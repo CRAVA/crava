@@ -161,6 +161,7 @@ public:
   size_t                    GetNTraces() const { return n_traces_ ;}
   size_t                    GetNz()      const { return nz_       ;}
   float                     GetDz()      const { return dz_       ;}
+  float                     GetTop()     const { return z0_       ;}
 
   enum                      OutsideModes{MISSING, ZERO, CLOSEST};
 

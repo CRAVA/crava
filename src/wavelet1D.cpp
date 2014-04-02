@@ -713,7 +713,8 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 
 
 float
-Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * simbox,
+Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,
+                                           const Simbox                                     * estimation_simbox,
                                            const std::vector<std::vector<double> >          & seis_logs,
                                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                            const ModelSettings                              * modelSettings,
@@ -768,7 +769,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     synt_r[w]                   = new fftw_real[rnzp_];
     const std::vector<int> ipos = blocked_log->GetIposVector();
     const std::vector<int> jpos = blocked_log->GetJposVector();
-    dzWell[w]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    dzWell[w]                   = static_cast<float>(estimation_simbox->getRelThick(ipos[0],jpos[0])) * dz_;
     w++;
   }
   //
@@ -876,7 +877,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   // local scale given means gain !=NULL
   else if (doEstimateLocalNoise && gainGrid != NULL) {
     optScale = globalScale; // Global scale must be given if local scale is given
-    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, mapped_blocked_logs, simbox);
+    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, mapped_blocked_logs, estimation_simbox);
   }
   else {
     optScale = globalScale;
@@ -997,10 +998,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     //
     Vario  * localWaveletVario     = modelSettings->getLocalWaveletVario();
     const CovGrid2D cov(localWaveletVario,
-                        simbox->getnx(),
-                        simbox->getny(),
-                        simbox->getdx(),
-                        simbox->getdy());
+                        inversion_simbox->getnx(),
+                        inversion_simbox->getny(),
+                        inversion_simbox->getdx(),
+                        inversion_simbox->getdy());
 
     if (ModelSettings::getDebugLevel() > 0) {
       std::string baseName = std::string("Local_Wavelet_Correlation") + IO::SuffixAsciiIrapClassic();
@@ -1009,10 +1010,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     }
 
     if (doEstimateLocalShift)
-      estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, simbox, mapped_blocked_logs);
+      estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, inversion_simbox, mapped_blocked_logs);
 
     if (doEstimateLocalScale)
-      estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, simbox, mapped_blocked_logs);
+      estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, inversion_simbox, mapped_blocked_logs);
 
     if (doEstimateLocalNoise) {
       float errStdLN;
@@ -1023,12 +1024,12 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale
         for(int w=0 ; w < nWells ; w++)
           errVarWell[w] = sqrt(errVarWell[w]);
-        estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, simbox, mapped_blocked_logs);
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, inversion_simbox, mapped_blocked_logs);
       }
       else if (doEstimateGlobalScale==true && doEstimateLocalScale==false) // global wavelet scale
-        estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, simbox, mapped_blocked_logs);
+        estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, inversion_simbox, mapped_blocked_logs);
       else
-        estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, simbox, mapped_blocked_logs);
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, inversion_simbox, mapped_blocked_logs);
     }
   }
 

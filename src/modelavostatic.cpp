@@ -335,8 +335,8 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
     }
   }
   FFTGrid::setMaxAllowedGrids(n_grids);
-  if (model_settings->getDebugFlag()>0)
-    FFTGrid::setTerminateOnMaxGrid(true);
+  //if (model_settings->getDebugFlag()>0)
+  //    FFTGrid::setTerminateOnMaxGrid(true); NBNB Ragnar: Temporary until count is ok.
 
   int   work_size   = 2500 + static_cast<int>( 0.65*grid_size_pad); //Size of memory used beyond grids.
 
@@ -589,25 +589,6 @@ void ModelAVOStatic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> b
 //      wells[i]->getBlockedLogsOrigThick()->generateSyntheticSeismic(reflectionMatrix,nAngles,wavelet,nz,nzp,timeSimbox);
 //  }
 //}
-
-void ModelAVOStatic::GenerateSyntheticSeismic(std::vector<Wavelet *>                   & wavelet,
-                                              std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                              const float *                      const * reflection_matrix,
-                                              const Simbox                             * time_simbox,
-                                              const ModelSettings                      * model_settings,
-                                              int                                        n_angles)
-{
-  int nzp     = time_simbox->GetNZpad();
-  int nz      = time_simbox->getnz();
-
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    if (blocked_log->GetIsDeviated() == true)
-      blocked_log->GenerateSyntheticSeismic(reflection_matrix, n_angles, wavelet, nz, nzp, time_simbox);
-  }
-}
 
 //-------------------------------------------------------------------
 FFTGrid *

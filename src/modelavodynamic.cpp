@@ -485,7 +485,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,
                             seis_cubes_[i],
-                            simbox,
+                            *simbox,
                             storm,
                             segy,
                             fft_grid_old,
@@ -502,9 +502,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     if(grid_tmp != NULL)
       delete grid_tmp;
-    if (fft_grid_old != NULL)
-      delete fft_grid_old;
-
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
@@ -634,7 +631,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
     std::vector<SeismicStorage> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
-    if (wavelet_estimated[i] == true) {
+    bool adjust_scale = (wavelet_estimated[i] == true || model_settings->getEstimateGlobalWaveletScale(this_timelapse_, i) == true);
+    bool adjust_noise = model_settings->getEstimateSNRatio(this_timelapse_, i);
+    if (adjust_scale == true || adjust_noise == true) {
       std::string err_text;
       int error = 0;
       Grid2D * noise_scaled_tmp;
@@ -644,11 +643,17 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       float sn_ratio_new = 0.0f;
 
       //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
-      wavelets_[i]->SetReflectionCoeffs(*reflection_matrix_);
+      wavelets_[i]->SetReflectionCoeffs(reflection_matrix_[i]);
 
       LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) { //Reestimate scale and noise with vp/vs for this interval.
+        //This is where it gets hairy. All estimation is done on estmation simbox scale, so create a local wavelet and resample.
+        //Find the scaling of this wavelet, and apply it to the non-resampled wavelet.
+        Wavelet * est_wavelet = new Wavelet1D(wavelets_[i]);
+        const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
+        est_wavelet->resample(estimation_simbox.getdz(), estimation_simbox.getnz(), estimation_simbox.GetNZpad());
+        est_wavelet->scale(1.0);
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
         std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs;
@@ -664,42 +669,29 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           w++;
         }
 
-        sn_ratio_new = wavelets_[i]->calculateSNRatioAndLocalWavelet(simbox,
-                                                                     seis_logs,
-                                                                     mapped_blocked_logs,
-                                                                     model_settings,
-                                                                     err_text,
-                                                                     error,
-                                                                     i, //angle
-                                                                     noise_scaled_tmp,
-                                                                     shift_grid_tmp,
-                                                                     gain_grid_tmp,
-                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i],
-                                                                     wavelets_[i]->getScale(),
-                                                                     true,   // doEstimateSNRatio
-                                                                     true,   // doEstimateGlobalScale
-                                                                     false,  // doEstimateLocalNoise
-                                                                     false,  // doEstimateLocalShift
-                                                                     false,  // doEstimateLocalScale
-                                                                     false); // doEstimateWavelet
+        sn_ratio_new = est_wavelet->calculateSNRatioAndLocalWavelet(simbox,
+                                                                    &(estimation_simbox),
+                                                                    seis_logs,
+                                                                    mapped_blocked_logs,
+                                                                    model_settings,
+                                                                    err_text,
+                                                                    error,
+                                                                    i, //angle
+                                                                    noise_scaled_tmp,
+                                                                    shift_grid_tmp,
+                                                                    gain_grid_tmp,
+                                                                    common_data->GetSNRatioTimeLapse(this_timelapse_)[i],
+                                                                    1.0,    //scale, set to 1 due to resampling.
+                                                                    adjust_noise,   // doEstimateSNRatio
+                                                                    adjust_scale,   // doEstimateGlobalScale
+                                                                    false,  // doEstimateLocalNoise
+                                                                    false,  // doEstimateLocalShift
+                                                                    false,  // doEstimateLocalScale
+                                                                    false); // doEstimateWavelet
 
-        //Add in synthetic sesmic (moved from wavelet1D.cpp)
-        w = 0;
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
-          BlockedLogsCommon * blocked_log = iter->second;
-
-          const std::vector<double> & synt_seis = common_data->GetSyntSeis(this_timelapse_)[i];
-
-          double z0      = blocked_log->GetZposBlocked()[0];
-          double dz      = simbox->getdz();
-          int    nz      = synt_seis.size(); //simbox->getnz();
-          double dz_well = simbox->getRelThick(blocked_log->GetIposVector()[0], blocked_log->GetJposVector()[0]) * dz;
-
-          blocked_log->SetLogFromVerticalTrend(synt_seis, z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, number_of_angles_);
-
-          w++;
-        }
+        //Compute scaling and scale original wavelet
+        float gain = est_wavelet->getScale();
+        wavelets_[i]->scale(gain);
       }
     }
     else {
@@ -709,7 +701,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    model_avo_static->GenerateSyntheticSeismic(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings, number_of_angles_);
+    CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings);
 
   //H Moved to CommonData, so it won't be writter per interval
   //if (estimation_mode)

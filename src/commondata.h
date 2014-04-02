@@ -36,7 +36,7 @@ public:
   //GET FUNCTIONS
 
   const Simbox                            & GetEstimationSimbox()               const { return estimation_simbox_      ;}
-  const NRLib::Volume                     & GetFullInversionVolume()            const { return full_inversion_volume_  ;}
+  const Simbox                            & GetFullInversionSimbox()            const { return full_inversion_simbox_  ;}
   const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
         std::vector<NRLib::Well>          & GetWells()                                { return wells_                  ;}
   const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
@@ -81,7 +81,6 @@ public:
   std::vector<std::vector<float> >      & GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
 
   std::vector<Wavelet *>                  & GetWavelet(int time_lapse)                  { return wavelets_.find(time_lapse)->second          ;}
-  const std::vector<std::vector<double> > & GetSyntSeis(int time_lapse)                 { return synt_seis_.find(time_lapse)->second         ;}
 
   const std::vector<std::vector<double> > & GetTGradX()                           const { return t_grad_x_                                   ;}
   const std::vector<std::vector<double> > & GetTGradY()                           const { return t_grad_y_                                   ;}
@@ -128,6 +127,12 @@ public:
                                   const ModelSettings                      * model_settings,
                                   std::vector<std::string>                   facies_name,
                                   std::vector<int>                           facies_label);
+
+  static   void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
+                                             std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                             const float *                      const * reflection_matrix,
+                                             const Simbox                             * time_simbox,
+                                             const ModelSettings                      * model_settings);
 
 
 
@@ -177,8 +182,7 @@ private:
 
   bool CreateOuterTemporarySimbox(ModelSettings           * model_settings,
                                   InputFiles              * input_files,
-                                  Simbox                  & estimation_simbox,
-                                  NRLib::Volume           & full_inversion_interval,
+                                  Simbox                  & full_inversion_simbox,
                                   std::string             & err_text);
 
   void WriteAreas(const SegyGeometry  * area_params,
@@ -199,22 +203,16 @@ private:
                           const std::string & grid_file,
                           std::string       & err_text);
 
-  void SetSurfacesMultipleIntervals(const ModelSettings            * const model_settings,
-                                    NRLib::Volume                  & full_inversion_volume,
-                                    Simbox                         & estimation_simbox,
-                                    int                              nz,
-                                    const InputFiles               * input_files,
-                                    std::string                    & err_text);
-
-  void SetSurfacesSingleInterval(const ModelSettings              * const model_settings,
-                                 NRLib::Volume                    & full_inversion_volume,
-                                 Simbox                           & estimation_simbox,
-                                 int                                nz,
-                                 const std::vector<std::string>   & surf_file,
-                                 std::string                      & err_text);
+  void SetSurfaces(const ModelSettings            * const model_settings,
+                   Simbox                         & full_inversion_simbox,
+                   bool                             multi_surface,
+                   const InputFiles               * input_files,
+                   std::string                    & err_text);
 
   bool ReadSeismicData(ModelSettings                               * modelSettings,
                        InputFiles                                  * inputFiles,
+                       const Simbox                                & full_inversion_simbox,
+                       Simbox                                      & estimation_simbox,
                        std::string                                 & err_text,
                        std::map<int, std::vector<SeismicStorage> > & seismic_data);
 
@@ -311,6 +309,8 @@ private:
 
   bool  WaveletHandling(ModelSettings                                     * model_settings,
                         InputFiles                                        * input_files,
+                        const Simbox                                      & estimation_simbox,
+                        const Simbox                                      & full_inversion_simbox,
                         std::map<int, std::vector<Wavelet *> >            & wavelets,
                         std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
                         std::map<int, std::vector<Grid2D *> >             & local_shift,
@@ -318,9 +318,8 @@ private:
                         std::map<int, std::vector<float> >                & global_noise_estimate,
                         std::map<int, std::vector<float> >                & sn_ratio,
                         bool                                              & use_local_noise,
-                        std::map<int, std::vector<std::vector<double> > > & synt_seis,
                         std::string                                       & err_text_common);
-
+    
   bool       CheckThatDataCoverGrid(const SegY   * segy,
                                     float          offset,
                                     const Simbox & simbox,
@@ -365,6 +364,8 @@ private:
                        const SeismicStorage                     * seismic_data,
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                        const std::vector<Surface *>             & waveletEstimInterval,
+                       const Simbox                             & estimation_simbox,
+                       const Simbox                             & full_inversion_simbox,
                        const float                              * reflection_matrix,
                        std::vector<double>                      & synt_seic,
                        std::string                              & err_text,
@@ -385,6 +386,8 @@ private:
                        const SeismicStorage                     * seismic_data,
                        std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                        const std::vector<Surface *>             & wavelet_estim_interval,
+                       const Simbox                             & estimation_simbox,
+                       const Simbox                             & full_inversion_simbox,
                        const float                              * reflection_matrix,
                        std::string                              & err_text,
                        Wavelet                                 *& wavelet,
@@ -400,24 +403,28 @@ private:
 
   void FindWaveletEstimationInterval(InputFiles             * input_files,
                                      std::vector<Surface *> & wavelet_estim_interval,
+                                     const Simbox           & estimation_simbox,
                                      std::string            & err_text);
 
   void ComputeStructureDepthGradient(double                 v0,
                                      double                 radius,
                                      const Surface        * t0_surf,
                                      const Surface        * correlation_direction,
+                                     const Simbox         & full_inversion_simbox,
                                      NRLib::Grid2D<float> & structure_depth_grad_x,
                                      NRLib::Grid2D<float> & structure_depth_grad_y);
 
-  void ComputeReferenceTimeGradient(const Surface       * t0_surf,
-                                    NRLib::Grid2D<float> &ref_time_grad_x,
-                                    NRLib::Grid2D<float> &ref_time_grad_y);
+  void ComputeReferenceTimeGradient(const Surface        * t0_surf,
+                                    NRLib::Grid2D<float> & ref_time_grad_x,
+                                    NRLib::Grid2D<float> & ref_time_grad_y,
+                                    const Simbox         & full_inversion_simbox);
 
   void CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
 
 
   void ResampleSurfaceToGrid2D(const Surface * surface,
-                               Grid2D        * outgrid);
+                               Grid2D        * outgrid,
+                               const Simbox  & simbox);
 
   int  GetWaveletFileFormat(const std::string & fileName, std::string & errText);
 
@@ -425,6 +432,7 @@ private:
                                     const std::string   & type,
                                     const float           scaleFactor,
                                     const ModelSettings * modelSettings,
+                                    const Simbox        & simbox,
                                     const Grid2D        * grid,
                                     const float           angle);
 
@@ -435,6 +443,7 @@ private:
   bool SetupTrendCubes(ModelSettings                     * model_settings,
                        InputFiles                        * input_files,
                        MultiIntervalGrid                 * multiple_interval_grid,
+                       const Simbox                      & full_inversion_simbox,
                        std::string                       & error_text);
 
   bool SetupRockPhysics(const ModelSettings                                 * model_settings,
@@ -451,12 +460,15 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings                               * model_settings,
-                            InputFiles                                  * input_files,
-                            std::string                                 & err_text);
+  bool SetupPriorFaciesProb(ModelSettings * model_settings,
+                            InputFiles    * input_files,
+                            const Simbox  & estimation_simbox,
+                            const Simbox  & full_inversion_simbox,
+                            std::string   & err_text);
 
   void FindFaciesEstimationInterval(InputFiles             * input_files,
                                     std::vector<Surface *> & facies_estim_interval,
+                                    const Simbox           & estimation_simbox,
                                     std::string            & err_text);
 
   void CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
@@ -469,6 +481,7 @@ private:
                                 ModelSettings                                    * model_settings,
                                 std::vector<std::vector<NRLib::Grid<double> *> > & prior_facies_prob_cubes,
                                 const std::vector<Simbox>                        & interval_simboxes,
+                                const Simbox                                     & full_inverion_simbox,
                                 std::string                                      & err_text);
 
   static FFTGrid  * CreateFFTGrid(int nx,
@@ -487,7 +500,7 @@ private:
                         const TraceHeaderFormat            * format,
                         int                                  grid_type,
                         const std::vector<Simbox>          & interval_simboxes,
-                        const Simbox                       & estimation_simbox,
+                        const Simbox                       & inversion_simbox,
                         const ModelSettings                * model_settings,
                         std::string                        & err_text,
                         bool                                 nopadding = true);
@@ -587,6 +600,7 @@ private:
 
   bool SetupDepthConversion(ModelSettings  * model_settings,
                             InputFiles     * input_files,
+                            const Simbox   & full_inversion_simbox,
                             std::string    & err_text);
 
   bool SetupBackgroundModel(ModelSettings            * model_settings,
@@ -698,6 +712,7 @@ private:
 
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,
+                                 const Simbox  & inversion_simbox,
                                  std::string   & err_text_common);
 
   void  ProcessHorizons(std::vector<Surface>   & horizons,
@@ -748,7 +763,8 @@ private:
 
   MultiIntervalGrid                           * multiple_interval_grid_;
   Simbox                                        estimation_simbox_;
-  NRLib::Volume                                 full_inversion_volume_;
+  Simbox                                        full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
+                                                                        //Not to be used for any z-resolution purposes.
 
   std::map<int, std::vector<SeismicStorage> >   seismic_data_; //Map timelapse
 
@@ -788,7 +804,6 @@ private:
   std::map<int, std::vector<float> >                 global_noise_estimates_;
   std::map<int, std::vector<float> >                 sn_ratios_;
   bool                                               use_local_noises_;
-  std::map<int, std::vector<std::vector<double> > >  synt_seis_; //Map time_lapse, vector angles
 
   std::vector<std::vector<double> >             t_grad_x_;
   std::vector<std::vector<double> >             t_grad_y_;
