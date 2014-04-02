@@ -1114,7 +1114,8 @@ ModelGeneral::logIntervalInformation(const Simbox      * simbox,
                        simbox->getdz()*simbox->getMinRelThick());
 }
 */
-void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
+
+/*void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
                                      const std::vector<std::string> & surfFile,
                                      ModelSettings                  * model_settings,
                                      std::string                    & errText,
@@ -1251,6 +1252,7 @@ void ModelGeneral::SetSimboxSurfaces(Simbox                        *& simbox,
   delete z0Grid;
   delete z1Grid;
 }
+*/
 
 //void
 //ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,

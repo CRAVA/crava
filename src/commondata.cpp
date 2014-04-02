@@ -152,8 +152,9 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 13. Setup of prior correlation
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
+      model_settings->SetMinBlocksForCorrEstimation(100); // As a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(read_wells_ && setup_multigrid_){
-          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(),  mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
             prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
       }
       else{
@@ -161,7 +162,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       }
     }
     else{
-      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
+      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(), mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
             prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
     }
   }
@@ -7767,8 +7768,9 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
 bool CommonData::SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                        const InputFiles                                            * input_files,
                                        const std::vector<NRLib::Well>                              & wells,
+                                       double                                                        dz_min,
                                        const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                                       const std::vector<Simbox>                                   & interval_simboxes,
+                                       std::vector<Simbox>                                         & interval_simboxes,
                                        const std::vector<std::vector<float> >                      & prior_facies_prob,
                                        const std::vector<std::string>                              & facies_names,
                                        const std::vector<CravaTrend>                               & trend_cubes,
@@ -7784,7 +7786,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
   bool failed                             = false;
   std::string err_text                    = "";
   Analyzelog * analyze_all                = NULL;
-  int min_data_for_estimation             = 100;  ///< Minimum number of blocks for estimation of time and param correlation
   bool print_result                       = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                                               model_settings->getEstimationMode() == true);
   size_t n_intervals                      = interval_simboxes.size();
@@ -7985,17 +7986,24 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
         //float ** point_var_0 = NULL;
         if (estimate_param_cov || estimate_temp_corr){
-
+          
           std::string tmp_err_txt;
           // Option 1: Estimate within this interval
-          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background[i], &interval_simboxes[i], model_settings, tmp_err_txt);
+          std::vector<Simbox *> temp_simbox;
+          temp_simbox.push_back(&interval_simboxes[i]);
+          std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
+          current_background_interval.push_back(background[i]);
+          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, dz_min,  model_settings, tmp_err_txt);
           if (tmp_err_txt != "") {
             err_text += tmp_err_txt;
             failed_param_cov = true;
           }
           // Option 2: Estimate over all intervals if the multiple interval setting is being used
           else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL){
-            analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, interval_simboxes, model_settings, tmp_err_txt);
+            std::vector<Simbox *> temp_simboxes;
+            for (size_t j = 0; j < interval_simboxes.size(); j++)
+              temp_simboxes.push_back(&interval_simboxes[j]);
+            analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, tmp_err_txt);
             if(analyze_all->GetEnoughData() == false){
               err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
               failed_param_cov = true;
@@ -9440,7 +9448,7 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
       else
         LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
-      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
+      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNzInterval(""));
 
     }
     else { //Multiple intervals
@@ -9900,4 +9908,19 @@ void CommonData::SetDebugLevel(ModelSettings * model_settings)
   FFTGrid::setOutputFlags(model_settings->getOutputGridFormat(),
                           model_settings->getOutputGridDomain());
 
+}
+
+std::string CommonData::ConvertInt(int number){
+    if (number == 0)
+        return "0";
+    std::string temp="";
+    std::string return_value="";
+    while (number>0)
+    {
+        temp+=number%10+48;
+        number/=10;
+    }
+    for (int i=0;i<temp.length();i++)
+        return_value+=temp[temp.length()-i-1];
+    return return_value;
 }

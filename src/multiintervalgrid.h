@@ -48,6 +48,7 @@ public:
   const std::vector<std::string>                         & GetSurfaceFiles()                      const { return surface_files_               ;}
   const std::vector<double>                              & GetRelativeGridResolution()            const { return relative_grid_resolution_    ;}
   const std::vector<double>                              & GetDesiredGridResolution()             const { return desired_grid_resolution_     ;}
+  double                                                   GetDzMin()                             const { return dz_min_                      ;}
   const std::vector<double>                              & GetDzRel()                             const { return dz_rel_                      ;}
   const std::vector<CravaTrend>                          & GetTrendCubes()                        const { return trend_cubes_                 ;}
   const CravaTrend                                       & GetTrendCube(int i)                    const { return trend_cubes_[i]              ;}
@@ -93,6 +94,7 @@ private:
                               const std::map<std::string, bool>         & corr_dir_base_conform,
                               std::vector<double>                       & desired_grid_resolution,
                               std::vector<double>                       & relative_grid_resolution,
+                              double                                    & dz_min,
                               std::vector<double>                       & dz_rel,
                               std::string                               & err_text,
                               bool                                      & failed) const;
@@ -161,6 +163,7 @@ private:
                          int             n_layers) const;
 
   // CLASS VARIABLES
+  double                                               dz_min_;                    // Highest vertical resolution in the interval simboxes
   size_t                                               n_intervals_;
   bool                                                 multiple_interval_setting_;
   std::vector<std::string>                             interval_names_;

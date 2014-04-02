@@ -2,13 +2,11 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
-
 #include "src/blockedlogscommon.h"
 #include "src/simbox.h"
 #include "lib/utils.h"
 #include "nrlib/flens/nrlib_flens.hpp"
 #include "src/multiintervalgrid.h"
-
 #include "src/wavelet1D.h"
 
 //#include "fftw.h"

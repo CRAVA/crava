@@ -308,11 +308,11 @@ private:
   //                                                const NRLib::Grid2D<double> & covariance,
   //                                                const bool                  & has_trend) const;
 
-  void              SetSimboxSurfaces(Simbox                        *& simbox,
+  /*void              SetSimboxSurfaces(Simbox                        *& simbox,
                                       const std::vector<std::string> & surfFile,
                                       ModelSettings                  * modelSettings,
                                       std::string                    & errText,
-                                      bool                           & failed);
+                                      bool                           & failed);*/
   void              EstimateXYPaddingSizes(Simbox         * timeSimbox,
                                            ModelSettings *& modelSettings);
   void              EstimateZPaddingSize(Simbox         * timeSimbox,
