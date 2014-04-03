@@ -11,28 +11,31 @@
 #include "nrlib/grid/grid.hpp"
 #include "nrlib/well/well.hpp"
 #include "src/multiintervalgrid.h"
+#include "src/commondata.h"
 
 class BlockedLogsCommon;
 class Background;
+//class CommonData;
 
 class Analyzelog {
 
 public:
 
 
-  Analyzelog(const std::vector<NRLib::Well>                          & wells,
+  /*Analyzelog(const std::vector<NRLib::Well>                          & wells,
              const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
              const std::vector<NRLib::Grid<float> *>                 & background,
-             //const std::vector<NRLib::Grid<double> >                 & background_max_Hz,
+             //const std::vector<NRLib::Grid<float> >                  & background_max_Hz,
              const Simbox                                            * simbox,
              const ModelSettings                                     * model_settings,
-             std::string                                             & err_txt);
+             std::string                                             & err_txt);*/
 
   Analyzelog(const std::vector<NRLib::Well>                          & wells,
              const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
              const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
-             //const std::vector<std::vector<NRLib::Grid<double> > >   & background_max_Hz,
-             const std::vector<Simbox>                               & interval_simboxes,
+             //const std::vector<std::vector<NRLib::Grid<float> > >    & background_max_Hz,
+             const std::vector<Simbox *>                             & interval_simboxes,
+             double                                                    dz_min,
              const ModelSettings                                     * model_settings,
              std::string                                             & err_txt);
 
@@ -55,14 +58,15 @@ public:
 
 private:
 
-  void            EstimateLnData(std::vector<std::vector<float> >                     & log_data,
-                                 const NRLib::Grid<float>                             * background,
-                                 const std::vector<std::string>                       & well_names,
-                                 const std::map<std::string, BlockedLogsCommon *>     & mapped_blocked_logs_for_correlation,
-                                 const std::string                                    & interval_name,
-                                 const std::string                                    & log_name,
-                                 std::string                                          & err_txt);
+  void            EstimateLnData(std::map<std::string, std::vector<float> >             & log_data,
+                                 const std::vector<std::vector<NRLib::Grid<float> *> >  & background,
+                                 const std::vector<std::string>                         & well_names,
+                                 const std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs_for_correlation,
+                                 const std::vector<Simbox *>                            & interval_simboxes,
+                                 const std::string                                      & log_name,
+                                 std::string                                            & err_txt);
 
+  /*
   void            EstimateCorrelation(const ModelSettings                                      * model_settings,
                                       const std::vector<NRLib::Well>                           & wells,
                                       const std::vector<std::string>                           & well_names,
@@ -72,24 +76,28 @@ private:
                                       bool                                                     & enough_data_for_corr_estimation,
                                       const std::vector<NRLib::Grid<float> *>                  & background,
                                       std::string                                              & errTxt);
+  */
 
     void          EstimateCorrelation(const ModelSettings                                      * model_settings,
                                       const std::vector<NRLib::Well>                           & wells,
                                       const std::vector<std::string>                           & well_names,
                                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                                      const std::vector<Simbox>                                & interval_simboxes,
+                                      const std::vector<Simbox *>                              & interval_simboxes,
                                       bool                                                     & enough_data_for_corr_estimation,
-                                      const std::vector<std::vector<NRLib::Grid<double> > >    & background,
+                                      double                                                     dz_min,
+                                      const std::vector<std::vector<NRLib::Grid<float> *> >    & background,
                                       std::string                                              & errTxt);
 
   void            estimate(const ModelSettings  * modelSettings,
                            Background           * background,
                            std::string          & errTxt);
 
+  /*
   void            estimateLnData(float      **& lnData,
                                  FFTGrid      * background,
                                  int            logNr,
                                  std::string  & errTxt);
+  */
 
   void            estimatePointVar0(float       ** Var0,
                                     float       ** lnDataAlpha,
@@ -111,20 +119,28 @@ private:
   void            readMeanData(FFTGrid *cube, int nd, const double *xpos, const double *ypos,
                                const double *zpos, float *meanValue);
 
-  void            CalculateNumberOfLags(int                               & numberOfLags,
-                                        const std::vector<NRLib::Well>    & wells,
+  void            CalculateNumberOfLags(int                                                   & max_nd,
+                                        const std::vector<Simbox *>                           & simboxes);
+
+  void            CalculateNumberOfLags(int                                                   & n_lags,
                                         const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
-                                        int                               & maxnd,
-                                        const Simbox                      * simbox,
-                                        std::string                       & errTxt);
+                                        int                                                   & max_nd,
+                                        const std::vector<Simbox *>                           & simboxes,
+                                        std::string                                           & err_txt);
 
   void            findConstructedVsLogs(void);
 
-  void            checkVariances(const ModelSettings  * modelSettings,
-                                 const float  * const * pointVar0,
-                                 const float  * const * Var0,
-                                 float            dt,
-                                 std::string    & errTxt);
+  void            CheckVariances(const ModelSettings    * model_settings,
+                                 const NRLib::Matrix    & var_0,
+                                 double                   dz,
+                                 std::string            & err_txt);
+
+  bool            CheckConsistencyBackground(const std::vector<float>                              & ln_data_blocked,
+                                              const std::vector<float>                              & background,
+                                              const std::vector<float>                              & low_freq_log,
+                                              int                                                     nd_tot);
+
+  //--------------------------------------------------------------------------------------------
 
   int                                                   min_blocks_with_data_for_corr_estim_;
   bool                                                  enough_data_for_corr_estimation_;       ///< Vector with size == n_intervals

@@ -17,6 +17,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   interval_names_                                                 = model_settings->getIntervalNames();
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
+  dz_min_                                                         = 10000;
 
   //H Combined the if(multinterval) below
   if (interval_names_.size() == 0) {
@@ -185,6 +186,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               model_settings->getCorrDirIntervalBaseConform(),
                               desired_grid_resolution_,
                               relative_grid_resolution_,
+                              dz_min_,
                               dz_rel_,
                               err_text,
                               failed);
@@ -309,6 +311,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 const std::map<std::string, bool>         & corr_dir_base_conform,
                                                 std::vector<double>                       & desired_grid_resolution,
                                                 std::vector<double>                       & relative_grid_resolution,
+                                                double                                    & dz_min,
                                                 std::vector<double>                       & dz_rel,
                                                 std::string                               & err_text,
                                                 bool                                      & failed) const
@@ -443,9 +446,16 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
   } // end for loop over intervals
   dz_rel.resize(interval_names.size());
-  double dz_0 = interval_simboxes[0].getdz();
-  for(size_t m = 0; m<interval_simboxes.size(); m++){
-    dz_rel[m] = interval_simboxes[m].getdz()/dz_0;
+
+  // Pick the simbox with the finest vertical resolution and set dz_rel relative to this dz
+  dz_min = 10000;
+  for (size_t m = 0; m < interval_simboxes.size(); m++){
+    if (interval_simboxes[m].getdz() < dz_min)
+      dz_min = interval_simboxes[m].getdz();
+  }
+
+  for(size_t m = 0; m < interval_simboxes.size(); m++){
+    dz_rel[m] = interval_simboxes[m].getdz()/dz_min;
   }
 }
 

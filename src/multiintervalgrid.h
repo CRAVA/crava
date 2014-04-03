@@ -42,6 +42,7 @@ public:
   const std::vector<std::string>                         & GetSurfaceFiles()                      const { return surface_files_               ;}
   const std::vector<double>                              & GetRelativeGridResolution()            const { return relative_grid_resolution_    ;}
   const std::vector<double>                              & GetDesiredGridResolution()             const { return desired_grid_resolution_     ;}
+  double                                                   GetDzMin()                             const { return dz_min_                      ;}
   const std::vector<double>                              & GetDzRel()                             const { return dz_rel_                      ;}
 
   // SET FUNCTIONS
@@ -61,6 +62,7 @@ private:
                               const std::map<std::string, bool>         & corr_dir_base_conform,
                               std::vector<double>                       & desired_grid_resolution,
                               std::vector<double>                       & relative_grid_resolution,
+                              double                                    & dz_min,
                               std::vector<double>                       & dz_rel,
                               std::string                               & err_text,
                               bool                                      & failed) const;
@@ -123,11 +125,12 @@ private:
                          int             n_layers) const;
 
   // CLASS VARIABLES
-  size_t                      n_intervals_;
-  bool                        multiple_interval_setting_;
-  std::vector<std::string>    interval_names_;
-  std::vector<int>            erosion_priorities_;
-  std::vector<std::string>    surface_files_;
+  double                                               dz_min_;                    // Highest vertical resolution in the interval simboxes
+  size_t                                               n_intervals_;
+  bool                                                 multiple_interval_setting_;
+  std::vector<std::string>                             interval_names_;
+  std::vector<int>                                     erosion_priorities_;
+  std::vector<std::string>                             surface_files_;
 
   std::vector<Simbox>         interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
 

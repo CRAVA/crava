@@ -364,6 +364,7 @@ public:
   //void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
   //void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
   //void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
+  void SetMinBlocksForCorrEstimation(int n)               { min_blocks_with_data_for_corr_estim_ = n             ;}
   void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
@@ -374,7 +375,7 @@ public:
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
-  void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
+  //void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
   void setTimeNzInterval(std::string name, int time_nz)   { time_nz_interval_[name]   = time_nz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}

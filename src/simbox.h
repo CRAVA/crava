@@ -104,7 +104,7 @@ public:
   double         getMinRelThick()                const { return minRelThick_             ;} // Returns minimum relative thickness.
   const NRLib::Surface<double> & GetTopErodedSurface()   const { return *top_eroded_surface_      ;}
   const NRLib::Surface<double> & GetBaseErodedSurface()  const { return *base_eroded_surface_     ;}
-
+  double         GetRelThickErodedInterval(double x, double y) const;
   double         getRelThick(int i, int j)       const;                                     // Local relative thickness.
   double         getRelThick(double x, double y) const;                                     // Local relative thickness.
   double         getAvgRelThick(void)            const;
@@ -141,7 +141,7 @@ public:
   // SET functions ------------------------------------------------------
 
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
-  void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf);
+  void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf, bool  skip_check = true);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
   bool           setArea(const NRLib::Volume * volume, int ni, int nj, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
@@ -175,6 +175,10 @@ public:
 
 
 private:
+
+  bool           CheckErodedSurfaces() const;
+  double         RecalculateErodedLZ();
+
   int            nx_pad_;                      ///< Number of cells to pad in x direction
   int            ny_pad_;
   int            nz_pad_;
@@ -184,6 +188,7 @@ private:
   double         grad_x_;
   double         grad_y_;
   double         dx_, dy_, dz_;            // Working resolution.
+  double         lz_eroded_;
   int            nx_, ny_, nz_;            // Number of cells in each direction.
   int            status_;                  // Since Simbox may be incomplete or with error
   double         cosrot_, sinrot_;         // Saving time in transformations.
