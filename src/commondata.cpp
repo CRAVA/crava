@@ -6,18 +6,18 @@
 #define _USE_MATH_DEFINES
 
 #include "src/commondata.h"
-#include "src/analyzelog.h"
-#include "src/simbox.h"
-#include "src/timeline.h"
+//#include "src/analyzelog.h"
+//#include "src/simbox.h"
+//#include "src/timeline.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/seismicstorage.h"
+//#include "src/seismicstorage.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/multiintervalgrid.h"
-#include "src/cravatrend.h"
-#include "src/background.h"
-#include "src/blockedlogscommon.h"
+//#include "src/multiintervalgrid.h"
+//#include "src/cravatrend.h"
+//#include "src/background.h"
+//#include "src/blockedlogscommon.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/segy/segytrace.hpp"
@@ -206,12 +206,12 @@ CommonData::CommonData(ModelSettings * model_settings,
 CommonData::~CommonData() {
 
 
-  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
-    for (int j = 0; j < 3; j++) {
-      if (background_parameters_[i][j] != NULL)
-        delete background_parameters_[i][j];
-    }
-  }
+  //for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+  //  for (int j = 0; j < 3; j++) {
+  //    if (background_parameters_[i][j] != NULL)
+  //      delete background_parameters_[i][j];
+  //  }
+  //}
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
     if (mapped_blocked_logs_.find(it->first)->second != NULL)

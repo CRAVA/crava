@@ -25,11 +25,11 @@
 //#include "src/background.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/gridmapping.h"
+//#include "src/gridmapping.h"
 //#include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
-#include "src/waveletfilter.h"
+//#include "src/waveletfilter.h"
 #include "src/tasklist.h"
 
 #include "lib/utils.h"

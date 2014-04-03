@@ -23,7 +23,7 @@ class Wavelet;
 class Vario;
 class Simbox;
 class FFTGrid;
-class GridMapping;
+//class GridMapping;
 class InputFiles;
 //class CommonData;
 class ModelAVOStatic

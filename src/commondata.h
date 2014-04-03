@@ -20,6 +20,7 @@
 #include "src/modelsettings.h"
 #include "src/timeline.h"
 #include "src/cravatrend.h"
+#include "src/multiintervalgrid.h"
 
 class MultiIntervalGrid;
 class CravaTrend;
@@ -124,6 +125,14 @@ public:
                   bool                 scale    = false,
                   bool                 is_segy  = true,
                   bool                 is_storm = false);
+
+  static FFTGrid  * CreateFFTGrid(int nx,
+                                  int ny,
+                                  int nz,
+                                  int nxp,
+                                  int nyp,
+                                  int nzp,
+                                  bool file_grid);
 
   void            GetCorrGradIJ(float         & corr_grad_I,
                                 float         & corr_grad_J,
@@ -512,14 +521,6 @@ private:
                                 const std::vector<Simbox>                        & interval_simboxes,
                                 const Simbox                                     & full_inverion_simbox,
                                 std::string                                      & err_text);
-
-  static FFTGrid  * CreateFFTGrid(int nx,
-                                  int ny,
-                                  int nz,
-                                  int nxp,
-                                  int nyp,
-                                  int nzp,
-                                  bool file_grid);
 
   void ReadGridFromFile(const std::string                  & file_name,
                         const std::string                  & par_name,

@@ -1,11 +1,12 @@
 /***************************************************************************
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
+
 #include "src/cravatrend.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
-#include "src/modelgeneral.h"
-//#include "src/commondata.h"
+//#include "src/modelgeneral.h"
+#include "src/commondata.h"
 
 CravaTrend::CravaTrend()
 {
@@ -77,7 +78,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube = CommonData::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
         trend_cube->createRealGrid();
         trend_cube->setAccessMode(FFTGrid::WRITE);
 
@@ -99,7 +100,7 @@ CravaTrend::CravaTrend(Simbox                       * timeSimbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        trend_cube = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
+        trend_cube = CommonData::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, false);
         trend_cube->createRealGrid();
         trend_cube->setAccessMode(FFTGrid::WRITE);
 
