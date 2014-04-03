@@ -13,8 +13,10 @@
 //#include "src/background.h" //or move getAlpha & co to cpp-file. //H Why must this be included?
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "src/commondata.h"
 
 #include "nrlib/well/well.hpp"
+
 
 struct irapgrid;
 class Wavelet;
@@ -23,7 +25,7 @@ class Simbox;
 class FFTGrid;
 class GridMapping;
 class InputFiles;
-class CommonData;
+//class CommonData;
 class ModelAVOStatic
 {
 public:

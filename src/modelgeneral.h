@@ -25,6 +25,7 @@
 
 #include "nrlib/grid/grid.hpp"
 #include "src/blockedlogscommon.h"
+#include "src/commondata.h"
 
 struct irapgrid;
 class Corr;

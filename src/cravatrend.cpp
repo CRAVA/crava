@@ -5,7 +5,7 @@
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 #include "src/modelgeneral.h"
-#include "src/commondata.h"
+//#include "src/commondata.h"
 
 CravaTrend::CravaTrend()
 {

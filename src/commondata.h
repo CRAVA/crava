@@ -318,8 +318,10 @@ private:
                               InputFiles     * input_files,
                               std::string    & err_text);
 
-  bool  SetupTemporaryWavelet(ModelSettings * model_settings,
-                              std::string   & err_text);
+  bool  SetupTemporaryWavelet(ModelSettings                               * model_settings,
+                              std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                              std::vector<Wavelet*>                       & temporary_wavelets,
+                              std::string                                 & err_text);
 
   bool  WaveletHandling(ModelSettings                                     * model_settings,
                         InputFiles                                        * input_files,

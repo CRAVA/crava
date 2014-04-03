@@ -14,6 +14,7 @@
 //#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "src/commondata.h"
 
 struct irapgrid;
 class Wavelet;
@@ -26,7 +27,7 @@ class InputFiles;
 class ModelAVOStatic;
 class ModelGeneral;
 class SeismicParametersHolder;
-class CommonData;
+//class CommonData;
 
 class ModelAVODynamic
 {

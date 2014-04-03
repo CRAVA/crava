@@ -21,7 +21,7 @@
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/segy/segytrace.hpp"
-#include "nrlib/well/norsarwell.hpp"
+//#include "nrlib/well/norsarwell.hpp"
 
 #include "rplib/distributionsrock.h"
 
@@ -99,7 +99,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 5. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
-    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, err_text);
+    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, err_text);
 
   // 6. Optimization of well location
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
@@ -2551,9 +2551,10 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   return true;
 }
 
-bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
-                                       //InputFiles    * input_files,
-                                       std::string   & err_text_common) {
+bool CommonData::SetupTemporaryWavelet(ModelSettings                               * model_settings,
+                                       std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                       std::vector<Wavelet*>                       & temporary_wavelets,
+                                       std::string                                 & err_text_common) {
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
 
@@ -2585,7 +2586,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
     std::vector<float> frequency_peaks;
     std::vector<std::vector<float> > trace_data(100);
     std::vector<float> trace_length;
-    seismic_data_[this_timelapse][j].GetSparseTraceData(trace_data, trace_length, 100);
+    seismic_data[this_timelapse][j].GetSparseTraceData(trace_data, trace_length, 100);
 
     //FFT to find peak-frequency.
     for (int k = 0; k < 100; k++) {
@@ -2634,7 +2635,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
     Wavelet * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
 
     if (tmp_error == 0)
-      temporary_wavelets_.push_back(wavelet_tmp);
+      temporary_wavelets.push_back(wavelet_tmp);
     else
       err_text += "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[j]) + ".\n";
   }
