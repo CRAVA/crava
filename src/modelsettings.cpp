@@ -38,7 +38,8 @@ ModelSettings::ModelSettings(void)
     indFacies_(0),
     indRockPhysics_(0),
     logNames_(6),
-    inverseVelocity_(2)
+    inverseVelocity_(2),
+    min_blocks_with_data_for_corr_estim_(100)
 {
   lateralCorr_             = new GenExpVario(1, 1000, 1000);
   backgroundVario_         = new GenExpVario(1, 2000, 2000);
