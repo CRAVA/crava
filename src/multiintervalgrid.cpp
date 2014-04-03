@@ -430,11 +430,14 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         failed = true;
       }
 
-      LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
+      if (interval_names.size() == 1)
+        LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids: \n");
+      else
+        LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
       LogKit::LogFormatted(LogKit::Low,"  Output grid        %4i * %4i * %4i   : %10llu\n",
                             interval_simboxes[i].getnx(),interval_simboxes[i].getny(),interval_simboxes[i].getnz(),
                             static_cast<unsigned long long int>(interval_simboxes[i].getnx())*interval_simboxes[i].getny()*interval_simboxes[i].getnz());
-      LogKit::LogFormatted(LogKit::Low,"  FFT grid            %4i * %4i * %4i   :%11llu\n",
+      LogKit::LogFormatted(LogKit::Low,"  FFT grid           %4i * %4i * %4i   :%11llu\n",
                             interval_simboxes[i].GetNXpad(),interval_simboxes[i].GetNYpad(),interval_simboxes[i].GetNZpad(),
                             static_cast<unsigned long long int>(interval_simboxes[i].GetNXpad())*interval_simboxes[i].GetNYpad()*interval_simboxes[i].GetNZpad());
     }
@@ -690,7 +693,8 @@ void  MultiIntervalGrid::LogIntervalInformation(const Simbox      & simbox,
   LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+"\n");
   double zmin, zmax;
   simbox.getMinMaxZ(zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low," Interval name: "+interval_name +"\n");
+  if (interval_name != "")
+    LogKit::LogFormatted(LogKit::Low," Interval name: "+interval_name +"\n");
   LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox.getlz()*simbox.getAvgRelThick()*0.5,
