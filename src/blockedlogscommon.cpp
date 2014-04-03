@@ -3393,7 +3393,6 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 }
 
 void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_coef,
-                                                 int                     n_angles,
                                                  std::vector<Wavelet *> & wavelet,
                                                  int                     nz,
                                                  int                     nzp,
@@ -3429,6 +3428,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
 
   float scale = static_cast<float>(simbox->getRelThick(i_pos_[0], j_pos_[0]));
 
+  int n_angles = static_cast<int>(wavelet.size());
   for (i=0; i < n_angles; i++) {
     for (j=0; j < rnzp; j++) {
       cpp_r[j] = 0;

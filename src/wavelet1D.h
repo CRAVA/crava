@@ -71,8 +71,8 @@ Wavelet1D(const ModelSettings * modelSettings,
                                                const SeismicStorage                             * seismic_data,
                                                const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs);
 
-  float         calculateSNRatioAndLocalWavelet(const Simbox                                     * simbox,
-                                                //const SeismicStorage                           * seismic_data,
+  float         calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,
+                                                const Simbox                                     * estimation_simbox,
                                                 const std::vector<std::vector<double> >          & seis_logs,
                                                 const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                                 const ModelSettings                              * modelSettings,

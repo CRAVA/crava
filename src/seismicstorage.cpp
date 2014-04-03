@@ -11,7 +11,7 @@
 
 #include "src/seismicstorage.h"
 #include "src/definitions.h"
-
+//#include "src/commondata.h"
 #include "src/fftgrid.h"
 
 SeismicStorage::SeismicStorage()
@@ -309,4 +309,44 @@ SeismicStorage::GetRealTraceValue(const Simbox * estimation_simbox,
   }
 
   return value;
+}
+
+
+void
+SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
+                           double         lz_limit,
+                           Simbox       & seismic_simbox,
+                           std::string  & err_txt) const
+{
+  switch(seismic_type_) {
+    case SEGY: {
+      const NRLib::SegyGeometry * geometry = segy_->GetGeometry();
+      seismic_simbox.setArea(geometry, err_txt);
+      seismic_simbox.setILXL(geometry);
+      double z_top  = static_cast<double>(segy_->GetTop());
+      double z_base = static_cast<double>(z_top+segy_->GetDz()*segy_->GetNz());
+      double x_min, x_max, y_min, y_max;
+      seismic_simbox.getMinAndMaxXY(x_min, x_max, y_min, y_max);
+      NRLib::RegularSurface<double> top(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_top);
+      NRLib::RegularSurface<double> base(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_base);
+      seismic_simbox.setDepth(top, base, segy_->GetNz(), true);
+      seismic_simbox.calculateDz(lz_limit, err_txt);
+      seismic_simbox.SetNoPadding();
+      break;
+    }
+    case STORM:
+    case SGRI:
+      seismic_simbox.setArea(storm_grid_,
+                             static_cast<int>(storm_grid_->GetNI()),
+                             static_cast<int>(storm_grid_->GetNJ()),
+                             err_txt);
+      seismic_simbox.SetNoPadding();
+      break;
+    default:
+      seismic_simbox.setArea(&full_inversion_simbox,
+                             static_cast<int>(full_inversion_simbox.getnx()),
+                             static_cast<int>(full_inversion_simbox.getny()),
+                             err_txt);
+      seismic_simbox.CopyAllPadding(full_inversion_simbox, lz_limit, err_txt);
+  }
 }

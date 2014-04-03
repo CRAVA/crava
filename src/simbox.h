@@ -143,6 +143,7 @@ public:
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
   void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
+  bool           setArea(const NRLib::Volume * volume, int ni, int nj, std::string & errText);
   void           setILXL(const SegyGeometry * geometry);
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);
@@ -154,6 +155,7 @@ public:
   void           SetYPadFactor(double y_pad_fac)       { y_pad_fac_   = y_pad_fac                    ;}
   void           SetZPadFactor(double z_pad_fac)       { z_pad_fac_   = z_pad_fac                    ;}
 
+  void           SetNoPadding();
   // other public functions
 
   void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
@@ -166,6 +168,11 @@ public:
   NRLib::Vector  FindPlane(const Surface * surf);
   Surface *      CreatePlaneSurface(const NRLib::Vector & planeParams,
                                     Surface             * templateSurf) const;
+
+  void           CopyAllPadding(const Simbox & original,
+                                double         lz_limit,
+                                std::string  & err_txt);
+
 
 private:
   int            nx_pad_;                      ///< Number of cells to pad in x direction

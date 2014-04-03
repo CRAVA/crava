@@ -850,6 +850,65 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   return false; // OK
 }
 
+bool
+Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errText)
+{
+  double x0  = volume->GetXMin();
+  double y0  = volume->GetYMin();
+  double lx  = volume->GetLX();
+  double ly  = volume->GetLY();
+  double rot = volume->GetAngle();
+  double dx  = lx/static_cast<double>(nx);
+  double dy  = ly/static_cast<double>(ny);
+
+  bool failed = false;
+
+  try
+  {
+    SetDimensions(x0,y0,lx,ly);
+  }
+  catch (NRLib::Exception & e)
+  {
+    errText += "Could not set x0, y0, lx, and ly.\n";
+    errText += e.what();
+    return true; // Failed
+  }
+  try
+  {
+    SetAngle(rot);
+  }
+  catch (NRLib::Exception & e)
+  {
+    errText += "Could not set rotation angle.\n";
+    errText += e.what();
+    failed = true;
+    return true; // Failed
+  }
+  cosrot_      = cos(rot);
+  sinrot_      = sin(rot);
+  dx_          = dx;
+  dy_          = dy;
+  nx_          = static_cast<int>(0.5+lx/dx_);
+  ny_          = static_cast<int>(0.5+ly/dy_);
+
+  // In case IL/XL information is not available, we fall back
+  //  on the following base case values ...
+  inLine0_     = -0.5;
+  crossLine0_  = -0.5;
+  ilStepX_     =  cosrot_/dx_;
+  ilStepY_     =  sinrot_/dx_;
+  xlStepX_     = -sinrot_/dy_;
+  xlStepY_     =  cosrot_/dy_;
+
+  if(status_ == EMPTY)
+    status_ = NODEPTH;
+  else if(status_ == NOAREA)
+    status_ = BOXOK;
+
+  return false; // OK
+}
+
+
 void
 Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck)
 {
@@ -1057,3 +1116,30 @@ void Simbox::SetErodedSurfaces(const NRLib::Surface<double> & top_surf,
   top_eroded_surface_  = top_surf.Clone();
   base_eroded_surface_ = bot_surf.Clone();
 }
+
+void
+Simbox::CopyAllPadding(const Simbox & original,
+                       double         lz_limit,
+                       std::string  & err_txt)
+{
+  setDepth(original.GetTopSurface(), original.GetBotSurface(), original.getnz(), true);
+  calculateDz(lz_limit, err_txt);
+  SetNXpad(original.GetNXpad());
+  SetNYpad(original.GetNYpad());
+  SetNZpad(original.GetNZpad());
+  SetXPadFactor(original.GetXPadFactor());
+  SetYPadFactor(original.GetYPadFactor());
+  SetZPadFactor(original.GetZPadFactor());
+}
+
+void
+Simbox::SetNoPadding()
+{
+  SetNXpad(nx_);
+  SetNYpad(ny_);
+  SetNZpad(nz_);
+  SetXPadFactor(0);
+  SetYPadFactor(0);
+  SetZPadFactor(0);
+}
+
