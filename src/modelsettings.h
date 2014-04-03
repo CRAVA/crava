@@ -183,7 +183,7 @@ public:
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
   bool                             getPorosityLogGiven(void)            const { return porosityLogGiven_                          ;}
-  const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
+  //const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
   const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
@@ -222,7 +222,7 @@ public:
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
   std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
-  std::map<std::string, float>                         getPriorFaciesProbInterval(std::string interval_name)            const { return priorFaciesProbInterval_.find(interval_name)->second                ;}
+  std::map<std::string, float>                         getPriorFaciesProbsInterval(std::string interval_name)           const { return priorFaciesProbInterval_.find(interval_name)->second                ;}
   const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbIntervals()                            const { return priorFaciesProbInterval_                                            ;}
   std::map<std::string, float>                         getVolumeFractionsProbInterval(std::string interval_name)        const { return volumefractionInterval_.find(interval_name)->second                 ;}
   std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbIntervals()                                const { return volumefractionInterval_                                             ;}
@@ -409,10 +409,11 @@ public:
   void setUseFilterForFaciesProb(bool useFilterForProb)   { useFilterForProb_         = useFilterForProb         ;}
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void setPorosityLogGiven(bool porosityGiven)            { porosityLogGiven_         = porosityGiven            ;}
-  void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
+  //void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
   void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
-  void addPriorFaciesProbInterval(std::string interval_name, std::map<std::string, float> prior_int_map){ priorFaciesProbInterval_[interval_name] = prior_int_map ;}
-  void addVolumeFractionInterval(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumefractionInterval_[interval_name] = volumefractions_map ;}
+  void addPriorFaciesProbsInterval(std::string interval_name, std::map<std::string, float> prior_int_map)     { priorFaciesProbInterval_[interval_name]              = prior_int_map       ;}
+  void addPriorFaciesProbInterval(std::string interval_name, std::string facies_name, float value)            { priorFaciesProbInterval_[interval_name][facies_name] = value               ;}
+  void addVolumeFractionInterval(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumefractionInterval_[interval_name]               = volumefractions_map ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)        { parallelTimeSurfaces_     = pTimeSurfaces            ;}
@@ -618,7 +619,7 @@ private:
   std::vector<bool>                 inverseVelocity_;            ///< If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
 
   int                               priorFaciesProbGiven_;
-  std::map<std::string, float>      priorFaciesProb_;
+  //std::map<std::string, float>      priorFaciesProb_;
   std::map<std::string, float>      volumeFractionProb_;
   std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
   std::map<std::string, std::map<std::string, float> >      volumefractionInterval_;

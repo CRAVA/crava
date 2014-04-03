@@ -132,11 +132,11 @@ private:
   std::vector<int>                                     erosion_priorities_;
   std::vector<std::string>                             surface_files_;
 
-  std::vector<Simbox>         interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
+  std::vector<Simbox>                                  interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
 
-  std::vector<double>         desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
-  std::vector<double>         relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.
-  std::vector<double>         dz_rel_;                   // Actual grid resolution relative to simbox 0
+  std::vector<double>                                  desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
+  std::vector<double>                                  relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.
+  std::vector<double>                                  dz_rel_;                   // Actual grid resolution relative to simbox 0
 
 };
 

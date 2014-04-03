@@ -4879,6 +4879,11 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
   //if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion()) {
 
+  if (model_settings->getPriorFaciesProbIntervals().size() == 0) {
+    std::map<std::string, float> map_tmp;
+    model_settings->addPriorFaciesProbsInterval("", map_tmp);
+  }
+
   if (!model_settings->getEstimateFaciesProb() && !model_settings->getDo4DInversion())
     return true;
 
@@ -5124,16 +5129,21 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
 
     for (int i = 0; i < n_intervals; i++) {
+
       prior_facies.resize(n_intervals);
+
       typedef std::map<std::string,float> map_type;
       map_type my_map;
 
-      if (n_intervals > 1) {
-        std::string interval_name = model_settings->getIntervalName(i); //H-TODO Remove getPriorFraciesProb, only use getPriorFaciesProbInterval. Same as with model_settings->getTimeNzInterval
-        my_map = model_settings->getPriorFaciesProbInterval(interval_name);
-      }
-      else
-        my_map = model_settings->getPriorFaciesProb();
+      std::string interval_name = multi_interval_grid->GetIntervalName(i);
+      my_map = model_settings->getPriorFaciesProbsInterval(interval_name);
+
+      //if (n_intervals > 1) {
+      //  std::string interval_name = model_settings->getIntervalName(i);
+      //  my_map = model_settings->getPriorFaciesProbInterval(interval_name);
+      //}
+      //else
+      //  my_map = model_settings->getPriorFaciesProb();
 
       for (int j = 0; j < n_facies; j++) {
         map_type::iterator iter = my_map.find(facies_names[j]);
@@ -5330,16 +5340,19 @@ CommonData::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
   }
 
   // Compare names in wells with names given in .xml-file
-  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
-  {
-    typedef std::map<std::string,float> mapType;
-    mapType myMap = model_settings->getPriorFaciesProb();
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
 
-    for (int i=0;i<n_facies;i++)
-    {
-      mapType::iterator iter = myMap.find(facies_names_[i]);
-      if (iter==myMap.end())
-        tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+    for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+      std::string interval_name = multiple_interval_grid_->GetIntervalName(i);
+
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = model_settings->getPriorFaciesProbsInterval(interval_name);
+
+      for (int i = 0; i < n_facies; i++) {
+        mapType::iterator iter = myMap.find(facies_names_[i]);
+        if (iter==myMap.end())
+          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+      }
     }
   }
 
@@ -7901,26 +7914,26 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         }
       }
 
-      // if multiple interval settings
-      if (interval_names.size()>0){
+      // if multiple interval settings //H Have combined getPriorFaciesProbInterval and getPriorFaciesProb (like getTimeNzInterval).
+      //if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                               model_settings->getPriorFaciesProbInterval(interval_names[i]),
-                                               facies_names_,
-                                               trend_cubes[i],
-                                               prior_param_cov_[i],
-                                               err_text);
-        }
-      }
-      // if multiple interval settings is not being used
-      else{
-        CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(),
+                                             model_settings->getPriorFaciesProbsInterval(interval_names[i]),
                                              facies_names_,
-                                             trend_cubes[0],
-                                             prior_param_cov_[0],
+                                             trend_cubes[i],
+                                             prior_param_cov_[i],
                                              err_text);
-      }
+        }
+      //}
+      // if multiple interval settings is not being used
+      //else{
+      //  CalculateCovarianceFromRockPhysics(rock_distribution,
+      //                                     model_settings->getPriorFaciesProb(),
+      //                                     facies_names_,
+      //                                     trend_cubes[0],
+      //                                     prior_param_cov_[0],
+      //                                     err_text);
+      //}
 
       if (tmp_err_text != "")
       {
@@ -7930,7 +7943,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
       // 3 Parameter estimation from well data -> further down
     }
-    else { //H Added
+    else {
       for (size_t i = 0; i < n_intervals; i++) {
         prior_param_cov_[i].resize(3,3);
       }
@@ -9711,11 +9724,19 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
       {
-        typedef std::map<std::string,float> mapType;
-        mapType myMap = model_settings->getPriorFaciesProb();
+        for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+          std::vector<std::string> interval_names = multiple_interval_grid_->GetIntervalNames();
 
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+          if (model_settings->getIntervalNames().size() > 0)
+            LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+
+          typedef std::map<std::string,float> mapType;
+          mapType myMap = model_settings->getPriorFaciesProbsInterval("");
+
+          for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+            LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+
+        }
       }
       else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
       {
