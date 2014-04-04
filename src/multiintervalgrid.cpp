@@ -151,7 +151,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
-        //if (model_settings->getTimeNz() == RMISSING) //Taken from simbox->SetDepth without nz
         if (model_settings->getTimeNzInterval("") == RMISSING) //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
 
@@ -245,7 +244,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const
 void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                               * model_settings,
                                              const Simbox                                * estimation_simbox,
                                              Simbox                                      & interval_simbox,
-                                             const std::vector<Surface>                  & eroded_surfaces, //H Added for testing
+                                             const std::vector<Surface>                  & eroded_surfaces,
                                              const std::string                           & corr_dir_single_surf,
                                              const std::string                           & corr_dir_top_surf,
                                              const std::string                           & corr_dir_base_surf,
@@ -264,8 +263,6 @@ void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                      
 
   if (n_layers == RMISSING)
     n_layers = static_cast<int>(0.5+model_settings->getTimeLz()/model_settings->getTimeDz());
-
-  //H-DEBUGGING Added cases for debugging
 
   // Case 1: Single correlation surface
   if (corr_dir_single_surf != "") {
@@ -745,8 +742,7 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
       estimation_simbox->getXYCoord(i,j,x,y);
       double z_top  = top_surface->GetZ(x,y);
       double z_base = base_surface->GetZ(x,y);
-      //double resolution = (z_top - z_base) / n_layers ;
-      double resolution = (z_base - z_top) / n_layers; //H Changed since z_top < z_base
+      double resolution = (z_base - z_top) / n_layers;
       if (resolution > max_resolution)
         max_resolution = resolution;
     }
@@ -754,10 +750,3 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
 
   return max_resolution;
 }
-
-//void MultiIntervalGrid::AddBackgroundParameterForInterval(int                  i,
-//                                                          int                  j,
-//                                                          NRLib::Grid<float> * parameter)
-//{
-//  background_parameters_[i][j] = new NRLib::Grid<float>(*parameter);
-//}

@@ -17,12 +17,12 @@ public:
 
   CravaTrend();
 
-  CravaTrend(Simbox                       * timeSimbox,
-             Simbox                       * timeCutSimbox,
-             ModelSettings                * modelSettings,
-             bool                         & failed,
-             std::string                  & errTxt,
-             const InputFiles             * inputFiles);
+  //CravaTrend(Simbox                       * timeSimbox,
+  //           Simbox                       * timeCutSimbox,
+  //           ModelSettings                * modelSettings,
+  //           bool                         & failed,
+  //           std::string                  & errTxt,
+  //           const InputFiles             * inputFiles);
 
   CravaTrend(const Simbox                      * interval_simbox,
              const ModelSettings               * model_settings,

@@ -66,8 +66,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
   float dy    = static_cast<float>(simBox->getdy());
   dz_         = static_cast<float>(simBox->getdz());
 
-  //nzp_        = seisCube->getNzp();
-  nzp_        = simBox->getnz(); //H
+  nzp_        = simBox->getnz();
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
 

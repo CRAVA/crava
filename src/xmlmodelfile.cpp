@@ -4329,7 +4329,7 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   std::vector<int> erosion_priorities;
   erosion_priorities.push_back(modelSettings_->getErosionPriorityTopSurface());
   std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
-  if(interval_names.size() != erosion_priorities.size()){ //H Changed to !=
+  if(interval_names.size() != erosion_priorities.size()){
     for (unsigned int i=0; i<interval_names.size(); i++){
       erosion_priorities.push_back(modelSettings_->getErosionPriorityBaseSurface(interval_names[i]));
     }
