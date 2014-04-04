@@ -12,8 +12,9 @@
 #include "src/modelsettings.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/welldata.h"
-#include "src/background.h"
+//#include "src/welldata.h"
+//#include "src/background.h"
+#include "src/blockedlogscommon.h"
 #include "src/simbox.h"
 #include "src/io.h"
 
@@ -157,13 +158,13 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
   if(!enough_data_for_corr_estimation){
     if (interval_simboxes.size() > 1){
-      TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) + 
+      TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) +
         " blocks are needed; currently there are "+ CommonData::ConvertInt(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in all intervals.\n");
     }
     else{
       std::string interval_name = interval_simboxes[0]->GetIntervalName();
-      TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) + 
+      TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) +
         " blocks are needed; currently there are "+ CommonData::ConvertInt(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in interval '"+ interval_name + "'.\n");
     }
@@ -212,7 +213,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
     CalculateNumberOfLags(n_lags_, interval_simboxes);
 
-    
+
     corr_T_.resize(n_lags_+1, 0);
 
     double corr_range = 20;
@@ -227,7 +228,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     var_0_(1,1) = 0.001810;
     var_0_(1,2) = -0.000395;
     var_0_(2,1) = var_0_(1,2);
-    var_0_(2,2) = 0.000530; 
+    var_0_(2,2) = 0.000530;
 
     /*
     EstimateCorrTAndVar0(corr_T_, var_0_,
@@ -404,7 +405,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
   //
   // These three data contain all data from all wells and all intervals
   //
-  std::vector<float>  ln_data;        
+  std::vector<float>  ln_data;
   std::vector<float>  low_freq_log;
   std::vector<float>  mean;
 
@@ -420,7 +421,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name       = interval_simboxes[j]->GetIntervalName();
       nd                              = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name);
-      
+
       const std::vector<int>    & i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
       const std::vector<int>    & j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
       const std::vector<int>    & k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
@@ -1247,14 +1248,14 @@ void  Analyzelog::CheckVariances(const ModelSettings      * model_settings,
   if (var_0(1,1) < minVarBeta/dz || var_0(1,1)  > maxVarBeta)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vs variance "  << var_0(1,1) 
+    o << std::scientific << std::setprecision(2) << "The Vs variance "  << var_0(1,1)
       << " is outside allowed interval Min=" << minVarBeta/dz << " Max=" << maxVarBeta << "\n";
     err_txt += o.str();
   }
   if (var_0(2,2)  < minVarRho/dz || var_0(2,2)  > maxVarRho)
   {
     std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Rho variance "  << var_0(2,2) 
+    o << std::scientific << std::setprecision(2) << "The Rho variance "  << var_0(2,2)
       << " is outside allowed interval Min=" << minVarRho/dz << " Max=" << maxVarRho << "\n";
     err_txt += o.str();
   }

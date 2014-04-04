@@ -12,7 +12,7 @@
 #include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-#include "src/background.h"
+//#include "src/background.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"

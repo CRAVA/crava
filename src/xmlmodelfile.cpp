@@ -1982,7 +1982,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   if(status==1)
   {
     typedef std::map<std::string,float> mapType;
-    mapType myMap = modelSettings_->getPriorFaciesProb();
+    mapType myMap = modelSettings_->getPriorFaciesProbsInterval("");
     for(mapType::const_iterator it=myMap.begin();it!=myMap.end();++it)
     {
       if (it->second < 0 || it->second > 1)
@@ -1999,8 +1999,8 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
     for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
       const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
-      const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProb();
-      modelSettings_->addPriorFaciesProbInterval(interval_name_tmp, facies_map_tmp);
+      const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProbsInterval("");
+      modelSettings_->addPriorFaciesProbsInterval(interval_name_tmp, facies_map_tmp);
     }
   }
 
@@ -2030,7 +2030,9 @@ TiXmlNode * root = node->FirstChildElement("facies");
   if(parseValue(root,"probability",value,errTxt,true)==true)
   {
     modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_MODEL_FILE);
-    modelSettings_->addPriorFaciesProb(faciesname,value);
+
+    modelSettings_->addPriorFaciesProbInterval("", faciesname, value);
+    //modelSettings_->addPriorFaciesProb(faciesname,value);
   }
   else if(parseValue(root,"probability-cube",filename,errTxt,true)==true)
   {
@@ -2113,6 +2115,8 @@ TiXmlNode * root = node->FirstChildElement("interval");
     sum += prob;
   }
 
+  modelSettings_->setPriorFaciesProbGiven(ModelSettings::FACIES_FROM_MODEL_FILE);
+
   if(sum != 1.0)
     errTxt+="Prior facies probabilities for interval " + interval_name + "  must sum to 1.0. They sum to "+ NRLib::ToString(sum) +".\n";
 
@@ -2125,7 +2129,7 @@ TiXmlNode * root = node->FirstChildElement("interval");
   }
 
 
-  modelSettings_->addPriorFaciesProbInterval(interval_name, facies_map);
+  modelSettings_->addPriorFaciesProbsInterval(interval_name, facies_map);
 
   checkForJunk(root, errTxt, legalCommands, true); //allow duplicates
   return(true);
@@ -6098,16 +6102,29 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
     // Compare names in rock physics model with names given in .xml-file
     if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
-      std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
 
-      for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
-        std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+      std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
+      int n_intervals                         = interval_names.size();
 
-        if(iter == rock_storage.end())
-          errTxt += "Problem with rock physics prior model. Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+      if (interval_names.size() == 0)
+        n_intervals = 1;
+
+      for (int i = 0; i < n_intervals; i++) {
+        std::map<std::string, float> facies_probabilities;
+
+        if (interval_names.size() == 0)
+          facies_probabilities = modelSettings_->getPriorFaciesProbsInterval("");
+        else
+          facies_probabilities = modelSettings_->getPriorFaciesProbsInterval(interval_names[i]);
+
+        for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
+          std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
+
+          if(iter == rock_storage.end())
+            errTxt += "Problem with rock physics prior model. Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
+        }
       }
     }
-
     // Compare names in rock physics model with names given as input in proability cubes
     else if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_CUBES) {
       const std::map<std::string,std::string>& facies_probabilities = inputFiles_->getPriorFaciesProbFile();

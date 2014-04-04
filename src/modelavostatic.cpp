@@ -19,17 +19,17 @@
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/analyzelog.h"
+//#include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-#include "src/background.h"
+//#include "src/background.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/gridmapping.h"
-#include "src/inputfiles.h"
+//#include "src/gridmapping.h"
+//#include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
-#include "src/waveletfilter.h"
+//#include "src/waveletfilter.h"
 #include "src/tasklist.h"
 
 #include "lib/utils.h"
@@ -137,9 +137,9 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 
     //Set up errCorr here
-    int nx  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
-    int ny  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
-    int nz  = common_data->GetMultipleIntervalGrid()->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
+    int nx  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
+    int ny  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
+    int nz  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
     int nxp = simbox->GetNXpad();
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
@@ -155,8 +155,6 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
     common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
     err_corr_->fillInErrCorr(common_data->GetPriorCorrXY(i_interval), corr_grad_I, corr_grad_J);
-
-    //CheckAvailableMemory(simbox, model_settings, input_files);
 
   }
   else // forward modeling
@@ -252,7 +250,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   int n_grid_covariances  = 6;                                      // Covariances, padded
   int n_grid_seismic_data = model_settings->getNumberOfAngles(0);     // One for each angle stack, padded
 
-  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProb(); //Used to find number of facies grids needed
+  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProbsInterval(""); //Used to find number of facies grids needed
 
   int n_grid_facies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
   int n_grid_histograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.

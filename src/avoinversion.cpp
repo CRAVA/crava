@@ -695,7 +695,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
       if(ModelSettings::getDebugLevel() > 0)
       {
-        /* NBNB How to handle 
+        /* NBNB How to handle
         std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
         std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
@@ -1736,9 +1736,10 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
     std::string angle     = NRLib::ToString(thetaDeg_[l],1);
     std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
     std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-      (modelSettings_->getForwardModeling() == true))
-      imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+    //H-Writing
+    //if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+    //  (modelSettings_->getForwardModeling() == true))
+    //  imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
     if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
       FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
 

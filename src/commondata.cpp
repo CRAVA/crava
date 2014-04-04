@@ -6,22 +6,22 @@
 #define _USE_MATH_DEFINES
 
 #include "src/commondata.h"
-#include "src/analyzelog.h"
-#include "src/simbox.h"
-#include "src/timeline.h"
+//#include "src/analyzelog.h"
+//#include "src/simbox.h"
+//#include "src/timeline.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-#include "src/seismicstorage.h"
+//#include "src/seismicstorage.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/multiintervalgrid.h"
-#include "src/cravatrend.h"
-#include "src/background.h"
-#include "src/blockedlogscommon.h"
+//#include "src/multiintervalgrid.h"
+//#include "src/cravatrend.h"
+//#include "src/background.h"
+//#include "src/blockedlogscommon.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/segy/segytrace.hpp"
-#include "nrlib/well/norsarwell.hpp"
+//#include "nrlib/well/norsarwell.hpp"
 
 #include "rplib/distributionsrock.h"
 
@@ -54,6 +54,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   velocity_from_inversion_(false),
   multiple_interval_grid_(NULL),
   time_line_(NULL),
+  time_depth_mapping_(NULL),
   estimation_simbox_()
 {
 
@@ -98,7 +99,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 5. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
-    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, err_text);
+    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, err_text);
 
   // 6. Optimization of well location
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
@@ -110,20 +111,20 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
-    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, full_inversion_simbox_, err_text);
+    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, full_inversion_simbox_, trend_cubes_, err_text);
   }
 
   // 10. Rock Physics
   if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
     if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
       if (setup_trend_cubes_) {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
-                                                          mapped_blocked_logs_, n_trend_cubes_, err_text);
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                                                          mapped_blocked_logs_, err_text);
       }
     }
     else {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, multiple_interval_grid_->GetTrendCubes(),
-                                                          mapped_blocked_logs_, n_trend_cubes_, err_text);
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                                                          mapped_blocked_logs_, err_text);
     }
   }
 
@@ -131,22 +132,27 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_) {
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (read_wells_)
-        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, facies_estim_interval_, multiple_interval_grid_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+        setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
+                                                                 facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
     }
     else
-      setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, facies_estim_interval_, multiple_interval_grid_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+      setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
+                                                               facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
   }
 
   // 12. Set up background model
   if (setup_multigrid_) {
     if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
+                                                       background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
       else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
+                                                       background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
     }
     else //Not estimation
-      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_, err_text);
+      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
+                                                     background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
   }
 
   // 13. Setup of prior correlation
@@ -155,7 +161,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       model_settings->SetMinBlocksForCorrEstimation(100); // As a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(read_wells_ && setup_multigrid_){
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(),  mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
@@ -163,7 +169,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
     else{
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(), mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, err_text);
     }
   }
   else{
@@ -189,7 +195,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   //TODO: Handle if err_text != "".
   if (err_text != "") {
-    LogKit::LogFormatted(LogKit::Error,"\n Error when loading and processing data: \n");
+    //LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
+    LogKit::WriteHeader("Loading and processing data failed:");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
   }
@@ -198,8 +205,42 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 CommonData::~CommonData() {
 
-  //if (multiple_interval_grid_ != NULL) //H Error in test_case 1
-  //  delete multiple_interval_grid_;
+
+  //for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+  //  for (int j = 0; j < 3; j++) {
+  //    if (background_parameters_[i][j] != NULL)
+  //      delete background_parameters_[i][j];
+  //  }
+  //}
+
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
+    if (mapped_blocked_logs_.find(it->first)->second != NULL)
+      delete mapped_blocked_logs_.find(it->first)->second;
+  }
+
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_for_correlation_.begin(); it != mapped_blocked_logs_for_correlation_.end(); it++) {
+    if (mapped_blocked_logs_for_correlation_.find(it->first)->second != NULL)
+      delete mapped_blocked_logs_for_correlation_.find(it->first)->second;
+  }
+
+  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+    std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
+
+    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
+      if (blocked_logs_interval.find(it->first)->second != NULL)
+        delete blocked_logs_interval.find(it->first)->second;
+    }
+  }
+
+  if (multiple_interval_grid_ != NULL) //H Error in test_case 1
+    delete multiple_interval_grid_;
+
+  //if (time_line_ != NULL)
+  //  delete time_line_;
+
+  if (time_depth_mapping_ != NULL)
+    delete time_depth_mapping_;
+
 
 
   //delete estimation_simbox_;
@@ -2510,9 +2551,10 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   return true;
 }
 
-bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
-                                       //InputFiles    * input_files,
-                                       std::string   & err_text_common) {
+bool CommonData::SetupTemporaryWavelet(ModelSettings                               * model_settings,
+                                       std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                       std::vector<Wavelet*>                       & temporary_wavelets,
+                                       std::string                                 & err_text_common) {
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
 
@@ -2544,7 +2586,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
     std::vector<float> frequency_peaks;
     std::vector<std::vector<float> > trace_data(100);
     std::vector<float> trace_length;
-    seismic_data_[this_timelapse][j].GetSparseTraceData(trace_data, trace_length, 100);
+    seismic_data[this_timelapse][j].GetSparseTraceData(trace_data, trace_length, 100);
 
     //FFT to find peak-frequency.
     for (int k = 0; k < 100; k++) {
@@ -2593,7 +2635,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings * model_settings,
     Wavelet * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
 
     if (tmp_error == 0)
-      temporary_wavelets_.push_back(wavelet_tmp);
+      temporary_wavelets.push_back(wavelet_tmp);
     else
       err_text += "Error setting up a temporary wavelet for angle " + NRLib::ToString(angles[j]) + ".\n";
   }
@@ -2970,7 +3012,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   //Add in synthetic sesmic (moved from wavelet1D.cpp)
   std::vector<Wavelet *> first_wavelets = wavelets[0];
-  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix_[0], &estimation_simbox, model_settings);
+  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix_[0], &estimation_simbox);
 
   return true;
 }
@@ -3594,12 +3636,11 @@ CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & er
   return fileformat;
 }
 
-void 
+void
 CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                          std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                          const float *                      const * reflection_matrix,
-                                         const Simbox                             * time_simbox,
-                                         const ModelSettings                      * model_settings)
+                                         const Simbox                             * time_simbox)
 {
   int nzp     = time_simbox->GetNZpad();
   int nz      = time_simbox->getnz();
@@ -4470,26 +4511,27 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                                  InputFiles                     * input_files,
                                  MultiIntervalGrid              * multiple_interval_grid,
                                  const Simbox                   & full_inversion_simbox,
+                                 std::vector<CravaTrend>        & trend_cubes,
                                  std::string                    & err_text_common) {
 
   LogKit::WriteHeader("Setting up Trend Cubes");
 
   std::string err_text = "";
-  //std::vector<CravaTrend> trend_cubes;
+  trend_cubes.resize(multiple_interval_grid->GetNIntervals());
 
   // Get trend variables from model settings
   const std::vector<std::string>  & trend_cube_parameters     = model_settings->getTrendCubeParameters();
   const std::vector<int>          & trend_cube_type           = model_settings->getTrendCubeType();
-  //trend_cubes_.resize(multiple_interval_grid->GetNIntervals());
-  const std::vector<std::string>  & interval_names            =  model_settings->getIntervalNames();
+  const std::vector<std::string>  & interval_names            = model_settings->getIntervalNames();
+
+  int n_parameters = trend_cube_parameters.size();
+  int n_intervals  = multiple_interval_grid->GetNIntervals();
 
   // Initialize values
-  std::vector<std::vector<NRLib::Grid<float> *> > trend_cubes_tmp;  //Vector(trends) vector(intervals)
-  trend_cubes_tmp.resize(trend_cube_parameters.size());
-
-  for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
+  std::vector<std::vector<NRLib::Grid<float> *> > trend_cubes_tmp(n_parameters);  //Vector(trends) vector(intervals)
+  for (int i = 0; i < n_parameters; i++) {
     trend_cubes_tmp[i].resize(interval_names.size());
-    for (size_t j = 0; j < interval_names.size(); j++) {
+    for (int j = 0; j < n_intervals; j++) {
       trend_cubes_tmp[i][j] = new NRLib::Grid<float>();
     }
   }
@@ -4497,7 +4539,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   try{
 
     for (size_t i = 0; i< trend_cube_parameters.size(); i++) {
-      if (trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) {
+      if (trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) { //Other options are handled inside CravaTrend
         // 1. Read the file into an FFTGrid
         const std::string         log_name   = "Trend cube '"+trend_cube_parameters[i]+"'";
         const SegyGeometry      * dummy1     = NULL;
@@ -4525,14 +4567,12 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
       }
     }
 
-    std::vector<CravaTrend> trend_cubes;
-    trend_cubes.resize(multiple_interval_grid->GetNIntervals());
+    for (int i = 0; i < n_intervals; i++) {
 
-    for (int i = 0; i<multiple_interval_grid->GetNIntervals(); i++) {
-
-      std::vector<NRLib::Grid<float> *> trend_cubes_interval;
-      for(size_t j = 0; j < trend_cube_parameters.size(); j++) {
-        trend_cubes_interval.push_back(trend_cubes_tmp[j][i]);
+      //Set up as a vector over parameters for this interval
+      std::vector<NRLib::Grid<float> *> trend_cubes_interval(n_parameters);
+      for (int j = 0; j < n_parameters; j++) {
+        trend_cubes_interval[j] = trend_cubes_tmp[j][i];
       }
 
       trend_cubes[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
@@ -4544,11 +4584,13 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
                                   trend_cubes_interval,
                                   err_text);
 
+      for(size_t j = 0; j < trend_cubes_interval.size(); j++) {
+        delete trend_cubes_interval[j];
+      }
+
     }
 
-    //Trend cubes stored in multiple interval grid
-    multiple_interval_grid->AddTrendCubes(trend_cubes);
-    n_trend_cubes_ = trend_cubes.size(); //Is this needed?
+    //n_trend_cubes_ = trend_cubes.size(); //Is this needed?
 
   }catch(NRLib::Exception & e){
     err_text += e.what();
@@ -4567,7 +4609,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                                   const MultiIntervalGrid                           * multiple_interval_grid,
                                   const std::vector<CravaTrend>                     & trend_cubes,
                                   const std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
-                                  int                                                 n_trend_cubes,
+                                  //int                                                 n_trend_cubes,
                                   std::string                                       & err_text_common) {
 
   LogKit::WriteHeader("Processing Rock Physics");
@@ -4576,13 +4618,14 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   (void) mapped_blocked_logs;
 
   std::string err_text = "";
+  int n_intervals = multiple_interval_grid->GetNIntervals();
 
   // rock physics data
   const std::vector<std::string>                    interval_names          = model_settings->getIntervalNames();
   //int                                               n_vintages              = model_settings->getNumberOfVintages();
   const std::string                                 path                    = input_files->getInputDirectory();
   const std::vector<std::string>                    trend_cube_parameters   = model_settings->getTrendCubeParameters();
-  std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_trend_cubes_);
+  std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_intervals); //trend_cube_sampling(n_trend_cubes_);
   const std::vector<std::vector<float> >            dummy_blocked_logs;
   const std::map<std::string,
     std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
@@ -4592,7 +4635,8 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   //rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
-  for (int i=0; i < n_trend_cubes; i++) { // the number of trend cubes is the same as the number of intervals
+  //for (int i=0; i < n_trend_cubes; i++) { // the number of trend cubes is the same as the number of intervals
+  for (int i = 0; i < n_intervals; i++) {
     trend_cube_sampling[i]                                                                     = trend_cubes[i].GetTrendCubeSampling();
     for (std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
@@ -4822,336 +4866,350 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
 
 bool CommonData::SetupPriorFaciesProb(ModelSettings                                    * model_settings,
                                       InputFiles                                       * input_files,
+                                      MultiIntervalGrid                               *& multi_interval_grid,
+                                      std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
+                                      std::vector<std::vector<float> >                 & prior_facies,
                                       std::vector<Surface *>                           & facies_estim_interval,
-                                      MultiIntervalGrid                               *& multiple_interval_grid,
+                                      std::vector<std::string>                         & facies_names,
                                       const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                       const Simbox                                     & full_inversion_simbox,
                                       std::string                                      & err_text_common)
 {
-  //std::vector<Surface *> outer_facies_estim_interval; // Whole facies interval for all zones/intervals
   std::string err_text = "";
 
-  if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion()) {
-    LogKit::WriteHeader("Prior Facies Probabilities");
+  //if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion()) {
 
-    if (facies_names_.size() == 0)
-      SetFaciesNamesFromRockPhysics();
+  if (model_settings->getPriorFaciesProbIntervals().size() == 0) {
+    std::map<std::string, float> map_tmp;
+    model_settings->addPriorFaciesProbsInterval("", map_tmp);
+  }
 
-    std::string tmp_err_text = "";
-    CheckFaciesNamesConsistency(model_settings,
-                                input_files,
-                                tmp_err_text);
+  if (!model_settings->getEstimateFaciesProb() && !model_settings->getDo4DInversion())
+    return true;
 
-    if (tmp_err_text != "") {
-      err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
-    }
+  LogKit::WriteHeader("Prior Facies Probabilities");
 
-    int n_facies = static_cast<int>(facies_names_.size());
+  if (facies_names.size() == 0)
+    SetFaciesNamesFromRockPhysics();
 
-    tmp_err_text = "";
-    FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
+  int n_facies    = static_cast<int>(facies_names.size());
+  int n_intervals = multi_interval_grid->GetNIntervals();
 
-    if (tmp_err_text != "") {
-      err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
-    }
 
-    if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
-      if (n_facies > 0) {
-        prior_facies_.resize(multiple_interval_grid->GetNIntervals());
+  std::string tmp_err_text = "";
+  CheckFaciesNamesConsistency(model_settings,
+                              input_files,
+                              tmp_err_text);
 
-        for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
-          const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i_interval);
-          int   nz      = simbox->getnz();
-          float dz      = static_cast<float>(simbox->getdz());
-          int   n_wells = model_settings->getNumberOfWells();
-          int   n_data  = n_wells*nz;
+  if (tmp_err_text != "")
+    err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
 
-          int ** facies_count = new int * [n_wells];
-          for (int w = 0 ; w < n_wells ; w++)
-            facies_count[w] = new int[n_facies];
+  tmp_err_text = "";
+  FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
 
-          for (int w = 0 ; w < n_wells ; w++)
-            for (int i = 0 ; i < n_facies ; i++)
-              facies_count[w][i] = 0;
+  if (tmp_err_text != "")
+    err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
 
-          int * facies_log = new int[n_data];   // NB! *internal* log numbering (0, 1, 2, ...)
-          for (int i = 0 ; i < n_data ; i++)
-            facies_log[i] = IMISSING;
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
+    if (n_facies > 0) {
+      prior_facies.resize(n_intervals);
 
-          std::vector<double> vt_vp(nz); // vt = vertical trend
-          std::vector<double> vt_vs(nz);
-          std::vector<double> vt_rho(nz);
-          std::vector<int>    vt_facies(nz);
+      for (int i = 0; i < n_intervals; i++) {
 
-          int n_used_wells = 0;
+        const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i);
+        int   nz              = simbox->getnz();
+        float dz              = static_cast<float>(simbox->getdz());
+        int   n_wells         = model_settings->getNumberOfWells();
+        int   n_data          = n_wells*nz;
 
-          int w_well = 0;
-          for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-            std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+        int ** facies_count = new int * [n_wells];
+        for (int w = 0; w < n_wells; w++)
+          facies_count[w] = new int[n_facies];
 
-            if (facies_log_wells_[w_well] == true) { // Well has facies log //if (wells[w]->getNFacies() > 0)
-              //
-              // Note that we use timeSimbox to calculate prior facies probabilities
-              // instead of the simbox with parallel top and base surfaces. This
-              // will make the prior probabilities slightly different, but that
-              // should not be a problem.
-              //
+        for (int w = 0; w < n_wells; w++)
+          for (int j = 0; j < n_facies; j++)
+            facies_count[w][j] = 0;
 
-              BlockedLogsCommon * blocked_log = iter->second;
-              int n_blocks = blocked_log->GetNumberOfBlocks();
+        int * facies_log = new int[n_data];   // NB! *internal* log numbering (0, 1, 2, ...)
+        for (int j = 0; j < n_data; j++)
+          facies_log[j] = IMISSING;
 
-              //
-              // Set facies data outside facies estimation interval IMISSING
-              //
-              // If multiinterval: Set facies data outside current interval IMISSING
+        std::vector<double> vt_vp(nz); // vt = vertical trend
+        std::vector<double> vt_vs(nz);
+        std::vector<double> vt_rho(nz);
+        std::vector<int>    vt_facies(nz);
 
-              std::vector<int> bl_facies_log = blocked_log->GetFaciesBlocked();
+        int n_used_wells = 0;
 
-              // Outside this interval
-              if (multiple_interval_grid->GetNIntervals() > 1) {
-                const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
-                const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
-                const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
+        int w_well = 0;
+        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
 
-                for (int i = 0 ; i < n_blocks ; i++) {
-                  const Simbox * interval_simbox = multiple_interval_grid->GetIntervalSimbox(i_interval);
+          if (facies_log_wells_[w_well] == true) { // Well has facies log //if (wells[w]->getNFacies() > 0)
+            //
+            // Note that we use timeSimbox to calculate prior facies probabilities
+            // instead of the simbox with parallel top and base surfaces. This
+            // will make the prior probabilities slightly different, but that
+            // should not be a problem.
+            //
 
-                  const double z_top  = interval_simbox->GetTopSurface().GetZ(x_pos[i], y_pos[i]);
-                  const double z_base = interval_simbox->GetBotSurface().GetZ(x_pos[i], y_pos[i]);
-                  if ( (z_pos[i] - 0.5*dz) < z_top || (z_pos[i] + 0.5*dz) > z_base)
-                    bl_facies_log[i] = IMISSING;
-                }
+            BlockedLogsCommon * blocked_log = iter->second;
+            int n_blocks = blocked_log->GetNumberOfBlocks();
+
+            //
+            // Set facies data outside facies estimation interval IMISSING. If multiinterval: Set facies data outside current interval IMISSING
+            //
+
+            std::vector<int> bl_facies_log = blocked_log->GetFaciesBlocked();
+
+            // Outside this interval
+            if (multi_interval_grid->GetNIntervals() > 1) {
+              const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
+              const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
+              const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
+
+              for (int j = 0; j < n_blocks; j++) {
+                const Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i);
+
+                const double z_top  = interval_simbox->GetTopSurface().GetZ(x_pos[j], y_pos[j]);
+                const double z_base = interval_simbox->GetBotSurface().GetZ(x_pos[j], y_pos[j]);
+                if ( (z_pos[j] - 0.5*dz) < z_top || (z_pos[j] + 0.5*dz) > z_base)
+                  bl_facies_log[j] = IMISSING;
               }
-
-              if (facies_estim_interval.size() > 0) {
-                const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
-                const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
-                const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
-
-                for (int i = 0 ; i < n_blocks ; i++) {
-                  const double z_top  = facies_estim_interval[0]->GetZ(x_pos[i], y_pos[i]);
-                  const double z_base = facies_estim_interval[1]->GetZ(x_pos[i], y_pos[i]);
-                  if ( (z_pos[i] - 0.5*dz) < z_top || (z_pos[i] + 0.5*dz) > z_base)
-                    bl_facies_log[i] = IMISSING;
-                }
-              }
-
-              blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), vt_vp);
-              blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), vt_vs);
-              blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), vt_rho);
-              blocked_log->GetVerticalTrend(&bl_facies_log[0], vt_facies);
-
-              for (int i = 0; i < nz; i++) {
-                int facies = 0;
-                if (vt_vp[i] != RMISSING && vt_vs[i] != RMISSING && vt_rho[i] != RMISSING)
-                  facies = vt_facies[i];
-                else
-                  facies = IMISSING;
-
-                facies_log[w_well*nz + i] = facies;
-                if (facies != IMISSING)
-                  facies_count[w_well][facies]++;
-              }
-              n_used_wells++;
             }
-            w_well++;
+
+            if (facies_estim_interval.size() > 0) {
+              const std::vector<double> & x_pos = blocked_log->GetXposBlocked();
+              const std::vector<double> & y_pos = blocked_log->GetYposBlocked();
+              const std::vector<double> & z_pos = blocked_log->GetZposBlocked();
+
+              for (int j = 0; j < n_blocks; j++) {
+                const double z_top  = facies_estim_interval[0]->GetZ(x_pos[j], y_pos[j]);
+                const double z_base = facies_estim_interval[1]->GetZ(x_pos[j], y_pos[j]);
+                if ( (z_pos[j] - 0.5*dz) < z_top || (z_pos[j] + 0.5*dz) > z_base)
+                  bl_facies_log[j] = IMISSING;
+              }
+            }
+
+            blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), vt_vp);
+            blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), vt_vs);
+            blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), vt_rho);
+            blocked_log->GetVerticalTrend(&bl_facies_log[0], vt_facies);
+
+            for (int j = 0; j < nz; j++) {
+              int facies = 0;
+              if (vt_vp[j] != RMISSING && vt_vs[j] != RMISSING && vt_rho[j] != RMISSING)
+                facies = vt_facies[j];
+              else
+                facies = IMISSING;
+
+              facies_log[w_well*nz + j] = facies;
+              if (facies != IMISSING)
+                facies_count[w_well][facies]++;
+            }
+            n_used_wells++;
           }
+          w_well++;
+        }
 
-          if (n_used_wells > 0) {
-            //
-            // Probabilities
-            //
-            LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each blocked well: \n");
-            LogKit::LogFormatted(LogKit::Low,"\nBlockedWell              ");
-            for (int i = 0 ; i < n_facies ; i++)
-              LogKit::LogFormatted(LogKit::Low,"%12s ",facies_names_[i].c_str());
-            LogKit::LogFormatted(LogKit::Low,"\n");
-            for (int i = 0 ; i < 24+13*n_facies ; i++)
-              LogKit::LogFormatted(LogKit::Low,"-");
-            LogKit::LogFormatted(LogKit::Low,"\n");
-            for (int w = 0 ; w < n_wells ; w++) {
+        if (n_used_wells > 0) {
+          //
+          // Probabilities
+          //
+          LogKit::LogFormatted(LogKit::Low,"\nFacies distributions for each blocked well: \n");
+          LogKit::LogFormatted(LogKit::Low,"\nBlockedWell              ");
+          for (int j = 0; j < n_facies; j++)
+            LogKit::LogFormatted(LogKit::Low,"%12s ",facies_names[j].c_str());
+          LogKit::LogFormatted(LogKit::Low,"\n");
+          for (int j = 0; j < 24+13*n_facies; j++)
+            LogKit::LogFormatted(LogKit::Low,"-");
+          LogKit::LogFormatted(LogKit::Low,"\n");
+          for (int w = 0 ; w < n_wells ; w++) {
 
-              if (facies_log_wells_[w] == true) { // Well has facies log
-                float tot = 0.0;
-                for (int i = 0 ; i < n_facies ; i++) {
-                  tot += static_cast<float>(facies_count[w][i]);
-                }
-
-                LogKit::LogFormatted(LogKit::Low,"%-23s ",wells_[w].GetWellName().c_str());
-                for (int i = 0; i < n_facies; i++) {
-                  float facies_prob = static_cast<float>(facies_count[w][i])/tot;
-                  LogKit::LogFormatted(LogKit::Low," %12.4f",facies_prob);
-                }
-                LogKit::LogFormatted(LogKit::Low,"\n");
+            if (facies_log_wells_[w] == true) { // Well has facies log
+              float tot = 0.0;
+              for (int j = 0; j < n_facies; j++) {
+                tot += static_cast<float>(facies_count[w][j]);
               }
-            }
-            LogKit::LogFormatted(LogKit::Low,"\n");
-            //
-            // Counts
-            //
-            LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each blocked well: \n");
 
-            LogKit::LogFormatted(LogKit::Medium,"\nBlockedWell              ");
-            for (int i = 0 ; i < n_facies ; i++)
-              LogKit::LogFormatted(LogKit::Medium,"%12s ",facies_names_[i].c_str());
-            LogKit::LogFormatted(LogKit::Medium,"\n");
-            for (int i = 0 ; i < 24+13*n_facies ; i++)
-              LogKit::LogFormatted(LogKit::Medium,"-");
-            LogKit::LogFormatted(LogKit::Medium,"\n");
-            for (int w = 0 ; w < n_wells ; w++) {
-              //
-              if (facies_log_wells_[w] == true) {
-                float tot = 0.0;
-                for (int i = 0 ; i < n_facies ; i++)
-                  tot += static_cast<float>(facies_count[w][i]);
-                LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells_[w].GetWellName().c_str());
-                for (int i = 0 ; i < n_facies ; i++) {
-                  LogKit::LogFormatted(LogKit::Medium," %12d",facies_count[w][i]);
-                }
-                LogKit::LogFormatted(LogKit::Medium,"\n");
+              LogKit::LogFormatted(LogKit::Low,"%-23s ",wells_[w].GetWellName().c_str());
+              for (int j = 0; j < n_facies; j++) {
+                float facies_prob = static_cast<float>(facies_count[w][j])/tot;
+                LogKit::LogFormatted(LogKit::Low," %12.4f",facies_prob);
               }
+              LogKit::LogFormatted(LogKit::Low,"\n");
             }
-            LogKit::LogFormatted(LogKit::Medium,"\n");
+          }
+          LogKit::LogFormatted(LogKit::Low,"\n");
+          //
+          // Counts
+          //
+          LogKit::LogFormatted(LogKit::Medium,"\nFacies counts for each blocked well: \n");
 
-            for (int w = 0 ; w < n_wells ; w++)
-              delete [] facies_count[w];
-            delete [] facies_count;
-
+          LogKit::LogFormatted(LogKit::Medium,"\nBlockedWell              ");
+          for (int j = 0; j < n_facies; j++)
+            LogKit::LogFormatted(LogKit::Medium,"%12s ",facies_names[j].c_str());
+          LogKit::LogFormatted(LogKit::Medium,"\n");
+          for (int j = 0; j < 24+13*n_facies; j++)
+            LogKit::LogFormatted(LogKit::Medium,"-");
+          LogKit::LogFormatted(LogKit::Medium,"\n");
+          for (int w = 0 ; w < n_wells ; w++) {
             //
-            // Make prior facies probabilities
-            //
-            float sum = 0.0f;
-            int * n_data_facies = new int[n_facies];
-            for (int i=0; i < n_facies; i++)
-              n_data_facies[i] = 0;
-
-            for (int i = 0; i < n_data; i++) {
-              if (facies_log[i] != IMISSING) {
-                n_data_facies[facies_log[i]]++;
+            if (facies_log_wells_[w] == true) {
+              float tot = 0.0;
+              for (int j = 0; j < n_facies; j++)
+                tot += static_cast<float>(facies_count[w][j]);
+              LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells_[w].GetWellName().c_str());
+              for (int j = 0; j < n_facies; j++) {
+                LogKit::LogFormatted(LogKit::Medium," %12d",facies_count[w][j]);
               }
+              LogKit::LogFormatted(LogKit::Medium,"\n");
             }
-            delete [] facies_log;
+          }
+          LogKit::LogFormatted(LogKit::Medium,"\n");
 
-            for (int i = 0; i < n_facies; i++)
-              sum += n_data_facies[i];
+          for (int w = 0 ; w < n_wells ; w++)
+            delete [] facies_count[w];
+          delete [] facies_count;
 
-            if (sum > 0) {
-              LogKit::LogFormatted(LogKit::Low,"Facies probabilities based on all blocked wells:\n\n");
-              LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
-              LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-              prior_facies_[i_interval].resize(n_facies);
-              for (int i = 0; i < n_facies; i++) {
-                prior_facies_[i_interval][i] = float(n_data_facies[i])/sum;
-                LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names_[i].c_str(),prior_facies_[i_interval][i]);
-              }
+          //
+          // Make prior facies probabilities
+          //
+          float sum = 0.0f;
+          int * n_data_facies = new int[n_facies];
+          for (int j = 0; j < n_facies; j++)
+            n_data_facies[j] = 0;
+
+          for (int j = 0; j < n_data; j++) {
+            if (facies_log[j] != IMISSING) {
+              n_data_facies[facies_log[j]]++;
             }
-            else {
-              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No valid facies log entries have been found\n");
-              model_settings->setEstimateFaciesProb(false);
-              TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+          }
+          delete [] facies_log;
 
+          for (int j = 0; j < n_facies; j++)
+            sum += n_data_facies[j];
+
+          if (sum > 0) {
+            LogKit::LogFormatted(LogKit::Low,"Facies probabilities based on all blocked wells:\n\n");
+            LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
+            LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
+            prior_facies[i].resize(n_facies);
+            for (int j = 0; j < n_facies; j++) {
+              prior_facies[i][j] = float(n_data_facies[j])/sum;
+              LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names[j].c_str(),prior_facies[i][j]);
             }
-            delete [] n_data_facies;
           }
           else {
-            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Estimation of facies probabilites have been requested, but there");
-            LogKit::LogFormatted(LogKit::Warning,"\n         are no wells with facies available and CRAVA will therefore not");
-            LogKit::LogFormatted(LogKit::Warning,"\n         be able to estimate these probabilities...\n");
+            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No valid facies log entries have been found\n");
             model_settings->setEstimateFaciesProb(false);
-
             TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+
           }
-        }//i_intervals
-      }
-      else {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Estimation of facies probabilites have been requested, but no facies");
-        LogKit::LogFormatted(LogKit::Warning,"\n         have been found and CRAVA will therefore not be able to estimate");
-        LogKit::LogFormatted(LogKit::Warning,"\n         these probabilities...\n");
-        model_settings->setEstimateFaciesProb(false);
-        TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
-      }
+          delete [] n_data_facies;
+        }
+        else {
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Estimation of facies probabilites have been requested, but there");
+          LogKit::LogFormatted(LogKit::Warning,"\n         are no wells with facies available and CRAVA will therefore not");
+          LogKit::LogFormatted(LogKit::Warning,"\n         be able to estimate these probabilities...\n");
+          model_settings->setEstimateFaciesProb(false);
+
+          TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
+        }
+      }//i_intervals
     }
-    else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
-      for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
-
-        prior_facies_.resize(multiple_interval_grid->GetNIntervals());
-        typedef std::map<std::string,float> map_type;
-        map_type my_map;
-
-        if (model_settings->getIntervalNames().size() > 0) {
-          std::string interval_name = model_settings->getIntervalName(i_interval);
-          my_map = model_settings->getPriorFaciesProbInterval(interval_name);
-        }
-        else
-          my_map = model_settings->getPriorFaciesProb();
-
-        for (int i = 0; i < n_facies; i++) {
-          map_type::iterator iter = my_map.find(facies_names_[i]);
-          if (iter!=my_map.end())
-            prior_facies_[i_interval][i] = iter->second;
-          else {
-            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",facies_names_[i].c_str());
-            model_settings->setEstimateFaciesProb(false);
-            TaskList::addTask("Check that facies " +NRLib::ToString(facies_names_[i].c_str())+" is given a prior probability in the xml-file");
-          }
-        }
-        LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
-        LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
-        for (int i=0; i < n_facies; i++) {
-          LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names_[i].c_str(),prior_facies_[i]);
-        }
-      }//i_interval
+    else {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Estimation of facies probabilites have been requested, but no facies");
+      LogKit::LogFormatted(LogKit::Warning,"\n         have been found and CRAVA will therefore not be able to estimate");
+      LogKit::LogFormatted(LogKit::Warning,"\n         these probabilities...\n");
+      model_settings->setEstimateFaciesProb(false);
+      TaskList::addTask("Consider using a well containing facies log entries to be able to estimate facies probabilities.");
     }
-    else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
-      //If intervals, send in vector of simboxes and grids to ReadPriorFaciesProbCubes. Splitting of intervals is done in ReadGridFromFile.
-      std::vector<Simbox> & interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-      std::vector<std::vector<NRLib::Grid<float> *> > prior_facies_prob_cubes;
+  }
+  else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
 
-      //if (model_settings->getIntervalNames().size() == 0) //NBNB Ragnar: Burde gi det same?
-      //  interval_simboxes[0] = &full_inversion_simbox;
+    for (int i = 0; i < n_intervals; i++) {
 
-      std::string err_text_tmp = "";
-      ReadPriorFaciesProbCubes(input_files,
-                               model_settings,
-                               prior_facies_prob_cubes,  //Vector(facies) vector(intervals)
-                               interval_simboxes,
-                               full_inversion_simbox, 
-                               err_text_tmp);
+      prior_facies.resize(n_intervals);
 
-      if (err_text_tmp == "") {
+      typedef std::map<std::string,float> map_type;
+      map_type my_map;
 
-        //Store as vector(intervals) vector(facies)
-        int n_facies = facies_names_.size();
-        for (size_t i = 0; i < model_settings->getIntervalNames().size(); i++) {
-          multiple_interval_grid->GetPriorFaciesProbCubesInterval(i).resize(n_facies);
+      std::string interval_name = multi_interval_grid->GetIntervalName(i);
+      my_map = model_settings->getPriorFaciesProbsInterval(interval_name);
 
-          for (int j = 0; j < n_facies; j++) {
-            multiple_interval_grid->AddPriorFaciesCube(i, j, prior_facies_prob_cubes[j][i]);
-          }
+      //if (n_intervals > 1) {
+      //  std::string interval_name = model_settings->getIntervalName(i);
+      //  my_map = model_settings->getPriorFaciesProbInterval(interval_name);
+      //}
+      //else
+      //  my_map = model_settings->getPriorFaciesProb();
+
+      for (int j = 0; j < n_facies; j++) {
+        map_type::iterator iter = my_map.find(facies_names[j]);
+        if (iter!=my_map.end())
+          prior_facies[i][j] = iter->second;
+        else {
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",facies_names[j].c_str());
+          model_settings->setEstimateFaciesProb(false);
+          TaskList::addTask("Check that facies " +NRLib::ToString(facies_names[j].c_str())+" is given a prior probability in the xml-file");
         }
-
-        typedef std::map<std::string,std::string> mapType;
-        mapType myMap = input_files->getPriorFaciesProbFile();
-
-        LogKit::LogFormatted(LogKit::Low,"Facies         Probability in file\n");
-        LogKit::LogFormatted(LogKit::Low,"----------------------------------\n");
-        for (mapType::iterator it=myMap.begin(); it!=myMap.end(); it++)
-          LogKit::LogFormatted(LogKit::Low,"%-15s %10s\n",(it->first).c_str(),(it->second).c_str());
       }
-      else {
-        err_text += "Error when reading facies from cubes: \n";
-        err_text += err_text_tmp;
+      LogKit::LogFormatted(LogKit::Low,"Facies         Probability\n");
+      LogKit::LogFormatted(LogKit::Low,"--------------------------\n");
+      for (int j = 0; j < n_facies; j++) {
+        LogKit::LogFormatted(LogKit::Low,"%-15s %10.4f\n",facies_names[j].c_str(),prior_facies[j]);
       }
     }
   }
+  else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
+    std::vector<Simbox> & interval_simboxes = multi_interval_grid->GetIntervalSimboxes();
+    prior_facies_prob_cubes.resize(n_intervals);
 
-  // facies_estim_interval to be read in ModelAVOStatic
-  //if (outer_facies_estim_interval.size() == 2) {
-  //  if (outer_facies_estim_interval[0] != NULL)
-  //    delete outer_facies_estim_interval[0];
-  //  if (outer_facies_estim_interval[1] != NULL)
-  //    delete outer_facies_estim_interval[1];
-  //}
+    //If intervals, send in vector of simboxes and grids to ReadPriorFaciesProbCubes. Splitting of intervals is done in ReadGridFromFile.
+    std::vector<std::vector<NRLib::Grid<float> *> > prior_facies_prob_cubes_tmp;
+    prior_facies_prob_cubes_tmp.resize(n_facies);
+    for (int j = 0; j < n_facies; j++) {
+      prior_facies_prob_cubes_tmp[j].resize(n_intervals);
+      for (int i = 0; i < n_intervals; i++) {
+        prior_facies_prob_cubes_tmp[j][i] = new NRLib::Grid<float>();
+      }
+    }
+
+    //if (model_settings->getIntervalNames().size() == 0) //NBNB Ragnar: Burde gi det same?
+    //  interval_simboxes[0] = &full_inversion_simbox;
+
+    std::string err_text_tmp = "";
+    ReadPriorFaciesProbCubes(input_files,
+                             model_settings,
+                             prior_facies_prob_cubes,  //Vector(facies) vector(intervals)
+                             interval_simboxes,
+                             full_inversion_simbox,
+                             err_text_tmp);
+
+    if (err_text_tmp == "") {
+      //Store as vector(intervals) vector(facies)
+      for (int i = 0; i < n_intervals; i++) {
+        prior_facies_prob_cubes[i].resize(n_facies);
+        for (int j = 0; j < n_facies; j++) {
+          prior_facies_prob_cubes[i][j] = new NRLib::Grid<float>(*prior_facies_prob_cubes_tmp[j][i]);
+          delete prior_facies_prob_cubes_tmp[j][i];
+        }
+      }
+
+      typedef std::map<std::string,std::string> mapType;
+      mapType myMap = input_files->getPriorFaciesProbFile();
+
+      LogKit::LogFormatted(LogKit::Low,"Facies         Probability in file\n");
+      LogKit::LogFormatted(LogKit::Low,"----------------------------------\n");
+      for (mapType::iterator it=myMap.begin(); it!=myMap.end(); it++)
+        LogKit::LogFormatted(LogKit::Low,"%-15s %10s\n",(it->first).c_str(),(it->second).c_str());
+    }
+    else {
+      err_text += "Error when reading facies from cubes: \n";
+      err_text += err_text_tmp;
+    }
+  }
 
   if (err_text != "") {
     err_text_common += err_text;
@@ -5215,11 +5273,11 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
                                      std::string                                      & err_text)
 {
   int n_facies = static_cast<int>(facies_names_.size());
-  prior_facies_prob_cubes.resize(n_facies);
+  //prior_facies_prob_cubes.resize(n_facies);
 
   typedef std::map<std::string,std::string> mapType;
   mapType myMap = input_files->getPriorFaciesProbFile();
-  for (int i=0; i < n_facies; i++) {
+  for (int i = 0; i < n_facies; i++) {
     mapType::iterator iter = myMap.find(facies_names_[i]);
 
     if (iter!=myMap.end()) {
@@ -5232,8 +5290,8 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
       if (model_settings->getIntervalNames().size() > 0)
         prior_facies_prob_cubes[i].resize(model_settings->getIntervalNames().size());
 
-      for (size_t j = 0; j < model_settings->getIntervalNames().size(); j++)
-        prior_facies_prob_cubes[i][j] = new NRLib::Grid<float>();
+      //for (size_t j = 0; j < model_settings->getIntervalNames().size(); j++)
+      //  prior_facies_prob_cubes[i][j] = new NRLib::Grid<float>();
 
       ReadGridFromFile(facies_prob_file,
                        "priorfaciesprob",
@@ -5253,8 +5311,7 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
         err_text += error_text;
       }
     }
-    else
-    {
+    else {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: No prior facies probability found for facies %12s\n",
                            facies_names_[i].c_str());
       TaskList::addTask("Check that facies "+NRLib::ToString(facies_names_[i].c_str())+" is given prior probability in the xml-file");
@@ -5283,16 +5340,19 @@ CommonData::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
   }
 
   // Compare names in wells with names given in .xml-file
-  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
-  {
-    typedef std::map<std::string,float> mapType;
-    mapType myMap = model_settings->getPriorFaciesProb();
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
 
-    for (int i=0;i<n_facies;i++)
-    {
-      mapType::iterator iter = myMap.find(facies_names_[i]);
-      if (iter==myMap.end())
-        tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+    for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+      std::string interval_name = multiple_interval_grid_->GetIntervalName(i);
+
+      typedef std::map<std::string,float> mapType;
+      mapType myMap = model_settings->getPriorFaciesProbsInterval(interval_name);
+
+      for (int i = 0; i < n_facies; i++) {
+        mapType::iterator iter = myMap.find(facies_names_[i]);
+        if (iter==myMap.end())
+          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+      }
     }
   }
 
@@ -5336,7 +5396,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                              const Simbox                       & inversion_simbox,
                              const ModelSettings                * model_settings,
                              std::string                        & err_text,
-                             bool                                 nopadding) 
+                             bool                                 nopadding)
 {
   int fileType = IO::findGridType(file_name);
 
@@ -6800,6 +6860,7 @@ bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
 
   //From ModelGeneral::ProcessDepthConversion
   std::string err_text = "";
+  time_depth_mapping   = NULL;
 
   NRLib::Grid<float> * velocity = NULL;
   std::string velocity_field    = input_files->getVelocityField();
@@ -6862,9 +6923,12 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       InputFiles                                                 * input_files,
                                       const std::vector<NRLib::Well>                             & wells,
                                       std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
-                                      MultiIntervalGrid                                         *& multiple_interval_grid,
+                                      MultiIntervalGrid                                         *& multi_interval_grid,
                                       const Simbox                                               * inversion_simbox,
-                                      std::string                                                & err_text_common) 
+                                      std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters, //vector (intervals) vector (parameters)
+                                      std::vector<double>                                        & background_vs_vp_ratios,
+                                      const std::vector<CravaTrend>                              & trend_cubes,
+                                      std::string                                                & err_text_common)
 {
   std::string err_text = "";
 
@@ -6881,20 +6945,32 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
     model_settings->getEstimateBackground() == false && model_settings->getEstimateCorrelations() == false)
     return true;
 
+  int n_intervals = multi_interval_grid->GetNIntervals();
+  background_vs_vp_ratios.resize(n_intervals);
+
+  background_parameters.resize(n_intervals);
+  for (int i = 0; i < n_intervals; i++) {
+    background_parameters[i].resize(3);
+    //for (int j = 0; j < 3; j++) {
+    //  background_parameters[i][j] = new NRLib::Grid<float>();
+    //}
+  }
+
   if (model_settings->getGenerateBackground()) {
 
     if (model_settings->getGenerateBackgroundFromRockPhysics() == false) {
 
       NRLib::Grid<float> * velocity = new NRLib::Grid<float>();
-      std::string back_vel_file = input_files->getBackVelFile();
+      std::string back_vel_file     = input_files->getBackVelFile();
+
       if (back_vel_file != "") {
         bool dummy;
         LoadVelocity(velocity,
-          inversion_simbox,
-          model_settings,
-          back_vel_file,
-          dummy,
-          err_text);
+                     inversion_simbox,
+                     model_settings,
+                     back_vel_file,
+                     dummy,
+                     err_text);
       }
       if (err_text == "") {
 
@@ -6902,35 +6978,32 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           err_text += "There is no variogram available for the background modelling.\n";
         }
 
-        std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters(); //vector(intervals) vector(parameters)
-
-        for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
+        for (int i = 0; i < n_intervals; i++) {
 
           std::string interval_text = "";
-          if (multiple_interval_grid->GetNIntervals() > 1) {
-            LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multiple_interval_grid->GetIntervalName(i_interval) + "\n");
-
-            interval_text = " for interval " + model_settings->getIntervalName(i_interval);
+          if (n_intervals > 1) {
+            LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + "\n");
+            interval_text = " for interval " + model_settings->getIntervalName(i);
           }
 
-          const Simbox       * simbox                = multiple_interval_grid->GetIntervalSimbox(i_interval);
-          std::string interval_name                  = multiple_interval_grid->GetIntervalName(i_interval);
+          const Simbox       * simbox                = multi_interval_grid->GetIntervalSimbox(i);
+          std::string interval_name                  = multi_interval_grid->GetIntervalName(i);
           NRLib::Grid<float> * velocity              = new NRLib::Grid<float>();
           Surface            * correlation_direction = NULL;
           Simbox             * bg_simbox             = NULL;
           BlockedLogsCommon  * bg_blocked_log        = NULL;
           std::string back_vel_file                  = input_files->getBackVelFile();
 
-          std::map<std::string, BlockedLogsCommon *> & blocked_logs = mapped_blocked_logs_intervals.find(i_interval)->second;
+          std::map<std::string, BlockedLogsCommon *> & blocked_logs = mapped_blocked_logs_intervals.find(i)->second;
 
           if (back_vel_file != "") {
             bool dummy;
             LoadVelocity(velocity,
-              simbox,
-              model_settings,
-              back_vel_file,
-              dummy,
-              err_text);
+                          simbox,
+                          model_settings,
+                          back_vel_file,
+                          dummy,
+                          err_text);
           }
 
           if (input_files->getCorrDirFile() != "") {
@@ -6962,15 +7035,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           //Block logs to bg_simbox
           std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
           if (bg_simbox != NULL) {
-            for (size_t i = 0; i < wells.size(); i++) {
+            for (size_t j = 0; j < wells.size(); j++) {
               bg_blocked_log = NULL;
 
               // Get all continuous and discrete logs
               std::vector<std::string> cont_logs_to_be_blocked;
               std::vector<std::string> disc_logs_to_be_blocked;
 
-              const std::map<std::string,std::vector<double> > & cont_logs = wells[i].GetContLog();
-              const std::map<std::string,std::vector<int> >    & disc_logs = wells[i].GetDiscLog();
+              const std::map<std::string,std::vector<double> > & cont_logs = wells[j].GetContLog();
+              const std::map<std::string,std::vector<int> >    & disc_logs = wells[j].GetDiscLog();
 
               for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
                 cont_logs_to_be_blocked.push_back(it->first);
@@ -6979,52 +7052,37 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                 disc_logs_to_be_blocked.push_back(it->first);
               }
 
-              bg_blocked_log = new BlockedLogsCommon(&wells[i],
-                cont_logs_to_be_blocked,
-                disc_logs_to_be_blocked,
-                bg_simbox,
-                false,
-                err_text);
+              bg_blocked_log = new BlockedLogsCommon(&wells[j],
+                                                      cont_logs_to_be_blocked,
+                                                      disc_logs_to_be_blocked,
+                                                      bg_simbox,
+                                                      false,
+                                                      err_text);
 
-              bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), bg_blocked_log));
+              bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bg_blocked_log));
             }
           }
 
+          for (int j = 0; j < 3; j++)
+            background_parameters[i][j] = new NRLib::Grid<float>();
+
           //Create background
-          Background(parameters[i_interval], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
+          Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
 
-          double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
-          multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
-
-
-        }  //i_interval
-
-        //Background changes
-        // 1 Remove multizone, give message to user to use multiinterval
-        // combine one interval with multiinterval and store all background models here.
-        //  i)  create an outer loop here and call standard background constructor for each interval
-        // Create background grids with interval_simbox(es) and not estimation_simbox.
-
-        // extended bg_simboxes for each interval
-        // velocity resampled for intervals
-
-        //H-TODO
-        // xmlreader and multizone background
+        }
       }
     }
     else {
 
-      std::vector<std::vector<NRLib::Grid<float> *> > & parameters = multiple_interval_grid->GetBackgroundParameters();
+      for (int i = 0; i < n_intervals; i++) {
 
-      for (int i_interval = 0; i_interval < multiple_interval_grid->GetNIntervals(); i_interval++) {
-
-        const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i_interval);
+        const Simbox * simbox = multi_interval_grid->GetIntervalSimbox(i);
 
         // Get prior probabilities for the facies in a vector
         std::vector<std::string> facies_names = facies_names_;
         int                      n_facies     = static_cast<int>(facies_names.size());
 
-        std::vector<float> prior_probability = prior_facies_[i_interval];
+        std::vector<float> prior_probability = prior_facies_[i];
 
         std::vector<DistributionsRock *> rock_distribution(n_facies);  //Get from rock_distributions_
 
@@ -7037,35 +7095,25 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             rock_distribution[j] = iter->second;
         }
 
-        // filling in the backModel in Background
-        GenerateRockPhysics3DBackground(rock_distribution,
-          prior_probability,
-          parameters[i_interval][0],
-          parameters[i_interval][1],
-          parameters[i_interval][2],
-          simbox,
-          multiple_interval_grid->GetTrendCube(i_interval));
+        for (int j = 0; j < 3; j++)
+          background_parameters[i][j] = new NRLib::Grid<float>();
 
-        double vs_vp_ratio = FindMeanVsVp(parameters[i_interval][0], parameters[i_interval][1]);
-        multiple_interval_grid->SetBackgroundVsVpRatio(i_interval, vs_vp_ratio);
+        GenerateRockPhysics3DBackground(rock_distribution,
+                                        prior_probability,
+                                        background_parameters[i][0],
+                                        background_parameters[i][1],
+                                        background_parameters[i][2],
+                                        simbox,
+                                        trend_cubes[i]);
 
       }
     }
   }
   else {
 
-    int n_intervals = multiple_interval_grid->GetNIntervals();
-
-    std::vector<std::vector<NRLib::Grid<float> *> > parameters; //vector(parameters) vector(intervals). Parameters on the outside due to reading grid from file.
-    parameters.resize(3);
-    for (int i = 0; i < 3; i++) {
-      parameters[i].resize(n_intervals);
-      for (int j = 0; j < n_intervals; j++) {
-        parameters[i][j] = new NRLib::Grid<float>();
-      }
-    }
-
-    std::vector<std::vector<std::vector<float> > > grid_statistics(3); // parameters intervals avg,min,max
+    std::vector<std::vector<std::vector<float> > > grid_statistics(n_intervals); // vector(intervals) vector(parameters) vector(avg,min,max)
+    for (int i = 0; i < n_intervals; i++)
+      grid_statistics[i].resize(3);
 
     std::vector<std::string> par_name;
     if (model_settings->getUseAIBackground())
@@ -7080,11 +7128,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
       par_name.push_back("Vs "+model_settings->getBackgroundType());
     par_name.push_back("Rho "+model_settings->getBackgroundType());
 
-    for (int i = 0; i < 3; i++) {
-      float const_back_value        = model_settings->getConstBackValue(i);
-      const std::string & back_file = input_files->getBackFile(i);
-
-      grid_statistics[i].resize(n_intervals);
+    for (int j = 0; j < 3; j++) {
+      float const_back_value        = model_settings->getConstBackValue(j);
+      const std::string & back_file = input_files->getBackFile(j);
 
       if (const_back_value < 0) {
         if (back_file.size() > 0) {
@@ -7093,30 +7139,40 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used. Create loop over timelapses?
           std::string err_text_tmp = "";
 
+          //ReadGridFromFile uses parameter vector(intervals)
+          std::vector<NRLib::Grid<float> *> parameter_tmp(n_intervals);
+          for (int i = 0; i < n_intervals; i++)
+            parameter_tmp[i] = new NRLib::Grid<float>();
+
           ReadGridFromFile(back_file,
-            par_name[i],
-            offset,
-            parameters[i], //This is split in intervals inside.
-            dummy1,
-            dummy2,
-            PARAMETER,
-            multiple_interval_grid->GetIntervalSimboxes(),
-            *inversion_simbox,
-            model_settings,
-            err_text_tmp);
+                           par_name[j],
+                           offset,
+                           parameter_tmp, //This is split in intervals inside.
+                           dummy1,
+                           dummy2,
+                           PARAMETER,
+                           multi_interval_grid->GetIntervalSimboxes(),
+                           *inversion_simbox,
+                           model_settings,
+                           err_text_tmp);
+
+          for (int i = 0; i < n_intervals; i++) {
+            background_parameters[i][j] = new NRLib::Grid<float>(*parameter_tmp[i]);
+            delete parameter_tmp[i];
+          }
 
           if (err_text_tmp != "") {
             err_text += err_text_tmp;
-            err_text += "Reading of file '"+back_file+"' for parameter '"+par_name[i]+"' failed\n\n";
+            err_text += "Reading of file '"+back_file+"' for parameter '"+par_name[j]+"' failed\n\n";
           }
           else {
-            for (int j = 0; j < n_intervals; j++) {
+            for (int i = 0; i < n_intervals; i++) {
               float avg = 0.0f;
               float min = 0.0f;
               float max = 0.0f;
-              parameters[i][j]->GetAvgMinMax(avg, min, max);
-              SetUndefinedCellsToGlobalAverageGrid(parameters[i][j], avg);
-              parameters[i][j]->LogTransform(RMISSING);
+              background_parameters[i][j]->GetAvgMinMax(avg, min, max);
+              SetUndefinedCellsToGlobalAverageGrid(background_parameters[i][j], avg);
+              background_parameters[i][j]->LogTransform(RMISSING);
 
               grid_statistics[i][j].push_back(avg);
               grid_statistics[i][j].push_back(min);
@@ -7125,21 +7181,27 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           }
         }
         else {
-          err_text += "Reading of file for parameter "+par_name[i]+" failed. No file name is given.\n";
+          err_text += "Reading of file for parameter "+par_name[j]+" failed. No file name is given.\n";
         }
       }
       else if (const_back_value > 0) {
 
-        for (int j = 0; j < n_intervals; j++) {
+        for (int i = 0; i < n_intervals; i++) {
 
-          const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(j);
+          const Simbox * simbox = multi_interval_grid->GetIntervalSimbox(j);
           int nx = simbox->getnx();
           int ny = simbox->getny();
           int nz = simbox->getnz();
 
           float log_value = log(const_back_value);
-          parameters[i][j]->Resize(nx, ny, nz, log_value);
 
+          for (int k = 0; k < 3; k++) {
+            background_parameters[i][k] = new NRLib::Grid<float>();
+          }
+
+          background_parameters[i][j]->Resize(nx, ny, nz, log_value);
+
+          //H Store constant value instead of log value
           grid_statistics[i][j].push_back(const_back_value); //avg
           grid_statistics[i][j].push_back(const_back_value); //min
           grid_statistics[i][j].push_back(const_back_value); //max
@@ -7151,67 +7213,51 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         }
       }
       else {
-        err_text += "Trying to set background model to 0 for parameter "+par_name[i]+"\n";
+        err_text += "Trying to set background model to 0 for parameter "+par_name[j]+"\n";
       }
     } //for i = 0,1,2
 
     if (err_text == "") {
 
-      for (int j = 0; j < n_intervals; j++) {
+      for (int i = 0; i < n_intervals; i++) {
 
-        if (multiple_interval_grid->GetNIntervals() > 1)
-          LogKit::LogFormatted(LogKit::Low, "\nInterval " + multiple_interval_grid->GetIntervalName(j) + "\n");
+        if (n_intervals> 1)
+          LogKit::LogFormatted(LogKit::Low, "\nInterval " + multi_interval_grid->GetIntervalName(i) + "\n");
         LogKit::LogFormatted(LogKit::Low, "\nSummary                Average   Minimum   Maximum\n");
         LogKit::LogFormatted(LogKit::Low, "--------------------------------------------------\n");
 
-        for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
 
           LogKit::LogFormatted(LogKit::Low, "%-20s %9.2f %9.2f %9.2f\n",
-            par_name[i].c_str(),
-            grid_statistics[i][j][0], //avg
-            grid_statistics[i][j][1], //min
-            grid_statistics[i][j][2]);//max
+                               par_name[j].c_str(),
+                               grid_statistics[i][j][0], //avg
+                               grid_statistics[i][j][1], //min
+                               grid_statistics[i][j][2]);//max
 
         }
         if (model_settings->getUseAIBackground()) { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
           LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
-          SubtractGrid(parameters[0][j], parameters[2][j]);
+          SubtractGrid(background_parameters[i][0], background_parameters[i][2]);
           //back_model[0]->subtract(back_model[2]);
         }
         if (model_settings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
           LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
-          SubtractGrid(parameters[1][j], parameters[2][j]);
+          SubtractGrid(background_parameters[i][1], background_parameters[i][2]);
           //back_model[1]->subtract(back_model[2]);
         }
         else if (model_settings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
           LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
-          SubtractGrid(parameters[1][j], parameters[0][j]);
-          ChangeSignGrid(parameters[1][j]);
+          SubtractGrid(background_parameters[i][1], background_parameters[i][0]);
+          ChangeSignGrid(background_parameters[i][1]);
           //back_model[1]->subtract(back_model[0]);
           //back_model[1]->changeSign();
         }
       }
     }
-
-    //Add background model to multiintervalgrid
-    std::vector<double> vs_vp_ratios(n_intervals);
-
-    for (int i = 0; i < n_intervals; i++) {
-      for (int j = 0; j < 3; j++) {
-        multiple_interval_grid->AddBackgroundParameterForInterval(i, j, parameters[j][i]);
-      }
-
-      vs_vp_ratios[i] = FindMeanVsVp(parameters[0][i], parameters[1][i]);
-
-    }
-    multiple_interval_grid->SetBackgroundVsVpRatios(vs_vp_ratios);
-
-    for (int j = 0; j < 3; j++) {
-      for (int i = 0; i < n_intervals; i++) {
-        delete parameters[j][i];
-      }
-    }
   }
+
+  for (int i = 0; i < n_intervals; i++)
+    background_vs_vp_ratios[i] = FindMeanVsVp(background_parameters[i][0], background_parameters[i][1]);
 
   //if (failed == false) { //H Writing of background models missing.
   //  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
@@ -7234,7 +7280,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 }
 
 double CommonData::FindMeanVsVp(const NRLib::Grid<float> * vp,
-                                const NRLib::Grid<float> * vs) 
+                                const NRLib::Grid<float> * vs)
 {
   double mean = 0;
   int ni  = vp->GetNI();
@@ -7436,14 +7482,6 @@ CommonData::GetRockDistributionTime0() const
   //std::vector<std::map<std::string, DistributionsRock *> > rock_dist_t0;
   std::map<std::string, DistributionsRock *> rock_dist_t0;
 
-  //for (size_t i = 0; i < rock_distributions_.size(); i++){
-  //
-  //  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_[i].begin(); it != rock_distributions_[i].end(); it++) {
-  //    std::string name = it->first;
-  //    std::vector<DistributionsRock *> rock_dist = it->second;
-  //    rock_dist_t0[i][name] = rock_dist[0];
-  //  }
-  //}
   for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     std::string name = it->first;
     std::vector<DistributionsRock *> rock_dist = it->second;
@@ -7455,9 +7493,9 @@ CommonData::GetRockDistributionTime0() const
 
 void CommonData::GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                                  const std::vector<float>               & probability,
-                                                 NRLib::Grid<float>                     * vp,
-                                                 NRLib::Grid<float>                     * vs,
-                                                 NRLib::Grid<float>                     * rho,
+                                                 NRLib::Grid<float>                    *& vp,
+                                                 NRLib::Grid<float>                    *& vs,
+                                                 NRLib::Grid<float>                    *& rho,
                                                  const Simbox                           & simbox,
                                                  const CravaTrend                       & trend_cube)
 {
@@ -7876,26 +7914,26 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         }
       }
 
-      // if multiple interval settings
-      if (interval_names.size()>0){
+      // if multiple interval settings //H Have combined getPriorFaciesProbInterval and getPriorFaciesProb (like getTimeNzInterval).
+      //if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                               model_settings->getPriorFaciesProbInterval(interval_names[i]),
-                                               facies_names_,
-                                               trend_cubes[i],
-                                               prior_param_cov_[i],
-                                               err_text);
-        }
-      }
-      // if multiple interval settings is not being used
-      else{
-        CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(),
+                                             model_settings->getPriorFaciesProbsInterval(interval_names[i]),
                                              facies_names_,
-                                             trend_cubes[0],
-                                             prior_param_cov_[0],
+                                             trend_cubes[i],
+                                             prior_param_cov_[i],
                                              err_text);
-      }
+        }
+      //}
+      // if multiple interval settings is not being used
+      //else{
+      //  CalculateCovarianceFromRockPhysics(rock_distribution,
+      //                                     model_settings->getPriorFaciesProb(),
+      //                                     facies_names_,
+      //                                     trend_cubes[0],
+      //                                     prior_param_cov_[0],
+      //                                     err_text);
+      //}
 
       if (tmp_err_text != "")
       {
@@ -7905,7 +7943,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
       // 3 Parameter estimation from well data -> further down
     }
-    else { //H Added
+    else {
       for (size_t i = 0; i < n_intervals; i++) {
         prior_param_cov_[i].resize(3,3);
       }
@@ -7986,7 +8024,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
         //float ** point_var_0 = NULL;
         if (estimate_param_cov || estimate_temp_corr){
-          
+
           std::string tmp_err_txt;
           // Option 1: Estimate within this interval
           std::vector<Simbox *> temp_simbox;
@@ -8843,17 +8881,17 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
     text1 = " estimated from lateral correlation ranges in internal grid";
     logLevel = LogKit::Low;
   }
-  if (model_settings->getEstimateZPadding()) {
-    text2 = " estimated from an assumed wavelet length";
-    logLevel = LogKit::Low;
-  }
+  //if (model_settings->getEstimateZPadding()) {
+  //  text2 = " estimated from an assumed wavelet length";
+  //  logLevel = LogKit::Low;
+  //}
 
   LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_xPad, true_x_pad_factor, nx, nx_pad);
   LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_yPad, true_y_pad_factor, ny, ny_pad);
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
+  //LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
 }
 
 
@@ -9448,7 +9486,9 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
       else
         LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
+      //LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
       LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNzInterval(""));
+
 
     }
     else { //Multiple intervals
@@ -9684,11 +9724,19 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"\nPrior facies probabilities:\n");
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE)
       {
-        typedef std::map<std::string,float> mapType;
-        mapType myMap = model_settings->getPriorFaciesProb();
+        for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
+          std::vector<std::string> interval_names = multiple_interval_grid_->GetIntervalNames();
 
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+          if (model_settings->getIntervalNames().size() > 0)
+            LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+
+          typedef std::map<std::string,float> mapType;
+          mapType myMap = model_settings->getPriorFaciesProbsInterval("");
+
+          for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
+            LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+
+        }
       }
       else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES)
       {
@@ -9920,7 +9968,14 @@ std::string CommonData::ConvertInt(int number){
         temp+=number%10+48;
         number/=10;
     }
-    for (int i=0;i<temp.length();i++)
+    for (size_t i=0;i<temp.length();i++)
         return_value+=temp[temp.length()-i-1];
     return return_value;
+}
+
+void CommonData::ReleaseBackgroundGrids(int i_interval)
+{
+  for (int i = 0; i < 3; i++) {
+    delete background_parameters_[i_interval][i];
+  }
 }

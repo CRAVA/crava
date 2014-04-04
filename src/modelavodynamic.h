@@ -11,9 +11,10 @@
 
 #include "src/vario.h"
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file.
+//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+#include "src/commondata.h"
 
 struct irapgrid;
 class Wavelet;
@@ -26,6 +27,7 @@ class InputFiles;
 class ModelAVOStatic;
 class ModelGeneral;
 class SeismicParametersHolder;
+//class CommonData;
 
 class ModelAVODynamic
 {
@@ -62,11 +64,9 @@ public:
   ModelAVODynamic(ModelSettings          *& model_settings,
                   ModelAVOStatic          * model_avo_static,
                   ModelGeneral            * model_general,
-                  CommonData              * commo_data,
+                  CommonData              * common_data,
                   SeismicParametersHolder & seismic_parameters,
                   const Simbox            * simbox,
-                  //const GridMapping       * timeDepthMapping,
-                  //const GridMapping       * timeCutMapping,
                   int                       t,
                   int                       i_interval);
 
@@ -216,6 +216,7 @@ private:
   //                                      std::string & errText);
   //double           vsvpFromWells(const std::vector<WellData *> & wells,
   //                               int                     nWells);
+
   void             VsVpFromWells(CommonData * common_data,
                                  int          i_interval,
                                  double     & vsvp,

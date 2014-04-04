@@ -11,7 +11,7 @@
 
 #include "src/seismicstorage.h"
 #include "src/definitions.h"
-#include "src/commondata.h"
+//#include "src/commondata.h"
 #include "src/fftgrid.h"
 
 SeismicStorage::SeismicStorage()

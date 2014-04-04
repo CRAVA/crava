@@ -19,6 +19,8 @@
 #include "src/inputfiles.h"
 #include "src/modelsettings.h"
 #include "src/timeline.h"
+#include "src/cravatrend.h"
+#include "src/multiintervalgrid.h"
 
 class MultiIntervalGrid;
 class CravaTrend;
@@ -26,8 +28,8 @@ class BlockedLogsCommon;
 
 class CommonData{
 public:
-  CommonData(ModelSettings                            * model_settings,
-             InputFiles                               * input_files);
+  CommonData(ModelSettings * model_settings,
+             InputFiles    * input_files);
 
   ~ CommonData();
 
@@ -35,63 +37,73 @@ public:
 
   //GET FUNCTIONS
 
-  const Simbox                            & GetEstimationSimbox()               const { return estimation_simbox_      ;}
-  const Simbox                            & GetFullInversionSimbox()            const { return full_inversion_simbox_  ;}
-  const std::vector<NRLib::Well>          & GetWells()                          const { return wells_                  ;}
-        std::vector<NRLib::Well>          & GetWells()                                { return wells_                  ;}
-  const MultiIntervalGrid                 * GetMultipleIntervalGrid()           const { return multiple_interval_grid_ ;}
-  MultiIntervalGrid                       * GetMultipleIntervalGrid(void)             { return multiple_interval_grid_ ;}
+  const Simbox                                                       & GetEstimationSimbox()                            const { return estimation_simbox_                             ;}
+  const Simbox                                                       & GetFullInversionSimbox()                         const { return full_inversion_simbox_                         ;}
+  const std::vector<NRLib::Well>                                     & GetWells()                                       const { return wells_                                         ;}
+        std::vector<NRLib::Well>                                     & GetWells()                                             { return wells_                                         ;}
+  const MultiIntervalGrid                                            * GetMultipleIntervalGrid()                        const { return multiple_interval_grid_                        ;}
+  MultiIntervalGrid                                                  * GetMultipleIntervalGrid(void)                          { return multiple_interval_grid_                        ;}
+
+  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()                           const { return rock_distributions_                            ;}
+  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables()                          const { return reservoir_variables_                           ;}
+
+  TimeLine                                                           * GetTimeLine()                                          { return time_line_                                     ;}
+  const std::vector<std::string>                                     & GetFaciesNames()                                 const { return facies_names_                                  ;}
+  const std::vector<int>                                             & GetFaciesNr()                                    const { return facies_nr_                                     ;}
+
+  const std::vector<std::vector<float> >                             & GetPriorFacies()                                 const { return prior_facies_                                  ;}
+  const std::vector<float>                                           & GetPriorFaciesInterval(int i)                    const { return prior_facies_[i]                               ;}
+  const std::vector<NRLib::Grid<float> *>                            & GetPriorFaciesProbCubesInterval(int interval)    const { return prior_facies_prob_cubes_[interval]             ;}
+  const NRLib::Grid<float>                                           * GetPriorFaciesProbCube(int interval, int facies) const { return prior_facies_prob_cubes_[interval][facies]     ;}
+
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogs()                                 const { return mapped_blocked_logs_                           ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsForCorr()                          const { return mapped_blocked_logs_for_correlation_           ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsInterval(int i)                    const { return mapped_blocked_logs_intervals_.find(i)->second ;}
+
+  std::vector<Surface *>                                             & GetFaciesEstimInterval()                               { return facies_estim_interval_                         ;}
+
+  std::vector<float>                                                 & GetGravityObservationUtmxTimeLapse(int time_lapse)     { return observation_location_utmx_[time_lapse]         ;}
+  std::vector<float>                                                 & GetGravityObservationUtmyTimeLapse(int time_lapse)     { return observation_location_utmy_[time_lapse]         ;}
+  std::vector<float>                                                 & GetGravityObservationDepthTimeLapse(int time_lapse)    { return observation_location_depth_[time_lapse]        ;}
+  std::vector<float>                                                 & GetGravityResponseTimeLapse(int time_lapse)            { return gravity_response_[time_lapse]                  ;}
+  std::vector<float>                                                 & GetGravityStdDevTimeLapse(int time_lapse)              { return gravity_std_dev_[time_lapse]                   ;}
+
+  GridMapping                                                        * GetTimeDepthMapping()                                  { return time_depth_mapping_                            ;}
+  bool                                                                 GetVelocityFromInversion()                             { return velocity_from_inversion_                       ;}
+
+  bool                                                                 GetUseLocalNoise()                                     { return use_local_noises_                              ;}
+  std::map<int, std::vector<Grid2D *> >                              & GetLocalNoiseScale()                                   { return local_noise_scales_                            ;}
+  std::vector<Grid2D *>                                              & GetLocalNoiseScaleTimeLapse(int time_lapse)            { return local_noise_scales_.find(time_lapse)->second   ;}
+  std::vector<SeismicStorage>                                        & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_.find(time_lapse)->second         ;}
+  std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
+  std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
+
+  bool                                                                 GetRefMatFromFileGlobalVpVs()                          { return refmat_from_file_global_vpvs_                  ;}
+  float **                                                             GetReflectionMatrixTimeLapse(int time_lapse)           { return reflection_matrix_.find(time_lapse)->second    ;}
+
+  std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
+  std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
+
+  //const std::vector<std::vector<double> >                            & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
+
+  const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
+  const std::vector<std::vector<double> >                            & GetTGradY()                                      const { return t_grad_y_                                      ;}
+  const NRLib::Grid2D<float>                                         & GetRefTimeGradX()                                const { return ref_time_grad_x_                               ;}
+  const NRLib::Grid2D<float>                                         & GetRefTimeGradY()                                const { return ref_time_grad_y_                               ;}
+
+  const Surface                                                      * GetPriorCorrXY(int i_interval)                         { return prior_corr_XY_[i_interval]                     ;}
+  const NRLib::Matrix                                                & GetPriorParamCov(int i_interval)                       { return prior_param_cov_[i_interval]                   ;}
+  const std::vector<double>                                          & GetPriorCorrT(int i_interval)                          { return prior_corr_T_[i_interval]                      ;}
+
+  const std::vector<NRLib::Grid<float> *>                            & GetBackgroundParametersInterval(int i)           const { return background_parameters_[i]                      ;}
+  double                                                             & GetBackgroundVsVpRatioInterval(int i)                  { return background_vs_vp_ratios_[i]                    ;}
+
+  const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
+  const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
+
   //const std::vector<NRLib::Grid<double> > & GetCovParametersInterval(int i_interval);
   //const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
   //const NRLib::Matrix                     & GetPriorVar0(int i_interval);
-
-  const std::map<std::string, std::vector<DistributionsRock *> >     & GetDistributionsRock()  const { return rock_distributions_  ;}
-  const std::map<std::string, std::vector<DistributionWithTrend *> > & GetReservoirVariables() const { return reservoir_variables_ ;}
-
-  TimeLine                               * GetTimeLine()                        { return time_line_       ;}
-  const std::vector<std::string>         & GetFaciesNames()               const { return facies_names_    ;}
-  const std::vector<int>                 & GetFaciesNr()                  const { return facies_nr_       ;}
-  const std::vector<std::vector<float> > & GetPriorFacies()               const { return prior_facies_    ;}
-  const std::vector<float>               & GetPriorFaciesInterval(int i)  const { return prior_facies_[i] ;}
-
-  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogs()              const { return mapped_blocked_logs_                           ;}
-  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogsForCorr()       const { return mapped_blocked_logs_for_correlation_           ;}
-  const std::map<std::string, BlockedLogsCommon *> & GetBlockedLogsInterval(int i) const { return mapped_blocked_logs_intervals_.find(i)->second ;}
-
-  std::vector<Surface *>                 & GetFaciesEstimInterval()             { return facies_estim_interval_ ;}
-
-  std::vector<float>       & GetGravityObservationUtmxTimeLapse(int time_lapse)  { return observation_location_utmx_[time_lapse]  ;}
-  std::vector<float>       & GetGravityObservationUtmyTimeLapse(int time_lapse)  { return observation_location_utmy_[time_lapse]  ;}
-  std::vector<float>       & GetGravityObservationDepthTimeLapse(int time_lapse) { return observation_location_depth_[time_lapse] ;}
-  std::vector<float>       & GetGravityResponseTimeLapse(int time_lapse)         { return gravity_response_[time_lapse]           ;}
-  std::vector<float>       & GetGravityStdDevTimeLapse(int time_lapse)           { return gravity_std_dev_[time_lapse]            ;}
-
-  GridMapping              * GetTimeDepthMapping()                             { return time_depth_mapping_            ;}
-  bool                       GetVelocityFromInversion()                        { return velocity_from_inversion_       ;}
-
-  bool                                    GetUseLocalNoise()                            { return use_local_noises_                            ;}
-  std::map<int, std::vector<Grid2D *> > & GetLocalNoiseScale()                          { return local_noise_scales_                          ;}
-  std::vector<Grid2D *>                 & GetLocalNoiseScaleTimeLapse(int time_lapse)   { return local_noise_scales_.find(time_lapse)->second ;}
-  std::vector<SeismicStorage>           & GetSeismicDataTimeLapse(int time_lapse)       { return seismic_data_.find(time_lapse)->second       ;}
-  std::map<int, std::vector<float> >    & GetSNRatio()                                  { return sn_ratios_                                   ;}
-  std::vector<float>                    & GetSNRatioTimeLapse(int time_lapse)           { return sn_ratios_.find(time_lapse)->second          ;}
-
-  bool                                    GetRefMatFromFileGlobalVpVs()                 { return refmat_from_file_global_vpvs_               ;}
-  float **                                GetReflectionMatrixTimeLapse(int time_lapse)  { return reflection_matrix_.find(time_lapse)->second ;}
-
-  std::vector<std::vector<float> >      & GetAngularCorrelation(int time_lapse)         { return angular_correlations_[time_lapse]           ;}
-
-  std::vector<Wavelet *>                  & GetWavelet(int time_lapse)                  { return wavelets_.find(time_lapse)->second          ;}
-
-  const std::vector<std::vector<double> > & GetTGradX()                           const { return t_grad_x_                                   ;}
-  const std::vector<std::vector<double> > & GetTGradY()                           const { return t_grad_y_                                   ;}
-  const NRLib::Grid2D<float>              & GetRefTimeGradX()                     const { return ref_time_grad_x_                            ;}
-  const NRLib::Grid2D<float>              & GetRefTimeGradY()                     const { return ref_time_grad_y_                            ;}
-
-  const Surface                           * GetPriorCorrXY(int i_interval)              { return prior_corr_XY_[i_interval]                  ;}
-  const NRLib::Matrix                     & GetPriorParamCov(int i_interval)            { return prior_param_cov_[i_interval]                ;}
-  const std::vector<double>               & GetPriorCorrT(int i_interval)               { return prior_corr_T_[i_interval]                   ;}
-
 
   void  SetupDefaultReflectionMatrix(float             **& reflection_matrix,
                                      double                vsvp,
@@ -114,6 +126,14 @@ public:
                   bool                 is_segy  = true,
                   bool                 is_storm = false);
 
+  static FFTGrid  * CreateFFTGrid(int nx,
+                                  int ny,
+                                  int nz,
+                                  int nxp,
+                                  int nyp,
+                                  int nzp,
+                                  bool file_grid);
+
   void            GetCorrGradIJ(float         & corr_grad_I,
                                 float         & corr_grad_J,
                                 const Simbox  * simbox) const;
@@ -132,10 +152,11 @@ public:
   static   void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                              std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                              const float *                      const * reflection_matrix,
-                                             const Simbox                             * time_simbox,
-                                             const ModelSettings                      * model_settings);
+                                             const Simbox                             * time_simbox);
 
   static std::string ConvertInt(int number);
+
+  void ReleaseBackgroundGrids(int i_interval);
 
 private:
 
@@ -306,8 +327,10 @@ private:
                               InputFiles     * input_files,
                               std::string    & err_text);
 
-  bool  SetupTemporaryWavelet(ModelSettings * model_settings,
-                              std::string   & err_text);
+  bool  SetupTemporaryWavelet(ModelSettings                               * model_settings,
+                              std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                              std::vector<Wavelet*>                       & temporary_wavelets,
+                              std::string                                 & err_text);
 
   bool  WaveletHandling(ModelSettings                                     * model_settings,
                         InputFiles                                        * input_files,
@@ -321,7 +344,7 @@ private:
                         std::map<int, std::vector<float> >                & sn_ratio,
                         bool                                              & use_local_noise,
                         std::string                                       & err_text_common);
-    
+
   void CheckThatDataCoverGrid(ModelSettings                               * model_settings,
                               std::map<int, std::vector<SeismicStorage> > & seismic_data,
                               MultiIntervalGrid                           * multiple_interval_grid,
@@ -453,6 +476,7 @@ private:
                        InputFiles                        * input_files,
                        MultiIntervalGrid                 * multiple_interval_grid,
                        const Simbox                      & full_inversion_simbox,
+                       std::vector<CravaTrend>           & trend_cubes,
                        std::string                       & error_text);
 
   bool SetupRockPhysics(const ModelSettings                                 * model_settings,
@@ -460,7 +484,7 @@ private:
                         const MultiIntervalGrid                             * multiple_interval_grid,
                         const std::vector<CravaTrend>                       & trend_cubes,
                         const std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
-                        int                                                   n_trend_cubes,
+                        //int                                                   n_trend_cubes,
                         std::string                                         & error_text);
 
   void PrintExpectationAndCovariance(const std::vector<double>   & expectation,
@@ -471,8 +495,11 @@ private:
 
   bool SetupPriorFaciesProb(ModelSettings                                    * model_settings,
                             InputFiles                                       * input_files,
-                            std::vector<Surface *>                           & facies_estim_interval,
                             MultiIntervalGrid                               *& multiple_interval_grid,
+                            std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
+                            std::vector<std::vector<float> >                 & prior_facies,
+                            std::vector<Surface *>                           & facies_estim_interval,
+                            std::vector<std::string>                         & facies_names,
                             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                             const Simbox                                     & full_inversion_simbox,
                             std::string                                      & err_text_common);
@@ -494,14 +521,6 @@ private:
                                 const std::vector<Simbox>                        & interval_simboxes,
                                 const Simbox                                     & full_inverion_simbox,
                                 std::string                                      & err_text);
-
-  static FFTGrid  * CreateFFTGrid(int nx,
-                                  int ny,
-                                  int nz,
-                                  int nxp,
-                                  int nyp,
-                                  int nzp,
-                                  bool file_grid);
 
   void ReadGridFromFile(const std::string                  & file_name,
                         const std::string                  & par_name,
@@ -619,8 +638,11 @@ private:
                             InputFiles                                                 * input_files,
                             const std::vector<NRLib::Well>                             & wells,
                             std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
-                            MultiIntervalGrid                                         *& multiple_interval_grid,
+                            MultiIntervalGrid                                         *& multi_interval_grid,
                             const Simbox                                               * inversion_simbox,
+                            std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
+                            std::vector<double>                                        & background_vs_vp_ratios,
+                            const std::vector<CravaTrend>                              & trend_cubes,
                             std::string                                                & err_text_common);
 
   double FindMeanVsVp(const NRLib::Grid<float> * vp,
@@ -645,9 +667,9 @@ private:
 
   void GenerateRockPhysics3DBackground(const std::vector<DistributionsRock *> & rock_distribution,
                                        const std::vector<float>               & probability,
-                                       NRLib::Grid<float>                     * vp,
-                                       NRLib::Grid<float>                     * vs,
-                                       NRLib::Grid<float>                     * rho,
+                                       NRLib::Grid<float>                    *& vp,
+                                       NRLib::Grid<float>                    *& vs,
+                                       NRLib::Grid<float>                    *& rho,
                                        const Simbox                           & simbox,
                                        const CravaTrend                       & trend_cube);
 
@@ -780,92 +802,102 @@ private:
   bool setup_gravity_inversion_;
   bool setup_traveltime_inversion_;
 
-  MultiIntervalGrid                           * multiple_interval_grid_;
-  Simbox                                        estimation_simbox_;
-  Simbox                                        full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
-                                                                        //Not to be used for any z-resolution purposes.
+  MultiIntervalGrid                                          * multiple_interval_grid_;
+  Simbox                                                       estimation_simbox_;
+  Simbox                                                       full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
+                                                                                       //Not to be used for any z-resolution purposes.
 
-  std::map<int, std::vector<SeismicStorage> >   seismic_data_; //Map timelapse
+  std::map<int, std::vector<SeismicStorage> >                  seismic_data_; //Map timelapse
 
   // Well logs
-  std::vector<std::string>                      log_names_;
-  std::vector<NRLib::Well>                      wells_;
+  std::vector<std::string>                                     log_names_;
+  std::vector<NRLib::Well>                                     wells_;
 
   // Blocked well logs
-  std::map<std::string, BlockedLogsCommon *>                 mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
-  std::map<std::string, BlockedLogsCommon *>                 mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
-  std::map<int, std::map<std::string, BlockedLogsCommon *> > mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
-  std::vector<std::string>                                   continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
-  std::vector<std::string>                                   discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
+  std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
+  std::map<int, std::map<std::string, BlockedLogsCommon *> >   mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
+  std::vector<std::string>                                     continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
+  std::vector<std::string>                                     discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
-  int                                           n_trend_cubes_;
-
+  std::vector<CravaTrend>                                      trend_cubes_;              //Trend cubes per interval.
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
+  //int                                                          n_trend_cubes_; //H Removed since it was equal to number of intervals
 
   // prior facies
-  std::vector<std::vector<float> >                   prior_facies_;                  ///< Prior facies probabilities
-  std::vector<Surface *>                             facies_estim_interval_;
+  std::vector<std::vector<NRLib::Grid<float> *> >              prior_facies_prob_cubes_;
+  std::vector<std::vector<float> >                             prior_facies_;                  ///< Prior facies probabilities. vector (intervals) vector(parameters)
+  std::vector<Surface *>                                       facies_estim_interval_;
+
+  // background model
+  std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;    // vector (intervals) vector (parameters)
+  std::vector<double>                                          background_vs_vp_ratios_;  // vs_vp_ratios from generation of backgroundmodel
 
   // Timeline
-  TimeLine                                         * time_line_;
+  TimeLine                                                   * time_line_;
 
-  bool                                               forward_modeling_;
+  bool                                                         forward_modeling_;
 
-  std::map<int, float **>                            reflection_matrix_; //Map timelapse
-  bool                                               refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
+  std::map<int, float **>                                      reflection_matrix_;             //Map timelapse
+  bool                                                         refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
 
   // Wavelet
-  std::map<int, std::vector<Wavelet *> >             wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >              local_noise_scales_;
-  std::map<int, std::vector<Grid2D *> >              local_shifts_;
-  std::map<int, std::vector<Grid2D *> >              local_scales_;
-  std::map<int, std::vector<float> >                 global_noise_estimates_;
-  std::map<int, std::vector<float> >                 sn_ratios_;
-  bool                                               use_local_noises_;
+  std::vector<Wavelet*>                                        temporary_wavelets_;            ///< Wavelet per angle
+  std::map<int, std::vector<Wavelet *> >                       wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
+  std::map<int, std::vector<Grid2D *> >                        local_shifts_;
+  std::map<int, std::vector<Grid2D *> >                        local_scales_;
+  std::map<int, std::vector<float> >                           global_noise_estimates_;
+  std::map<int, std::vector<float> >                           sn_ratios_;
+  bool                                                         use_local_noises_;
 
-  std::vector<std::vector<double> >             t_grad_x_;
-  std::vector<std::vector<double> >             t_grad_y_;
-  NRLib::Grid2D<float>                          ref_time_grad_x_; ///< Time gradient in x-direction for reference time surface (t0)
-  NRLib::Grid2D<float>                          ref_time_grad_y_; ///< Time gradient in x-direction for reference time surface (t0)
+  std::vector<std::vector<double> >                            t_grad_x_;
+  std::vector<std::vector<double> >                            t_grad_y_;
+  NRLib::Grid2D<float>                                         ref_time_grad_x_; ///< Time gradient in x-direction for reference time surface (t0)
+  NRLib::Grid2D<float>                                         ref_time_grad_y_; ///< Time gradient in x-direction for reference time surface (t0)
 
-  std::vector<std::vector<int> >                facies_nr_wells_;               ///< Facies Numbers per well.
-  std::vector<std::vector<std::string> >        facies_names_wells_;            ///< Facies Names per well
-  std::vector<bool>                             facies_log_wells_;              ///< True if this well has a facies log
+  // Facies
+  std::vector<std::vector<int> >                               facies_nr_wells_;    ///< Facies Numbers per well.
+  std::vector<std::vector<std::string> >                       facies_names_wells_; ///< Facies Names per well
+  std::vector<bool>                                            facies_log_wells_;   ///< True if this well has a facies log
 
-  std::vector<std::string>                      facies_names_;                  ///< Facies names combined for wells.
-  std::vector<int>                              facies_nr_;
+  std::vector<std::string>                                     facies_names_; ///< Facies names combined for wells.
+  std::vector<int>                                             facies_nr_;
 
   // Prior correlation
-  bool                                          prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
+  bool                                                         prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
   //std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
   //std::vector<NRLib::Grid<double> >             corr_params_interval_;
-  std::vector<Surface *>                        prior_corr_XY_;
-  std::vector<NRLib::Matrix>                    prior_param_cov_;
-  std::vector<std::vector<double> >             prior_corr_T_;
+  std::vector<Surface *>                                       prior_corr_XY_;
+  std::vector<NRLib::Matrix>                                   prior_param_cov_;
+  std::vector<std::vector<double> >                            prior_corr_T_;
   //std::vector<NRLib::Grid<double> >             prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 
-  std::vector<Wavelet*>                         temporary_wavelets_;            ///< Wavelet per angle
+  //H Copied from multiinterval grid. Not used?
+  //std::vector<std::vector<NRLib::Grid<double> > >      prior_cov_;                //Vp, vs, rho //From CommonData -> SetupPriorCorrelation
+  //std::vector<std::vector<NRLib::Grid<double> > >      prior_corr_;               //Vp-vs, Vp-Rho, Vs-Rho
+  //std::vector<NRLib::Matrix>                           prior_var_0_;
 
   //Gravimetry parameters per timelapse
-  std::vector<std::vector<float> >              observation_location_utmx_;     ///< Vectors to store observation location coordinates
-  std::vector<std::vector<float> >              observation_location_utmy_;
-  std::vector<std::vector<float> >              observation_location_depth_;
-  std::vector<std::vector<float> >              gravity_response_;              ///< Vector to store base line gravity response
-  std::vector<std::vector<float> >              gravity_std_dev_;               ///< Vector to store base line gravity standard deviation
+  std::vector<std::vector<float> >                             observation_location_utmx_;     ///< Vectors to store observation location coordinates
+  std::vector<std::vector<float> >                             observation_location_utmy_;
+  std::vector<std::vector<float> >                             observation_location_depth_;
+  std::vector<std::vector<float> >                             gravity_response_;              ///< Vector to store base line gravity response
+  std::vector<std::vector<float> >                             gravity_std_dev_;               ///< Vector to store base line gravity standard deviation
 
   //Traveltime parameters per timelapse
-  std::vector<std::vector<Surface> >            horizons_;                      ///< Horizons used for horizon inversion
-  std::vector<NRLib::Grid<float> *>             rms_data_;                      ///< RMS data U^2
+  std::vector<std::vector<Surface> >                           horizons_;                      ///< Horizons used for horizon inversion
+  std::vector<NRLib::Grid<float> *>                            rms_data_;                      ///< RMS data U^2
 
   //Depth conversion
-  GridMapping                                 * time_depth_mapping_;
-  bool                                          velocity_from_inversion_;
+  GridMapping                                                * time_depth_mapping_;
+  bool                                                         velocity_from_inversion_;
 
   //Angular correlations
-  std::vector<std::vector<std::vector<float> > > angular_correlations_;
+  std::vector<std::vector<std::vector<float> > >               angular_correlations_;
 
 };
 #endif

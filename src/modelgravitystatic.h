@@ -16,7 +16,7 @@ public:
 
   ModelGravityStatic(ModelSettings      *& modelSettings,
                      CommonData          * common_data,
-                     const Simbox              * simbox,
+                     const Simbox        * simbox,
                      int                   i_interval);
 
   ~ModelGravityStatic();

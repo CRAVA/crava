@@ -11,9 +11,11 @@
 #include "nrlib/grid/grid.hpp"
 #include "nrlib/well/well.hpp"
 #include "src/multiintervalgrid.h"
+#include "src/commondata.h"
 
 class BlockedLogsCommon;
 class Background;
+//class CommonData;
 
 class Analyzelog {
 
@@ -132,7 +134,7 @@ private:
                                  const NRLib::Matrix    & var_0,
                                  double                   dz,
                                  std::string            & err_txt);
-  
+
   bool            CheckConsistencyBackground(const std::vector<float>                              & ln_data_blocked,
                                               const std::vector<float>                              & background,
                                               const std::vector<float>                              & low_freq_log,

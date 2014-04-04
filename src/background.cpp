@@ -14,7 +14,7 @@
 #include "nrlib/random/beta.hpp"
 #include "nrlib/random/distribution.hpp"
 
-#include "src/blockedlogsforzone.h"
+//#include "src/blockedlogsforzone.h"
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
 #include "src/modelsettings.h"

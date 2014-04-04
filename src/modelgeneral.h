@@ -11,7 +11,7 @@
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/definitions.h"
-#include "src/background.h" //or move getAlpha & co to cpp-file.
+//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 #include "src/cravatrend.h"
@@ -25,6 +25,7 @@
 
 #include "nrlib/grid/grid.hpp"
 #include "src/blockedlogscommon.h"
+#include "src/commondata.h"
 
 struct irapgrid;
 class Corr;
@@ -308,43 +309,43 @@ private:
   //                                                const NRLib::Grid2D<double> & covariance,
   //                                                const bool                  & has_trend) const;
 
-  /*void              SetSimboxSurfaces(Simbox                        *& simbox,
-                                      const std::vector<std::string> & surfFile,
-                                      ModelSettings                  * modelSettings,
-                                      std::string                    & errText,
-                                      bool                           & failed);*/
-  void              EstimateXYPaddingSizes(Simbox         * timeSimbox,
-                                           ModelSettings *& modelSettings);
-  void              EstimateZPaddingSize(Simbox         * timeSimbox,
-                                         ModelSettings *& modelSettings);
-  int               SetPaddingSize(int    nx,
-                                   double px);
+  //void              SetSimboxSurfaces(Simbox                        *& simbox,
+  //                                    const std::vector<std::string> & surfFile,
+  //                                    ModelSettings                  * modelSettings,
+  //                                    std::string                    & errText,
+  //                                    bool                           & failed);
+  //void              EstimateXYPaddingSizes(Simbox         * timeSimbox,
+  //                                         ModelSettings *& modelSettings);
+  //void              EstimateZPaddingSize(Simbox         * timeSimbox,
+  //                                       ModelSettings *& modelSettings);
+  //int               SetPaddingSize(int    nx,
+  //                                 double px);
 
   //void              PrintSettings(ModelSettings    * modelSettings,
   //                                const InputFiles * inputFiles);
   //Compute correlation gradient in terms of i,j and k in grid.
-  NRLib::Vector      FindPlane(Surface * surf); //Finds plane l2-closest to surface.
+  //NRLib::Vector      FindPlane(Surface * surf); //Finds plane l2-closest to surface.
   //Create planar surface with same extent as template, p[0]+p[1]*x+p[2]*y
-  Surface          * CreatePlaneSurface(const NRLib::Vector & planeParams,
-                                        Surface             * templateSurf);
-  void               WriteAreas(const SegyGeometry * areaParams,
-                                Simbox             * timeSimbox,
-                                std::string        & text);
-  void               FindSmallestSurfaceGeometry(const double   x0,
-                                                 const double   y0,
-                                                 const double   lx,
-                                                 const double   ly,
-                                                 const double   rot,
-                                                 double       & xMin,
-                                                 double       & yMin,
-                                                 double       & xMax,
-                                                 double       & yMax);
-  void              GetGeometryFromGridOnFile(const std::string         seismicFile,
-                                              const TraceHeaderFormat * thf,
-                                              SegyGeometry           *& geometry,
-                                              std::string             & errText);
-  SegyGeometry    * GeometryFromCravaFile(const std::string & fileName);
-  SegyGeometry    * GeometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
+  //Surface          * CreatePlaneSurface(const NRLib::Vector & planeParams,
+  //                                      Surface             * templateSurf);
+  //void               WriteAreas(const SegyGeometry * areaParams,
+  //                              Simbox             * timeSimbox,
+  //                              std::string        & text);
+  //void               FindSmallestSurfaceGeometry(const double   x0,
+  //                                               const double   y0,
+  //                                               const double   lx,
+  //                                               const double   ly,
+  //                                               const double   rot,
+  //                                               double       & xMin,
+  //                                               double       & yMin,
+  //                                               double       & xMax,
+  //                                               double       & yMax);
+  //void              GetGeometryFromGridOnFile(const std::string         seismicFile,
+  //                                            const TraceHeaderFormat * thf,
+  //                                            SegyGeometry           *& geometry,
+  //                                            std::string             & errText);
+  //SegyGeometry    * GeometryFromCravaFile(const std::string & fileName);
+  //SegyGeometry    * GeometryFromStormFile(const std::string & fileName, std::string & errText, bool scale = false);
   //void            processStructureParameters();
 
   void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
@@ -352,11 +353,11 @@ private:
                                               int numberOfAngles);
   //Surface         * findCorrXYGrid(const Simbox * timeSimbox, const ModelSettings * modelSettings);
 
-  int               ComputeTime(int year, int month, int day) const;
+  //int               ComputeTime(int year, int month, int day) const;
 
-  void              CheckFaciesNamesConsistency(ModelSettings     *& modelSettings,
-                                                const InputFiles   * inputFiles,
-                                                std::string        & tmpErrText) const;
+  //void              CheckFaciesNamesConsistency(ModelSettings     *& modelSettings,
+  //                                              const InputFiles   * inputFiles,
+  //                                              std::string        & tmpErrText) const;
 
   //void              readPriorFaciesProbCubes(const InputFiles        * inputFiles,
   //                                           ModelSettings           * modelSettings,
@@ -372,39 +373,35 @@ private:
   void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  const Simbox                  * simbox_;                 ///< Information about simulation area.
+  const Simbox                                                * simbox_;                 ///< Information about simulation area.
 
-  RandomGen               * random_gen_;             ///< Random generator.
+  RandomGen                                                   * random_gen_;             ///< Random generator.
 
   CravaTrend                                                    trend_cubes_;            ///< Trend cubes used in rock phyiscs prior model
   std::map<std::string, std::vector<DistributionsRock *> >      rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> >  reservoir_variables_;    ///< Reservoir variables used in the rock physics model
 
-  TimeEvolution             time_evolution_;
+  TimeEvolution                                                 time_evolution_;
 
-  GridMapping             * time_depth_mapping_;           ///< Contains both simbox and mapping used for depth conversion
+  GridMapping                                                 * time_depth_mapping_;           ///< Contains both simbox and mapping used for depth conversion
 
+  bool                                                          velocity_from_inversion_;
 
-  bool                      velocity_from_inversion_;  //Needed? Copy from CommonData.
+  TimeLine                                                    * time_line_;
 
-  TimeLine                * time_line_;
+  std::map<std::string, BlockedLogsCommon *>                    blocked_logs_;
 
-  //Replaces WellData wells_
-  std::map<std::string, BlockedLogsCommon *> blocked_logs_;
+  std::vector<float>                                            prior_facies_;                ///< Prior facies probabilities
+  std::vector<FFTGrid *>                                        prior_facies_prob_cubes_;     ///< Cubes for prior facies probabilities
 
+  std::vector<int>                                              facies_labels_;               ///< Facies labels, flyttes til blockedlogs
+  std::vector<std::string>                                      facies_names_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
 
+  bool                                                          do_4D_inversion_;
+  bool                                                          do_4D_rock_physics_vnversion_;
+  State4D                                                       state4d_;                     ///< State4D holds the 27 grdis needed for 4D inversion.
 
-  std::vector<float>        prior_facies_;                ///< Prior facies probabilities
-  std::vector<FFTGrid *>    prior_facies_prob_cubes_;       ///< Cubes for prior facies probabilities
-
-  std::vector<int>          facies_labels_;               ///< Facies labels, flyttes til blockedlogs
-  std::vector<std::string>  facies_names_;                ///< Facies names   (nFacies = faciesNames.size()). Use for ordering of facies
-
-  bool                      do_4D_inversion_;
-  bool                      do_4D_rock_physics_vnversion_;
-  State4D                   state4d_;                    ///< State4D holds the 27 grdis needed for 4D inversion.
-
-  bool                      multi_interval_;              ///< True if there is multiple intervals
+  bool                                                          multi_interval_;              ///< True if there is multiple intervals
 
 
   //Fjernes:

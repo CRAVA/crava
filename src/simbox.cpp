@@ -107,7 +107,7 @@ Volume(*estimation_simbox){
   grad_y_         = 0;
   // Set Eroded surfaces in the simbox
   SetErodedSurfaces(top_surface, base_surface);
-  // Set surfaces in the volume 
+  // Set surfaces in the volume
   // This should set the status to BOXOK
   setDepth(top_surface, base_surface, n_layers);
   if(status_!=BOXOK){
@@ -1171,7 +1171,7 @@ double Simbox::RecalculateErodedLZ()
   return lz;
 }
 
-void 
+void
 Simbox::CopyAllPadding(const Simbox & original,
                        double         lz_limit,
                        std::string  & err_txt)

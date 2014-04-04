@@ -20,17 +20,17 @@
 #include "src/modelsettings.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-#include "src/analyzelog.h"
+//#include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-#include "src/background.h"
+//#include "src/background.h"
 #include "src/fftgrid.h"
-#include "src/fftfilegrid.h"
+//#include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
-#include "src/inputfiles.h"
+//#include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
-#include "src/waveletfilter.h"
+//#include "src/waveletfilter.h"
 #include "src/tasklist.h"
 #include "src/seismicparametersholder.h"
 
@@ -536,7 +536,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   bool segy_volumes_read = false;
   for (int i = 0; i < number_of_angles_ ; i++) {
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    if (seismic_type == 0) //(geometry[i] != NULL)
+    if (seismic_type == 0)
       segy_volumes_read = true;
   }
   if (segy_volumes_read) {
@@ -544,7 +544,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
     for (int i = 0; i < number_of_angles_; i++) {
       int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-      if (seismic_type == 0) { //(geometry[i] != NULL) {
+      if (seismic_type == 0) {
         double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
         if (geo_angle < 0)
           geo_angle += 360.0;
@@ -584,7 +584,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     vpvs = 1 / vsvp;
   }
   else {  //background
-    vsvp = common_data->GetMultipleIntervalGrid()->GetBackgroundVsVpRatioInterval(i_interval);
+    vsvp = common_data->GetBackgroundVsVpRatioInterval(i_interval);
     vpvs = 1 / vsvp;
   }
 
@@ -661,7 +661,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         //Find the scaling of this wavelet, and apply it to the non-resampled wavelet.
         Wavelet * est_wavelet = new Wavelet1D(wavelets_[i]);
         const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
-        est_wavelet->resample(estimation_simbox.getdz(), estimation_simbox.getnz(), estimation_simbox.GetNZpad());
+        est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad());
         est_wavelet->scale(1.0);
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
@@ -710,7 +710,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   if (model_settings->getEstimateWaveletNoise())
-    CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox, model_settings);
+    CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox);
 
   //H Moved to CommonData, so it won't be writter per interval
   //if (estimation_mode)

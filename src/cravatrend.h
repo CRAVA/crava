@@ -5,7 +5,7 @@
 
 #include "src/simbox.h"
 #include "src/fftgrid.h"
-#include "src/commondata.h"
+//#include "src/commondata.h"
 
 class ModelSettings;
 class InputFiles;
