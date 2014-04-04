@@ -3177,6 +3177,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
     if (error == 0) {
       wavelet_pre_resampling = new Wavelet1D(wavelet);
+      wavelet_pre_resampling->scale(wavelet->getScale()); //H Not copied in copy-constructor
+
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
