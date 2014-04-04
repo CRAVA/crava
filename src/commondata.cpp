@@ -133,11 +133,11 @@ CommonData::CommonData(ModelSettings * model_settings,
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (read_wells_)
         setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                                 facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+                                                                 facies_names_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
     }
     else
       setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                               facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+                                                               facies_names_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
   }
 
   // 12. Set up background model
@@ -4864,16 +4864,16 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   return true;
 }
 
-bool CommonData::SetupPriorFaciesProb(ModelSettings                                    * model_settings,
-                                      InputFiles                                       * input_files,
-                                      MultiIntervalGrid                               *& multi_interval_grid,
-                                      std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                                      std::vector<std::vector<float> >                 & prior_facies,
-                                      std::vector<Surface *>                           & facies_estim_interval,
-                                      std::vector<std::string>                         & facies_names,
-                                      const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                                      const Simbox                                     & full_inversion_simbox,
-                                      std::string                                      & err_text_common)
+bool CommonData::SetupPriorFaciesProb(ModelSettings                                                    * model_settings,
+                                      InputFiles                                                       * input_files,
+                                      MultiIntervalGrid                                               *& multi_interval_grid,
+                                      std::vector<std::vector<NRLib::Grid<float> *> >                  & prior_facies_prob_cubes,
+                                      std::vector<std::vector<float> >                                 & prior_facies,
+                                      std::vector<Surface *>                                           & facies_estim_interval,
+                                      std::vector<std::string>                                         & facies_names,
+                                      const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                      const Simbox                                                     & full_inversion_simbox,
+                                      std::string                                                      & err_text_common)
 {
   std::string err_text = "";
 
@@ -4941,9 +4941,11 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
         int n_used_wells = 0;
 
+        const std::map<std::string, BlockedLogsCommon *> & mapped_intervals = mapped_blocked_logs_intervals.find(i)->second;
+
         int w_well = 0;
-        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_intervals.begin(); it != mapped_intervals.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_intervals.find(it->first);
 
           if (facies_log_wells_[w_well] == true) { // Well has facies log //if (wells[w]->getNFacies() > 0)
             //

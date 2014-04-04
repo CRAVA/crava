@@ -493,16 +493,16 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings                                    * model_settings,
-                            InputFiles                                       * input_files,
-                            MultiIntervalGrid                               *& multiple_interval_grid,
-                            std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                            std::vector<std::vector<float> >                 & prior_facies,
-                            std::vector<Surface *>                           & facies_estim_interval,
-                            std::vector<std::string>                         & facies_names,
-                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                            const Simbox                                     & full_inversion_simbox,
-                            std::string                                      & err_text_common);
+  bool SetupPriorFaciesProb(ModelSettings                                                    * model_settings,
+                            InputFiles                                                       * input_files,
+                            MultiIntervalGrid                                               *& multiple_interval_grid,
+                            std::vector<std::vector<NRLib::Grid<float> *> >                  & prior_facies_prob_cubes,
+                            std::vector<std::vector<float> >                                 & prior_facies,
+                            std::vector<Surface *>                                           & facies_estim_interval,
+                            std::vector<std::string>                                         & facies_names,
+                            const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                            const Simbox                                                     & full_inversion_simbox,
+                            std::string                                                      & err_text_common);
 
   void FindFaciesEstimationInterval(InputFiles             * input_files,
                                     std::vector<Surface *> & facies_estim_interval,
