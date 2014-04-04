@@ -159,15 +159,15 @@ public:
                                  bool                                       /*estimateSNRatio*/,
                                  bool                                       /*estimateWavelet*/) {return 1.0f;}
 
- float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
- void           nullOutsideFrequencyBand(float loCut ,float hiCut );
- float          findNorm() const;
- void           SetReflectionCoeffs(const float * reflCoef);
+  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
+  void           nullOutsideFrequencyBand(float loCut ,float hiCut );
+  float          findNorm() const;
+  void           SetReflectionCoeffs(const float * reflCoef);
+  bool           getInFFTOrder()     const {return inFFTorder_;}
 
 protected:
   float          getTheta()          const {return theta_;}
   int            getCz()             const {return cz_;}
-  bool           getInFFTOrder()     const {return inFFTorder_;}
   float          getWaveletLength()  const {return waveletLength_;}
 
   void           doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and scale
