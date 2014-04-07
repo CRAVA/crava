@@ -340,6 +340,8 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                              static_cast<int>(storm_grid_->GetNI()),
                              static_cast<int>(storm_grid_->GetNJ()),
                              err_txt);
+      seismic_simbox.setDepth(storm_grid_->GetTopSurface(), storm_grid_->GetBotSurface(), storm_grid_->GetNK(), true);
+      seismic_simbox.calculateDz(lz_limit, err_txt);
       seismic_simbox.SetNoPadding();
       break;
     default:
