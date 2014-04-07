@@ -318,6 +318,9 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                            Simbox       & seismic_simbox,
                            std::string  & err_txt) const
 {
+  NRLib::Surface<double> * top_tmp = NULL;
+  NRLib::Surface<double> * bot_tmp = NULL;
+
   switch(seismic_type_) {
     case SEGY: {
       const NRLib::SegyGeometry * geometry = segy_->GetGeometry();
@@ -339,8 +342,24 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
       seismic_simbox.setArea(storm_grid_,
                              static_cast<int>(storm_grid_->GetNI()),
                              static_cast<int>(storm_grid_->GetNJ()),
-                             err_txt);
-      seismic_simbox.setDepth(storm_grid_->GetTopSurface(), storm_grid_->GetBotSurface(), storm_grid_->GetNK(), true);
+                             err_txt,
+                             true); //scale
+
+      //storm_grid_->GetTopSurface().Multiply(1000);
+      //storm_grid_->GetBotSurface().Multiply(1000);
+
+      top_tmp = storm_grid_->GetTopSurface().Clone();
+      top_tmp->Multiply(1000);
+
+      bot_tmp = storm_grid_->GetBotSurface().Clone();
+      bot_tmp->Multiply(1000);
+
+      seismic_simbox.setDepth(*top_tmp, *bot_tmp, storm_grid_->GetNK(), true);
+      //seismic_simbox.setDepth(storm_grid_->GetTopSurface(), storm_grid_->GetBotSurface(), storm_grid_->GetNK(), true);
+
+      //storm_grid_->GetTopSurface().Multiply(0.001);
+      //storm_grid_->GetBotSurface().Multiply(0.001);
+
       seismic_simbox.calculateDz(lz_limit, err_txt);
       seismic_simbox.SetNoPadding();
       break;
@@ -351,4 +370,10 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                              err_txt);
       seismic_simbox.CopyAllPadding(full_inversion_simbox, lz_limit, err_txt);
   }
+
+  if (top_tmp != NULL)
+    delete top_tmp;
+  if (bot_tmp != NULL)
+    delete bot_tmp;
+
 }

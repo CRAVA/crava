@@ -143,7 +143,7 @@ public:
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
   void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf, bool  skip_check = true);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
-  bool           setArea(const NRLib::Volume * volume, int ni, int nj, std::string & errText);
+  bool           setArea(const NRLib::Volume * volume, int ni, int nj, std::string & errText, bool scale = false);
   void           setILXL(const SegyGeometry * geometry);
   void           setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck = false);
   void           setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck = false);

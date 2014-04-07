@@ -572,10 +572,10 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             break;
           }
 
-          bool scale = false;
-          if (file_type == IO::SGRI)
-            scale = true;
-          std::string err_text_tmp = "";
+          //bool scale = false;
+          //if (file_type == IO::SGRI)
+          //  scale = true;
+          //std::string err_text_tmp = "";
 
           SeismicStorage seismicdata_tmp;
 
