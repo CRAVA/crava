@@ -28,8 +28,8 @@
 
 struct irapgrid;
 class Corr;
-class Wavelet;
-class Vario;
+//class Wavelet;
+//class Vario;
 class Simbox;
 class FFTGrid;
 class RandomGen;

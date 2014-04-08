@@ -151,8 +151,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
-        if (model_settings->getTimeNzInterval("") == RMISSING) //Taken from simbox->SetDepth without nz
+        if (model_settings->getTimeNzInterval("") == RMISSING) { //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
+          model_settings->setTimeNzInterval("", nz);
+        }
 
       }
 
