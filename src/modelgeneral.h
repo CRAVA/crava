@@ -62,6 +62,8 @@ public:
   void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
   const State4D            & getState4D()               const { return state4d_                ;}
+  State4D                  * getState4D()                     { return &state4d_               ;}
+
   FFTGrid                  * getRelativeVelocity()            { return state4d_.getRelativeVelocity();}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}

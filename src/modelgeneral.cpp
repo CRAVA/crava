@@ -4015,7 +4015,8 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       const int nzPad     = modelSettings->getNZpad();
 
       float dt = static_cast<float>(timeSimbox->getdz());
-      float lowCut = -1.0f;// modelSettings->getLowCut();//NBNB OK quick fix
+      //float lowCut = -1.0f;// modelSettings->getLowCut();//NBNB OK quick fix
+      float lowCut =  modelSettings->getLowCut();//NBNB OK quick fix
       int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
       float corrGradI;
@@ -4943,7 +4944,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
-  // /*
+   /*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "mean_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();

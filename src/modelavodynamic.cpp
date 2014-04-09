@@ -1398,7 +1398,7 @@ ModelAVODynamic::process3DWavelet(const ModelSettings                     * mode
         }
       }
 
-      const float SNLow  = 1.0;
+      const float SNLow  = 0.4;
       const float SNHigh = 10.0;
       if ((SNRatio_[i] <=SNLow  || SNRatio_[i] > SNHigh) && modelSettings->getForwardModeling()==false) {
         errText += "Illegal signal-to-noise ratio of "+NRLib::ToString(SNRatio_[i])+" for cube "+NRLib::ToString(i+1)+".\n";

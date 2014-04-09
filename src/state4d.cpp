@@ -679,8 +679,11 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
              sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
          }
 
-         if( (sigmaCurrentPosterior >0.0) & (sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
+         if((sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
            // This is the computations
+           if(sigmaCurrentPosterior <= 0.0)
+             sigmaCurrentPosterior=0.0001*sigmaCurrentPrior; // Robustify computations against numerical errors
+
            double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
 
            fftw_complex d;

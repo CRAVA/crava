@@ -35,8 +35,7 @@ public:
 private:
   void                          doHorizonInversion(ModelGeneral            * modelGeneral,
                                                    ModelTravelTimeStatic   * modelTravelTimeStatic,
-                                                   ModelTravelTimeDynamic  * modelTravelTimeDynamic,
-                                                   SeismicParametersHolder & seismicParameters) const;
+                                                   ModelTravelTimeDynamic  * modelTravelTimeDynamic) const;
 
   void                          do1DHorizonInversion(FFTGrid               * mu_prior,
                                                      const NRLib::Grid2D<double> & Sigma_log_vp,

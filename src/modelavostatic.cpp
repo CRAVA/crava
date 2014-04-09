@@ -289,6 +289,7 @@ ModelAVOStatic::checkAvailableMemory(Simbox           * timeSimbox,
       gridMem = peakGridMem;
     }
   }
+  nGrids=53;// NBNB OK quickfix
   FFTGrid::setMaxAllowedGrids(nGrids);
   if(modelSettings->getDebugFlag()>0)
     FFTGrid::setTerminateOnMaxGrid(true);
