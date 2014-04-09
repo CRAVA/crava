@@ -75,6 +75,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, log_names_, model_settings->getLogNames(),
                              model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
+
   // 4. block wells for estimation
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
@@ -571,11 +572,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
             break;
           }
-
-          //bool scale = false;
-          //if (file_type == IO::SGRI)
-          //  scale = true;
-          //std::string err_text_tmp = "";
 
           SeismicStorage seismicdata_tmp;
 
@@ -3443,7 +3439,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
          gy+=gyTmp;
        }
        else {
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(static_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
          CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
