@@ -853,12 +853,17 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
 }
 
 bool
-Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errText)
+Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errText, bool scale)
 {
-  double x0  = volume->GetXMin();
-  double y0  = volume->GetYMin();
-  double lx  = volume->GetLX();
-  double ly  = volume->GetLY();
+  double scale_value = 1.0;
+
+  if (scale == true) //SGRI
+    scale_value = 1000;
+
+  double x0  = volume->GetXMin()*scale_value;
+  double y0  = volume->GetYMin()*scale_value;
+  double lx  = volume->GetLX()*scale_value;
+  double ly  = volume->GetLY()*scale_value;
   double rot = volume->GetAngle();
   double dx  = lx/static_cast<double>(nx);
   double dy  = ly/static_cast<double>(ny);

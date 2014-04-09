@@ -49,8 +49,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
                          disc_logs_to_be_blocked, n_data_, failed, err_text);
 
-  //well_data->SetNumberOfNonMissingData(n_data_); //H This is set in ProcessLogsNorsarWell and ProcessLogsRMSWell.
-
   if (failed)
     err_text += "Logs were not successfully read from well " + well_name_ +".\n";
 
@@ -1064,9 +1062,6 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
 
   int last_I,  last_J,  last_K;
 
-  //H-Problem. Ok now after last_S_ fix?
-  // z_pos_raw_logs[last_M_] > interval_simbox z_bot(x,y) means that last_I, last_J and last_K returns missing (-9999)
-  // Example was interval 1 3100 - 3600, interval 2 3600-3900. Wells about 3100 - 3650
   interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
   min_m = last_K+1;
   max_m = interval_simboxes[last_S_].getnz();

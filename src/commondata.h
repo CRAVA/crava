@@ -493,16 +493,16 @@ private:
 
   bool EstimateWaveletShape();
 
-  bool SetupPriorFaciesProb(ModelSettings                                    * model_settings,
-                            InputFiles                                       * input_files,
-                            MultiIntervalGrid                               *& multiple_interval_grid,
-                            std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                            std::vector<std::vector<float> >                 & prior_facies,
-                            std::vector<Surface *>                           & facies_estim_interval,
-                            std::vector<std::string>                         & facies_names,
-                            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                            const Simbox                                     & full_inversion_simbox,
-                            std::string                                      & err_text_common);
+  bool SetupPriorFaciesProb(ModelSettings                                                    * model_settings,
+                            InputFiles                                                       * input_files,
+                            MultiIntervalGrid                                               *& multiple_interval_grid,
+                            std::vector<std::vector<NRLib::Grid<float> *> >                  & prior_facies_prob_cubes,
+                            std::vector<std::vector<float> >                                 & prior_facies,
+                            std::vector<Surface *>                                           & facies_estim_interval,
+                            std::vector<std::string>                                         & facies_names,
+                            const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                            const Simbox                                                     & full_inversion_simbox,
+                            std::string                                                      & err_text_common);
 
   void FindFaciesEstimationInterval(InputFiles             * input_files,
                                     std::vector<Surface *> & facies_estim_interval,
@@ -798,7 +798,6 @@ private:
   bool setup_background_model_;
   bool setup_prior_correlation_;
   bool setup_timeline_;
-  //bool prior_corr_estimation_;
   bool setup_gravity_inversion_;
   bool setup_traveltime_inversion_;
 
@@ -824,7 +823,6 @@ private:
   std::vector<CravaTrend>                                      trend_cubes_;              //Trend cubes per interval.
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
-  //int                                                          n_trend_cubes_; //H Removed since it was equal to number of intervals
 
   // prior facies
   std::vector<std::vector<NRLib::Grid<float> *> >              prior_facies_prob_cubes_;
@@ -875,11 +873,6 @@ private:
   std::vector<std::vector<double> >                            prior_corr_T_;
   //std::vector<NRLib::Grid<double> >             prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
-
-  //H Copied from multiinterval grid. Not used?
-  //std::vector<std::vector<NRLib::Grid<double> > >      prior_cov_;                //Vp, vs, rho //From CommonData -> SetupPriorCorrelation
-  //std::vector<std::vector<NRLib::Grid<double> > >      prior_corr_;               //Vp-vs, Vp-Rho, Vs-Rho
-  //std::vector<NRLib::Matrix>                           prior_var_0_;
 
   //Gravimetry parameters per timelapse
   std::vector<std::vector<float> >                             observation_location_utmx_;     ///< Vectors to store observation location coordinates

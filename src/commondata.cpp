@@ -6,23 +6,13 @@
 #define _USE_MATH_DEFINES
 
 #include "src/commondata.h"
-//#include "src/analyzelog.h"
-//#include "src/simbox.h"
-//#include "src/timeline.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-//#include "src/seismicstorage.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
-//#include "src/multiintervalgrid.h"
-//#include "src/cravatrend.h"
-//#include "src/background.h"
-//#include "src/blockedlogscommon.h"
 #include "nrlib/well/well.hpp"
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/segy/segytrace.hpp"
-//#include "nrlib/well/norsarwell.hpp"
-
 #include "rplib/distributionsrock.h"
 
 #include "lib/timekit.hpp"
@@ -46,10 +36,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   setup_background_model_(false),
   setup_prior_correlation_(false),
   setup_timeline_(false),
-  //prior_corr_estimation_(false),
   setup_gravity_inversion_(false),
   setup_traveltime_inversion_(false),
-  //trend_cubes_(false),
   refmat_from_file_global_vpvs_(false),
   velocity_from_inversion_(false),
   multiple_interval_grid_(NULL),
@@ -86,6 +74,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 3. read well data
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, log_names_, model_settings->getLogNames(),
                              model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
+
 
   // 4. block wells for estimation
   // if well position is to be optimized or
@@ -133,11 +122,11 @@ CommonData::CommonData(ModelSettings * model_settings,
     if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
       if (read_wells_)
         setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                                 facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+                                                                 facies_names_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
     }
     else
       setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                               facies_names_, mapped_blocked_logs_, full_inversion_simbox_, err_text);
+                                                               facies_names_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
   }
 
   // 12. Set up background model
@@ -232,7 +221,7 @@ CommonData::~CommonData() {
     }
   }
 
-  if (multiple_interval_grid_ != NULL) //H Error in test_case 1
+  if (multiple_interval_grid_ != NULL)
     delete multiple_interval_grid_;
 
   //if (time_line_ != NULL)
@@ -583,11 +572,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
             break;
           }
-
-          bool scale = false;
-          if (file_type == IO::SGRI)
-            scale = true;
-          std::string err_text_tmp = "";
 
           SeismicStorage seismicdata_tmp;
 
@@ -1894,11 +1878,10 @@ void CommonData::CutWell(std::string           well_file_name,
   double bot_surf_max = bot_surf.Max();
 
   bool need_cutting = false;
-  //if (z_old[0] < top_surf.GetZ(x_old[0], y_old[0]) || z_old[z_old.size()-1] > bot_surf.GetZ(x_old[z_old.size()-1], y_old[z_old.size()-1]))
   if (z_old[0] < top_surf_max || z_old[z_old.size()-1] > bot_surf_min)
     need_cutting = true;
 
-  if (need_cutting == true) { //H Cut missing values?
+  if (need_cutting == true) {
 
     for (size_t i = 0; i < z_old.size(); i++) {
 
@@ -1912,7 +1895,6 @@ void CommonData::CutWell(std::string           well_file_name,
         if (bot_tmp == WELLMISSING)
           bot_tmp = bot_surf_max;
 
-        //if ( !(z_old[i] < top_surf.GetZ(x_old[i], y_old[i]) || z_old[i] > bot_surf.GetZ(x_old[i], y_old[i])) ) { //Inside, keep
         if ( !(z_old[i] < top_tmp || z_old[i] > bot_tmp) ) { //Inside, keep
 
           x_new.push_back(x_old[i]);
@@ -3177,6 +3159,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
     if (error == 0) {
       wavelet_pre_resampling = new Wavelet1D(wavelet);
+      wavelet_pre_resampling->scale(wavelet->getScale()); //H Not copied in copy-constructor
+
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
@@ -3455,7 +3439,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
          gy+=gyTmp;
        }
        else {
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(static_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
          CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
@@ -4078,7 +4062,6 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
           base_surface = new Surface(*top_surface);
           base_surface->Add(lz);
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
-          //full_inversion_volume.SetSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel()); //H
         }
         else { //Two reference surfaces
           const std::string & base_surface_file_name = surface_file_names[1];
@@ -4864,16 +4847,16 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   return true;
 }
 
-bool CommonData::SetupPriorFaciesProb(ModelSettings                                    * model_settings,
-                                      InputFiles                                       * input_files,
-                                      MultiIntervalGrid                               *& multi_interval_grid,
-                                      std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                                      std::vector<std::vector<float> >                 & prior_facies,
-                                      std::vector<Surface *>                           & facies_estim_interval,
-                                      std::vector<std::string>                         & facies_names,
-                                      const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                                      const Simbox                                     & full_inversion_simbox,
-                                      std::string                                      & err_text_common)
+bool CommonData::SetupPriorFaciesProb(ModelSettings                                                    * model_settings,
+                                      InputFiles                                                       * input_files,
+                                      MultiIntervalGrid                                               *& multi_interval_grid,
+                                      std::vector<std::vector<NRLib::Grid<float> *> >                  & prior_facies_prob_cubes,
+                                      std::vector<std::vector<float> >                                 & prior_facies,
+                                      std::vector<Surface *>                                           & facies_estim_interval,
+                                      std::vector<std::string>                                         & facies_names,
+                                      const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                      const Simbox                                                     & full_inversion_simbox,
+                                      std::string                                                      & err_text_common)
 {
   std::string err_text = "";
 
@@ -4941,9 +4924,11 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
         int n_used_wells = 0;
 
+        const std::map<std::string, BlockedLogsCommon *> & mapped_intervals = mapped_blocked_logs_intervals.find(i)->second;
+
         int w_well = 0;
-        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_intervals.begin(); it != mapped_intervals.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_intervals.find(it->first);
 
           if (facies_log_wells_[w_well] == true) { // Well has facies log //if (wells[w]->getNFacies() > 0)
             //
@@ -6158,279 +6143,6 @@ int CommonData::GetFillNumber(int i, int n, int np) {
   }//endif
   return(refi);
 }
-
-//void CommonData::FillInData(NRLib::Grid<double> & grid,
-//                            const Simbox        & simbox,
-//                            StormContGrid       * storm_grid,
-//                            const SegY          * segy,
-//                            float                 smooth_length,
-//                            int                 & missing_traces_simbox,
-//                            int                 & missing_traces_padding,
-//                            int                 & dead_traces_simbox,
-//                            std::string         & err_text,
-//                            int                   grid_type,
-//                            bool                  scale,
-//                            bool                  is_segy)
-//{
-//  assert(grid_type != CTMISSING);
-//
-//  double wall=0.0, cpu=0.0;
-//  TimeKit::getTime(wall,cpu);
-//
-//  float scalevert, scalehor;
-//  if (scale == false || is_segy == true)
-//  {
-//    scalevert = 1.0;
-//    scalehor  = 1.0;
-//  }
-//  else //from sgri file
-//  {
-//    LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
-//    scalevert = 0.001f; //1000.0;
-//    scalehor  = 0.001f; //1000.0;
-//  }
-//
-//  int ni = grid.GetNI();
-//  int nj = grid.GetNJ();
-//  int nk = grid.GetNK();
-//
-//  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",ni,nj,nk);
-//
-//  float monitorSize = std::max(1.0f, static_cast<float>(nj*ni)*0.02f); //nyp_*rnxp_
-//  float nextMonitor = monitorSize;
-//  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
-//  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
-//  printf("\n  ^");
-//
-//  //
-//  // Find proper length of time samples to get N*log(N) performance in FFT.
-//  //
-//  size_t n_samples = 0;
-//  float  dz_data   = 0.0f;
-//  float  dz_min    = 0.0f;
-//  if (is_segy) {
-//    n_samples = segy->FindNumberOfSamplesInLongestTrace();
-//    dz_data   = segy->GetDz();
-//    dz_min    = dz_data/4.0f;
-//  }
-//  else
-//    n_samples = storm_grid->GetNK();
-//
-//  int nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
-//  int mt = 4*nt;           // Use four times the sampling density for the fine-meshed data
-//
-//  //
-//  // Create FFT plans
-//  //
-//  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-//  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-//
-//  //
-//  // Do resampling
-//  //
-//  missing_traces_simbox  = 0; // Part of simbox is outside seismic data
-//  missing_traces_padding = 0; // Part of padding is outside seismic data
-//  dead_traces_simbox     = 0; // Simbox is inside seismic data but trace is missing
-//
-//  for (int j = 0 ; j < nj ; j++) {
-//    for (int i = 0 ; i < ni ; i++) {
-//
-//      int refi  = i; //getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
-//      int refj  = j; //getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
-//      int refk  = 0;
-//
-//      double x, y, z0;
-//      simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
-//      x*=  scalehor;
-//      y*=  scalehor;
-//      z0*= scalevert;
-//
-//      double dz = simbox.getdz(refi, refj)*scalevert;
-//      float  xf = static_cast<float>(x);
-//      float  yf = static_cast<float>(y);
-//
-//      bool is_inside = false;
-//      if (is_segy)
-//        is_inside = segy->GetGeometry()->IsInside(xf, yf);
-//      else {
-//        if (storm_grid->IsInside(xf, yf) == 1)
-//          is_inside = true;
-//      }
-//
-//      if (is_inside == true) {
-//        bool  missing = true;
-//        float z0_data = RMISSING;
-//
-//        std::vector<float> data_trace;
-//        size_t grid_i = 0;
-//        size_t grid_j = 0;
-//        double grid_x = 0.0;
-//        double grid_y = 0.0;
-//        double grid_z = 0.0;
-//        float value =   0.0f;
-//
-//        float z_min = 0.0f;
-//        float z_max = 0.0f;
-//
-//        //Get data_trace for this i and j.
-//        if (is_segy) {
-//          segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
-//        }
-//        else {
-//          storm_grid->FindXYIndex(xf, yf, grid_i, grid_j);
-//          for (size_t k = 0; k < grid.GetNK(); k++) {
-//            storm_grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
-//            value = storm_grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
-//            data_trace.push_back(value);
-//
-//            if (k == 0)
-//              z_min = static_cast<float>(grid_z);
-//            if (k == grid.GetNK()-1)
-//              z_max = static_cast<float>(grid_z);
-//          }
-//
-//          dz_data = (z_max- z_min) / grid.GetNK();
-//          dz_min = dz_data/4.0f;
-//          z0_data = z_min;
-//        }
-//
-//        size_t n_trace = data_trace.size();
-//        float trend_first = 0.0f;
-//        float trend_last  = 0.0f;
-//
-//        if (grid_type != DATA) {
-//          //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
-//          if (data_trace[0] == 0) {
-//            std::vector<float> data_trace_new;
-//            for (size_t k_trace = 0; k_trace < n_trace; k_trace++) {
-//              if (data_trace[k_trace] != 0)
-//                data_trace_new.push_back(data_trace[k_trace]);
-//            }
-//            data_trace = data_trace_new;
-//            n_trace = data_trace.size();
-//          }
-//
-//          n_samples = data_trace.size();
-//          nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
-//          mt = 4*nt;
-//
-//          fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-//          fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-//
-//          //Remove trend from trace
-//          trend_first = data_trace[0];
-//          trend_last = data_trace[n_trace - 1];
-//          float trend_inc = (trend_last - trend_first) / (n_trace - 1);
-//          for (size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
-//            data_trace[k_trace] -= trend_first + k_trace * trend_inc;
-//          }
-//        }
-//
-//        if (is_segy == false || (is_segy == true && !missing)) {
-//          int         cnt      = nt/2 + 1;
-//          int         rnt      = 2*cnt;
-//          int         cmt      = mt/2 + 1;
-//          int         rmt      = 2*cmt;
-//
-//          fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
-//          fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
-//
-//          float       dz_grid  = static_cast<float>(dz);
-//          float       z0_grid  = static_cast<float>(z0);
-//
-//          std::vector<float> grid_trace(nk);
-//
-//          std::string err_text_tmp = "";
-//          smooth_length*=scalevert;
-//          if (grid_type == DATA) {
-//            SmoothTraceInGuardZone(data_trace,
-//                                   dz_data,
-//                                   smooth_length);
-//          }
-//
-//          ResampleTrace(data_trace,
-//                        fftplan1,
-//                        fftplan2,
-//                        rAmpData,
-//                        rAmpFine,
-//                        cnt,
-//                        rnt,
-//                        cmt,
-//                        rmt);
-//
-//          std::vector<float> data_trace_trend_long;
-//          if (grid_type != DATA) {
-//            float trend_inc = (trend_last - trend_first) / (rmt - 1);
-//
-//            data_trace_trend_long.resize(rmt);
-//            for (int k_trace = 0; k_trace < rmt; k_trace++) {
-//              data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
-//            }
-//          }
-//
-//          //Includes a shift
-//          InterpolateGridValues(grid_trace,
-//                                z0_grid,     // Centre of first cell
-//                                dz_grid,
-//                                rAmpFine,
-//                                z0_data,     // Time of first data sample
-//                                dz_min,
-//                                rmt,
-//                                grid.GetNK());
-//
-//          //Interpolate and shift trend before adding to grid_trace.
-//          //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
-//          if (grid_type != DATA) {
-//            std::vector<float> trend_interpolated(nk);
-//            InterpolateAndShiftTrend(trend_interpolated,
-//                                     z0_grid,     // Centre of first cell
-//                                     dz_grid,
-//                                     data_trace_trend_long,
-//                                     z0_data,     // Time of first data sample
-//                                     dz_min,
-//                                     rmt,
-//                                     grid.GetNK());
-//
-//            //Add trend
-//            for (size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
-//              grid_trace[k_trace] += trend_interpolated[k_trace];
-//          }
-//
-//          err_text += err_text_tmp;
-//
-//          fftw_free(rAmpData);
-//          fftw_free(rAmpFine);
-//
-//          SetTrace(grid_trace, grid, i, j);
-//        }
-//        else {
-//          SetTrace(0.0f, grid, i, j); // Dead traces (in case we allow them)
-//          dead_traces_simbox++;
-//        }
-//      }
-//      else {
-//        SetTrace(0.0f, grid, i, j);   // Outside seismic data grid
-//        if (i < ni && j < nj )
-//          missing_traces_simbox++;
-//        else
-//          missing_traces_padding++; //H Won't happen with NRLibGrid
-//      }
-//
-//      if (ni*j + i + 1 >= static_cast<int>(nextMonitor)) { //rnxp_
-//        nextMonitor += monitorSize;
-//        printf("^");
-//        fflush(stdout);
-//      }
-//
-//    }
-//  }
-//  LogKit::LogFormatted(LogKit::Low,"\n");
-//
-//  fftwnd_destroy_plan(fftplan1);
-//  fftwnd_destroy_plan(fftplan2);
-//
-//  Timings::setTimeResamplingSeismic(wall,cpu);
-//}
 
 int CommonData::FindClosestFactorableNumber(int leastint)
 {
@@ -7827,7 +7539,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
   bool print_result                       = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                                               model_settings->getEstimationMode() == true);
   size_t n_intervals                      = interval_simboxes.size();
-  size_t n_facies                         = facies_names.size(); //static_cast<int>(prior_facies_[0].size()); //H Changed since prior_facies_ isn't necessarily set.
+  size_t n_facies                         = facies_names.size();
   std::vector<std::string> interval_names = model_settings->getIntervalNames();
 
   // Local parameters to be set in this function ----------------------------------------------------

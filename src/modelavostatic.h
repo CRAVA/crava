@@ -10,7 +10,6 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "src/definitions.h"
-//#include "src/background.h" //or move getAlpha & co to cpp-file. //H Why must this be included?
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
 #include "src/commondata.h"
@@ -23,20 +22,10 @@ class Wavelet;
 class Vario;
 class Simbox;
 class FFTGrid;
-//class GridMapping;
 class InputFiles;
-//class CommonData;
 class ModelAVOStatic
 {
 public:
-  //ModelAVOStatic(ModelSettings        *& modelSettings,
-  //               ModelGeneral         *& modelGeneral,
-  //               const InputFiles      * inputFiles,
-  //               GridMapping           * timeCutMapping,
-  //               Simbox                * timeSimbox,
-  //               Simbox               *& timeBGSimbox,
-  //               Simbox                * timeSimboxConstThick,
-  //               std::vector<WellData *> wells);
 
   ModelAVOStatic(ModelSettings        *& model_settings,
                  const InputFiles      * input_files,
@@ -56,48 +45,15 @@ public:
 
   bool                               GetForwardModeling()                 { return forward_modeling_       ;}
 
-  //bool                          getFailed()                const { return failed_                 ;}
-  //std::vector<bool>             getFailedDetails()         const { return failed_details_         ;}
-
-  //void                          writeWells(       std::vector<WellData *> wells, ModelSettings * modelSettings) const;
-  //void                          writeBlockedWells(std::vector<WellData *> wells, ModelSettings * modelSettings, std::vector<std::string> facies_name, std::vector<int> facies_label) const;
-  //void             WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-  //                                   ModelSettings                            * model_settings,
-  //                                   std::vector<std::string>                   facies_name,
-  //                                   std::vector<int>                           facies_label) const;
-
   void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                   std::vector<FFTGrid *>                     seis_cube,
                                   int                                        n_angles);                              // Changes wells
-
-  //void             generateSyntheticSeismic(Wavelet              ** wavelet,
-  //                                          std::vector<WellData *> wells,
-  //                                          const float   * const * reflectionMatrix,
-  //                                          const Simbox          * timeSimbox,
-  //                                          const ModelSettings   * modelSettings,
-  //                                          int                     nAngles);                    // Changes wells
 
   static FFTGrid *        CreateFFTGrid(int nx,  int ny,  int nz,
                                         int nxp, int nyp, int nzp,
                                         bool file_grid);
 
-  //void             deleteDynamicWells(std::vector<WellData *> wells,
-  //                                    int         nWells);
-
 private:
-  //void             blockLogs(std::vector<WellData *> & wells,
-  //                              Simbox               * timeSimbox,
-  //                              Simbox               * timeBGSimbox,
-  //                              Simbox               * timeSimboxConstThick,
-  //                              ModelSettings       *& modelSettings);
-
-  //void             loadExtraSurfaces(std::vector<Surface *> & waveletEstimInterval,
-  //                                   std::vector<Surface *> & faciesEstimInterval,
-  //                                   std::vector<Surface *> & wellMoveInterval,
-  //                                   Simbox                 * timeSimbox,
-  //                                   const InputFiles       * inputFiles,
-  //                                   std::string            & errText,
-  //                                   bool                   & failed);
 
   void             CheckAvailableMemory(const Simbox              * time_simbox,
                                         ModelSettings       * model_settings,
@@ -111,8 +67,6 @@ private:
 
   FFTGrid                 * err_corr_;
 
-  //bool                      failed_;                ///< Indicates whether errors occured during construction.
-  //std::vector<bool>         failed_details_;        ///< Detailed failed information.
 };
 
 #endif

@@ -699,7 +699,7 @@ private:
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
   double                            time_dz_;                    ///< Used when top and base surfaces are parallel
   std::map<std::string, int>        time_nz_interval_;           ///< Number of layers for each interval
-  int                               time_nz_;                    ///< Used when top and base surfaces are parallel
+  //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 
   int                               areaSpecification_;          ///< Specifying whether are is taken from UTM-coord, seismic or surface

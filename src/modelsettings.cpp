@@ -123,7 +123,9 @@ ModelSettings::ModelSettings(void)
   time_dTop_               = RMISSING;
   time_lz_                 = RMISSING;
   time_dz_                 = RMISSING;
-  time_nz_                 = IMISSING;
+  //time_nz_                 = IMISSING;
+  time_nz_interval_[""]    = IMISSING;
+
   velocityFromInv_         =    false;
 
   areaILXL_                = std::vector<int>(0);
