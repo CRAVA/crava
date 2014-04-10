@@ -182,7 +182,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   ReadAngularCorrelations(model_settings, angular_correlations_);
   CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
-  //TODO: Handle if err_text != "".
   if (err_text != "") {
     //LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
     LogKit::WriteHeader("Loading and processing data failed:");
@@ -3439,7 +3438,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
          gy+=gyTmp;
        }
        else {
-         CalculateSmoothGrad( &(static_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
          CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);

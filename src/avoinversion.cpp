@@ -1891,9 +1891,9 @@ AVOInversion::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::Low,"\nWavelet scale          :");
   for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %2.3e  ",seisWavelet_[i]->getScale());
   LogKit::LogFormatted(LogKit::Low,"\nEmpirical S/N          :");
-  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",empSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"   %5.2f        ",empSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nModelled S/N           :");
-  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",theoSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"   %5.2f        ",theoSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\n");
 }
 

@@ -349,6 +349,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                     false,  // doEstimateLocalScale
                                                                     false); // doEstimateWavelet
 
+        sn_ratio_[i] = sn_ratio_new;
+
         //Compute scaling and scale original wavelet
         float gain = est_wavelet->getScale();
         wavelets_[i]->scale(gain);
@@ -373,6 +375,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   SetupErrorCorrelation(local_noise_scale_,
                         data_variance_,
+                        sn_ratio_,
+                        angular_corr_,
                         error_variance_,
                         err_theta_cov_);
 
@@ -653,10 +657,12 @@ ModelAVODynamic::ComputeDataVariance(std::vector<FFTGrid *> & seis_data,
 }
 
 void
-ModelAVODynamic::SetupErrorCorrelation(const std::vector<Grid2D *> & noise_scale,
-                                       const float                 * data_variance,
-                                       float                       * error_variance,
-                                       double                     ** err_theta_cov)
+ModelAVODynamic::SetupErrorCorrelation(const std::vector<Grid2D *>             & noise_scale,
+                                       const float                             * data_variance,
+                                       const std::vector<float>                & sn_ratio,
+                                       const std::vector<std::vector<float > > & angular_corr,
+                                       float                                   * error_variance,
+                                       double                                 ** err_theta_cov)
 {
   //
   //  Setup error correlation matrix
@@ -665,18 +671,18 @@ ModelAVODynamic::SetupErrorCorrelation(const std::vector<Grid2D *> & noise_scale
   for (int l = 0; l < number_of_angles_; l++) {
     if (use_local_noise_ == true) {
       double minScale = noise_scale[l]->FindMin(RMISSING);
-      error_variance[l] = float(data_variance[l]*minScale/sn_ratio_[l]);
+      error_variance[l] = float(data_variance[l]*minScale/sn_ratio[l]);
     }
     else
-      error_variance[l] = data_variance[l]/sn_ratio_[l];
+      error_variance[l] = data_variance[l]/sn_ratio[l];
   }
 
   for (int i = 0; i < number_of_angles_; i++) {
     for (int j = 0; j < number_of_angles_; j++) {
 
-      err_theta_cov[i][j] = static_cast<float>(sqrt(error_variance_[i])
-                                              *sqrt(error_variance_[j])
-                                              *angular_corr_[i][j]);
+      err_theta_cov[i][j] = static_cast<float>(sqrt(error_variance[i])
+                                              *sqrt(error_variance[j])
+                                              *angular_corr[i][j]);
     }
   }
 }

@@ -97,10 +97,12 @@ private:
                                         int                      nyp,
                                         int                      nzp);
 
-  void              SetupErrorCorrelation(const std::vector<Grid2D *> & noiseScale,
-                                          const float                 * dataVariance,
-                                          float                       * errorVariance,
-                                          double                     ** errThetaCov);
+  void              SetupErrorCorrelation(const std::vector<Grid2D *>             & noise_scale,
+                                          const float                             * data_variance,
+                                          const std::vector<float>                & sn_ratio,
+                                          const std::vector<std::vector<float > > & angular_corr,
+                                          float                                   * error_variance,
+                                          double                                 ** err_theta_cov);
 
   float             ComputeWDCorrMVar(Wavelet1D* WD,
                                       fftw_real* corrT,
