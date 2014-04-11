@@ -325,7 +325,7 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
 
     if (scaleOpt == RMISSING) {
       errCode = 1;
-      LogKit::LogFormatted(LogKit::Error,"  Could not estimate global wavelet scale\n");
+      LogKit::LogFormatted(LogKit::Error,"\nERROR: Could not estimate global wavelet scale\n");
       errTxt += "Could not estimate global wavelet scale for stack "+NRLib::ToString(iAngle)+".\n";
     }
   }
@@ -593,14 +593,12 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 
 }
 
-
-
-
 float
-Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSettings,
-                                          const Simbox                * simbox,
-                                          const FFTGrid               * seisCube,
-                                          std::vector<WellData *> wells)
+Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings     * modelSettings,
+                                          const Simbox            * simbox,
+                                          const FFTGrid           * seisCube,
+                                          std::vector<WellData *> & wells,
+                                          std::string             & errTxt)
 {
   int nWells          = modelSettings->getNumberOfWells();
 //The reason why the next three variables are not taken from the class variables is that this function is called
@@ -636,21 +634,29 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSet
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
-      std::vector<bool> hasData(nz);
+      std::vector<bool>  hasData(nz);
       std::vector<float> seisData(nz);
-      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+      std::vector<float> alpha(nz);
+      std::vector<float> beta(nz);
+      std::vector<float> rho(nz);
+      bl->getVerticalTrend(&seisLog[0]   , &seisData[0]);
+      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
+      bl->getVerticalTrend(bl->getBeta() , &beta[0]);
+      bl->getVerticalTrend(bl->getRho()  , &rho[0]);
+
       for (int k = 0 ; k < nz; k++)
-        hasData[k] = seisData[k] != RMISSING;
+        hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
+
       int start,length;
       bl->findContiniousPartOfData(hasData,nz,start,length);
       bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp);
       bl->fillInSeismic(&seisData[0],start,length,seis_r[w],nzp);
 
       for(int i=0;i<nzp;i++) {
-        if(cpp_r[w][i] > maxCpp)
-          maxCpp = cpp_r[w][i];
-        if(seis_r[w][i] > maxSeis)
-          maxSeis = seis_r[w][i];
+        if(std::abs(cpp_r[w][i]) > maxCpp)
+          maxCpp = std::abs(cpp_r[w][i]);
+        if(std::abs(seis_r[w][i]) > maxSeis)
+          maxSeis = std::abs(seis_r[w][i]);
       }
     }
   }
@@ -662,14 +668,19 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings         * modelSet
   delete [] cpp_r;
   delete [] seis_r;
 
+  if (maxCpp < -1.0 || maxCpp > 1.0) {
+    std::string num = NRLib::ToString(maxCpp,2);
+    errTxt += std::string("\nERROR: Cannot find global wavelet scale. The maximum reflection");
+    errTxt += std::string("\n       coefficient of ") + num + "  is outside valid range of [-1, +1].\n";
+  }
+
   float kk = maxSeis/maxCpp;
   float maxwavelet = 0.0;
-  for(int i=0;i<nzp_;i++)
-   if(getRAmp(i)> maxwavelet)
-     maxwavelet = getRAmp(i);
+  for (int i=0;i<nzp_;i++)
+    if (std::abs(getRAmp(i)) > maxwavelet)
+      maxwavelet = std::abs(getRAmp(i));
 
   float scale1 = kk/maxwavelet;
-
   return scale1;
 }
 
@@ -696,10 +707,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells\n");
 
-  float       minSNRatio            = 1.1f;
-  std::string angle                 = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
-  int         nWells                = modelSettings->getNumberOfWells();
-  bool        estimateSomething     = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
+  float       minSNRatio          = 1.1f;
+  std::string angle               = NRLib::ToString((180.0/NRLib::Pi)*theta_, 1);
+  int         nWells              = modelSettings->getNumberOfWells();
+  bool        estimateSomething   = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
 
   //Noise estimation
@@ -804,6 +815,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     }
   }
   float globalScale = waveletScale;
+
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
   std::vector<float> errWell(nWells);
@@ -813,14 +825,14 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   //If local scale given, run separate routine to find local noise if wanted.
   float optScale;
   if (doEstimateLocalScale || doEstimateGlobalScale) {
-    optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale
-);
-    if (!doEstimateGlobalScale)
-      optScale = globalScale;
-    else {
+    optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale);
+    if (doEstimateGlobalScale) {
       scale(optScale);
       for (int i=0 ; i < nWells ; i++)
         scaleOptWell[i] /= optScale;
+    }
+    else {
+      optScale = globalScale;
     }
   }
   // local scale given means gain !=NULL
@@ -832,6 +844,12 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     optScale = globalScale;
     // only for loging
     findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale);
+  }
+
+  if (optScale == RMISSING) {
+    error = 1;
+    LogKit::LogFormatted(LogKit::Error,"\nERROR Could not estimate global wavelet scale\n");
+    errText += "Could not estimate global wavelet scale for stack "+NRLib::ToString(number)+".\n";
   }
 
   for(int w=0; w<nWells; w++) {
@@ -1042,8 +1060,8 @@ Wavelet1D::findOptimalWaveletScale(fftw_real               ** synt_seis_r,
                                    std::vector<float>       & errWellOptScale) const
 {
   float   optScale   = 1.0f;
-  float   scaleLimit = 3.0f;
-  int     nScales    = 51; // should be odd to include 1.00
+  float   scaleLimit = 5.0f; // Increased from 3.0 to 5.0. See Jira issue CRA-684 why
+  int     nScales    = 95;   // should be odd to include 1.00
   float * scales     = new float[nScales];
   float * error      = new float[nScales];
 
@@ -1073,17 +1091,17 @@ Wavelet1D::findOptimalWaveletScale(fftw_real               ** synt_seis_r,
           counter[i]++;
       totCount+=counter[i];
 
-      for(int j=0;j<nScales;j++) {
+      for (int j=0;j<nScales;j++) {
         resNorm[i][j]=0.0;
-        for(int k=0;k<nzp;k++) {
-          if(fabs(seis_r[i][k]) > minSeisAmp) {
+        for (int k=0;k<nzp;k++) {
+          if (fabs(seis_r[i][k]) > minSeisAmp) {
             seisNorm[i]   += seis_r[i][k] * seis_r[i][k];
-            float      foo = scales[j]*synt_seis_r[i][k] - seis_r[i][k];
+            float foo      = scales[j]*synt_seis_r[i][k] - seis_r[i][k];
             resNorm[i][j] += foo*foo;
+
           }
         }
-        error[j]+=resNorm[i][j];
-
+        error[j] += resNorm[i][j];
       }
     }//if
   }

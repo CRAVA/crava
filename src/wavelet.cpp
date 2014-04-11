@@ -476,7 +476,7 @@ Wavelet::multiplyRAmpByConstant(float c)
 void
 Wavelet::scale(float scale)
 {
-  if (scale != 1.0f) {
+  if (scale != 1.0f && scale != RMISSING) {
     LogKit::LogFormatted(LogKit::Low,"\n  Scaling wavelet with factor : %.3f\n",scale);
     for(int i=0; i < rnzp_ ; i++)
       if(rAmp_[i] != RMISSING)
