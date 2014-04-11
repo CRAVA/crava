@@ -176,7 +176,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 17. Depth Conversion
   if (multiple_interval_grid_->GetNIntervals() == 1 && model_settings->getDoDepthConversion())
-    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, &full_inversion_simbox_, time_depth_mapping_, err_text);
+    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, err_text);
 
   //Punkt o: diverse:
   ReadAngularCorrelations(model_settings, angular_correlations_);
@@ -226,13 +226,9 @@ CommonData::~CommonData() {
   //if (time_line_ != NULL)
   //  delete time_line_;
 
-  if (time_depth_mapping_ != NULL)
-    delete time_depth_mapping_;
+  //if (time_depth_mapping_ != NULL)
+  //  delete time_depth_mapping_;
 
-
-
-  //delete estimation_simbox_;
-  //delete full_inversion_volume_;
 }
 
 bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
@@ -475,8 +471,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                  const Simbox                                & full_inversion_simbox,
                                  Simbox                                      & estimation_simbox,
                                  std::string                                 & err_text_common,
-                                 std::map<int, std::vector<SeismicStorage> > & seismic_data) {
-
+                                 std::map<int, std::vector<SeismicStorage> > & seismic_data)
+{
   std::string err_text = "";
 
   //Skip if there is no AVO-seismic.
@@ -822,8 +818,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
                               const std::vector<std::string> & log_names_from_user,
                               const std::vector<bool>        & inverse_velocity,
                               bool                             facies_log_given,
-                              std::string                    & err_text_common) {
-
+                              std::string                    & err_text_common)
+{
   std::string err_text = "";
 
   // Get all log names given by user
@@ -1849,8 +1845,8 @@ void CommonData::ApplyFilter(std::vector<double> & log_filtered,
 
 void CommonData::CutWell(std::string           well_file_name,
                          NRLib::Well         & well,
-                         const NRLib::Volume & full_inversion_volume) {
-
+                         const NRLib::Volume & full_inversion_volume)
+{
   //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
   //Possible Logs: X_pos, Y_pos, Z_pos, Dt, Vp, Dts, Vs, Rho, Facies
 
@@ -2167,7 +2163,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   // Time is always entry 0 in the log name list
   // Time is always called 'TWT', so no need to rename it
-  //if (new_well.HasContLog(log_names_from_user[0]))
 
   // Vp is always entry 1 in the log name list and entry 0 in inverse_velocity
   if (new_well.HasContLog(log_names_from_user[1])) {
@@ -2232,12 +2227,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     new_well.RemoveContLog(log_names_from_user[2]);
     new_well.AddContLog("Rho", rho);
   }
-
-  // Rho is always entry 2 in the log name list
-  //if (new_well.HasContLog(log_names_from_user[2])) {
-  //  new_well.AddContLog("Rho", new_well.GetContLog(log_names_from_user[2]));
-  //  new_well.RemoveContLog(log_names_from_user[2]);
-  //}
 
   // If defined, Facies is always entry 4 in the log name list
   if (facies_log_given) {
@@ -2365,7 +2354,6 @@ void
 CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                         std::vector<int>         & facies_nr,
                                         std::vector<std::string> & facies_names)
-                                        //std::string              & err_txt)
 {
   const std::map<int, std::string> & facies_map = well.GetFaciesMap();
   int n_facies = facies_map.size();
@@ -2680,7 +2668,6 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
   }
   else
     err_text += "Reading matrix " + file_name + "failed.\n";
-    //LogKit::LogFormatted(LogKit::Low,"failed.\n");
 
   delete [] tmp_res;
   return(result);
@@ -3719,14 +3706,6 @@ CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
     }
   }
 }
-
-//bool CommonData::optimizeWellLocations() {
-//  return true;
-//}
-
-//bool CommonData::SetupEstimationRockPhysics(){
-//  return true;
-//}
 
 int
 CommonData::ComputeTime(int year, int month, int day) const
@@ -5166,7 +5145,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
     std::string err_text_tmp = "";
     ReadPriorFaciesProbCubes(input_files,
                              model_settings,
-                             prior_facies_prob_cubes,  //Vector(facies) vector(intervals)
+                             prior_facies_prob_cubes_tmp,  //Vector(facies) vector(intervals)
                              interval_simboxes,
                              full_inversion_simbox,
                              err_text_tmp);
@@ -5257,7 +5236,6 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
                                      std::string                                      & err_text)
 {
   int n_facies = static_cast<int>(facies_names_.size());
-  //prior_facies_prob_cubes.resize(n_facies);
 
   typedef std::map<std::string,std::string> mapType;
   mapType myMap = input_files->getPriorFaciesProbFile();
@@ -5273,9 +5251,6 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
 
       if (model_settings->getIntervalNames().size() > 0)
         prior_facies_prob_cubes[i].resize(model_settings->getIntervalNames().size());
-
-      //for (size_t j = 0; j < model_settings->getIntervalNames().size(); j++)
-      //  prior_facies_prob_cubes[i][j] = new NRLib::Grid<float>();
 
       ReadGridFromFile(facies_prob_file,
                        "priorfaciesprob",
@@ -6388,16 +6363,6 @@ int CommonData::GetZSimboxIndex(int k,
   return refk;
 }
 
-//void CommonData::SetTrace(const std::vector<float> & trace,
-//                          NRLib::Grid<double>      & grid,
-//                          size_t                     i,
-//                          size_t                     j)
-//{
-//  for (size_t k = 0; k < grid.GetNK(); k++) {
-//    grid(i, j, k) = static_cast<double>(trace[k]);
-//  }
-//}
-
 void CommonData::SetTrace(const std::vector<float> & trace,
                           NRLib::Grid<float>       * grid,
                           size_t                     i,
@@ -6562,11 +6527,11 @@ CommonData::ReadStormFile(const std::string                 & file_name,
   }
 }
 
-bool CommonData::SetupDepthConversion(ModelSettings  * model_settings,
-                                      InputFiles     * input_files,
-                                      const Simbox   & full_inversion_simbox,
-                                      GridMapping    * time_depth_mapping,
-                                      std::string    & err_text_common) {
+bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
+                                      InputFiles    * input_files,
+                                      const Simbox  & full_inversion_simbox,
+                                      GridMapping  *& time_depth_mapping,
+                                      std::string   & err_text_common) {
 
 
   //From ModelGeneral::ProcessDepthConversion
@@ -7073,38 +7038,6 @@ void CommonData::ChangeSignGrid(NRLib::Grid<float> * grid) {
   }
 
 }
-
-
-//NRLib::Grid<double>
-//CommonData::FFTGridRealToGrid(const FFTGrid * fft_grid) {
-//
-//  NRLib::Grid<double> grid(0,0,0);
-//
-//  if (fft_grid != NULL) {
-//    int nx = fft_grid->getNx();
-//    int ny = fft_grid->getNy();
-//    int nz = fft_grid->getNz();
-//    //int nxp = fft_grid->getNxp();
-//    int nyp = fft_grid->getNyp();
-//    int nzp = fft_grid->getNzp();
-//
-//    int rnxp = fft_grid->getRNxp();
-//
-//    NRLib::Grid<double> grid(nx,ny,nz);
-//
-//    for (int k=0; k<nzp; k++) {
-//      for (int j=0; j<nyp; j++) {
-//        for (int i=0; i<rnxp; i++) {
-//          if (i < nx && j < ny && k < nz)
-//            grid(i,j,k) = fft_grid->getRealValue(i,j,k);
-//        }
-//      }
-//    }
-//  }
-//
-//  return grid;
-//}
-
 
 void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
                               const Simbox        & simbox,

@@ -127,7 +127,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     // if multiple-intervals is NOT used in model settings
     else {
 
-      //int nz = model_settings->getTimeNz();
       int nz = model_settings->getTimeNzInterval("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
