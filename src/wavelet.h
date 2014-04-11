@@ -116,10 +116,11 @@ public:
 
 
 
-  virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
-                                               const Simbox                * /*simbox*/,
-                                               const FFTGrid               * /*seisCube*/,
-                                               std::vector<WellData *> /*wells*/) {return 1.0f;}
+  virtual float findGlobalScaleForGivenWavelet(const ModelSettings      * /*modelSettings*/,
+                                               const Simbox             * /*simbox*/,
+                                               const FFTGrid            * /*seisCube*/,
+                                               std::vector<WellData *>  & /*wells*/,
+                                               std::string              & /*errTxt*/) {return 1.0f;}
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,

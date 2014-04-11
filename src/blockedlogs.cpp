@@ -1510,9 +1510,7 @@ void BlockedLogs::fillInCpp(const float * coeff,
                             fftw_real   * cpp_r,
                             int           nzp)
 {
-  int i;
-
-  for(i=0;i<nzp;i++)
+  for(int i=0;i<nzp;i++)
     cpp_r[i]=0;
 
   float * alphaVert = new float[nLayers_];
@@ -1523,7 +1521,7 @@ void BlockedLogs::fillInCpp(const float * coeff,
   getVerticalTrend(beta_, betaVert);
   getVerticalTrend(rho_, rhoVert);
 
-  for(i=start;i < start+length-1;i++)
+  for(int i=start;i < start+length-1;i++)
   {
     float ei1 = computeElasticImpedance(alphaVert[i],betaVert[i],rhoVert[i],coeff);
     float ei2 = computeElasticImpedance(alphaVert[i+1],betaVert[i+1],rhoVert[i+1],coeff);
@@ -1541,10 +1539,7 @@ float BlockedLogs::computeElasticImpedance(float         alpha,
                                            const float * coeff) const
 {
   // vp, vs, rho are logtransformed
-  float angImp;
-
-  angImp = float(coeff[0]*alpha+coeff[1]*beta+coeff[2]*rho );
-
+  float angImp = float(coeff[0]*alpha + coeff[1]*beta + coeff[2]*rho);
   return(angImp);
 }
 
@@ -1554,11 +1549,10 @@ void BlockedLogs::fillInSeismic(float     * seismicData,
                                 fftw_real * seis_r,
                                 int         nzp) const
 {
-  int i;
-  for(i=0; i<nzp; i++)
+  for(int i=0; i<nzp; i++)
     seis_r[i] = 0.0;
 
-  for(i=start; i<start+length; i++)
+  for(int i=start; i<start+length; i++)
     seis_r[i] = seismicData[i];
 /*
   int lTregion = 3;

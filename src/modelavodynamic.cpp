@@ -1173,25 +1173,34 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
     }
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seisCube != NULL) {// If forward modeling, we have no seismic, can not prescale wavelet.
-      float       prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings, timeSimbox, seisCube[i], wells);
-      const float limHigh  = 3.0f;
-      const float limLow   = 0.33f;
-      if (modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) { // prescale, then we have correct size order, and later scale estimation will be ok.
-        wavelet->multiplyRAmpByConstant(prescale);
-        LogKit::LogFormatted(LogKit::Warning,"\n  Wavelet prescaled with factor %7.2f\n",prescale);
-      }
-      else {
-        if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
-          std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-          if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
-            errText += text;
-            error++;
-          }
-          else {
-            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-            TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+      float prescale = wavelet->findGlobalScaleForGivenWavelet(modelSettings,
+                                                               timeSimbox,
+                                                               seisCube[i],
+                                                               wells,
+                                                               errText);
+      if (errText == "") {
+        if (modelSettings->getEstimateGlobalWaveletScale(thisTimeLapse_,i)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+          wavelet->multiplyRAmpByConstant(prescale);
+          LogKit::LogFormatted(LogKit::Warning,"\n  Wavelet prescaled with factor %.2f\n",prescale);
+        }
+        else {
+          const float limHigh = 3.0f;
+          const float limLow  = 0.33f;
+          if(modelSettings->getWaveletScale(thisTimeLapse_,i)!= 1.0f && (prescale>limHigh || prescale<limLow)) {
+            std::string text = "The wavelet given for angle no "+NRLib::ToString(i)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            if(modelSettings->getEstimateLocalScale(thisTimeLapse_,i)) {
+              errText += text;
+              error++;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+            }
           }
         }
+      }
+      else {
+        error++;
       }
     }
     if (error == 0)
@@ -1199,7 +1208,6 @@ ModelAVODynamic::process1DWavelet(const ModelSettings          * modelSettings,
                         timeSimbox->getnz(),
                         modelSettings->getNZpad());
   }
-
   if (error == 0) {
     wavelet->scale(modelSettings->getWaveletScale(thisTimeLapse_,i));
 
