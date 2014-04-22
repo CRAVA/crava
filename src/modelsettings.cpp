@@ -188,6 +188,10 @@ ModelSettings::ModelSettings(void)
   smoothKrigedParameters_  =    false;
 
   seed_                    =        0;
+
+  //intervalTopConformCorrelation_[""]  = false;
+  //intervalBaseConformCorrelation_[""] = false;
+
 }
 
 ModelSettings::~ModelSettings(void)

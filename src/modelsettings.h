@@ -230,8 +230,8 @@ public:
   const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
   int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}
 
-  bool                               getCorrDirTopConform(void)                       const { return topConformCorrelation_                             ;}
-  bool                               getCorrDirBaseConform(void)                      const { return baseConformCorrelation_                            ;}
+  //bool                               getCorrDirTopConform(void)                       const { return topConformCorrelation_                             ;}
+  //bool                               getCorrDirBaseConform(void)                      const { return baseConformCorrelation_                            ;}
   const std::map<std::string, bool>& getCorrDirIntervalTopConform()                   const { return intervalTopConformCorrelation_                     ;}
   bool                               getCorrDirIntervalTopConform(std::string name)   const { return intervalTopConformCorrelation_.find(name)->second  ;}
   const std::map<std::string, bool>& getCorrDirIntervalBaseConform()                  const { return intervalBaseConformCorrelation_                    ;}
@@ -757,8 +757,8 @@ private:
   double                            gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
 
-  bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
-  bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
+  //bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
+  //bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
   std::map<std::string, bool>       intervalTopConformCorrelation_;  ///< Should top correlation direction be equal to the top inversion surface per interval
   std::map<std::string, bool>       intervalBaseConformCorrelation_; ///< Should base correlation direction be equal to the base inversion surface per interval
   bool                              intervalCorrelationUsed_;    ///< Whether intervals are used for correlation direction

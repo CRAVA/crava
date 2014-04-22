@@ -91,7 +91,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   try{
     // if multiple-intervals keyword is used in model settings
     if (multiple_interval_setting_){
-      top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+      top_surface_file_name_temp = input_files->getTimeSurfTopFile();//getTimeSurfFile(0);
       erosion_priorities_[0] = erosion_priority_top_surface;
 
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
@@ -130,17 +130,17 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       int nz = model_settings->getTimeNzInterval("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
-        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[0] = *top_surface;
 
-        base_surface_file_name_temp = input_files->getTimeSurfFile(1);
+        base_surface_file_name_temp = input_files->getIntervalBaseTimeSurface("");
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[1] = *base_surface;
 
       }
       else { //H added if only one surface-file is used, similar to setup of estimation_simbox.
-        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[0] = *top_surface;
 
@@ -198,7 +198,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   }
 
   // Add inn surface files.
-  surface_files_.push_back(input_files->getTimeSurfFile(0));
+  surface_files_.push_back(input_files->getTimeSurfTopFile());
 
   const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getIntervalBaseTimeSurfaces();
   for (size_t i = 0; i > n_intervals_; i++) {
@@ -334,7 +334,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
     // Make extended interval_simbox for the inversion interval ---------------------------
 
-    if (interval_simboxes[i].status() == Simbox::EMPTY){
+    if (interval_simboxes[i].status() == Simbox::EMPTY) {
 
       // Case 1: Single correlation surface
       if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
@@ -375,7 +375,6 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         err_text += ".\n";
         failed = true;
       }
-
 
     }
     // Calculate Z padding ----------------------------------------------------------------

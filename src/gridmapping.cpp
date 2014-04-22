@@ -399,21 +399,22 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<float> * velocity,
 }
 
 void
-GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
-                              bool                           & failed,
-                              std::string                    & errText)
+GridMapping::setDepthSurfaces(const std::string & topSurfFile,
+                              const std::string & baseSurfFile,
+                              bool              & failed,
+                              std::string       & errText)
 {
-  if(surfFile[0]=="" && surfFile[1]=="")
+  if(topSurfFile=="" && baseSurfFile=="")
   {
     errText += "Both top and base depth surfaces are missing.\n";
     failed = 1;
   }
-  if(surfFile[0] != "")
+  if(topSurfFile != "")
   {
     try {
       if(z0Grid_ != NULL)
         delete z0Grid_;
-      Surface tmpSurf(surfFile[0]);
+      Surface tmpSurf(topSurfFile);
       z0Grid_ = new Surface(tmpSurf);
       surfaceMode_ = TOPGIVEN;
     }
@@ -422,12 +423,12 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
       failed = 1;
     }
   }
-  if(surfFile[1] != "")
+  if(baseSurfFile != "")
   {
     try {
       if(z1Grid_ != NULL)
         delete z1Grid_;
-      Surface tmpSurf(surfFile[1]);
+      Surface tmpSurf(baseSurfFile);
       z1Grid_ = new Surface(tmpSurf);
       if(surfaceMode_ == TOPGIVEN)
         surfaceMode_ = BOTHGIVEN;

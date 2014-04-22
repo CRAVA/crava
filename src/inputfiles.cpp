@@ -13,19 +13,26 @@ InputFiles::InputFiles(void)
     wellFiles_(0),
     wellMoveIntFile_(2),
     faciesEstIntFile_(2),
-    timeSurfFiles_(0),
-    depthSurfFiles_(2),
+    timeSurfTopFile_(""),
+    depthSurfTopFile_(""),
+    //timeSurfFiles_(0),
+    //depthSurfFiles_(2),
     velocityField_(""),
     backFile_(3),
     backVelFile_(""),
     reflMatrFile_(""),
-    corrDirFile_(""),
-    corrDirTopFile_(""),
-    corrDirBaseFile_(""),
+    //corrDirFile_(""),
+    //corrDirTopFile_(""),
+    //corrDirBaseFile_(""),
     paramCovFile_(""),
     tempCorrFile_(""),
     areaSurfaceFile_("")
 {
+  //interval_corrDirFiles_[""]     = "";
+  //interval_corrDirTopFiles_[""]  = "";
+  //interval_corrDirBaseFiles_[""] = "";
+  //timeSurfBaseFiles_[""]         = "";
+  //depthSurfBaseFiles_[""]        = "";
 }
 
 InputFiles::~InputFiles(void)
@@ -87,10 +94,12 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(faciesEstIntFile_[i]);
   for(i=0;i<wellMoveIntFile_.size();i++)
     errTxt += addPathAndCheck(wellMoveIntFile_[i], true);
-  for(i=0;i<timeSurfFiles_.size();i++)
-    errTxt += addPathAndCheck(timeSurfFiles_[i], true);
-  for(i=0;i<depthSurfFiles_.size();i++)
-    errTxt += addPathAndCheck(depthSurfFiles_[i]);
+  //for(i=0;i<timeSurfFiles_.size();i++)
+  //  errTxt += addPathAndCheck(timeSurfFiles_[i], true);
+  errTxt += addPathAndCheck(timeSurfTopFile_, true);
+  //for(i=0;i<depthSurfFiles_.size();i++)
+  //  errTxt += addPathAndCheck(depthSurfFiles_[i]);
+  errTxt += addPathAndCheck(depthSurfTopFile_);
   //for(i=0;i<multizoneSurfaceFiles_.size();i++)
   //  errTxt += addPathAndCheck(multizoneSurfaceFiles_[i]);
   errTxt += addPathAndCheck(velocityField_);
@@ -98,10 +107,10 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(backFile_[i]);
 
   std::map<std::string, std::string>::iterator j;
-  for(j=interval_base_time_surface_.begin();j != interval_base_time_surface_.end();j++) {
+  for(j=timeSurfBaseFiles_.begin();j != timeSurfBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second, true);
   }
-  for(j=interval_base_depth_surface_.begin();j != interval_base_depth_surface_.end();j++) {
+  for(j=depthSurfBaseFiles_.begin();j != depthSurfBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second, true);
   }
   for(j=interval_corrDirFiles_.begin();j != interval_corrDirFiles_.end();j++) {
@@ -115,9 +124,9 @@ InputFiles::addInputPathAndCheckFiles()
   }
 
   errTxt += addPathAndCheck(backVelFile_);
-  errTxt += addPathAndCheck(corrDirFile_);
-  errTxt += addPathAndCheck(corrDirTopFile_);
-  errTxt += addPathAndCheck(corrDirBaseFile_);
+  //errTxt += addPathAndCheck(corrDirFile_);
+  //errTxt += addPathAndCheck(corrDirTopFile_);
+  //errTxt += addPathAndCheck(corrDirBaseFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCovFile_);
   errTxt += addPathAndCheck(tempCorrFile_);

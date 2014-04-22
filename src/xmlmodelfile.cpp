@@ -1745,6 +1745,8 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
       inputFiles_->setCorrDirIntervalFile("", corr_file);
       //inputFiles_->setCorrDirFile(corr_file);
       corr_file_used = true;
+      modelSettings_->setCorrDirIntervalBaseConform("", false);
+      modelSettings_->setCorrDirIntervalTopConform("", false);
     }
   }
 
@@ -1755,12 +1757,14 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "top-surface", filename, errTxt) == true) {
     //inputFiles_->setCorrDirTopSurfaceFile(filename);
     inputFiles_->setCorrDirIntervalTopSurfaceFile("", filename);
+    modelSettings_->setCorrDirIntervalTopConform("", false);
     top_surface = true;
   }
 
   if(parseFileName(root, "base-surface", filename, errTxt) == true) {
     //inputFiles_->setCorrDirBaseSurfaceFile(filename);
     inputFiles_->setCorrDirIntervalBaseSurfaceFile("", filename);
+    modelSettings_->setCorrDirIntervalBaseConform("", false);
     base_surface = true;
   }
 
@@ -4370,7 +4374,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
     errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   bool topDepthGiven;
-  if(inputFiles_->getDepthSurfFile(0) == "")
+  if(inputFiles_->getDepthSurfTopFile() == "")
     topDepthGiven = false;
   else
     topDepthGiven = true;
@@ -4379,7 +4383,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
     errTxt += "Base surface not specified in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   bool baseDepthGiven;
-  if(inputFiles_->getDepthSurfFile(1) == "")
+  //if(inputFiles_->getIntervalBaseDepthSurface("") == "")
+  if(inputFiles_->getIntervalBaseDepthSurfaces().find("") == inputFiles_->getIntervalBaseDepthSurfaces().end())
     baseDepthGiven = false;
   else
     baseDepthGiven = true;
@@ -4450,26 +4455,26 @@ XmlModelFile::parseTopSurface(TiXmlNode * node, std::string & errTxt)
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
   if(timeFile == true)
-    inputFiles_->addTimeSurfFile(filename);
+    inputFiles_->setTimeSurfTopFile(filename);
 
   float value;
   bool timeValue = parseValue(root,"time-value", value, errTxt);
   if(timeValue == true) {
     if(timeFile == false)
-      inputFiles_->addTimeSurfFile(NRLib::ToString(value));
+      inputFiles_->setTimeSurfTopFile(NRLib::ToString(value));
     else
       errTxt += "Both file and value given for top time in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
   }
   else if(timeFile == false) {
-    inputFiles_->addTimeSurfFile("");
+    inputFiles_->setTimeSurfTopFile("");
 
     errTxt += "No time surface given in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   }
 
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
-    inputFiles_->setDepthSurfFile(0, filename);
+    inputFiles_->setDepthSurfTopFile(filename);
 
   int erosion_priority;
   if(parseValue(root, "top-surface-erosion-priority", erosion_priority, errTxt) == true){
@@ -4547,25 +4552,25 @@ XmlModelFile::parseBaseSurface(TiXmlNode * node, std::string & errTxt)
   std::string filename;
   bool timeFile = parseFileName(root,"time-file", filename, errTxt);
   if(timeFile == true)
-    inputFiles_->addTimeSurfFile(filename);
+    inputFiles_->setIntervalBaseTimeSurface("", filename);
 
   float value;
   bool timeValue = parseValue(root,"time-value", value, errTxt);
   if(timeValue == true) {
     if(timeFile == false)
-      inputFiles_->addTimeSurfFile(NRLib::ToString(value));
+      inputFiles_->setIntervalBaseTimeSurface("", NRLib::ToString(value));
     else
       errTxt += "Both file and value given for base time in command <"+
         root->ValueStr()+"> "+lineColumnText(root)+".\n";
   }
   else if(timeFile == false) {
-    inputFiles_->addTimeSurfFile("");
+    inputFiles_->setIntervalBaseTimeSurface("", "");
     errTxt += "No time surface given in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   }
 
   if(parseFileName(root,"depth-file", filename, errTxt) == true)
-    inputFiles_->setDepthSurfFile(1, filename);
+    inputFiles_->setIntervalBaseDepthSurface("", filename);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -4589,7 +4594,7 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
 
   std::string filename;
   if(parseFileName(root, "reference-surface", filename, errTxt) == true)
-    inputFiles_->addTimeSurfFile(filename);
+    inputFiles_->setTimeSurfTopFile(filename);
   else
     errTxt += "No reference surface given in command <"+
       root->ValueStr()+"> "+lineColumnText(root)+".\n";

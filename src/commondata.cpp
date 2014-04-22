@@ -183,8 +183,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
   if (err_text != "") {
-    //LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
-    LogKit::WriteHeader("Loading and processing data failed:");
+    LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
+    //LogKit::WriteHeader("Loading and processing data failed:");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
   }
@@ -2826,9 +2826,10 @@ bool CommonData::WaveletHandling(ModelSettings                                  
           //Correlation direction from ModelGeneral::makeTimeSimboxes
           Surface * correlation_direction = NULL;
 
-          if(input_files->getCorrDirFile() != "") { //H can be given as top and base?
+          //if (input_files->getCorrDirIntervalFile("") != "") { //H can be given as top and base? can be given per inteval?
+          if (input_files->getCorrDirIntervalFiles().find("") != input_files->getCorrDirIntervalFiles().end()) {//H can be given as top and base? can be given per inteval?
             try {
-              Surface tmp_surf(input_files->getCorrDirFile());
+              Surface tmp_surf(input_files->getCorrDirIntervalFile(""));
               if (estimation_simbox.CheckSurface(tmp_surf) == true)
                 correlation_direction = new Surface(tmp_surf);
               else {
@@ -4003,8 +4004,15 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
 
   const std::vector<std::string>            interval_names                =  model_settings->getIntervalNames();
   // implicit assumption that the top surface is the first one given and the base surface is the last one
-  const std::vector<std::string>            surface_file_names            =  input_files->getTimeSurfFiles();
-  const std::string                         top_surface_file_name         =  surface_file_names[0];
+  //std::vector<std::string>                  surface_file_names            =  input_files->getTimeSurfFiles();
+
+  //if (multi_surface) { //If multi_interval: surface_file_names contains only top-surface, the rest are stored sepratly in interval_base_time_surface_.
+  //  int n_intervals           = model_settings->getIntervalNames().size();
+  //  std::string last_interval = model_settings->getIntervalNames()[n_intervals-1];
+  //  surface_file_names.push_back(input_files->getIntervalBaseTimeSurface(last_interval));
+  //}
+
+  const std::string top_surface_file_name = input_files->getTimeSurfTopFile(); //surface_file_names[0];
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
@@ -4042,7 +4050,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
         }
         else { //Two reference surfaces
-          const std::string & base_surface_file_name = surface_file_names[1];
+          const std::string & base_surface_file_name = input_files->getIntervalBaseTimeSurface(""); //surface_file_names[1];
           if (NRLib::IsNumber(base_surface_file_name)) {
             LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
             // Find the smallest surface that covers the simbox.
@@ -4061,7 +4069,12 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
         }
       }
       else {
-        const std::string base_surface_file_name = surface_file_names.back();
+
+        int n_intervals = interval_names.size();
+        const std::string base_surface_file_name = input_files->getIntervalBaseDepthSurface(interval_names[n_intervals - 1]);
+
+        //const std::string base_surface_file_name = surface_file_names.back();
+
         if (NRLib::IsNumber(base_surface_file_name)){
           LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
           double x_min, x_max;
@@ -6552,7 +6565,8 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
     bool failed_dummy = false;
 
     time_depth_mapping = new GridMapping();
-    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
+    //time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
+    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), input_files->getIntervalBaseDepthSurface(""), failed_dummy, err_text);
 
     if (velocity != NULL) {
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
@@ -6682,9 +6696,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                           err_text);
           }
 
-          if (input_files->getCorrDirFile() != "") {
+          //if (input_files->getCorrDirIntervalFile(interval_name) != "") {
+          if (input_files->getCorrDirIntervalFiles().find(interval_name) != input_files->getCorrDirIntervalFiles().end()) {
 
-            Surface tmpSurf(input_files->getCorrDirFile());
+            Surface tmpSurf(input_files->getCorrDirIntervalFile(interval_name));
             if (simbox->CheckSurface(tmpSurf) == true)
               correlation_direction = new Surface(tmpSurf);
             else
@@ -6700,8 +6715,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += err_text_tmp;
             }
           }
-          else if (input_files->getCorrDirBaseFile() != "" || model_settings->getCorrDirBaseConform()) {
-            //H Create a backgroundsimbox based on the different options for correlation direction? top/base conform. CRA-619
+          //else if (input_files->getCorrDirIntervalBaseSurfaceFile(interval_name) != "" || model_settings->getCorrDirIntervalBaseConform(interval_name)) {
+          else if (input_files->getCorrDirIntervalBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirIntervalBaseSurfaceFiles().end()
+                  || model_settings->getCorrDirIntervalBaseConform(interval_name)) {
             //Similiar to MultiIntervalGrid::SetupIntervalSimbox
 
             //SetupExtendedBackgroundSimbox(simbox, two correlations surfaces, bg_simbox);
@@ -9107,7 +9123,7 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
   LogKit::LogFormatted(LogKit::Low,"\nTime surfaces:\n");
   if (model_settings->getParallelTimeSurfaces())
   {
-    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfFile(0)+"\n");
+    LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfTopFile()+"\n");
     LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
     LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
     LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
@@ -9115,7 +9131,7 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
   }
   else
   {
-    const std::string & top_name  = input_files->getTimeSurfFile(0);
+    const std::string & top_name  = input_files->getTimeSurfTopFile();
 
     if (NRLib::IsNumber(top_name))
       LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_name.c_str()));
@@ -9124,7 +9140,8 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
 
     if (model_settings->getIntervalNames().size() == 0) {
 
-      const std::string & base_name = input_files->getTimeSurfFile(1);
+      //const std::string & base_name = input_files->getTimeSurfFile(1);
+      const std::string & base_name = input_files->getIntervalBaseTimeSurface("");
 
       if (NRLib::IsNumber(base_name))
         LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
@@ -9154,18 +9171,21 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
 
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
   }
-  if (input_files->getCorrDirFile() != "")
-    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirFile()+"\n");
+
+  //if (input_files->getCorrDirIntervalFile("") != "")
+  if (input_files->getCorrDirIntervalFiles().find("") != input_files->getCorrDirIntervalFiles().end())
+    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirIntervalFile("")+"\n");
 
   if (model_settings->getDoDepthConversion())
   {
     LogKit::LogFormatted(LogKit::Low,"\nDepth conversion:\n");
-    if (input_files->getDepthSurfFile(0) != "")
-      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : "+input_files->getDepthSurfFile(0)+"\n");
+    if (input_files->getDepthSurfTopFile() != "")
+      LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : "+input_files->getDepthSurfTopFile()+"\n");
     else
       LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : %s\n", "Made from base depth surface and velocity field");
-    if (input_files->getDepthSurfFile(1) != "")
-      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getDepthSurfFile(1)+"\n");
+    //if (input_files->getIntervalBaseDepthSurface("") != "")
+    if (input_files->getIntervalBaseDepthSurfaces().find("") != input_files->getIntervalBaseDepthSurfaces().end())
+      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getIntervalBaseDepthSurface("")+"\n");
     else
       LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : %s\n", "Made from top depth surface and velocity field");
     std::string velocityField = input_files->getVelocityField();
