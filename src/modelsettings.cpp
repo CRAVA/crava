@@ -56,21 +56,21 @@ ModelSettings::ModelSettings(void)
   //
   // The original ranges were provided by Nam Hoai Pham (Statoil/25.09.2007)
   //
-  alpha_min_               =  1300.0f;   // Nam: 1800
-  alpha_max_               =  7000.0f;   // Nam: 6000
-  beta_min_                =   200.0f;   // Nam:  800
-  beta_max_                =  4200.0f;   // Nam: 3000
+  vp_min_                  =  1300.0f;   // Nam: 1800
+  vp_max_                  =  7000.0f;   // Nam: 6000
+  vs_min_                  =   200.0f;   // Nam:  800
+  vs_max_                  =  4200.0f;   // Nam: 3000
   rho_min_                 =     1.4f;   // Nam:  1.5
   rho_max_                 =     3.3f;   // Nam:  3.0
 
-  var_alpha_min_           =   5.e-4f;
-  var_alpha_max_           = 250.e-4f;
-  var_beta_min_            =  10.e-4f;
-  var_beta_max_            = 500.e-4f;
+  var_vp_min_              =   5.e-4f;
+  var_vp_max_              = 250.e-4f;
+  var_vs_min_              =  10.e-4f;
+  var_vs_max_              = 500.e-4f;
   var_rho_min_             =   2.e-4f;
   var_rho_max_             = 100.e-4f;
 
-  vp_vs_ratio_             = RMISSING;
+  //vp_vs_ratio_             = RMISSING;
   vp_vs_ratio_from_wells_  =    false;
   vp_vs_ratio_min_         =     1.4f;
   vp_vs_ratio_max_         =     3.0f;
@@ -124,7 +124,7 @@ ModelSettings::ModelSettings(void)
   time_lz_                 = RMISSING;
   time_dz_                 = RMISSING;
   //time_nz_                 = IMISSING;
-  time_nz_interval_[""]    = IMISSING;
+  //time_nz_[""]             = IMISSING;
 
   velocityFromInv_         =    false;
 

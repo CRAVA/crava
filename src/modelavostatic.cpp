@@ -150,7 +150,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   int n_grid_covariances  = 6;                                      // Covariances, padded
   int n_grid_seismic_data = model_settings->getNumberOfAngles(0);     // One for each angle stack, padded
 
-  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProbsInterval(""); //Used to find number of facies grids needed
+  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProb(""); //Used to find number of facies grids needed
 
   int n_grid_facies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
   int n_grid_histograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.

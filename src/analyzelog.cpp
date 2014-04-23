@@ -1196,10 +1196,10 @@ void  Analyzelog::CheckVariances(const ModelSettings      * model_settings,
   //| The limits are for point variances. The minimum allowed variance
   //| for parameters will be scaled with 1/dt*dt
 
-  float minVarAlpha = model_settings->getVarAlphaMin();
-  float maxVarAlpha = model_settings->getVarAlphaMax();
-  float minVarBeta  = model_settings->getVarBetaMin();
-  float maxVarBeta  = model_settings->getVarBetaMax();
+  float minVarAlpha = model_settings->getVarVpMin();
+  float maxVarAlpha = model_settings->getVarVpMax();
+  float minVarBeta  = model_settings->getVarVsMin();
+  float maxVarBeta  = model_settings->getVarVsMax();
   float minVarRho   = model_settings->getVarRhoMin();
   float maxVarRho   = model_settings->getVarRhoMax();
 

@@ -441,14 +441,17 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       model_settings->rotateVariograms(static_cast<float> (full_inversion_simbox.getAngle()));
 
       // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
-      // if multiple intervals
-      if (model_settings->getIntervalNames().size() > 0) {
-        SetSurfaces(model_settings, full_inversion_simbox, true, input_files, err_text);
-      }
-      // single interval described by either one or two surfaces
-      else{
-        SetSurfaces(model_settings, full_inversion_simbox, false, input_files, err_text);
-      }
+      bool multi_interval = model_settings->getIntervalNames().size() > 0;
+      SetSurfaces(model_settings, full_inversion_simbox, multi_interval, input_files, err_text);
+
+      //// if multiple intervals
+      //if (model_settings->getIntervalNames().size() > 0) {
+      //  SetSurfaces(model_settings, full_inversion_simbox, true, input_files, err_text);
+      //}
+      //// single interval described by either one or two surfaces
+      //else{
+      //  SetSurfaces(model_settings, full_inversion_simbox, false, input_files, err_text);
+      //}
     }
   }
 
@@ -1293,10 +1296,10 @@ void CommonData::SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
   //
   bool debug = true;
 
-  float vp_min  = model_settings->getAlphaMin();
-  float vp_max  = model_settings->getAlphaMax();
-  float vs_min  = model_settings->getBetaMin();
-  float vs_max  = model_settings->getBetaMax();
+  float vp_min  = model_settings->getVpMin();
+  float vp_max  = model_settings->getVpMax();
+  float vs_min  = model_settings->getVsMin();
+  float vs_max  = model_settings->getVsMax();
   float rho_min = model_settings->getRhoMin();
   float rho_max = model_settings->getRhoMax();
 
@@ -1304,9 +1307,9 @@ void CommonData::SetWrongLogEntriesInWellUndefined(NRLib::Well   & well,
   count_vs  = 0;
   count_rho = 0;
 
-  std::vector<double> & vp  = well.GetContLog("Vp");
-  std::vector<double> & vs  = well.GetContLog("Vs");
-  std::vector<double> & rho = well.GetContLog("Rho");
+  std::vector<double>       & vp    = well.GetContLog("Vp");
+  std::vector<double>       & vs    = well.GetContLog("Vs");
+  std::vector<double>       & rho   = well.GetContLog("Rho");
   const std::vector<double> & z_pos = well.GetContLog("Z_pos");
 
   int n_data = well.GetNData();
@@ -2474,7 +2477,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
   //
   const std::string & refl_matr_file = input_files->getReflMatrFile();
-  const double vpvs                  = model_settings->getVpVsRatio();
+  const double vpvs                  = model_settings->getVpVsRatio("");
   float                             ** reflection_matrix;
 
   int n_timelapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
@@ -2826,10 +2829,9 @@ bool CommonData::WaveletHandling(ModelSettings                                  
           //Correlation direction from ModelGeneral::makeTimeSimboxes
           Surface * correlation_direction = NULL;
 
-          //if (input_files->getCorrDirIntervalFile("") != "") { //H can be given as top and base? can be given per inteval?
-          if (input_files->getCorrDirIntervalFiles().find("") != input_files->getCorrDirIntervalFiles().end()) {//H can be given as top and base? can be given per inteval?
+          if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
             try {
-              Surface tmp_surf(input_files->getCorrDirIntervalFile(""));
+              Surface tmp_surf(input_files->getCorrDirFile(""));
               if (estimation_simbox.CheckSurface(tmp_surf) == true)
                 correlation_direction = new Surface(tmp_surf);
               else {
@@ -4002,17 +4004,8 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
   LogKit::LogFormatted(LogKit::Low,"\nSetting top and base surfaces for the entire inversion volume:\n");
   bool failed = false;
 
-  const std::vector<std::string>            interval_names                =  model_settings->getIntervalNames();
-  // implicit assumption that the top surface is the first one given and the base surface is the last one
-  //std::vector<std::string>                  surface_file_names            =  input_files->getTimeSurfFiles();
-
-  //if (multi_surface) { //If multi_interval: surface_file_names contains only top-surface, the rest are stored sepratly in interval_base_time_surface_.
-  //  int n_intervals           = model_settings->getIntervalNames().size();
-  //  std::string last_interval = model_settings->getIntervalNames()[n_intervals-1];
-  //  surface_file_names.push_back(input_files->getIntervalBaseTimeSurface(last_interval));
-  //}
-
-  const std::string top_surface_file_name = input_files->getTimeSurfTopFile(); //surface_file_names[0];
+  const std::vector<std::string> interval_names = model_settings->getIntervalNames();
+  const std::string top_surface_file_name       = input_files->getTimeSurfTopFile();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
@@ -4050,7 +4043,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
         }
         else { //Two reference surfaces
-          const std::string & base_surface_file_name = input_files->getIntervalBaseTimeSurface(""); //surface_file_names[1];
+          const std::string & base_surface_file_name = input_files->getBaseTimeSurface(""); //surface_file_names[1];
           if (NRLib::IsNumber(base_surface_file_name)) {
             LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
             // Find the smallest surface that covers the simbox.
@@ -4071,8 +4064,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
       else {
 
         int n_intervals = interval_names.size();
-        const std::string base_surface_file_name = input_files->getIntervalBaseDepthSurface(interval_names[n_intervals - 1]);
-
+        const std::string base_surface_file_name = input_files->getBaseDepthSurface(interval_names[n_intervals - 1]);
         //const std::string base_surface_file_name = surface_file_names.back();
 
         if (NRLib::IsNumber(base_surface_file_name)){
@@ -4629,16 +4621,16 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   if (err_text == "") {
 
     // elastic min/max data
-    float alpha_min     = model_settings->getAlphaMin();
-    float alpha_max     = model_settings->getAlphaMax();
-    float beta_min      = model_settings->getBetaMin();
-    float beta_max      = model_settings->getBetaMax();
+    float alpha_min     = model_settings->getVpMin();
+    float alpha_max     = model_settings->getVpMax();
+    float beta_min      = model_settings->getVsMin();
+    float beta_max      = model_settings->getVsMax();
     float rho_min       = model_settings->getRhoMin();
     float rho_max       = model_settings->getRhoMax();
-    float var_alpha_min = model_settings->getVarAlphaMin();
-    float var_alpha_max = model_settings->getVarAlphaMax();
-    float var_beta_min  = model_settings->getVarBetaMin();
-    float var_beta_max  = model_settings->getVarBetaMax();
+    float var_alpha_min = model_settings->getVarVpMin();
+    float var_alpha_max = model_settings->getVarVpMax();
+    float var_beta_min  = model_settings->getVarVsMin();
+    float var_beta_max  = model_settings->getVarVsMax();
     float var_rho_min   = model_settings->getVarRhoMin();
     float var_rho_max   = model_settings->getVarRhoMax();
     //int   n_wells       = model_settings->getNumberOfWells();
@@ -4674,7 +4666,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     //}
 
     // Facies names
-    std::map<std::string, std::map<std::string, float> > prior_facies_prob_interval = model_settings->getPriorFaciesProbIntervals();
+    std::map<std::string, std::map<std::string, float> > prior_facies_prob_interval = model_settings->getPriorFaciesProbs();
     //std::map<std::string, float> facies_probabilities = model_settings->getPriorFaciesProb();
     std::map<std::string, std::string> facies_cubes   = input_files->getPriorFaciesProbFile();
     std::vector<std::string> all_facies_names         = facies_names_;
@@ -4853,9 +4845,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
   //if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion()) {
 
-  if (model_settings->getPriorFaciesProbIntervals().size() == 0) {
+  if (model_settings->getPriorFaciesProbs().size() == 0) {
     std::map<std::string, float> map_tmp;
-    model_settings->addPriorFaciesProbsInterval("", map_tmp);
+    model_settings->addPriorFaciesProbs("", map_tmp);
   }
 
   if (!model_settings->getEstimateFaciesProb() && !model_settings->getDo4DInversion())
@@ -5112,7 +5104,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
       map_type my_map;
 
       std::string interval_name = multi_interval_grid->GetIntervalName(i);
-      my_map = model_settings->getPriorFaciesProbsInterval(interval_name);
+      my_map = model_settings->getPriorFaciesProb(interval_name);
 
       //if (n_intervals > 1) {
       //  std::string interval_name = model_settings->getIntervalName(i);
@@ -5318,7 +5310,7 @@ CommonData::CheckFaciesNamesConsistency(ModelSettings     *& model_settings,
       std::string interval_name = multiple_interval_grid_->GetIntervalName(i);
 
       typedef std::map<std::string,float> mapType;
-      mapType myMap = model_settings->getPriorFaciesProbsInterval(interval_name);
+      mapType myMap = model_settings->getPriorFaciesProb(interval_name);
 
       for (int i = 0; i < n_facies; i++) {
         mapType::iterator iter = myMap.find(facies_names_[i]);
@@ -6565,8 +6557,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
     bool failed_dummy = false;
 
     time_depth_mapping = new GridMapping();
-    //time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfFiles(), failed_dummy, err_text);
-    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), input_files->getIntervalBaseDepthSurface(""), failed_dummy, err_text);
+    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), input_files->getBaseDepthSurface(""), failed_dummy, err_text);
 
     if (velocity != NULL) {
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
@@ -6696,10 +6687,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                           err_text);
           }
 
-          //if (input_files->getCorrDirIntervalFile(interval_name) != "") {
-          if (input_files->getCorrDirIntervalFiles().find(interval_name) != input_files->getCorrDirIntervalFiles().end()) {
+          if (input_files->getCorrDirFiles().find(interval_name) != input_files->getCorrDirFiles().end()) {
 
-            Surface tmpSurf(input_files->getCorrDirIntervalFile(interval_name));
+            Surface tmpSurf(input_files->getCorrDirFile(interval_name));
             if (simbox->CheckSurface(tmpSurf) == true)
               correlation_direction = new Surface(tmpSurf);
             else
@@ -6715,9 +6705,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += err_text_tmp;
             }
           }
-          //else if (input_files->getCorrDirIntervalBaseSurfaceFile(interval_name) != "" || model_settings->getCorrDirIntervalBaseConform(interval_name)) {
-          else if (input_files->getCorrDirIntervalBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirIntervalBaseSurfaceFiles().end()
-                  || model_settings->getCorrDirIntervalBaseConform(interval_name)) {
+          else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()
+                  || model_settings->getCorrDirBaseConform(interval_name)) {
             //Similiar to MultiIntervalGrid::SetupIntervalSimbox
 
             //SetupExtendedBackgroundSimbox(simbox, two correlations surfaces, bg_simbox);
@@ -7096,8 +7085,8 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
       //
       // Check that the velocity grid is veldefined.
       //
-      float log_min = model_settings->getAlphaMin();
-      float log_max = model_settings->getAlphaMax();
+      float log_min = model_settings->getVpMin();
+      float log_max = model_settings->getVpMax();
 
       const int nz = velocity->GetNK();
       const int ny = velocity->GetNJ();
@@ -7578,7 +7567,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       //if (interval_names.size()>0){
         for(size_t i = 0; i<n_intervals; i++){
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProbsInterval(interval_names[i]),
+                                             model_settings->getPriorFaciesProb(interval_names[i]),
                                              facies_names_,
                                              trend_cubes[i],
                                              prior_param_cov_[i],
@@ -7839,10 +7828,10 @@ void  CommonData::GetCorrGradIJ(float         & corr_grad_I,
 void CommonData::ValidateCovarianceMatrix(float               ** C,
                                            const ModelSettings * model_settings,
                                            std::string         & err_txt){
-  float minAlpha = model_settings->getVarAlphaMin();
-  float maxAlpha = model_settings->getVarAlphaMax();
-  float minBeta  = model_settings->getVarBetaMin();
-  float maxBeta  = model_settings->getVarBetaMax();
+  float minAlpha = model_settings->getVarVpMin();
+  float maxAlpha = model_settings->getVarVpMax();
+  float minBeta  = model_settings->getVarVsMin();
+  float maxBeta  = model_settings->getVarVsMax();
   float minRho   = model_settings->getVarRhoMin();
   float maxRho   = model_settings->getVarRhoMax();
 
@@ -8911,8 +8900,9 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
   if (input_files->getReflMatrFile() != "")
     LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", input_files->getReflMatrFile().c_str());
 
-  if (model_settings->getVpVsRatio() != RMISSING)
-    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio());
+  //if (model_settings->getVpVsRatio() != RMISSING)
+  if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end())
+    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(""));
 
   LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (model_settings->getRunFromPanel() ? "yes" : "no"));
   LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", model_settings->getMinHorizontalRes());
@@ -8946,10 +8936,10 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
     LogKit::LogFormatted(LogKit::High,"  Estimate Vp-Vs ratio from well data      : %10s\n", (model_settings->getVpVsRatioFromWells() ? "yes" : "no"));
   }
   LogKit::LogFormatted(LogKit::High,"\nRange of allowed parameter values:\n");
-  LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",model_settings->getAlphaMin());
-  LogKit::LogFormatted(LogKit::High,"  Vp  - max                                : %10.0f\n",model_settings->getAlphaMax());
-  LogKit::LogFormatted(LogKit::High,"  Vs  - min                                : %10.0f\n",model_settings->getBetaMin());
-  LogKit::LogFormatted(LogKit::High,"  Vs  - max                                : %10.0f\n",model_settings->getBetaMax());
+  LogKit::LogFormatted(LogKit::High,"  Vp  - min                                : %10.0f\n",model_settings->getVpMin());
+  LogKit::LogFormatted(LogKit::High,"  Vp  - max                                : %10.0f\n",model_settings->getVpMax());
+  LogKit::LogFormatted(LogKit::High,"  Vs  - min                                : %10.0f\n",model_settings->getVsMin());
+  LogKit::LogFormatted(LogKit::High,"  Vs  - max                                : %10.0f\n",model_settings->getVsMax());
   LogKit::LogFormatted(LogKit::High,"  Rho - min                                : %10.1f\n",model_settings->getRhoMin());
   LogKit::LogFormatted(LogKit::High,"  Rho - max                                : %10.1f\n",model_settings->getRhoMax());
 
@@ -9140,15 +9130,13 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
 
     if (model_settings->getIntervalNames().size() == 0) {
 
-      //const std::string & base_name = input_files->getTimeSurfFile(1);
-      const std::string & base_name = input_files->getIntervalBaseTimeSurface("");
+      const std::string & base_name = input_files->getBaseTimeSurface("");
 
       if (NRLib::IsNumber(base_name))
         LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
       else
         LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
-      //LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz());
-      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNzInterval(""));
+      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz(""));
 
 
     }
@@ -9158,13 +9146,13 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       for (size_t i = 0; i < interval_names.size(); i++) {
 
         LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
-        const std::string & base_name = input_files->getIntervalBaseTimeSurface(interval_names[i]);
+        const std::string & base_name = input_files->getBaseTimeSurface(interval_names[i]);
 
         if (NRLib::IsNumber(base_name))
           LogKit::LogFormatted(LogKit::Low,"    Stop time                              : %10.2f\n", atof(base_name.c_str()));
         else
           LogKit::LogFormatted(LogKit::Low,"    Base surface                           : "+base_name+"\n");
-        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNzInterval(interval_names[i]));
+        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNz(interval_names[i]));
 
       }
     }
@@ -9172,9 +9160,8 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
   }
 
-  //if (input_files->getCorrDirIntervalFile("") != "")
-  if (input_files->getCorrDirIntervalFiles().find("") != input_files->getCorrDirIntervalFiles().end())
-    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirIntervalFile("")+"\n");
+  if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end())
+    LogKit::LogFormatted(LogKit::Low,"\n  Correlation direction                    : "+input_files->getCorrDirFile("")+"\n");
 
   if (model_settings->getDoDepthConversion())
   {
@@ -9183,9 +9170,8 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : "+input_files->getDepthSurfTopFile()+"\n");
     else
       LogKit::LogFormatted(LogKit::Low,"  Top depth surface                        : %s\n", "Made from base depth surface and velocity field");
-    //if (input_files->getIntervalBaseDepthSurface("") != "")
-    if (input_files->getIntervalBaseDepthSurfaces().find("") != input_files->getIntervalBaseDepthSurfaces().end())
-      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getIntervalBaseDepthSurface("")+"\n");
+    if (input_files->getBaseDepthSurfaces().find("") != input_files->getBaseDepthSurfaces().end())
+      LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : "+input_files->getBaseDepthSurface("")+"\n");
     else
       LogKit::LogFormatted(LogKit::Low,"  Base depth surface                       : %s\n", "Made from top depth surface and velocity field");
     std::string velocityField = input_files->getVelocityField();
@@ -9361,10 +9347,10 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
       GenExpVario * pCorr = dynamic_cast<GenExpVario*>(corr);
       LogKit::LogFormatted(LogKit::Low,"\nPrior correlation (of residuals):\n");
       LogKit::LogFormatted(LogKit::Low,"  Range of allowed parameter values:\n");
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - min                         : %10.1e\n",model_settings->getVarAlphaMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - max                         : %10.1e\n",model_settings->getVarAlphaMax());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - min                         : %10.1e\n",model_settings->getVarBetaMin());
-      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - max                         : %10.1e\n",model_settings->getVarBetaMax());
+      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - min                         : %10.1e\n",model_settings->getVarVpMin());
+      LogKit::LogFormatted(LogKit::Low,"    Var{Vp}  - max                         : %10.1e\n",model_settings->getVarVpMax());
+      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - min                         : %10.1e\n",model_settings->getVarVsMin());
+      LogKit::LogFormatted(LogKit::Low,"    Var{Vs}  - max                         : %10.1e\n",model_settings->getVarVsMax());
       LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - min                         : %10.1e\n",model_settings->getVarRhoMin());
       LogKit::LogFormatted(LogKit::Low,"    Var{Rho} - max                         : %10.1e\n",model_settings->getVarRhoMax());
       LogKit::LogFormatted(LogKit::Low,"  Lateral correlation:\n");
@@ -9395,7 +9381,7 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
             LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
 
           typedef std::map<std::string,float> mapType;
-          mapType myMap = model_settings->getPriorFaciesProbsInterval("");
+          mapType myMap = model_settings->getPriorFaciesProb("");
 
           for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
             LogKit::LogFormatted(LogKit::Low,"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);

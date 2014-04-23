@@ -113,13 +113,13 @@ InputFiles::addInputPathAndCheckFiles()
   for(j=depthSurfBaseFiles_.begin();j != depthSurfBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second, true);
   }
-  for(j=interval_corrDirFiles_.begin();j != interval_corrDirFiles_.end();j++) {
+  for(j=corrDirFiles_.begin();j != corrDirFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
-  for(j=interval_corrDirTopFiles_.begin();j != interval_corrDirTopFiles_.end();j++) {
+  for(j=corrDirTopFiles_.begin();j != corrDirTopFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
-  for(j=interval_corrDirBaseFiles_.begin();j != interval_corrDirBaseFiles_.end();j++) {
+  for(j=corrDirBaseFiles_.begin();j != corrDirBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
 

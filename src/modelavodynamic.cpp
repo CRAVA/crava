@@ -222,8 +222,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   double vpvs = 0.0;
   double vsvp = 0.0;
   int    n_well_points = 0;
-  if (model_settings->getVpVsRatioIntervals().size() > 0) { //model file
-    vpvs = static_cast<double>(model_settings->getVpVsRatioIntervals().find(model_settings->getIntervalName(i_interval))->second);
+  if (model_settings->getVpVsRatios().size() > 0) { //model file
+    vpvs = static_cast<double>(model_settings->getVpVsRatios().find(model_settings->getIntervalName(i_interval))->second);
     vsvp = 1 / vpvs;
   }
   else if (model_settings->getVpVsRatioFromWells()) { //wells
@@ -248,7 +248,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
   else {  //Vp/Vs set temporary to 2 in CommonData: update reflection matrix per interval.
 
-    if (model_settings->getVpVsRatioIntervals().size() > 0) {
+    if (model_settings->getVpVsRatios().size() > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp/Vs ratio specified in model file.\n");
 
       common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);

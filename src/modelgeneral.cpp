@@ -370,10 +370,10 @@ void ModelGeneral::ValidateCorrelationMatrix(float               ** C,
                                              const ModelSettings *  model_settings,
                                              std::string         &  errTxt)
 {
-  float minAlpha = model_settings->getVarAlphaMin();
-  float maxAlpha = model_settings->getVarAlphaMax();
-  float minBeta  = model_settings->getVarBetaMin();
-  float maxBeta  = model_settings->getVarBetaMax();
+  float minAlpha = model_settings->getVarVpMin();
+  float maxAlpha = model_settings->getVarVpMax();
+  float minBeta  = model_settings->getVarVsMin();
+  float maxBeta  = model_settings->getVarVsMax();
   float minRho   = model_settings->getVarRhoMin();
   float maxRho   = model_settings->getVarRhoMax();
 

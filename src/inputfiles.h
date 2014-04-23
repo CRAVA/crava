@@ -33,7 +33,7 @@ public:
   const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}
   //const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfTopFile()          const { return timeSurfTopFile_      ;}
-  const std::string              & getDepthSurfTopFile()         const { return depthSurfTopFile_      ;}
+  const std::string              & getDepthSurfTopFile()         const { return depthSurfTopFile_     ;}
   //const std::vector<std::string> & getDepthSurfFiles(void)       const { return depthSurfFiles_       ;}
   const std::string              & getVelocityField(void)        const { return velocityField_        ;}
   const std::string              & getBackFile(int i)            const { return backFile_[i]          ;}
@@ -41,28 +41,28 @@ public:
   //const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
   //const std::string              & getCorrDirTopFile(void)       const { return corrDirTopFile_       ;}
   //const std::string              & getCorrDirBaseFile(void)      const { return corrDirBaseFile_      ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalFiles(void)                        const { return interval_corrDirFiles_     ;}
-  const std::string                        & getCorrDirIntervalFile(std::string name)             const { return interval_corrDirFiles_.find(name)->second     ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalTopSurfaceFiles(void)              const { return interval_corrDirTopFiles_  ;}
-  const std::string                        & getCorrDirIntervalTopSurfaceFile(std::string name)   const { return interval_corrDirTopFiles_.find(name)->second  ;}
-  const std::map<std::string, std::string> & getCorrDirIntervalBaseSurfaceFiles(void)             const { return interval_corrDirBaseFiles_ ;}
-  const std::string                        & getCorrDirIntervalBaseSurfaceFile(std::string name)  const { return interval_corrDirBaseFiles_.find(name)->second ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCovFile(void)         const { return paramCovFile_         ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
   const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
-  const std::map<std::string,std::string> & getPriorFaciesProbFile(void)   const {return priorFaciesProb_ ;}
+  const std::map<std::string,std::string> & getPriorFaciesProbFile(void) const {return priorFaciesProb_ ;}
   const std::string              & getAreaSurfaceFile(void)      const { return areaSurfaceFile_      ;}
   //const std::vector<std::string> & getMultizoneSurfaceFiles()    const { return multizoneSurfaceFiles_;}
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
   const std::string              & getGravimetricData(int i)     const { return gravimetricData_[i]   ;}
   const std::vector<std::string> & getSeismicFiles(void)         const { return seismicFiles_         ;}
-  const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void) const { return timeLapseSeismicFiles_ ;}
-  const std::map<std::string, std::string> & getIntervalBaseTimeSurfaces(void)             const { return timeSurfBaseFiles_                     ;}
-  const std::string                        & getIntervalBaseTimeSurface(std::string name)  const { return timeSurfBaseFiles_.find(name)->second  ;}
-  const std::map<std::string, std::string> & getIntervalBaseDepthSurfaces(void)            const { return depthSurfBaseFiles_                    ;}
-  const std::string                        & getIntervalBaseDepthSurface(std::string name) const { return depthSurfBaseFiles_.find(name)->second ;}
+  const std::map<std::string, std::string> & getCorrDirFiles(void)                        const { return corrDirFiles_                        ;}
+  const std::string                        & getCorrDirFile(std::string name)             const { return corrDirFiles_.find(name)->second     ;}
+  const std::map<std::string, std::string> & getCorrDirTopSurfaceFiles(void)              const { return corrDirTopFiles_                     ;}
+  const std::string                        & getCorrDirTopSurfaceFile(std::string name)   const { return corrDirTopFiles_.find(name)->second  ;}
+  const std::map<std::string, std::string> & getCorrDirBaseSurfaceFiles(void)             const { return corrDirBaseFiles_                    ;}
+  const std::string                        & getCorrDirBaseSurfaceFile(std::string name)  const { return corrDirBaseFiles_.find(name)->second ;}
+  const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void)    const { return timeLapseSeismicFiles_                 ;}
+  const std::map<std::string, std::string> & getBaseTimeSurfaces(void)             const { return timeSurfBaseFiles_                     ;}
+  const std::string                        & getBaseTimeSurface(std::string name)  const { return timeSurfBaseFiles_.find(name)->second  ;}
+  const std::map<std::string, std::string> & getBaseDepthSurfaces(void)            const { return depthSurfBaseFiles_                    ;}
+  const std::string                        & getBaseDepthSurface(std::string name) const { return depthSurfBaseFiles_.find(name)->second ;}
 
   int                              getNumberOfSeismicFiles(int i)const { return static_cast<int>(timeLapseSeismicFiles_[i].size());}
 
@@ -93,20 +93,20 @@ public:
   //void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
   //void setCorrDirTopSurfaceFile(const std::string & corrDirFile)          { corrDirTopFile_       = corrDirFile       ;}
   //void setCorrDirBaseSurfaceFile(const std::string & corrDirFile)         { corrDirBaseFile_      = corrDirFile       ;}
-  void setCorrDirIntervalFile(const std::string & interval_name, const std::string & file_name)            { interval_corrDirFiles_[interval_name]     = file_name ;}
-  void setCorrDirIntervalTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { interval_corrDirTopFiles_[interval_name]  = file_name ;}
-  void setCorrDirIntervalBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { interval_corrDirBaseFiles_[interval_name] = file_name ;}
-  void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_        = paramCovFile     ;}
+  void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_         = paramCovFile      ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
   void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
-  std::string addInputPathAndCheckFiles();
-  void setIntervalBaseTimeSurface(const std::string & interval_name, const std::string & file_name)  { timeSurfBaseFiles_[interval_name] = file_name   ;}
-  void setIntervalBaseDepthSurface(const std::string & interval_name, const std::string & file_name) { depthSurfBaseFiles_[interval_name] = file_name  ;}
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
   void addDefaultWaveletEstIntFileBase(void)                              { waveletEstIntFileBase_.push_back("")      ;}
+  void setCorrDirFile(const std::string & interval_name, const std::string & file_name)            { corrDirFiles_[interval_name]       = file_name ;}
+  void setCorrDirTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { corrDirTopFiles_[interval_name]    = file_name ;}
+  void setCorrDirBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { corrDirBaseFiles_[interval_name]   = file_name ;}
+  void setBaseTimeSurface(const std::string & interval_name, const std::string & file_name)        { timeSurfBaseFiles_[interval_name]  = file_name ;}
+  void setBaseDepthSurface(const std::string & interval_name, const std::string & file_name)       { depthSurfBaseFiles_[interval_name] = file_name ;}
+  std::string addInputPathAndCheckFiles();
 
   void clearTimeLapse(void)                                               { seismicFiles_.clear();
                                                                             waveletShiftFiles_.clear();
@@ -155,27 +155,27 @@ private:
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 
   std::string                        timeSurfTopFile_;    ///< File names: top time surface
-  std::map<std::string, std::string> timeSurfBaseFiles_;  ///< File names: base time surfaces
+  std::map<std::string, std::string> timeSurfBaseFiles_;  ///< File names: base time surfaces per interval
   std::string                        depthSurfTopFile_;   ///< File names: top depth surface
-  std::map<std::string, std::string> depthSurfBaseFiles_; ///< File names: base depth surfaces
+  std::map<std::string, std::string> depthSurfBaseFiles_; ///< File names: base depth surfaces per interval
 
-  std::vector<std::string>           trendCubes_;               ///< File name for the trend cubes in the rock physics model
-  std::string                        inputDirectory_;        ///< Base directory for input files.
-  std::vector<std::string>           localNoiseFiles_;       ///< File names: local noise
-  std::map<std::string, std::string> priorFaciesProb_; ///< File names for locally varying prior facies probability
+  std::vector<std::string>           trendCubes_;         ///< File name for the trend cubes in the rock physics model
+  std::string                        inputDirectory_;     ///< Base directory for input files.
+  std::vector<std::string>           localNoiseFiles_;    ///< File names: local noise
+  std::map<std::string, std::string> priorFaciesProb_;    ///< File names for locally varying prior facies probability
   std::string                        areaSurfaceFile_;
 
   //std::map<std::string, std::string>    interval_base_time_surface_;     ///< File names: Map between interval name and base time surface file name/value.
   //std::map<std::string, std::string>    interval_base_depth_surface_;    ///< File names: Map between interval name and base depth surface file name.
-  std::map<std::string, std::string>     interval_corrDirFiles_;           ///< File names: Map between interval name and correlation direction
-  std::map<std::string, std::string>     interval_corrDirTopFiles_;        ///< File names: Map between interval name and correlation direction for top-surface
-  std::map<std::string, std::string>     interval_corrDirBaseFiles_;       ///< File names: Map between interval name and correlation direction for base-surface
+  std::map<std::string, std::string>     corrDirFiles_;                ///< File names: Map between interval name and correlation direction
+  std::map<std::string, std::string>     corrDirTopFiles_;             ///< File names: Map between interval name and correlation direction for top-surface
+  std::map<std::string, std::string>     corrDirBaseFiles_;            ///< File names: Map between interval name and correlation direction for base-surface
 
-  std::vector<std::vector<std::string> > timeLapseWaveletShiftFiles_; ///< File names: wavelets for each time lapse and angle gather
-  std::vector<std::vector<std::string> > timeLapseWaveletScaleFiles_; ///< File names: wavelets for each time lapse and angle gather
-  std::vector<std::vector<std::string> > timeLapseWaveletFiles_;      ///< File names: wavelets for each time lapse and angle gather
-  std::vector<std::vector<std::string> > timeLapseSeismicFiles_;      ///< File names: seismic data for each time lapse and angle gather
-  std::vector<std::vector<std::string> > timeLapseLocalNoiseFiles_;   ///< File names: local noise for each time lapse and angle gather
+  std::vector<std::vector<std::string> > timeLapseWaveletShiftFiles_;  ///< File names: wavelets for each time lapse and angle gather
+  std::vector<std::vector<std::string> > timeLapseWaveletScaleFiles_;  ///< File names: wavelets for each time lapse and angle gather
+  std::vector<std::vector<std::string> > timeLapseWaveletFiles_;       ///< File names: wavelets for each time lapse and angle gather
+  std::vector<std::vector<std::string> > timeLapseSeismicFiles_;       ///< File names: seismic data for each time lapse and angle gather
+  std::vector<std::vector<std::string> > timeLapseLocalNoiseFiles_;    ///< File names: local noise for each time lapse and angle gather
 
   std::vector<std::vector<std::string> > timeLapseTravelTimeHorizons_; ///< File names: Horizons for each travel time time lapse
 };
