@@ -155,7 +155,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       model_settings->SetMinBlocksForCorrEstimation(100); // As a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(read_wells_ && setup_multigrid_){
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(),  mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), prior_cov_estimated_, err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
@@ -163,7 +163,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
     else{
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(), mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), err_text);
+            prior_facies_, facies_names_, multiple_interval_grid_->GetTrendCubes(), seismic_data_, multiple_interval_grid_->GetBackgroundParameters(), prior_cov_estimated_, err_text);
     }
   }
   else{
@@ -7776,6 +7776,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        const std::vector<CravaTrend>                               & trend_cubes,
                                        const std::map<int, std::vector<SeismicStorage> >           & seismic_data,
                                        const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
+                                       bool                                                        & prior_cov_estimated,
                                        std::string                                                 & err_text_common){
 
   (void) seismic_data, facies_names, prior_facies_prob;
@@ -7929,13 +7930,16 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     const std::string & corr_time_file    = input_files->getTempCorrFile();
     bool temporal_corr_range_given        = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
     bool estimate_temp_corr               = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
+    if (estimate_param_cov || estimate_temp_corr) 
+      prior_auto_cov_.resize(interval_simboxes.size());
+
     bool failed_temp_corr                 = false;
     failed_param_cov                     = false;
 
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
         // Number of bins
-        int n_corr_T = interval_simboxes[i].GetNZpad();
+        int n_corr_T = interval_simboxes[i].getnz();
         if((n_corr_T % 2) == 0)
           n_corr_T = n_corr_T/2+1;
         else
@@ -7983,22 +7987,22 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         // A.3 Estimation of parameter correlation from data
         // C.3 Estimation of temporal correlation from data
 
-
-        //float ** point_var_0 = NULL;
         if (estimate_param_cov || estimate_temp_corr){
-          
+          prior_cov_estimated = true;
+          prior_auto_cov_[i].resize(n_corr_T);
           std::string tmp_err_txt;
-          // Option 1: Estimate within this interval
+
+          // First possibility: Estimate within this interval
           std::vector<Simbox *> temp_simbox;
           temp_simbox.push_back(&interval_simboxes[i]);
           std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
           current_background_interval.push_back(background[i]);
-          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, dz_min,  model_settings, tmp_err_txt);
+          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, interval_simboxes[i].getdz(), model_settings, tmp_err_txt);
           if (tmp_err_txt != "") {
             err_text += tmp_err_txt;
             failed_param_cov = true;
           }
-          // Option 2: Estimate over all intervals if the multiple interval setting is being used
+          // Second possibility: Estimate over all intervals if the multiple interval setting is being used
           else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL){
             std::vector<Simbox *> temp_simboxes;
             for (size_t j = 0; j < interval_simboxes.size(); j++)
@@ -8027,8 +8031,31 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 prior_param_cov_[i](j,k) = param_cov_array_temp(j,k);
             }
 
+            std::vector<NRLib::Matrix> prior_auto_cov_temp;
+            if(analyze->GetEnoughData() == true){
+              prior_auto_cov_temp = analyze->GetAutoCovariance();
+            }
+            else{
+              prior_auto_cov_temp = analyze_all->GetAutoCovariance();
+            }
+
+            // Erik N: HERE! dz can be different between intervals
+            int nd_max        = analyze->GetNumberOfLags();
+            int n_est_nonzero = analyze->GetNumberOfAutoCovData();
+            int n_est = std::min(n_est_nonzero, n_corr_T);
+            if(n_est_nonzero<n_corr_T) {
+              LogKit::LogFormatted(LogKit::High,
+                  "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
+            }
+            
+            for(int j=0; j<n_est; j++){
+              prior_auto_cov_[i][j] = prior_auto_cov_temp[j];
+            }
+
+
             //prior_var_0_[i] = analyze->getPointVar0();
 
+            /*
             std::vector<float> est_corr_T;
             if (analyze->GetEnoughData() == true){
               est_corr_T = analyze->GetCorrT();
@@ -8036,6 +8063,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             else{
               est_corr_T = analyze_all->GetCorrT();
             }
+
             if(estimate_temp_corr) {
               //corr_T.resize(n_corr_T);
               int n_est = analyze->GetNumberOfLags();
@@ -8051,6 +8079,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                   prior_corr_T_[i][j] = 0.0f;
               }
             }
+            */
           }
           delete analyze;
 
