@@ -183,8 +183,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
   if (err_text != "") {
-    LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
-    //LogKit::WriteHeader("Loading and processing data failed:");
+    //LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
+    LogKit::WriteHeader("Loading and processing data failed:");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
   }
@@ -4064,7 +4064,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
       else {
 
         int n_intervals = interval_names.size();
-        const std::string base_surface_file_name = input_files->getBaseDepthSurface(interval_names[n_intervals - 1]);
+        const std::string base_surface_file_name = input_files->getBaseTimeSurface(interval_names[n_intervals - 1]);
         //const std::string base_surface_file_name = surface_file_names.back();
 
         if (NRLib::IsNumber(base_surface_file_name)){
@@ -6557,7 +6557,12 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
     bool failed_dummy = false;
 
     time_depth_mapping = new GridMapping();
-    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), input_files->getBaseDepthSurface(""), failed_dummy, err_text);
+
+    std::string base_depth_surface = "";
+    if (input_files->getBaseDepthSurfaces().find("") != input_files->getBaseDepthSurfaces().end())
+      base_depth_surface = input_files->getBaseDepthSurface("");
+
+    time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), base_depth_surface, failed_dummy, err_text);
 
     if (velocity != NULL) {
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
@@ -8728,7 +8733,7 @@ void CommonData::ReadAngularCorrelations(ModelSettings                          
       angle_corr[i].resize(n_angles);
       for (int j = 0; j < n_angles; j++) {
         float d_angle    = angles[i] - angles[j];
-        angle_corr[i][i] = vario->corr(d_angle, 0);
+        angle_corr[i][j] = vario->corr(d_angle, 0);
       }
     }
     angular_correlations.push_back(angle_corr);
