@@ -151,7 +151,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
         double dz = model_settings->getTimeDz();
         //if (model_settings->getTimeNz("") == IMISSING) { //Taken from simbox->SetDepth without nz
-        if (model_settings->getTimeNzs().find("") != model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
+        if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
           model_settings->setTimeNz("", nz);
         }
