@@ -86,6 +86,7 @@ public:
 
   //const std::vector<std::vector<double> >                            & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
 
+  bool                                      GetPriorCovEst()                      const { return prior_cov_estimated_                        ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
   const std::vector<std::vector<double> >                            & GetTGradY()                                      const { return t_grad_y_                                      ;}
   const NRLib::Grid2D<float>                                         & GetRefTimeGradX()                                const { return ref_time_grad_x_                               ;}
@@ -699,6 +700,7 @@ private:
                              const std::vector<CravaTrend>                               & trend_cubes,
                              const std::map<int, std::vector<SeismicStorage> >           & seismic_data,
                              const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
+                             bool                                                        & prior_cov_estimated,
                              std::string                                                 & err_text);
 
   void  CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
@@ -868,9 +870,11 @@ private:
   bool                                                         prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
   //std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
   //std::vector<NRLib::Grid<double> >             corr_params_interval_;
-  std::vector<Surface *>                                       prior_corr_XY_;
-  std::vector<NRLib::Matrix>                                   prior_param_cov_;
-  std::vector<std::vector<double> >                            prior_corr_T_;
+  bool                                          prior_cov_estimated_;             //< CRA-257: If prior covariances are estimated, time corr is included in this estimation
+  std::vector<Surface *>                        prior_corr_XY_;
+  std::vector<std::vector<NRLib::Matrix> >      prior_auto_cov_;                  //< CRA-257: New estimation of prior autocovariance - in this case prior_param_corr is not used. The first vector is intervals.
+  std::vector<NRLib::Matrix>                    prior_param_cov_;           
+  std::vector<std::vector<double> >             prior_corr_T_;
   //std::vector<NRLib::Grid<double> >             prior_cov_; //Vp, vs, rho
   //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 

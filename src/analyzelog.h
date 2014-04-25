@@ -50,11 +50,13 @@ public:
   ~Analyzelog(void);
 
   //NRLib::Grid2D<double> & GetVar0()     const { return Var0_         ;}
-  const NRLib::Matrix       & GetVar0(void)         const { return var_0_                           ;}
-  const NRLib::Matrix       & GetPointVar0(void)    const { return point_var_0_                     ;}
-  const std::vector<float>  & GetCorrT(void)        const { return corr_T_                          ;}
-  int                         GetNumberOfLags(void) const { return n_lags_                  ;}
-  bool                        GetEnoughData()       const { return enough_data_for_corr_estimation_ ;}
+  const NRLib::Matrix                    & GetVar0(void)          const { return var_0_                           ;}
+  //const NRLib::Matrix       & GetPointVar0(void)    const { return point_var_0_                               ;}
+  const std::vector<float>               & GetCorrT(void)         const { return corr_T_                          ;}
+  int                                      GetNumberOfLags(void)  const { return n_lags_                          ;}
+  int                                      GetNumberOfAutoCovData()const{return max_lag_with_data_                ;}
+  bool                                     GetEnoughData()        const { return enough_data_for_corr_estimation_ ;}
+  const std::vector<NRLib::Matrix>       & GetAutoCovariance()    const {return        auto_cov_                  ;}
 
 private:
 
@@ -84,9 +86,33 @@ private:
                                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                                       const std::vector<Simbox *>                              & interval_simboxes,
                                       bool                                                     & enough_data_for_corr_estimation,
+                                      NRLib::Vector                                            & regression_coef,
+                                      double                                                   & var_vs_resid,
                                       double                                                     dz_min,
+                                      std::vector<double>                                        dz_rel,
                                       const std::vector<std::vector<NRLib::Grid<float> *> >    & background,
+                                      int                                                      & n_lags,
                                       std::string                                              & errTxt);
+
+  void            EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >                        & auto_cov,
+                                                 const std::vector<std::string>                     & well_names,
+                                                 const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
+                                                 const std::vector<Simbox *>                        & interval_simboxes,
+                                                 const std::map<std::string, std::vector<float> >   & log_data_vp,
+                                                 const std::map<std::string, std::vector<float> >   & log_data_vs,
+                                                 const std::map<std::string, std::vector<float> >   & log_data_rho,
+                                                 bool                                                 all_Vs_logs_synthetic,
+                                                 bool                                                 all_Vs_logs_non_synthetic,
+                                                 NRLib::Vector                                      & regression_coef,
+                                                 double                                             & var_vs_resid,
+                                                 float                                                dt,
+                                                 int                                                  max_nd,
+                                                 int                                                & max_lag_with_data,
+                                                 std::string                                        & err_text);
+
+  void            SetParameterCov(const NRLib::Matrix                           & auto_cov,
+                                  NRLib::Matrix                                 & var_0,
+                                  int                                             n_params);
 
   void            estimate(const ModelSettings  * modelSettings,
                            Background           * background,
@@ -120,13 +146,17 @@ private:
                                const double *zpos, float *meanValue);
 
   void            CalculateNumberOfLags(int                                                   & max_nd,
+                                        double                                                  dz_min,
+                                        const std::vector<double>                             & dz_rel,
                                         const std::vector<Simbox *>                           & simboxes);
 
+  /*
   void            CalculateNumberOfLags(int                                                   & n_lags,
                                         const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
                                         int                                                   & max_nd,
                                         const std::vector<Simbox *>                           & simboxes,
                                         std::string                                           & err_txt);
+  */
 
   void            findConstructedVsLogs(void);
 
@@ -140,6 +170,9 @@ private:
                                               const std::vector<float>                              & low_freq_log,
                                               int                                                     nd_tot);
 
+  NRLib::Vector   Regress(const NRLib::Matrix                             & A,
+                          const NRLib::Vector                             & b);
+
   //--------------------------------------------------------------------------------------------
 
   int                                                   min_blocks_with_data_for_corr_estim_;
@@ -148,13 +181,17 @@ private:
   //const Simbox                                        * simbox_;
   //std::vector<WellData *>                               wells_;
   std::vector<std::string>                              well_names_;
-  int                                                   n_wells_;       // Number of wells
+  int                                                   n_wells_;             // Number of wells
+  NRLib::Vector                                         regression_coef_vs_;  // Regression coefficients for Vs ~ Vp + Rho in case of mixture of synthetic and non-synt wells (CRA-257)
+  double                                                var_vs_resid_;        // Variance of residuals for the Vs regression
 
-  std::string            interval_name_;
-  NRLib::Matrix          var_0_;
-  NRLib::Matrix          point_var_0_;
-  std::vector<float>     corr_T_;
-  int                    n_lags_;
+  std::string                                           interval_name_;
+  std::vector<NRLib::Matrix >                           auto_cov_;
+  NRLib::Matrix                                         var_0_;
+  //NRLib::Matrix                                       point_var_0_;
+  std::vector<float>                                    corr_T_;
+  int                                                   n_lags_;
+  int                                                   max_lag_with_data_;
 
   //float        ** Var0_;
   //float        ** pointVar0_;
