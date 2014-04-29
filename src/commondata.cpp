@@ -2497,8 +2497,8 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
 
       refmat_from_file_global_vpvs_ = true;
     }
-
-    else if (vpvs != RMISSING) {
+    else if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end()) {
+   // else if (vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
       double vsvp = 1.0/vpvs;
       SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
@@ -7631,7 +7631,12 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
         // Number of bins
-        int n_corr_T = interval_simboxes[i].getnz();
+
+        //H H-CHECK: Was changed from nzpad to nz, but it failes in test_case 3 under ReadMatrix: Temporary fix use nz (CRA-687)
+        // Found 127 in file ../../02_two_cubes_one_well_pred_nokrig/input/correlations/Prior_Temporal_Correlation.crava, expected 63.
+        //int n_corr_T = interval_simboxes[i].getnz();
+        int n_corr_T = interval_simboxes[i].GetNZpad();
+
         if((n_corr_T % 2) == 0)
           n_corr_T = n_corr_T/2+1;
         else
