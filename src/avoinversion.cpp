@@ -143,12 +143,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       covVp->endAccess();
     }
 
-    fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
+    //fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
     //H-Writing
-    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz() && !multi_interval);
-    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-      seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
+    //float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
+    //if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval)
+    //  seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
     errCorr_ = modelAVOstatic->GetErrCorr();
 
@@ -159,14 +159,14 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //computeVariances(corrT, modelSettings_);
 
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-    fftw_free(corrT);
+    //fftw_free(corrT);
 
     //H-Writing
-    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
-      float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
-      seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
-      delete [] corrTFiltered;
-    }
+    //if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
+    //  float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
+    //  seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
+    //  delete [] corrTFiltered;
+    //}
 
     if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet(seismicParameters);

@@ -543,25 +543,25 @@ SeismicParametersHolder::getPriorCorrTFiltered(int nz, int nzp) const
 }
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePriorCorrT(fftw_real   * priorCorrT,
-                                             const int   & nzp,
-                                             const float & dt) const
-{
-  // This is the cyclic and filtered version of CorrT
-  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
-  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed
-       << std::right
-       << std::setprecision(6)
-       << dt << "\n";
-  for(int i=0 ; i<nzp; i++) {
-    file << std::setw(9) << priorCorrT[i] << "\n";
-  }
-  file.close();
-}
+//void
+//SeismicParametersHolder::writeFilePriorCorrT(fftw_real   * priorCorrT,
+//                                             const int   & nzp,
+//                                             const float & dt) const
+//{
+//  // This is the cyclic and filtered version of CorrT
+//  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
+//  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed
+//       << std::right
+//       << std::setprecision(6)
+//       << dt << "\n";
+//  for(int i=0 ; i<nzp; i++) {
+//    file << std::setw(9) << priorCorrT[i] << "\n";
+//  }
+//  file.close();
+//}
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,

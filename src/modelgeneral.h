@@ -79,10 +79,10 @@ public:
                                   int nzp,
                                   bool fileGrid);
 
-  void              CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
-                                                        const std::vector<float>                         & probability,
-                                                        NRLib::Grid2D<double>                            & param_corr,
-                                                        std::string                                      & errTxt);
+  //void              CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
+  //                                                      const std::vector<float>                         & probability,
+  //                                                      NRLib::Grid2D<double>                            & param_corr,
+  //                                                      std::string                                      & errTxt);
 
   void              Complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
@@ -106,19 +106,19 @@ private:
                                  NRLib::Vector           & initialMean,
                                  NRLib::Matrix           & initialCov);
 
-  void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
-                                                       const std::vector<float>               & probability,
-                                                       const std::vector<double>              & trend_position,
-                                                       NRLib::Grid2D<double>                  & sigma_sum) const;
+  //void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+  //                                                     const std::vector<float>               & probability,
+  //                                                     const std::vector<double>              & trend_position,
+  //                                                     NRLib::Grid2D<double>                  & sigma_sum) const;
 
-  void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
-                                              FFTGrid ** seisCube,
-                                              int numberOfAngles);
+  //void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
+  //                                            FFTGrid ** seisCube,
+  //                                            int numberOfAngles);
 
-  void              ValidateCorrelationMatrix(float              ** C,
-                                              const ModelSettings *  modelSettings,
-                                              std::string         &  errTxt);
-  void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
+  //void              ValidateCorrelationMatrix(float              ** C,
+  //                                            const ModelSettings *  modelSettings,
+  //                                            std::string         &  errTxt);
+  //void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
   const Simbox                                                * simbox_;                       ///< Information about simulation area.

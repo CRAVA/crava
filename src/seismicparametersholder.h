@@ -89,9 +89,9 @@ public:
 
   void                          getNextParameterCovariance(fftw_complex **& parVar) const;
 
-  void                          writeFilePriorCorrT(fftw_real   * priorCorrT,
-                                                    const int   & nzp,
-                                                    const float & dt) const;
+  //void                          writeFilePriorCorrT(fftw_real   * priorCorrT,
+  //                                                  const int   & nzp,
+  //                                                  const float & dt) const;
 
   void                          writeFilePriorVariances(const ModelSettings      * modelSettings,
                                                         const std::vector<float> & priorCorrT,

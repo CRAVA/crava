@@ -389,6 +389,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
+    //H Adjust name to intervals
     std::string angle     = NRLib::ToString(theta_deg_[i], 1);
     std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
     error_smooth[i]->printToFile(file_name);
@@ -428,6 +429,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         (model_settings->getEstimationMode() && model_settings->getEstimateWavelet(this_timelapse_)[l]))
       {
         std::string angle     = NRLib::ToString(theta_deg_[l], 1);
+
+        //H Adjust name to intervals
         std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
         wavelets_[l]->writeWaveletToFile(file_name, 1.0,false); // dt_max = 1.0;
       }

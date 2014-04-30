@@ -45,7 +45,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
                                const Simbox          * simbox,
                                int                     i_interval)
 {
-  forward_modeling_        = model_settings->getForwardModeling();
+  forward_modeling_ = model_settings->getForwardModeling();
 
   if (model_settings->getForwardModeling() == false)
   {

@@ -52,6 +52,8 @@
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
 
+#include "src/cravaresult.h"
+
 #if defined(COMPILE_STORM_MODULES_FOR_RMS)
 
 class CravaAppl : public IoAppl {
@@ -179,10 +181,13 @@ int main(int argc, char** argv)
     XmlModelFile modelFile(argv[1]);
     InputFiles     * inputFiles     = modelFile.getInputFiles();
     ModelSettings  * modelSettings  = modelFile.getModelSettings();
-    CommonData     * common_data     = NULL;
+    CommonData     * common_data    = NULL;
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
+    AVOInversion   * avoInversion   = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
+
+    CravaResult * cravaResult = new CravaResult();
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
@@ -213,6 +218,7 @@ int main(int argc, char** argv)
       modelGeneral       = NULL;
       modelAVOstatic     = NULL;
       modelGravityStatic = NULL;
+      avoInversion       = NULL;
 
       std::string interval_text = "";
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
@@ -318,15 +324,17 @@ int main(int argc, char** argv)
           }
           bool failed;
           switch(eventType) {
-          case TimeLine::AVO :
+          case TimeLine::AVO : {
             failed = doTimeLapseAVOInversion(modelSettings,
                                              modelGeneral,
                                              modelAVOstatic,
+                                             avoInversion,
                                              common_data,
                                              seismicParametersInterval,
                                              eventIndex,
                                              i_interval);
             break;
+          }
           case TimeLine::TRAVEL_TIME :
             failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                     modelGeneral,
@@ -352,8 +360,85 @@ int main(int argc, char** argv)
 
           first = false;
         }
+
+
+        //Add results to a sepate results class (CravaResult).
+        // Store from SeismicParametersHOlder, state4D and filter well logs (if facies is to be predicted).
+        // 3D inverson, store results per interval in a multiintervalgrid (similar to background models)
+
+        std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+
+        cravaResult->AddPostVp(interval_name, seismicParametersInterval.GetMeanVp());
+        cravaResult->AddPostVs(interval_name, seismicParametersInterval.GetMeanVs());
+        cravaResult->AddPostRho(interval_name, seismicParametersInterval.GetMeanRho());
+
+        int nz  = seismicParametersInterval.GetMeanVp()->getNz();
+        int nzp = seismicParametersInterval.GetMeanVp()->getNzp();
+
+        cravaResult->AddCorrT(interval_name, seismicParametersInterval.extractParamCorrFromCovVp(nzp));
+        cravaResult->AddCorrTFiltered(interval_name, seismicParametersInterval.getPriorCorrTFiltered(nz, nzp));
+
+
       }
     } //interval_loop
+
+
+    //Combine results
+    cravaResult->CombineResults(common_data->GetMultipleIntervalGrid()); //Not working
+
+    //Write results
+
+    const Simbox & simbox = common_data->GetFullInversionSimbox();
+
+    cravaResult->WriteResults(modelSettings,
+                              simbox);
+
+    /*
+
+    ModelGeneral: Ingen utskrift
+    ModelAVOStatic: Ingen utskrift
+
+    ModelAVODynamic:
+      Utskrift:
+      seisCube(fftgrid) (Seismic resamplet til intervall (fftgrid), men har allerede seismic lagret samlet i CommonData på forskjellig format)
+      wavelets (Forskjellig per intervall, ok å skrive ut her?)
+
+   AVOInversion:
+      Utskrift:
+      x PriorCorrT: seismicParameters.writeFilePriorCorrT
+      x corrTFiltered: seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);
+      seismicParameters.writeFilePostVariances
+      seismicParameters.writeFilePostCovGrids
+      CommonData::WriteBlockedWells Blir skrevet ut i CommonData::BlockWellsForEstimation hvis getEstimationMode()
+      computePostMeanResidAndFFTCov:
+          if(writePrediction_ == true )
+             ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+             outputGridsElastic_, fileGrid_, -1, false);
+      doPredictionKriging:
+          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+          outputGridsElastic_, fileGrid_, -1, true);
+      simulate:
+          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
+          outputGridsElastic_, fileGrid_, simNr, kriging);
+      doPostKriging:
+          kd.writeToFile (KrigingData)
+      computeSyntSeismic:
+          imp->writeFile
+      computeFaciesProb:
+          ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
+
+   Ekstra:
+      Bakgrunn:
+      Fra background.cpp (Alt utskrift der er kommentert ut).
+
+      Brønner:
+      Skrevet ut i CommonData
+
+
+
+
+    */
+
 
     if(modelSettings->getDo4DInversion())
     {
