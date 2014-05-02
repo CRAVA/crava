@@ -15,6 +15,8 @@
 #include "src/modelsettings.h"
 
 #include "src/multiintervalgrid.h"
+#include "src/blockedlogscommon.h"
+#include "src/commondata.h"
 
 class FFTGrid;
 class Simbox;
@@ -29,6 +31,7 @@ public:
   void CombineResults(MultiIntervalGrid * multi_interval_grid);
 
   void WriteResults(ModelSettings * model_settings,
+                    CommonData    * common_data,
                     const Simbox  & simbox);
 
   void WriteFilePriorCorrT(fftw_real   * prior_corr_T,
@@ -45,6 +48,11 @@ public:
                           const std::string        & base_name) const;
 
   void WriteFilePostCovGrids(const Simbox & simbox) const;
+
+  void WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                         const ModelSettings                        * model_settings,
+                         std::vector<std::string>                     facies_name,
+                         std::vector<int>                             facies_label);
 
   //GET FUNCTIONS
 

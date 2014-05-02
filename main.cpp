@@ -402,6 +402,7 @@ int main(int argc, char** argv)
     //Write results
     const Simbox & simbox = common_data->GetFullInversionSimbox();
     cravaResult->WriteResults(modelSettings,
+                              common_data,
                               simbox);
 
     /*
@@ -412,7 +413,7 @@ int main(int argc, char** argv)
     ModelAVODynamic:
       Utskrift:
       seisCube(fftgrid) (Seismic resamplet til intervall (fftgrid), men har allerede seismic lagret samlet i CommonData på forskjellig format)
-      wavelets (Forskjellig per intervall, ok å skrive ut her?)
+      wavelets (Er forskjellig per intervall, ok å skrive ut i modelAVODynamic?)
 
    AVOInversion:
       Utskrift:
@@ -420,8 +421,7 @@ int main(int argc, char** argv)
       x corrTFiltered: seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);
       x seismicParameters.writeFilePostVariances
       x seismicParameters.writeFilePostCovGrids
-
-      CommonData::WriteBlockedWells Blir skrevet ut i CommonData::BlockWellsForEstimation hvis getEstimationMode()
+      x WriteBlockedWells
 
       computePostMeanResidAndFFTCov:
           if(writePrediction_ == true )
@@ -435,23 +435,16 @@ int main(int argc, char** argv)
           outputGridsElastic_, fileGrid_, simNr, kriging);
       doPostKriging:
           kd.writeToFile (KrigingData)
-      computeSyntSeismic:
-          imp->writeFile
       computeFaciesProb:
           ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
       computeSyntSeismic:
         imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-      CommonData::WriteBlockedWells
 
    Ekstra:
       Bakgrunn:
       Fra background.cpp (Alt utskrift der er kommentert ut).
 
-      Brønner:
-      Skrevet ut i CommonData
-
-
-
+      x CommonData::BlockWellsForEstimation::WriteBlockedWells (hvis estimation mode)
 
     */
 

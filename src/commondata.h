@@ -145,10 +145,10 @@ public:
                                  double                dt_milliseconds,
                                  float                 max_hz);
 
-  static void        WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                       const ModelSettings                      * model_settings,
-                                       std::vector<std::string>                   facies_name,
-                                       std::vector<int>                           facies_label);
+  //static void        WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  //                                     const ModelSettings                      * model_settings,
+  //                                     std::vector<std::string>                   facies_name,
+  //                                     std::vector<int>                           facies_label);
 
   static void        GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                                   std::map<std::string, BlockedLogsCommon *> blocked_wells,

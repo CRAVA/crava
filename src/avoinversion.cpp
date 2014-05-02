@@ -145,7 +145,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     //H-Writing
     //float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
-    //if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval)
+    //if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
     //  seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
 
     errCorr_ = modelAVOstatic->GetErrCorr();
@@ -160,7 +160,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //fftw_free(corrT);
 
     //H-Writing
-    //if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
+    //if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
     //  float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
     //  seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
     //  delete [] corrTFiltered;
@@ -252,7 +252,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // Temporary placement.
     //
 
-    //H-Writing of wells: Why is this done for each timelapse? Move to after multiinterval
+    //H-Writing
     //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
     //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
     //}
@@ -2524,27 +2524,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   delete [] sigmamdx;
 
 }
-
-//void AVOInversion::writeBWPredicted(void)
-//{
-//  int i;
-//  for (i=0; i<nWells_; i++)
-//  {
-//    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
-//
-//    postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postVp_,0,1,"ALPHA_PREDICTED");
-//    postVp_->endAccess();
-//
-//    postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postVs_,0,1,"BETA_PREDICTED");
-//    postVs_->endAccess();
-//
-//    postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
-//    postRho_->endAccess();
-//   }
-//}
 
 void AVOInversion::writeBWPredicted(void)
 {

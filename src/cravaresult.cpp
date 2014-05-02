@@ -42,6 +42,7 @@ void CravaResult::CombineResults(MultiIntervalGrid * multi_interval_grid)
 }
 
 void CravaResult::WriteResults(ModelSettings * model_settings,
+                               CommonData    * common_data,
                                const Simbox  & simbox)
 {
   //Move writing rutines from modelavodynamic and avoinversion here
@@ -49,24 +50,37 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
   //Results are combined to one grid in CombineResults first
 
   float dt = static_cast<float>(simbox.getdz());
-  int nz   = simbox.getnz();
+  //int nz   = simbox.getnz();
   int nzp  = simbox.GetNZpad();
 
-  if((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-    WriteFilePriorCorrT(corr_T_, nzp, dt);
+  if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
+    WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
-  fftw_free(corr_T_);
 
-  if((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-    WriteFilePriorCorrT(corr_T_filtered_, nzp, dt);     // No zeros in the middle
-    delete [] corr_T_filtered_;
+
   }
+  else {
 
- if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-  WriteFilePostVariances(post_var0_, post_cov_vp00_, post_cov_vs00_, post_cov_rho00_);
-  WriteFilePostCovGrids(simbox);
- }
+    if((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+      WriteFilePriorCorrT(corr_T_, nzp, dt);
 
+    fftw_free(corr_T_);
+
+    if((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
+      WriteFilePriorCorrT(corr_T_filtered_, nzp, dt);     // No zeros in the middle
+      delete [] corr_T_filtered_;
+    }
+
+    if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+      WriteFilePostVariances(post_var0_, post_cov_vp00_, post_cov_vs00_, post_cov_rho00_);
+      WriteFilePostCovGrids(simbox);
+    }
+
+    if((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+      WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    }
+
+  }
 
 
 }
@@ -169,4 +183,22 @@ void CravaResult::WriteFilePostCovGrids(const Simbox & simbox) const
   cr_cov_vs_rho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
   cr_cov_vs_rho_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vs,density)");
   cr_cov_vs_rho_ ->endAccess();
+}
+
+void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                    const ModelSettings                        * model_settings,
+                                    std::vector<std::string>                     facies_name,
+                                    std::vector<int>                             facies_label)
+{
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    blocked_log->WriteWell(model_settings->getWellFormatFlag(),
+                           model_settings->getMaxHzBackground(),
+                           model_settings->getMaxHzSeismic(),
+                           facies_name,
+                           facies_label);
+
+  }
 }

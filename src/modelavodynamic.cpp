@@ -14,7 +14,7 @@
 
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
-#include "src/modelavostatic.h"
+//#include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
 #include "src/xmlmodelfile.h"
 #include "src/modelsettings.h"
@@ -43,7 +43,7 @@
 #include "nrlib/volume/volume.hpp"
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
-                                 ModelAVOStatic          * model_avo_static,
+                                 //ModelAVOStatic          * model_avo_static,
                                  ModelGeneral            * model_general,
                                  CommonData              * common_data,
                                  SeismicParametersHolder & seismic_parameters,
@@ -84,13 +84,19 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   for (int i = 0; i < number_of_angles_; i++)
     angle_[i] = seismic_data[i].GetAngle();
 
-  for (int i=0; i < number_of_angles_; i++) {
+  for (int i = 0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
     theta_deg_[i]     = static_cast<float>(angle_[i]*180.0/NRLib::Pi);
   }
 
   //AngulurCorr between angle i and j
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
+
+  //Add seismic data to blcoked logs (before resampling to intervals).
+  AddSeismicLogs(model_general->GetBlockedWells(),
+                 seismic_data,
+                 simbox,
+                 number_of_angles_);
 
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
@@ -102,20 +108,19 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   int nyp = simbox->GetNYpad();
   int nzp = simbox->GetNZpad();
 
-  SegY          * segy  = NULL;
-  StormContGrid * storm = NULL;
-
   for (int i = 0; i < number_of_angles_; i++) {
 
     LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data for angle %4.1f ", theta_deg_[i]);
 
-    seis_cubes_[i] = ModelAVOStatic::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
+    seis_cubes_[i] = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
     seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
     bool is_segy           = false;
     bool is_storm          = false;
+    SegY          * segy   = NULL;
+    StormContGrid * storm  = NULL;
     FFTGrid * fft_grid_old = NULL;
 
     if (seismic_type == 0) { //SEGY
@@ -158,9 +163,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     seis_cubes_[i]->endAccess();
 
+    if (segy != NULL)
+      delete segy;
+    if (storm != NULL)
+      delete storm;
     if(grid_tmp != NULL)
       delete grid_tmp;
-
 
     //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
     //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
@@ -195,6 +203,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     for (int i = 0; i < number_of_angles_; i++) {
       int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
       if (seismic_type == 0) {
+        SegY * segy      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
         double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
         if (geo_angle < 0)
           geo_angle += 360.0;
@@ -202,6 +211,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                              segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
                              segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
                              segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
+
+        if (segy != NULL)
+          delete segy;
       }
     }
   }
@@ -209,14 +221,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //H Missing from processSeismic:
   //seisCube[i]->writeFile
   //seisCube[i]->writeCravaFile
-
-  //H model_avo_static->addSeismicLogs with intervals? Hentes fram i BlockedLogs -> WriteRMSWell
-  //Or should this have been set in CommonData::ReadWellData?
-  if (model_general->GetMultiInterval() == false) {
-    model_avo_static->AddSeismicLogs(model_general->GetBlockedWells(),
-                                     seis_cubes_,
-                                     number_of_angles_);
-  }
 
   //Get Vp/Vs
   double vpvs = 0.0;
@@ -439,11 +443,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     theo_sn_ratio_[l] = signal_variance_[l]/error_variance_[l];
   }
-
-  if (segy != NULL)
-    delete segy;
-  if (storm != NULL)
-    delete storm;
 
   delete [] param_var;
   delete [] wd_corr_mvar;
@@ -706,5 +705,41 @@ ModelAVODynamic::ComputeWDCorrMVar(Wavelet1D* WD,
   }
 
   return var;
+}
+
+void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                     const std::vector<SeismicStorage>          & seismic_data,
+                                     const Simbox                               & simbox,
+                                     int                                          n_angles)
+{
+  for (int i = 0; i < n_angles; i++) {
+
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
+
+      int seismic_type = seismic_data[i].GetSeismicType();
+
+      if (seismic_type == 0) { //SEGY
+        SegY * segy = seismic_data[i].GetSegY();
+        blocked_log->SetLogFromGrid(segy, simbox, i, n_angles, "SEISMIC_DATA");
+        if (segy != NULL)
+          delete segy;
+      }
+      else if (seismic_type == 3) { //FFTGrid
+        FFTGrid * fft_grid = seismic_data[i].GetFFTGrid();
+        blocked_log->SetLogFromGrid(fft_grid, i, n_angles, "SEISMIC_DATA");
+        if (fft_grid != NULL)
+          delete fft_grid;
+      }
+      else { //STORM / SGRI
+        StormContGrid * storm  = seismic_data[i].GetStorm();
+        blocked_log->SetLogFromGrid(storm, i, n_angles, "SEISMIC_DATA");
+        if (storm != NULL)
+          delete storm;
+      }
+
+    }
+  }
 }
 

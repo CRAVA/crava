@@ -45,9 +45,9 @@ public:
 
   bool                               GetForwardModeling()                 { return forward_modeling_       ;}
 
-  void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                  std::vector<FFTGrid *>                     seis_cube,
-                                  int                                        n_angles);                              // Changes wells
+  //void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+  //                                std::vector<FFTGrid *>                     seis_cube,
+  //                                int                                        n_angles);                              // Changes wells
 
   static FFTGrid *        CreateFFTGrid(int nx,  int ny,  int nz,
                                         int nxp, int nyp, int nzp,

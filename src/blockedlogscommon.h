@@ -246,10 +246,21 @@ public:
                                                                   int                     nzp,
                                                                   const Simbox          * timeSimbox);
 
-  void                                   SetLogFromGrid(FFTGrid    * grid,
-                                                        int          i_angle,
-                                                        int          n_angles,
-                                                        std::string  type);
+  void                                   SetLogFromGrid(FFTGrid   * grid,
+                                                        int         i_angle,
+                                                        int         n_angles,
+                                                        std::string type);
+
+  void                                   SetLogFromGrid(SegY         * segy,
+                                                        const Simbox & simbox,
+                                                        int            i_angle,
+                                                        int            n_angles,
+                                                        std::string    type);
+
+  void                                   SetLogFromGrid(StormContGrid * storm,
+                                                        int             i_angle,
+                                                        int             n_angles,
+                                                        std::string     type);
 
   void                                   SetSpatialFilteredLogs(std::vector<double>       & filtered_log,
                                                                 int                         n_data,
