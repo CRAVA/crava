@@ -563,24 +563,24 @@ SeismicParametersHolder::getPriorCorrTFiltered(int nz, int nzp) const
 //  file.close();
 //}
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
-                                            const std::string        & subDir,
-                                            const std::string        & baseName) const
-{
-  std::string fileName = IO::makeFullFileName(subDir,baseName);
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed;
-  file << std::setprecision(6);
-  file << std::right;
-  float c0 = 1.0f/postCov[0];
-
-  for(int k=0 ; k < static_cast<int>(postCov.size()) ; k++)
-    file << std::setw(9) << postCov[k]*c0 << "\n";
-
-  file.close();
-}
+//void
+//SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
+//                                            const std::string        & subDir,
+//                                            const std::string        & baseName) const
+//{
+//  std::string fileName = IO::makeFullFileName(subDir,baseName);
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed;
+//  file << std::setprecision(6);
+//  file << std::right;
+//  float c0 = 1.0f/postCov[0];
+//
+//  for(int k=0 ; k < static_cast<int>(postCov.size()) ; k++)
+//    file << std::setw(9) << postCov[k]*c0 << "\n";
+//
+//  file.close();
+//}
 
 //--------------------------------------------------------------------
 void
@@ -690,71 +690,71 @@ SeismicParametersHolder::printPostVariances(const NRLib::Matrix & postVar0) cons
 }
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postVar0,
-                                                const std::vector<float> & postCovVp00,
-                                                const std::vector<float> & postCovVs00,
-                                                const std::vector<float> & postCovRho00) const
-{
-  std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
-  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
-
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed;
-  file << std::right;
-  file << std::setprecision(6);
-  for(int i=0 ; i<3 ; i++) {
-    for(int j=0 ; j<3 ; j++) {
-      file << std::setw(10) << postVar0(i,j) << " ";
-    }
-    file << "\n";
-  }
-  file.close();
-
-  std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
-  std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
-  std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
-  writeFilePostCorrT(postCovVp00,  IO::PathToCorrelations(), baseName1);
-  writeFilePostCorrT(postCovVs00,  IO::PathToCorrelations(), baseName2);
-  writeFilePostCorrT(postCovRho00, IO::PathToCorrelations(), baseName3);
-}
+//void
+//SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postVar0,
+//                                                const std::vector<float> & postCovVp00,
+//                                                const std::vector<float> & postCovVs00,
+//                                                const std::vector<float> & postCovRho00) const
+//{
+//  std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
+//  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
+//
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed;
+//  file << std::right;
+//  file << std::setprecision(6);
+//  for(int i=0 ; i<3 ; i++) {
+//    for(int j=0 ; j<3 ; j++) {
+//      file << std::setw(10) << postVar0(i,j) << " ";
+//    }
+//    file << "\n";
+//  }
+//  file.close();
+//
+//  std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
+//  std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
+//  std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
+//  writeFilePostCorrT(postCovVp00,  IO::PathToCorrelations(), baseName1);
+//  writeFilePostCorrT(postCovVs00,  IO::PathToCorrelations(), baseName2);
+//  writeFilePostCorrT(postCovRho00, IO::PathToCorrelations(), baseName3);
+//}
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
-{
-  std::string fileName;
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
-  covVp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covVp_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
-  covVp_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
-  covVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
-  covVs_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
-  covRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
-  covRho_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
-  crCovVpVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVpVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
-  crCovVpVs_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
-  crCovVpRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVpRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
-  crCovVpRho_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
-  crCovVsRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVsRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
-  crCovVsRho_ ->endAccess();
-}
+//void
+//SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
+//{
+//  std::string fileName;
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+//  covVp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covVp_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
+//  covVp_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+//  covVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
+//  covVs_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+//  covRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
+//  covRho_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+//  crCovVpVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVpVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
+//  crCovVpVs_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+//  crCovVpRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVpRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
+//  crCovVpRho_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
+//  crCovVsRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVsRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
+//  crCovVsRho_ ->endAccess();
+//}
 
 //-------------------------------------------------------------------
 fftw_real *

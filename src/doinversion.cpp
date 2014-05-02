@@ -158,7 +158,7 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelGeneral            * modelGeneral,
                              ModelAVOStatic          * modelAVOstatic,
-                             AVOInversion            * avoinversion,
+                             //AVOInversion            * avoinversion,
                              CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
                              int                       vintage,
@@ -182,7 +182,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
 
   if(failedLoadingModel == false) {
 
-    avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
+    AVOInversion * avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
     //delete avoinversion;
   }

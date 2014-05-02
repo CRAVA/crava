@@ -114,8 +114,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   SpatialWellFilter * spatwellfilter = NULL;
 
-  bool multi_interval = modelGeneral->GetMultiInterval();
-
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -226,10 +224,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seismicParameters.printPostVariances(postVar0_);
 
     //H-Writing
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) && !multi_interval){
-      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-      seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
-    }
+    //if(modelSettings->getOutputGridsOther() & IO::CORRELATION){
+    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
+    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
+    //}
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
@@ -274,6 +272,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
   seismicParameters.FFTCovGrids();
+
+  seismicParameters.setPostVar0(postVar0_);
+  seismicParameters.setPostCovVp00(postCovVp00_);
+  seismicParameters.setPostCovVs00(postCovVs00_);
+  seismicParameters.setPostCovRho00(postCovRho00_);
+
 
   delete spatwellfilter;
 

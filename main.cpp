@@ -184,7 +184,7 @@ int main(int argc, char** argv)
     CommonData     * common_data    = NULL;
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
-    AVOInversion   * avoInversion   = NULL;
+    //AVOInversion   * avoInversion   = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
 
     CravaResult * cravaResult = new CravaResult();
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
       modelGeneral       = NULL;
       modelAVOstatic     = NULL;
       modelGravityStatic = NULL;
-      avoInversion       = NULL;
+      //avoInversion       = NULL;
 
       std::string interval_text = "";
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
@@ -328,7 +328,7 @@ int main(int argc, char** argv)
             failed = doTimeLapseAVOInversion(modelSettings,
                                              modelGeneral,
                                              modelAVOstatic,
-                                             avoInversion,
+                                             //avoInversion,
                                              common_data,
                                              seismicParametersInterval,
                                              eventIndex,
@@ -363,7 +363,7 @@ int main(int argc, char** argv)
 
 
         //Add results to a sepate results class (CravaResult).
-        // Store from SeismicParametersHOlder, state4D and filter well logs (if facies is to be predicted).
+        // Store from SeismicParametersHolder, state4D and filter well logs (if facies is to be predicted).
         // 3D inverson, store results per interval in a multiintervalgrid (similar to background models)
 
         std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
@@ -378,18 +378,29 @@ int main(int argc, char** argv)
         cravaResult->AddCorrT(interval_name, seismicParametersInterval.extractParamCorrFromCovVp(nzp));
         cravaResult->AddCorrTFiltered(interval_name, seismicParametersInterval.getPriorCorrTFiltered(nz, nzp));
 
+        cravaResult->AddPostVar0(interval_name, seismicParametersInterval.GetPostVar0());
+        cravaResult->AddPostCovVp00(interval_name, seismicParametersInterval.GetPostCovVp00());
+        cravaResult->AddPostCovVs00(interval_name, seismicParametersInterval.GetPostCovVs00());
+        cravaResult->AddPostCovRho00(interval_name, seismicParametersInterval.GetPostCovRho00());
+
+        cravaResult->AddCovVp(interval_name, seismicParametersInterval.GetCovVp());
+        cravaResult->AddCovVs(interval_name, seismicParametersInterval.GetCovVs());
+        cravaResult->AddCovRho(interval_name, seismicParametersInterval.GetCovRho());
+        cravaResult->AddCrCovVpVs(interval_name, seismicParametersInterval.GetCrCovVpVs());
+        cravaResult->AddCrCovVpRho(interval_name, seismicParametersInterval.GetCrCovVpRho());
+        cravaResult->AddCrCovVsRho(interval_name, seismicParametersInterval.GetCrCovVsRho());
+
+
 
       }
     } //interval_loop
 
 
-    //Combine results
+    //Combine interval grids to one grid per parameter
     cravaResult->CombineResults(common_data->GetMultipleIntervalGrid()); //Not working
 
     //Write results
-
     const Simbox & simbox = common_data->GetFullInversionSimbox();
-
     cravaResult->WriteResults(modelSettings,
                               simbox);
 
@@ -407,9 +418,11 @@ int main(int argc, char** argv)
       Utskrift:
       x PriorCorrT: seismicParameters.writeFilePriorCorrT
       x corrTFiltered: seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);
-      seismicParameters.writeFilePostVariances
-      seismicParameters.writeFilePostCovGrids
+      x seismicParameters.writeFilePostVariances
+      x seismicParameters.writeFilePostCovGrids
+
       CommonData::WriteBlockedWells Blir skrevet ut i CommonData::BlockWellsForEstimation hvis getEstimationMode()
+
       computePostMeanResidAndFFTCov:
           if(writePrediction_ == true )
              ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
@@ -426,6 +439,9 @@ int main(int argc, char** argv)
           imp->writeFile
       computeFaciesProb:
           ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
+      computeSyntSeismic:
+        imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+      CommonData::WriteBlockedWells
 
    Ekstra:
       Bakgrunn:

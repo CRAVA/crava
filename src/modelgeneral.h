@@ -56,7 +56,6 @@ public:
   CravaTrend                               & GetTrendCubes()                  { return trend_cubes_             ;}
   CravaTrend                                 GetTrendCubes()            const { return trend_cubes_             ;}
   bool                                       GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
-  bool                                       GetMultiInterval()         const { return multi_interval_          ;}
   State4D                                    GetState4D()               const { return state4d_                 ;}
   TimeLine                                 * GetTimeLine()              const { return time_line_               ;}
   std::map<std::string, BlockedLogsCommon *> GetBlockedWells()                { return blocked_logs_            ;}
@@ -148,8 +147,6 @@ private:
   bool                                                          do_4D_inversion_;
   bool                                                          do_4D_rock_physics_vnversion_;
   State4D                                                       state4d_;                     ///< State4D holds the 27 grdis needed for 4D inversion.
-
-  bool                                                          multi_interval_;              ///< True if there is multiple intervals
 
 };
 

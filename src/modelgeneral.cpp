@@ -66,7 +66,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
   random_gen_              = NULL;
   time_line_               = NULL;
   time_depth_mapping_      = NULL;
-  multi_interval_          = false;
   velocity_from_inversion_ = false;
 
   {
@@ -87,8 +86,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
       //
       // INVERSION/ESTIMATION
       //
-      if (model_settings->getIntervalNames().size() > 0)
-        multi_interval_ = true;
 
       //Facies-names
       facies_names_  = common_data->GetFaciesNames();

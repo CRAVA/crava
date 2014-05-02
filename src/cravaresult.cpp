@@ -62,9 +62,14 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     delete [] corr_T_filtered_;
   }
 
+ if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+  WriteFilePostVariances(post_var0_, post_cov_vp00_, post_cov_vs00_, post_cov_rho00_);
+  WriteFilePostCovGrids(simbox);
+ }
+
+
 
 }
-
 
 void CravaResult::WriteFilePriorCorrT(fftw_real   * prior_corr_T,
                                       const int   & nzp,
@@ -85,4 +90,83 @@ void CravaResult::WriteFilePriorCorrT(fftw_real   * prior_corr_T,
   file.close();
 }
 
+void CravaResult::WriteFilePostVariances(const NRLib::Matrix      & post_var0,
+                                         const std::vector<float> & post_cov_vp00,
+                                         const std::vector<float> & post_cov_vs00,
+                                         const std::vector<float> & post_cov_rho00) const
+{
+  std::string base_name = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
+  std::string file_name = IO::makeFullFileName(IO::PathToCorrelations(), base_name);
 
+  std::ofstream file;
+  NRLib::OpenWrite(file, file_name);
+  file << std::fixed;
+  file << std::right;
+  file << std::setprecision(6);
+  for(int i=0 ; i<3 ; i++) {
+    for(int j=0 ; j<3 ; j++) {
+      file << std::setw(10) << post_var0(i,j) << " ";
+    }
+    file << "\n";
+  }
+  file.close();
+
+  std::string base_name1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
+  std::string base_name2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
+  std::string base_name3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
+  WriteFilePostCorrT(post_cov_vp00,  IO::PathToCorrelations(), base_name1);
+  WriteFilePostCorrT(post_cov_vs00,  IO::PathToCorrelations(), base_name2);
+  WriteFilePostCorrT(post_cov_rho00, IO::PathToCorrelations(), base_name3);
+}
+
+void CravaResult::WriteFilePostCorrT(const std::vector<float> & post_cov,
+                                     const std::string        & sub_dir,
+                                     const std::string        & base_name) const
+{
+  std::string fileName = IO::makeFullFileName(sub_dir,base_name);
+  std::ofstream file;
+  NRLib::OpenWrite(file, fileName);
+  file << std::fixed;
+  file << std::setprecision(6);
+  file << std::right;
+  float c0 = 1.0f/post_cov[0];
+
+  for(int k=0 ; k < static_cast<int>(post_cov.size()) ; k++)
+    file << std::setw(9) << post_cov[k]*c0 << "\n";
+
+  file.close();
+}
+
+void CravaResult::WriteFilePostCovGrids(const Simbox & simbox) const
+{
+  std::string file_name;
+  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+  cov_vp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cov_vp_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vp");
+  cov_vp_ ->endAccess();
+
+  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+  cov_vs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cov_vs_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vs");
+  cov_vs_ ->endAccess();
+
+  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+  cov_rho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cov_rho_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for density");
+  cov_rho_ ->endAccess();
+
+  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+  cr_cov_vp_vs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cr_cov_vp_vs_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,Vs)");
+  cr_cov_vp_vs_ ->endAccess();
+
+  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+  cr_cov_vp_rho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cr_cov_vp_rho_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,density)");
+  cr_cov_vp_rho_ ->endAccess();
+
+  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
+  cr_cov_vs_rho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+  cr_cov_vs_rho_ ->writeFile(file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vs,density)");
+  cr_cov_vs_rho_ ->endAccess();
+}

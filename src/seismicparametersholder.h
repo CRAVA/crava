@@ -33,11 +33,22 @@ public:
   FFTGrid                     * GetCrCovVpRho()                    { return crCovVpRho_ ;}
   FFTGrid                     * GetCrCovVsRho()                    { return crCovVsRho_ ;}
 
+  NRLib::Matrix               & GetPostVar0() { return postVar0_ ;}
+  std::vector<float> & GetPostCovVp00() { return postCovVp00_ ;}
+  std::vector<float> & GetPostCovVs00() { return postCovVs00_ ;}
+  std::vector<float> & GetPostCovRho00() { return postCovRho00_ ;}
+
   void                          invFFTAllGrids();
   void                          invFFTCovGrids();
   void                          FFTCovGrids();
   void                          FFTAllGrids();
   void                          updatePriorVar();
+
+  void setPostVar0(NRLib::Matrix & postVar0) { postVar0_ = postVar0 ;}
+  void setPostCovVp00(std::vector<float> & postCovVp00) { postCovVp00_ = postCovVp00 ;}
+  void setPostCovVs00(std::vector<float> & postCovVs00) { postCovVs00_ = postCovVs00 ;}
+  void setPostCovRho00(std::vector<float> & postCovRho00) { postCovRho00_ = postCovRho00 ;}
+
 
   void                          setBackgroundParameters(FFTGrid  * meanVp,
                                                         FFTGrid  * meanVs,
@@ -98,12 +109,12 @@ public:
                                                         const Surface            * priorCorrXY,
                                                         const float              & dt) const;
 
-  void                          writeFilePostVariances(const NRLib::Matrix      & postVar0,
-                                                       const std::vector<float> & postCovVp00,
-                                                       const std::vector<float> & postCovVs00,
-                                                       const std::vector<float> & postCovRho00) const;
+  //void                          writeFilePostVariances(const NRLib::Matrix      & postVar0,
+  //                                                     const std::vector<float> & postCovVp00,
+  //                                                     const std::vector<float> & postCovVs00,
+  //                                                     const std::vector<float> & postCovRho00) const;
 
-  void                          writeFilePostCovGrids(Simbox const * simbox) const;
+  //void                          writeFilePostCovGrids(Simbox const * simbox) const;
 
   std::vector<float>            createPostCov00(FFTGrid * postCov) const;
 
@@ -130,9 +141,9 @@ private:
 
   float                         getOrigin(FFTGrid * grid) const;
 
-  void                          writeFilePostCorrT(const std::vector<float> & postCov,
-                                                   const std::string        & subDir,
-                                                   const std::string        & baseName) const;
+  //void                          writeFilePostCorrT(const std::vector<float> & postCov,
+  //                                                 const std::string        & subDir,
+  //                                                 const std::string        & baseName) const;
 
   FFTGrid * meanVp_;
   FFTGrid * meanVs_ ;
@@ -145,6 +156,12 @@ private:
   FFTGrid * crCovVsRho_  ;
 
   NRLib::Matrix priorVar0_;
+
+
+  NRLib::Matrix      postVar0_;
+  std::vector<float> postCovVp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float> postCovVs00_;
+  std::vector<float> postCovRho00_;
 
 };
 #endif
