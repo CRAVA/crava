@@ -86,7 +86,7 @@ private:
   int                simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
   int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
   void               printEnergyToScreen();
-  void               computeSyntSeismic(FFTGrid * alpha, FFTGrid * beta, FFTGrid * rho);
+  void               computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters);
   void               computeFaciesProb(SpatialWellFilter       * filteredlogs,
                                        bool                      useFilter,
                                        SeismicParametersHolder & seismicParameters);

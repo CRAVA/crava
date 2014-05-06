@@ -92,7 +92,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //AngulurCorr between angle i and j
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
 
-  //Add seismic data to blcoked logs (before resampling to intervals).
+  //Add seismic data to blocked logs (before resampling to intervals).
   AddSeismicLogs(model_general->GetBlockedWells(),
                  seismic_data,
                  simbox,
@@ -720,24 +720,12 @@ void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> 
 
       int seismic_type = seismic_data[i].GetSeismicType();
 
-      if (seismic_type == 0) { //SEGY
-        SegY * segy = seismic_data[i].GetSegY();
-        blocked_log->SetLogFromGrid(segy, simbox, i, n_angles, "SEISMIC_DATA");
-        if (segy != NULL)
-          delete segy;
-      }
-      else if (seismic_type == 3) { //FFTGrid
-        FFTGrid * fft_grid = seismic_data[i].GetFFTGrid();
-        blocked_log->SetLogFromGrid(fft_grid, i, n_angles, "SEISMIC_DATA");
-        if (fft_grid != NULL)
-          delete fft_grid;
-      }
-      else { //STORM / SGRI
-        StormContGrid * storm  = seismic_data[i].GetStorm();
-        blocked_log->SetLogFromGrid(storm, i, n_angles, "SEISMIC_DATA");
-        if (storm != NULL)
-          delete storm;
-      }
+      if (seismic_type == 0) //SEGY
+        blocked_log->SetLogFromGrid(seismic_data[i].GetSegY(), simbox, i, n_angles, "SEISMIC_DATA");
+      else if (seismic_type == 3) //FFTGrid
+        blocked_log->SetLogFromGrid(seismic_data[i].GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
+      else //STORM / SGRI
+        blocked_log->SetLogFromGrid(seismic_data[i].GetStorm(), i, n_angles, "SEISMIC_DATA");
 
     }
   }

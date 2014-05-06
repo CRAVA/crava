@@ -184,7 +184,6 @@ int main(int argc, char** argv)
     CommonData     * common_data    = NULL;
     ModelGeneral   * modelGeneral   = NULL;
     ModelAVOStatic * modelAVOstatic = NULL;
-    //AVOInversion   * avoInversion   = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
 
     CravaResult * cravaResult = new CravaResult();
@@ -218,7 +217,6 @@ int main(int argc, char** argv)
       modelGeneral       = NULL;
       modelAVOstatic     = NULL;
       modelGravityStatic = NULL;
-      //avoInversion       = NULL;
 
       std::string interval_text = "";
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
@@ -237,6 +235,12 @@ int main(int argc, char** argv)
                                                                 simbox->GetNXpad(),
                                                                 simbox->GetNYpad(),
                                                                 simbox->GetNZpad());
+
+      //Background grids are overwritten in avoinversion
+      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+      cravaResult->AddBackgroundVp(interval_name, seismicParametersInterval.GetMeanVp());
+      cravaResult->AddBackgroundVs(interval_name, seismicParametersInterval.GetMeanVs());
+      cravaResult->AddBackgroundRho(interval_name, seismicParametersInterval.GetMeanRho());
 
       //Realease background grids from common_data.
       common_data->ReleaseBackgroundGrids(i_interval);
@@ -328,7 +332,6 @@ int main(int argc, char** argv)
             failed = doTimeLapseAVOInversion(modelSettings,
                                              modelGeneral,
                                              modelAVOstatic,
-                                             //avoInversion,
                                              common_data,
                                              seismicParametersInterval,
                                              eventIndex,
@@ -366,33 +369,10 @@ int main(int argc, char** argv)
         // Store from SeismicParametersHolder, state4D and filter well logs (if facies is to be predicted).
         // 3D inverson, store results per interval in a multiintervalgrid (similar to background models)
 
-        std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+        //std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+        cravaResult->AddParameters(seismicParametersInterval, interval_name);
 
-        cravaResult->AddPostVp(interval_name, seismicParametersInterval.GetMeanVp());
-        cravaResult->AddPostVs(interval_name, seismicParametersInterval.GetMeanVs());
-        cravaResult->AddPostRho(interval_name, seismicParametersInterval.GetMeanRho());
-
-        int nz  = seismicParametersInterval.GetMeanVp()->getNz();
-        int nzp = seismicParametersInterval.GetMeanVp()->getNzp();
-
-        cravaResult->AddCorrT(interval_name, seismicParametersInterval.extractParamCorrFromCovVp(nzp));
-        cravaResult->AddCorrTFiltered(interval_name, seismicParametersInterval.getPriorCorrTFiltered(nz, nzp));
-
-        cravaResult->AddPostVar0(interval_name, seismicParametersInterval.GetPostVar0());
-        cravaResult->AddPostCovVp00(interval_name, seismicParametersInterval.GetPostCovVp00());
-        cravaResult->AddPostCovVs00(interval_name, seismicParametersInterval.GetPostCovVs00());
-        cravaResult->AddPostCovRho00(interval_name, seismicParametersInterval.GetPostCovRho00());
-
-        cravaResult->AddCovVp(interval_name, seismicParametersInterval.GetCovVp());
-        cravaResult->AddCovVs(interval_name, seismicParametersInterval.GetCovVs());
-        cravaResult->AddCovRho(interval_name, seismicParametersInterval.GetCovRho());
-        cravaResult->AddCrCovVpVs(interval_name, seismicParametersInterval.GetCrCovVpVs());
-        cravaResult->AddCrCovVpRho(interval_name, seismicParametersInterval.GetCrCovVpRho());
-        cravaResult->AddCrCovVsRho(interval_name, seismicParametersInterval.GetCrCovVsRho());
-
-
-
-      }
+       }
     } //interval_loop
 
 
@@ -423,27 +403,17 @@ int main(int argc, char** argv)
       x seismicParameters.writeFilePostCovGrids
       x WriteBlockedWells
 
-      computePostMeanResidAndFFTCov:
-          if(writePrediction_ == true )
-             ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-             outputGridsElastic_, fileGrid_, -1, false);
-      doPredictionKriging:
-          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-          outputGridsElastic_, fileGrid_, -1, true);
-      simulate:
-          ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-          outputGridsElastic_, fileGrid_, simNr, kriging);
-      doPostKriging:
-          kd.writeToFile (KrigingData)
-      computeFaciesProb:
-          ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
-      computeSyntSeismic:
-        imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+      x computePostMeanResidAndFFTCov: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_, outputGridsElastic_, fileGrid_, -1, false);
+      x doPredictionKriging: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_, outputGridsElastic_, fileGrid_, -1, true);
+      x simulate: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2, outputGridsElastic_, fileGrid_, simNr, kriging);
+      x doPostKriging: kd.writeToFile (KrigingData, only based on blocked_wells_).
+      x computeFaciesProb: ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,""); Facies, Undef, LHCube
+      x computeSyntSeismic: imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+      x KrigAll: blockGrid->writeFile
+      x QualityGrid ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
 
    Ekstra:
-      Bakgrunn:
-      Fra background.cpp (Alt utskrift der er kommentert ut).
-
+      x Bakgrunn:      fra background.cpp (Alt utskrift der er kommentert ut).
       x CommonData::BlockWellsForEstimation::WriteBlockedWells (hvis estimation mode)
 
     */

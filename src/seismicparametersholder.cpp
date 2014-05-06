@@ -21,6 +21,16 @@ SeismicParametersHolder::SeismicParametersHolder(void)
   crCovVpRho_ = NULL;
   crCovVsRho_ = NULL;
 
+  postVp_     = NULL;
+  postVs_     = NULL;
+  postRho_    = NULL;
+
+  postVpKriging_  = NULL; //From avoinversion doPredictionKriging()
+  postVsKriging_  = NULL;
+  postRhoKriging_ = NULL;
+
+  block_grid_ = NULL;
+
   priorVar0_.resize(3,3);
 }
 
@@ -58,9 +68,9 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 
 void
-SeismicParametersHolder::setBackgroundParameters(FFTGrid  * meanVp,
-                                                 FFTGrid  * meanVs,
-                                                 FFTGrid  * meanRho)
+SeismicParametersHolder::setBackgroundParameters(FFTGrid * meanVp,
+                                                 FFTGrid * meanVs,
+                                                 FFTGrid * meanRho)
 {
   meanVp_   = meanVp;
   meanVs_   = meanVs;

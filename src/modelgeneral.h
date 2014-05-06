@@ -28,8 +28,6 @@
 
 struct irapgrid;
 class Corr;
-//class Wavelet;
-//class Vario;
 class Simbox;
 class FFTGrid;
 class RandomGen;
@@ -50,20 +48,20 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                             * GetTimeSimbox()            const { return simbox_                  ;}
-  RandomGen                                * GetRandomGen()             const { return random_gen_              ;}
-  GridMapping                              * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
-  CravaTrend                               & GetTrendCubes()                  { return trend_cubes_             ;}
-  CravaTrend                                 GetTrendCubes()            const { return trend_cubes_             ;}
-  bool                                       GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
-  State4D                                    GetState4D()               const { return state4d_                 ;}
-  TimeLine                                 * GetTimeLine()              const { return time_line_               ;}
-  std::map<std::string, BlockedLogsCommon *> GetBlockedWells()                { return blocked_logs_            ;}
-  const std::vector<float>                 & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
-  const std::vector<FFTGrid *>             & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
-  const std::vector<std::string>           & GetFaciesNames(void)       const { return facies_names_            ;}
-  std::vector<int>                           GetFaciesLabel()           const { return facies_labels_           ;}
-  bool                                       GetIs4DActive()            const { return(do_4D_inversion_)        ;}
+  const Simbox                               * GetTimeSimbox()            const { return simbox_                  ;}
+  RandomGen                                  * GetRandomGen()             const { return random_gen_              ;}
+  GridMapping                                * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
+  CravaTrend                                 & GetTrendCubes()                  { return trend_cubes_             ;}
+  CravaTrend                                   GetTrendCubes()            const { return trend_cubes_             ;}
+  bool                                         GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
+  State4D                                      GetState4D()               const { return state4d_                 ;}
+  TimeLine                                   * GetTimeLine()              const { return time_line_               ;}
+  std::map<std::string, BlockedLogsCommon *> & GetBlockedWells()                { return blocked_logs_            ;}
+  const std::vector<float>                   & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>               & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string>             & GetFaciesNames(void)       const { return facies_names_            ;}
+  std::vector<int>                             GetFaciesLabel()           const { return facies_labels_           ;}
+  bool                                         GetIs4DActive()            const { return(do_4D_inversion_)        ;}
 
   void AddFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
   void AddFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}

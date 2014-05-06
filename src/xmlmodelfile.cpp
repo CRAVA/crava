@@ -5427,7 +5427,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
   int kLimit = 0;
-  if(parseValue(root, "kriging-data-limit", kLimit, errTxt) == true) {
+  if(parseValue(root, "z", kLimit, errTxt) == true) {
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
     else
