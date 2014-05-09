@@ -365,6 +365,7 @@
     </ClCompile>
     <ClCompile Include="src\spatialwellfilter.cpp" />
     <ClCompile Include="src\state4d.cpp" />
+    <ClCompile Include="src\surfacefrompoints.cpp" />
     <ClCompile Include="src\tasklist.cpp" />
     <ClCompile Include="src\timeevolution.cpp" />
     <ClCompile Include="src\timeline.cpp" />
