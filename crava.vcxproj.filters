@@ -1047,6 +1047,9 @@
     <ClCompile Include="libs\nrlib\random\randomgenerator.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
+    <ClCompile Include="src\surfacefrompoints.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
