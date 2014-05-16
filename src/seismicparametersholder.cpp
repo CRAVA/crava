@@ -11,25 +11,24 @@
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
-  meanVp_     = NULL;
-  meanVs_     = NULL;
-  meanRho_    = NULL;
-  covVp_      = NULL;
-  covVs_      = NULL;
-  covRho_     = NULL;
-  crCovVpVs_  = NULL;
-  crCovVpRho_ = NULL;
-  crCovVsRho_ = NULL;
-
-  postVp_     = NULL;
-  postVs_     = NULL;
-  postRho_    = NULL;
-
-  postVpKriging_  = NULL; //From avoinversion doPredictionKriging()
-  postVsKriging_  = NULL;
-  postRhoKriging_ = NULL;
-
-  block_grid_ = NULL;
+  meanVp_            = NULL;
+  meanVs_            = NULL;
+  meanRho_           = NULL;
+  covVp_             = NULL;
+  covVs_             = NULL;
+  covRho_            = NULL;
+  crCovVpVs_         = NULL;
+  crCovVpRho_        = NULL;
+  crCovVsRho_        = NULL;
+  postVp_            = NULL;
+  postVs_            = NULL;
+  postRho_           = NULL;
+  postVpKriging_     = NULL;
+  postVsKriging_     = NULL;
+  postRhoKriging_    = NULL;
+  block_grid_        = NULL;
+  facies_prob_undef_ = NULL;
+  quality_grid_      = NULL;
 
   priorVar0_.resize(3,3);
 }
@@ -37,32 +36,97 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
-  if(covVp_!=NULL)
+  if (covVp_ != NULL)
     delete covVp_;
 
-  if(covVs_!=NULL)
+  if (covVs_ != NULL)
     delete covVs_;
 
-  if(covRho_!=NULL)
+  if (covRho_ != NULL)
     delete covRho_;
 
-  if(crCovVpVs_!=NULL)
+  if (crCovVpVs_ != NULL)
     delete crCovVpVs_ ;
 
-  if(crCovVpRho_!=NULL)
+  if (crCovVpRho_ != NULL)
     delete crCovVpRho_ ;
 
-  if(crCovVsRho_!=NULL)
+  if (crCovVsRho_ != NULL)
     delete crCovVsRho_;
 
-  if(meanVp_!=NULL)
+  if (meanVp_ != NULL)
     delete meanVp_;
 
-  if(meanVs_!=NULL)
+  if (meanVs_ != NULL)
     delete meanVs_;
 
-  if(meanRho_!=NULL)
+  if (meanRho_ != NULL)
     delete meanRho_;
+
+  if (postVp_ != NULL)
+    delete postVp_;
+
+  if (postVs_ != NULL)
+    delete postVs_;
+
+  if (postRho_ != NULL)
+    delete postRho_;
+
+  if (postVpKriging_ != NULL)
+    delete postVpKriging_;
+
+  if (postVsKriging_ != NULL)
+    delete postVsKriging_;
+
+  if (block_grid_ != NULL)
+    delete block_grid_;
+
+  if (facies_prob_undef_ != NULL)
+    delete facies_prob_undef_;
+
+  if (quality_grid_ != NULL)
+    delete quality_grid_;
+
+  for (size_t i = 0; i < simulations_seed0_.size(); i++) {
+    if (simulations_seed0_[i] != NULL)
+      delete simulations_seed0_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed1_.size(); i++) {
+    if (simulations_seed1_[i] != NULL)
+      delete simulations_seed1_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed2_.size(); i++) {
+    if (simulations_seed2_[i] != NULL)
+      delete simulations_seed2_[i];
+  }
+
+  for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
+    if (synt_seismic_data_[i] != NULL)
+      delete synt_seismic_data_[i];
+  }
+
+  for (size_t i = 0; i < synt_residuals_.size(); i++) {
+    if (synt_residuals_[i] != NULL)
+      delete synt_residuals_[i];
+  }
+
+  for (size_t i = 0; i < facies_prob_.size(); i++) {
+    if (facies_prob_[i] != NULL)
+      delete facies_prob_[i];
+  }
+
+  for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
+    if (facies_prob_geo_[i] != NULL)
+      delete facies_prob_geo_[i];
+  }
+
+  for (size_t i = 0; i < lh_cube_.size(); i++) {
+    if (lh_cube_[i] != NULL)
+      delete lh_cube_[i];
+  }
+
 
 }
 //--------------------------------------------------------------------
@@ -108,8 +172,6 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
   meanRho_ = new FFTGrid(meanRho);
 }
 
-
-
 void
 SeismicParametersHolder::setCorrelationParameters(const NRLib::Matrix       & priorVar0,
                                                   const std::vector<double> & priorCorrT,
@@ -124,42 +186,7 @@ SeismicParametersHolder::setCorrelationParameters(const NRLib::Matrix       & pr
                                                   const int                 & nyPad,
                                                   const int                 & nzPad)
 {
-  //priorVar0_.resize(3,3);
   priorVar0_ = priorVar0;
-
-  //priorVar0_(0,0) = static_cast<double>(priorVar0[0][0]);
-  //priorVar0_(1,0) = static_cast<double>(priorVar0[1][0]);
-  //priorVar0_(2,0) = static_cast<double>(priorVar0[2][0]);
-  //priorVar0_(0,1) = static_cast<double>(priorVar0[0][1]);
-  //priorVar0_(1,1) = static_cast<double>(priorVar0[1][1]);
-  //priorVar0_(2,1) = static_cast<double>(priorVar0[2][1]);
-  //priorVar0_(0,2) = static_cast<double>(priorVar0[0][2]);
-  //priorVar0_(1,2) = static_cast<double>(priorVar0[1][2]);
-  //priorVar0_(2,2) = static_cast<double>(priorVar0[2][2]);
-
-
-  // check if covariance is well conditioned and robustify
-  //NRLib::Vector eVals(3);
-  //NRLib::Matrix eVec(3,3);
-  //NRLib::Matrix tmp(3,3);
-  //tmp=priorVar0_;
-  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
-
-  //double maxVal = eVals(0);
-
-  //for(int i=1;i<3;i++)
-  //  if(maxVal<eVals(i))
-  //    maxVal=eVals(i);
-
-  //for(int k=0;k<3;k++){
-  //  if(eVals(k)<maxVal*0.001){
-  //    for(int i=0;i<3;i++)
-  //      for(int j=0;j<3;j++)
-  //        priorVar0_(i,j)+= eVec(k,i)*eVec(k,j)*(maxVal*0.0011-eVals(k));
-  //  }
-  //}
-  //tmp=priorVar0_;
-  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
 
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
@@ -828,3 +855,97 @@ SeismicParametersHolder::createPostCov00(FFTGrid * postCov) const
   return postCov00;
 }
 //--------------------------------------------------------------------
+
+void SeismicParametersHolder::releaseGrids()
+{
+  if (postVp_ != NULL)
+    delete postVp_;
+
+  if (postVs_ != NULL)
+    delete postVs_;
+
+  if (postRho_ != NULL)
+    delete postRho_;
+
+  if (postVpKriging_ != NULL)
+    delete postVpKriging_;
+
+  if (postVsKriging_ != NULL)
+    delete postVsKriging_;
+
+  if (block_grid_ != NULL)
+    delete block_grid_;
+
+  if (facies_prob_undef_ != NULL)
+    delete facies_prob_undef_;
+
+  if (quality_grid_ != NULL)
+    delete quality_grid_;
+
+  for (size_t i = 0; i < simulations_seed0_.size(); i++) {
+    if (simulations_seed0_[i] != NULL)
+      delete simulations_seed0_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed1_.size(); i++) {
+    if (simulations_seed1_[i] != NULL)
+      delete simulations_seed1_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed2_.size(); i++) {
+    if (simulations_seed2_[i] != NULL)
+      delete simulations_seed2_[i];
+  }
+
+  for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
+    if (synt_seismic_data_[i] != NULL)
+      delete synt_seismic_data_[i];
+  }
+
+  for (size_t i = 0; i < synt_residuals_.size(); i++) {
+    if (synt_residuals_[i] != NULL)
+      delete synt_residuals_[i];
+  }
+
+  for (size_t i = 0; i < facies_prob_.size(); i++) {
+    if (facies_prob_[i] != NULL)
+      delete facies_prob_[i];
+  }
+
+  for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
+    if (facies_prob_geo_[i] != NULL)
+      delete facies_prob_geo_[i];
+  }
+
+  for (size_t i = 0; i < lh_cube_.size(); i++) {
+    if (lh_cube_[i] != NULL)
+      delete lh_cube_[i];
+  }
+}
+
+//FFTGrid*
+//SeismicParametersHolder::copyFFTGrid(FFTGrid * fft_grid_old)
+//{
+//  FFTGrid* fft_grid;
+//  if(fft_grid_old->isFile())
+//    fft_grid = new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fft_grid_old));
+//  else
+//    fft_grid = new FFTGrid(fft_grid_old);
+//
+//  return(fft_grid);
+//}
+
+FFTGrid*
+SeismicParametersHolder::copyFFTGrid(FFTGrid * fft_grid_old)
+{
+  FFTGrid* fft_grid;
+  if(fft_grid_old->isFile()) {
+    fft_grid_old->endAccess();
+    fft_grid = new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fft_grid_old));
+    //fft_grid = new FFTGrid(reinterpret_cast<FFTGrid*>(fft_grid_old));
+  }
+  else
+    fft_grid = new FFTGrid(fft_grid_old);
+
+  return(fft_grid);
+}

@@ -54,6 +54,37 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   forward_modeling_ = model_settings->getForwardModeling();
 
+
+  //H-Test
+  //FFTFileGrid * test1 = new FFTFileGrid(10,10,10,10,10,10);
+  //test1->createRealGrid();
+  //test1->setAccessMode(FFTGrid::RANDOMACCESS);
+  //for (int k=0;k<10;k++)
+  //  for (int j=0;j<10;j++)
+  //    for (int i=0;i<10;i++)
+  //      test1->setRealValue(i, j, k, 1);
+
+  //bool file = test1->isFile();
+
+  //FFTFileGrid * test_1_filekopi = new FFTFileGrid(test1);
+
+
+  //FFTGrid * test_1_kopi_tilgrid = new FFTFileGrid(test1);
+
+  //test1->endAccess();
+  //test1->setAccessMode(FFTGrid::READ);
+
+  //FFTGrid * test1_kopi = new FFTGrid(test1);
+  //
+  //test1->endAccess();
+  //test1->setAccessMode(FFTGrid::RANDOMACCESS);
+
+  //FFTGrid * test1_referanse = new FFTGrid(*test1);
+  //for (int k=0;k<10;k++)
+  //  for (int j=0;j<10;j++)
+  //    for (int i=0;i<10;i++)
+  //      test1->setRealValue(i, j, k, 2);
+
   // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, err_text);
 
@@ -4097,6 +4128,16 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
       full_inversion_simbox.SetXPadFactor(0.0);
       full_inversion_simbox.SetYPadFactor(0.0);
       full_inversion_simbox.SetZPadFactor(0.0);
+
+      //H Needed for writing
+      int output_format = model_settings->getOutputGridFormat();
+      int output_domain = model_settings->getOutputGridDomain();
+      if ((output_domain & IO::TIMEDOMAIN) > 0) {
+        std::string top_surf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+        std::string base_surf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+        full_inversion_simbox.setTopBotName(top_surf, base_surf, output_format);
+      }
+
     }
     catch(NRLib::Exception & e){
       err_text += e.what();
@@ -5404,6 +5445,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
       }
     }
     else {
+      LogKit::LogFormatted(LogKit::Low,"\n CRAVA input not allowed in multiple intervals");
       assert(0); //Do not currently allow use of crava format files with multizone.
       for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
         int nx = interval_simboxes[i_interval].getnx();

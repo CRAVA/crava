@@ -211,6 +211,8 @@ int main(int argc, char** argv)
 
     common_data = new CommonData(modelSettings, inputFiles);
 
+    std::vector<SeismicParametersHolder> seismicParametersIntervals(common_data->GetMultipleIntervalGrid()->GetNIntervals());
+
     //Loop over intervals
     for (int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
 
@@ -226,21 +228,21 @@ int main(int argc, char** argv)
       //Priormodell i 3D
 
       //From NRLib::Grid to FFT-grid, need to fill in padding.
-      SeismicParametersHolder seismicParametersInterval;
+      //SeismicParametersHolder seismicParametersInterval;
 
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
       //Forventningsgrid (fra multisonegrid)
-      seismicParametersInterval.setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
-                                                                simbox->GetNXpad(),
-                                                                simbox->GetNYpad(),
-                                                                simbox->GetNZpad());
+      seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
+                                                                             simbox->GetNXpad(),
+                                                                             simbox->GetNYpad(),
+                                                                             simbox->GetNZpad());
 
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-      cravaResult->AddBackgroundVp(interval_name, seismicParametersInterval.GetMeanVp());
-      cravaResult->AddBackgroundVs(interval_name, seismicParametersInterval.GetMeanVs());
-      cravaResult->AddBackgroundRho(interval_name, seismicParametersInterval.GetMeanRho());
+      cravaResult->AddBackgroundVp(interval_name, seismicParametersIntervals[i_interval].GetMeanVp());
+      cravaResult->AddBackgroundVs(interval_name, seismicParametersIntervals[i_interval].GetMeanVs());
+      cravaResult->AddBackgroundRho(interval_name, seismicParametersIntervals[i_interval].GetMeanRho());
 
       //Realease background grids from common_data.
       common_data->ReleaseBackgroundGrids(i_interval);
@@ -254,18 +256,18 @@ int main(int argc, char** argv)
       float low_cut   = modelSettings->getLowCut();
       int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
-      seismicParametersInterval.setCorrelationParameters(common_data->GetPriorParamCov(i_interval),
-                                                         common_data->GetPriorCorrT(i_interval),
-                                                         common_data->GetPriorCorrXY(i_interval),
-                                                         low_int_cut,
-                                                         corr_grad_I,
-                                                         corr_grad_J,
-                                                         simbox->getnx(),
-                                                         simbox->getny(),
-                                                         simbox->getnz(),
-                                                         simbox->GetNXpad(),
-                                                         simbox->GetNYpad(),
-                                                         simbox->GetNZpad());
+      seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorParamCov(i_interval),
+                                                                      common_data->GetPriorCorrT(i_interval),
+                                                                      common_data->GetPriorCorrXY(i_interval),
+                                                                      low_int_cut,
+                                                                      corr_grad_I,
+                                                                      corr_grad_J,
+                                                                      simbox->getnx(),
+                                                                      simbox->getny(),
+                                                                      simbox->getnz(),
+                                                                      simbox->GetNXpad(),
+                                                                      simbox->GetNYpad(),
+                                                                      simbox->GetNZpad());
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,
@@ -273,7 +275,7 @@ int main(int argc, char** argv)
                         modelGravityStatic,
                         modelSettings,
                         inputFiles,
-                        seismicParametersInterval,
+                        seismicParametersIntervals[i_interval],
                         common_data,
                         i_interval);
 
@@ -323,7 +325,7 @@ int main(int argc, char** argv)
         bool first     = true;
         while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
           if (first == false) {
-             modelGeneral->AdvanceTime(time_index, seismicParametersInterval, modelSettings);
+             modelGeneral->AdvanceTime(time_index, seismicParametersIntervals[i_interval], modelSettings);
              time_index++;
           }
           bool failed;
@@ -333,7 +335,7 @@ int main(int argc, char** argv)
                                              modelGeneral,
                                              modelAVOstatic,
                                              common_data,
-                                             seismicParametersInterval,
+                                             seismicParametersIntervals[i_interval],
                                              eventIndex,
                                              i_interval);
             break;
@@ -343,7 +345,7 @@ int main(int argc, char** argv)
                                                     modelGeneral,
                                                     inputFiles,
                                                     eventIndex,
-                                                    seismicParametersInterval);
+                                                    seismicParametersIntervals[i_interval]);
             break;
           case TimeLine::GRAVITY :
             failed = doTimeLapseGravimetricInversion(modelSettings,
@@ -352,7 +354,7 @@ int main(int argc, char** argv)
                                                      common_data,
                                                      inputFiles,
                                                      eventIndex,
-                                                     seismicParametersInterval);
+                                                     seismicParametersIntervals[i_interval]);
             break;
           default :
             failed = true;
@@ -370,14 +372,16 @@ int main(int argc, char** argv)
         // 3D inverson, store results per interval in a multiintervalgrid (similar to background models)
 
         //std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-        cravaResult->AddParameters(seismicParametersInterval, interval_name);
+        //cravaResult->AddParameters(seismicParametersIntervals[i_interval], interval_name);
 
        }
     } //interval_loop
 
 
     //Combine interval grids to one grid per parameter
-    cravaResult->CombineResults(common_data->GetMultipleIntervalGrid()); //Not working
+    cravaResult->CombineResults(modelSettings,
+                                common_data,
+                                seismicParametersIntervals); //Not working
 
     //Write results
     const Simbox & simbox = common_data->GetFullInversionSimbox();

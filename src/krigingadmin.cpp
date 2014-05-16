@@ -241,7 +241,7 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
     //H-Writing
     //blockGrid->writeFile("BlockGrid",IO::PathToInversionResults(), &simbox_);
     seismicParameters.SetBlockGrid(blockGrid);
-    delete blockGrid;
+    //delete blockGrid;
   }
 
   trendAlpha_ = &trendAlpha;

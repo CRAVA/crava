@@ -159,6 +159,8 @@ public:
 
   void               ReleaseBackgroundGrids(int i_interval);
 
+  static int         FindClosestFactorableNumber(int leastint);
+
 private:
 
   void               LoadWellMoveInterval(const InputFiles             * input_files,
@@ -558,7 +560,7 @@ private:
 
   int                GetFillNumber(int i, int n, int np);
 
-  int                FindClosestFactorableNumber(int leastint);
+  //int                FindClosestFactorableNumber(int leastint);
 
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,

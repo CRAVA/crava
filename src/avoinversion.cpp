@@ -250,6 +250,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if(modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
 
+    //H Moved computation of synthetic seismic until after postVp, postVs and postRho are combined for intervals.
     if(modelSettings->getGenerateSeismicAfterInv())
       computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
     //
@@ -1755,15 +1756,20 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, Seis
         }
       }
     }
+
     std::string angle     = NRLib::ToString(thetaDeg_[l],1);
     std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
     std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
     if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
       (modelSettings_->getForwardModeling() == true))
       seismicParameters.AddSyntSeismicData(imp);
+
     // H-Writing
       //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+
     if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
+      FFTGrid * imp_residual = new FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+
       FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
 
       std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
@@ -1775,7 +1781,7 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, Seis
           for (int j=0;j<ny_;j++) {
             for (int i=0;i<nx_;i++) {
               float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
-              imp->setRealValue(i, j, k, residual);
+              imp_residual->setRealValue(i, j, k, residual);
             }
           }
         }
@@ -1783,14 +1789,14 @@ AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, Seis
         fileName = IO::PrefixSyntheticResiduals() + angle;
         //H-Writing
         //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-        seismicParameters.AddSyntResiduals(imp);
+        seismicParameters.AddSyntResiduals(imp_residual);
       }
       else {
         errText += "\nFailed to read temporary stored seismic data.\n";
         LogKit::LogMessage(LogKit::Error,errText);
       }
     }
-    delete imp;
+    //delete imp;
   }
 
   if(fftDomain == true) {
@@ -2130,7 +2136,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
         //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         seismicParameters.AddLHCube(grid);
-        delete grid;
+        //delete grid;
       }
     }
 

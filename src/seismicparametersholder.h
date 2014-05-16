@@ -77,39 +77,40 @@ public:
   void                          FFTAllGrids();
   void                          updatePriorVar();
 
-  void SetPostVp(FFTGrid * vp)   { postVp_ = new FFTGrid(vp)   ;}
-  void SetPostVs(FFTGrid * vs)   { postVs_ = new FFTGrid(vs)   ;}
-  void SetPostRho(FFTGrid * rho) { postRho_ = new FFTGrid(rho) ;}
+  void SetPostVp(FFTGrid * vp)                               { postVp_  = new FFTGrid(vp)                           ;}
+  void SetPostVs(FFTGrid * vs)                               { postVs_  = new FFTGrid(vs)                           ;}
+  void SetPostRho(FFTGrid * rho)                             { postRho_ = new FFTGrid(rho)                          ;}
 
-  void SetPostVpKriging(FFTGrid * vp)   { postVpKriging_ = new FFTGrid(vp)   ;}
-  void SetPostVsKriging(FFTGrid * vs)   { postVsKriging_ = new FFTGrid(vs)   ;}
-  void SetPostRhoKriging(FFTGrid * rho) { postRhoKriging_ = new FFTGrid(rho) ;}
+  void SetPostVpKriging(FFTGrid * vp)                        { postVpKriging_  = new FFTGrid(vp)                    ;}
+  void SetPostVsKriging(FFTGrid * vs)                        { postVsKriging_  = new FFTGrid(vs)                    ;}
+  void SetPostRhoKriging(FFTGrid * rho)                      { postRhoKriging_ = new FFTGrid(rho)                   ;}
 
-  void SetPostVar0(NRLib::Matrix & postVar0)              { postVar0_     = postVar0     ;}
-  void SetPostCovVp00(std::vector<float> & postCovVp00)   { postCovVp00_  = postCovVp00  ;}
-  void SetPostCovVs00(std::vector<float> & postCovVs00)   { postCovVs00_  = postCovVs00  ;}
-  void SetPostCovRho00(std::vector<float> & postCovRho00) { postCovRho00_ = postCovRho00 ;}
+  void SetPostVar0(NRLib::Matrix & postVar0)                 { postVar0_     = postVar0                             ;}
+  void SetPostCovVp00(std::vector<float> & postCovVp00)      { postCovVp00_  = postCovVp00                          ;}
+  void SetPostCovVs00(std::vector<float> & postCovVs00)      { postCovVs00_  = postCovVs00                          ;}
+  void SetPostCovRho00(std::vector<float> & postCovRho00)    { postCovRho00_ = postCovRho00                         ;}
 
-  void SetCorrT(fftw_real * corr_T)              { corr_T_          = corr_T          ;}
-  void SetCorrTFiltered(float * corr_T_filtered) { corr_T_filtered_ = corr_T_filtered ;}
+  void SetCorrT(fftw_real * corr_T)                          { corr_T_          = corr_T                            ;}
+  void SetCorrTFiltered(float * corr_T_filtered)             { corr_T_filtered_ = corr_T_filtered                   ;}
 
-  void AddSimulationSeed0(FFTGrid * seed0) { simulations_seed0_.push_back(new FFTGrid(*seed0)) ;}
-  void AddSimulationSeed1(FFTGrid * seed1) { simulations_seed1_.push_back(new FFTGrid(*seed1)) ;}
-  void AddSimulationSeed2(FFTGrid * seed2) { simulations_seed2_.push_back(new FFTGrid(*seed2)) ;}
+  void AddSimulationSeed0(FFTGrid * seed0)                   { simulations_seed0_.push_back(new FFTGrid(seed0))     ;} //Copy: They are overwritten?
+  void AddSimulationSeed1(FFTGrid * seed1)                   { simulations_seed1_.push_back(new FFTGrid(seed1))     ;}
+  void AddSimulationSeed2(FFTGrid * seed2)                   { simulations_seed2_.push_back(new FFTGrid(seed2))     ;}
 
-  void AddSyntSeismicData(FFTGrid * grid) { synt_seismic_data_.push_back(new FFTGrid(*grid)) ;}
-  void AddSyntResiduals(FFTGrid * grid)   { synt_residuals_.push_back(new FFTGrid(*grid))    ;}
+  void AddSyntSeismicData(FFTGrid * grid)                    { synt_seismic_data_.push_back(grid)                   ;}
+  //void AddSyntSeismicData(FFTGrid * grid)                    { synt_seismic_data_.push_back(copyFFTGrid(grid))      ;}
+  void AddSyntResiduals(FFTGrid * grid)                      { synt_residuals_.push_back(grid)                      ;}
 
-  void SetBlockGrid(FFTGrid * grid) { block_grid_ = new FFTGrid(*grid) ;}
+  void SetBlockGrid(FFTGrid * grid)                          { block_grid_ = grid                                   ;}
 
-  void AddFaciesProb(FFTGrid * facies_prob) { facies_prob_.push_back(new FFTGrid(facies_prob)) ;}
-  void AddFaciesProbUndef(FFTGrid * facies_prob_undef) { facies_prob_undef_ = new FFTGrid(facies_prob_undef) ;}
+  void AddFaciesProb(FFTGrid * facies_prob)                  { facies_prob_.push_back(new FFTGrid(facies_prob))     ;} //overwritten?
+  void AddFaciesProbUndef(FFTGrid * facies_prob_undef)       { facies_prob_undef_ = new FFTGrid(facies_prob_undef)  ;}
 
-  void AddFaciesProbGeomodel(FFTGrid * facies_prob) { facies_prob_geo_.push_back(new FFTGrid(facies_prob)) ;}
+  void AddFaciesProbGeomodel(FFTGrid * facies_prob)          { facies_prob_geo_.push_back(new FFTGrid(facies_prob)) ;}
 
-  void AddLHCube(FFTGrid * lh_cube) { lh_cube_.push_back(new FFTGrid(lh_cube)) ;}
+  void AddLHCube(FFTGrid * lh_cube)                          { lh_cube_.push_back(lh_cube)                          ;}
 
-  void SetQualityGrid(FFTGrid * grid) { quality_grid_ = new FFTGrid(*grid) ;}
+  void SetQualityGrid(FFTGrid * grid)                        { quality_grid_ = grid                                 ;}
 
 
   void                          setBackgroundParameters(FFTGrid  * meanVp,
@@ -180,6 +181,10 @@ public:
 
   std::vector<float>            createPostCov00(FFTGrid * postCov) const;
 
+  void                          releaseGrids();
+
+  FFTGrid *                     copyFFTGrid(FFTGrid * fft_grid_old);
+
 private:
   void                          createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
 
@@ -247,7 +252,7 @@ private:
   FFTGrid * block_grid_;
 
   std::vector<FFTGrid *> facies_prob_;
-  FFTGrid * facies_prob_undef_;
+  FFTGrid *              facies_prob_undef_;
   std::vector<FFTGrid *> facies_prob_geo_;
 
   std::vector<FFTGrid *> lh_cube_;

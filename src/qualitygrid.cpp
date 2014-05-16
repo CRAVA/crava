@@ -51,7 +51,7 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
   //ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
   seismicParameters.SetQualityGrid(grid);
 
-  delete grid;
+  //delete grid;
 }
 
 void QualityGrid::generateProbField(FFTGrid                                   *& grid,
