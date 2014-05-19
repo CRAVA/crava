@@ -6070,7 +6070,6 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
                                      rmt,
                                      nz,
                                      nzp);
-                                     //grid.GetNK());
 
             //Add trend
             for (size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)

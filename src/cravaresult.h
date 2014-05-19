@@ -31,8 +31,8 @@ public:
 
   ~CravaResult();
 
-  void AddParameters(SeismicParametersHolder & seismic_parameters,
-                     std::string             & interval_name);
+  //void AddParameters(SeismicParametersHolder & seismic_parameters,
+  //                   std::string             & interval_name);
 
   void CombineResults(ModelSettings                        * model_settings,
                       CommonData                           * common_data,
@@ -62,10 +62,47 @@ public:
                          std::vector<std::string>                     facies_name,
                          std::vector<int>                             facies_label);
 
-  void FindNz(const Simbox      & full_inversion_simbox,
-              MultiIntervalGrid * multi_interval_grid,
-              int               & nz,
-              double            & dz);
+  void FindDzMin(const Simbox      & full_inversion_simbox,
+                 MultiIntervalGrid * multi_interval_grid,
+                 //int               & nz,
+                 double            & dz);
+
+  //void ResampleTrace(const std::vector<float> & data_trace,
+  //                   const rfftwnd_plan       & fftplan1,
+  //                   const rfftwnd_plan       & fftplan2,
+  //                   fftw_real                * rAmpData,
+  //                   fftw_real                * rAmpFine,
+  //                   int                        cnt,
+  //                   int                        rnt,
+  //                   int                        cmt,
+  //                   int                        rmt);
+
+  //void InterpolateGridValues(std::vector<float> & grid_trace,
+  //                           float                z0_grid,
+  //                           float                dz_grid,
+  //                           fftw_real          * rAmpFine,
+  //                           float                z0_data,
+  //                           float                dz_fine,
+  //                           int                  n_fine,
+  //                           int                  nz,
+  //                           int                  nzp);
+
+  //int GetZSimboxIndex(int k,
+  //                    int nz,
+  //                    int nzp);
+
+  //void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+  //                              float                      z0_grid,
+  //                              float                      dz_grid,
+  //                              const std::vector<float> & trend_long,
+  //                              float                      z0_data,
+  //                              float                      dz_fine,
+  //                              int                        n_fine,
+  //                              int                        nz,
+  //                              int                        nzp);
+
+  void ResampleSimple(std::vector<float>       & new_trace,
+                      const std::vector<float> & old_trace);
 
   //GET FUNCTIONS
 
@@ -77,7 +114,75 @@ public:
 private:
 
   //Resuls per interval
-  //std::map<std::string, FFTGrid *> post_vp_intervals_;
+  std::map<std::string, FFTGrid *> background_vp_intervals_;
+  std::map<std::string, FFTGrid *> background_vs_intervals_;
+  std::map<std::string, FFTGrid *> background_rho_intervals_;
+
+  //Results combined
+  FFTGrid                        * cov_vp_;
+  FFTGrid                        * cov_vs_;
+  FFTGrid                        * cov_rho_;
+  FFTGrid                        * cr_cov_vp_vs_;
+  FFTGrid                        * cr_cov_vp_rho_;
+  FFTGrid                        * cr_cov_vs_rho_;
+
+  FFTGrid                        * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
+  FFTGrid                        * post_vs_;
+  FFTGrid                        * post_rho_;
+
+  FFTGrid                        * post_vp_kriging_; //From avoinversion doPredictionKriging()
+  FFTGrid                        * post_vs_kriging_;
+  FFTGrid                        * post_rho_kriging_;
+
+  FFTGrid                        * background_vp_;
+  FFTGrid                        * background_vs_;
+  FFTGrid                        * background_rho_;
+
+  std::vector<FFTGrid *>           simulations_seed0_; //Vector over number of simulations
+  std::vector<FFTGrid *>           simulations_seed1_;
+  std::vector<FFTGrid *>           simulations_seed2_;
+
+  fftw_real                      * corr_T_;
+  float                          * corr_T_filtered_;
+
+  NRLib::Matrix                    post_var0_;
+  std::vector<float>               post_cov_vp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float>               post_cov_vs00_;
+  std::vector<float>               post_cov_rho00_;
+
+  std::vector<FFTGrid *>           synt_seismic_data_; //Vector angles
+  std::vector<FFTGrid *>           synt_residuals_;
+
+  FFTGrid                        * block_grid_;
+
+  std::vector<FFTGrid *>           facies_prob_;
+  FFTGrid                        * facies_prob_undef_;
+
+  std::vector<FFTGrid *>           facies_prob_geo_;
+
+  std::vector<FFTGrid *>           lh_cubes_;
+
+  FFTGrid                        * quality_grid_;
+
+  int                              n_intervals_;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //std::map<std::string, FFTGrid *> post_vp_intervals_;
   //std::map<std::string, FFTGrid *> post_vs_intervals_;
   //std::map<std::string, FFTGrid *> post_rho_intervals_;
 
@@ -104,10 +209,6 @@ private:
   //std::map<std::string, std::vector<FFTGrid *> > simulations_seed1_intervals_;
   //std::map<std::string, std::vector<FFTGrid *> > simulations_seed2_intervals_;
 
-  std::map<std::string, FFTGrid *> background_vp_intervals_;
-  std::map<std::string, FFTGrid *> background_vs_intervals_;
-  std::map<std::string, FFTGrid *> background_rho_intervals_;
-
   //std::map<std::string, std::vector<FFTGrid *> > synt_seismic_data_intervals_; //Vector over angles
   //std::map<std::string, std::vector<FFTGrid *> > synt_residuals_intervals_;
 
@@ -122,55 +223,6 @@ private:
 
   //std::map<std::string, FFTGrid *> quality_grid_intervals_;
 
-
-
-  //Results combined
-  FFTGrid * cov_vp_;
-  FFTGrid * cov_vs_;
-  FFTGrid * cov_rho_;
-  FFTGrid * cr_cov_vp_vs_;
-  FFTGrid * cr_cov_vp_rho_;
-  FFTGrid * cr_cov_vs_rho_;
-
-  FFTGrid * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
-  FFTGrid * post_vs_;
-  FFTGrid * post_rho_;
-
-  FFTGrid * post_vp_kriging_; //From avoinversion doPredictionKriging()
-  FFTGrid * post_vs_kriging_;
-  FFTGrid * post_rho_kriging_;
-
-  FFTGrid * background_vp_;
-  FFTGrid * background_vs_;
-  FFTGrid * background_rho_;
-
-  std::vector<FFTGrid *> simulations_seed0_; //Vector over number of simulations
-  std::vector<FFTGrid *> simulations_seed1_;
-  std::vector<FFTGrid *> simulations_seed2_;
-
-  fftw_real * corr_T_;
-  float     * corr_T_filtered_;
-
-  NRLib::Matrix      post_var0_;
-  std::vector<float> post_cov_vp00_;        // Posterior covariance in (i,j) = (0,0)
-  std::vector<float> post_cov_vs00_;
-  std::vector<float> post_cov_rho00_;
-
-  std::vector<FFTGrid *> synt_seismic_data_; //Vector angles
-  std::vector<FFTGrid *> synt_residuals_;
-
-  FFTGrid * block_grid_;
-
-  std::vector<FFTGrid *> facies_prob_;
-  FFTGrid * facies_prob_undef_;
-
-  std::vector<FFTGrid *> facies_prob_geo_;
-
-  std::vector<FFTGrid *> lh_cubes_;
-
-  FFTGrid * quality_grid_;
-
-  int n_intervals_;
 
 };
 

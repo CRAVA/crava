@@ -127,6 +127,16 @@ public:
                                 bool                 is_segy  = true,
                                 bool                 is_storm = false);
 
+  static void         ResampleTrace(const std::vector<float> & data_trace,
+                                    const rfftwnd_plan       & fftplan1,
+                                    const rfftwnd_plan       & fftplan2,
+                                    fftw_real                * rAmpData,
+                                    fftw_real                * rAmpFine,
+                                    int                        cnt,
+                                    int                        rnt,
+                                    int                        cmt,
+                                    int                        rmt);
+
   static FFTGrid *   CreateFFTGrid(int nx,
                                    int ny,
                                    int nz,
@@ -158,8 +168,6 @@ public:
   static std::string ConvertInt(int number);
 
   void               ReleaseBackgroundGrids(int i_interval);
-
-  static int         FindClosestFactorableNumber(int leastint);
 
 private:
 
@@ -560,21 +568,21 @@ private:
 
   int                GetFillNumber(int i, int n, int np);
 
-  //int                FindClosestFactorableNumber(int leastint);
+  int                FindClosestFactorableNumber(int leastint);
 
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,
                                             float                smooth_length);
 
-  void               ResampleTrace(const std::vector<float> & data_trace,
-                                   const rfftwnd_plan       & fftplan1,
-                                   const rfftwnd_plan       & fftplan2,
-                                   fftw_real                * rAmpData,
-                                   fftw_real                * rAmpFine,
-                                   int                        cnt,
-                                   int                        rnt,
-                                   int                        cmt,
-                                   int                        rmt);
+  //void               ResampleTrace(const std::vector<float> & data_trace,
+  //                                 const rfftwnd_plan       & fftplan1,
+  //                                 const rfftwnd_plan       & fftplan2,
+  //                                 fftw_real                * rAmpData,
+  //                                 fftw_real                * rAmpFine,
+  //                                 int                        cnt,
+  //                                 int                        rnt,
+  //                                 int                        cmt,
+  //                                 int                        rmt);
 
   void               InterpolateGridValues(std::vector<float> & grid_trace,
                                            float                z0_grid,

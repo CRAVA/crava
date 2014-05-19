@@ -21,9 +21,9 @@ CravaResult::~CravaResult()
 {
 }
 
-void CravaResult::AddParameters(SeismicParametersHolder & seismic_parameters,
-                                std::string             & interval_name)
-{
+//void CravaResult::AddParameters(SeismicParametersHolder & seismic_parameters,
+//                                std::string             & interval_name)
+//{
 
   //post_vp_intervals_[interval_name]  = new FFTGrid(*seismic_parameters.GetPostVp());
   //post_vs_intervals_[interval_name]  = new FFTGrid(seismic_parameters.GetPostVs());
@@ -72,10 +72,7 @@ void CravaResult::AddParameters(SeismicParametersHolder & seismic_parameters,
   //if (seismic_parameters.GetQualityGrid() != NULL)
   //  quality_grid_intervals_[interval_name] = new FFTGrid(seismic_parameters.GetQualityGrid());
 
-
-
-
-}
+//}
 
 void CravaResult::CombineResults(ModelSettings                        * model_settings,
                                  CommonData                           * common_data,
@@ -93,33 +90,30 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     int nx  = full_inversion_simbox.getnx();
     int ny  = full_inversion_simbox.getny();
-    //int nz  = full_inversion_simbox.getnz(); //1
-    int nxp = full_inversion_simbox.GetNXpad();
-    int nyp = full_inversion_simbox.GetNYpad();
-    int nzp = full_inversion_simbox.GetNZpad();
-
-    //FFTGrid * post_vp_final = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
 
     //Store final grid as stormgrid
     //Compaction: Use the finest dz between intervals
 
     //Find maximum nz from all traces (based on interval with lowest dz)
-    int nz_new    = 0;
-    double dz_new = 0;
+    double dz_min = 0.0;
+    FindDzMin(full_inversion_simbox, multi_interval_grid, dz_min);
 
-    FindNz(full_inversion_simbox, multi_interval_grid, nz_new, dz_new);
-
+    int nz_max = (full_inversion_simbox.getBotZMax() - full_inversion_simbox.getTopZMin()) / dz_min;
 
     //int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
     //const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
 
     const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
 
+    StormContGrid * post_vp = new StormContGrid(full_inversion_simbox, nx, ny, nz_max);
+
     //Resample
     for (int i = 0; i < nx; i++) {
       for (int j = 0; j < ny; j++) {
 
-        //Find minumum dz for each interval
+        std::vector<std::vector<float> > new_traces(n_intervals);
+
+        //Resample each trace to new nz
         for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
           //Use erosion priorities to decide overlapping intervals (?)
@@ -127,7 +121,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
           Simbox * interval_simbox  = multi_interval_grid->GetIntervalSimbox(i_interval);
           FFTGrid * cov_vp_interval = seismic_parameters_intervals[i_interval].GetPostVp();
 
-          std::vector<float> & trace = cov_vp_interval->getRealTrace2(i, j);
+          std::vector<float> & old_trace = cov_vp_interval->getRealTrace2(i, j);
 
           double top_value = interval_simbox->getTop(i,j);
           double bot_value = interval_simbox->getBot(i,j);
@@ -136,17 +130,46 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
           double dz_old    = (bot_value - top_value) / nz_old;
 
           //Resample to new nz based on minimum dz from all traces and intervals
-          int nz_new = (bot_value - top_value) / dz_new;
+          int nz_new = (bot_value - top_value) / dz_min;
 
           //H-TEST For resampling
           nz_new = nz_new + 50;
 
-          std::vector<float> trace_new(nz_new);
+          new_traces[i_interval].resize(nz_new);
 
-          //From CommonData FillInData
-          int nt = CommonData::FindClosestFactorableNumber(nz_new);
+          //H-Writing
+          std::string file_name = "combine/old_trace";
+          std::ofstream file;
+          NRLib::OpenWrite(file, file_name);
+          file << std::fixed
+               << std::setprecision(6);
+          for (size_t k = 0; k < old_trace.size(); k++)
+            file << old_trace[k] << " ";
+          file.close();
 
-          int mt = 4*nt;
+          //Resampling
+          //FFT(trace) -> pad with zeros until new nz -> IFFT back
+          std::vector<float> trace_new_simple(nz_new);
+          ResampleSimple(trace_new_simple, old_trace); //H Not working properly. Oscillates at the beginning and end.
+
+
+          //Alternative as in resampling of traces from CommonData::FillInData
+          //Remove trend -> fft -> pad with zeroes -> resample -> ifft -> add trend
+
+          //Remove trend from trace
+          size_t n_trace    = old_trace.size();
+          float trend_first = old_trace[0];
+          float trend_last  = old_trace[n_trace - 1];
+          float trend_inc   = (trend_last - trend_first) / (n_trace - 1);
+          for (size_t k_trace = 0; k_trace < old_trace.size(); k_trace++) {
+            old_trace[k_trace] -= trend_first + k_trace * trend_inc;
+          }
+
+          //int nt = CommonData::FindClosestFactorableNumber(nz_new);
+          //int mt = 4*nt;
+
+          int nt = nz_old;
+          int mt = nz_new;
 
           rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
           rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -159,158 +182,154 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
           fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
           fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-          fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
-          fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+          CommonData::ResampleTrace(old_trace,
+                                    fftplan1,
+                                    fftplan2,
+                                    rAmpData,
+                                    rAmpFine,
+                                    cnt,
+                                    rnt,
+                                    cmt,
+                                    rmt);
 
-          int n_data = static_cast<int>(trace.size());
-
-          for (int i = 0 ; i < n_data ; i++) {
-            rAmpData[i] = trace[i];
-          }
-
-          // Pad with zeros
-          for (int i = n_data; i < rnt; i++) { //H-CHECK Pad before transforming?
-            rAmpData[i] = 0.0f;
-          }
-
-          //
-          // Transform to Fourier domain
-          //
-          rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
-
-          //
-          // Fill fine-sampled grid
-          //
-          for (int i = 0; i < cnt; i++) {
-            cAmpFine[i].re = cAmpData[i].re;
-            cAmpFine[i].im = cAmpData[i].im;
-          }
-          // Pad with zeros (cmt is always greater than cnt)
-          for (int i = cnt; i < cmt; i++) {
-            cAmpFine[i].re = 0.0f;
-            cAmpFine[i].im = 0.0f;
-          }
-
-          //
-          // Fine-sampled grid: Fourier --> Time
-          //
-          rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
-
-          //
-          // Scale and fill grid_trace
-          //
-          std::vector<float> test(rmt);
-
-          float scale = 1/static_cast<float>(rnt);
-          for (int i = 0 ; i < rmt ; i++) {
-            rAmpFine[i] = scale*rAmpFine[i];
-
-            test[i] = rAmpFine[i];
+          //Add trend
+          trend_inc = (trend_last - trend_first) / (nz_new - 1);
+          for (int k = 0; k < nz_new; k++) {
+            new_traces[i_interval][k] = rAmpFine[k] + (trend_first + k*trend_inc);
           }
 
 
-
-          //Interplolate
-          double dz_fine = dz_old;
-          double dz_grid = dz_new;
-          int n_fine = rmt;
-          //float z0_shift = 0.0f;
-          int refk = 0;
-
-          double x  = 0.0;
-          double y  = 0.0;
-          double z0 = 0.0;
-          interval_simbox->getCoord(i, j, 0, x, y, z0);  // Get lateral position and z-start (z0)
-          float  xf = static_cast<float>(x);
-          float  yf = static_cast<float>(y);
-
-          double z_min = 0.0;
-          interval_simbox->getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
-          float z0_data = static_cast<float>(z_min);
-
-          float z0_grid = static_cast<float>(z0);
-
-          float z0_shift    = z0_grid - z0_data; //= 0 for fftgrid without geometry since simbox is used to getZCoord z0_data
-          float inv_dz_fine = 1.0f/dz_fine;
-
-          int n_grid = static_cast<int>(trace_new.size());
-
-          for (int k = 0; k < n_grid; k++) {
-
-            //GetZSimboxIndex(k, nz, nzp);
-
-            int nz = n_grid;
-            nzp = nz;
-
-            int refk;
-            if (k < (nz + nzp)/2)
-              refk=k;
-            else
-              refk=k-nzp;
-
-
-            float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
-            int   l1 = static_cast<int>(floor(dl));
-            int   l2 = static_cast<int>(ceil(dl));
-
-            if (l2 < 0 || l1 > n_fine - 1) {
-              trace_new[k] = 0.0f;
-            }
-            else {
-              if (l1 < 0) {
-                trace_new[k] = rAmpFine[l2];
-              }
-              else if (l2 > n_fine - 1) {
-                trace_new[k] = rAmpFine[l1];
-              }
-              else if (l1 == l2) {
-                trace_new[k] = rAmpFine[l1];
-              }
-              else {
-                float w1 = ceil(dl) - dl;
-                float w2 = dl - floor(dl);
-                trace_new[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
-              }
-            }
-          }
-
-          //H-TEMP Writing
-          std::string file_name = "old_trace";
-
-          std::ofstream file;
+          //H-Writing
+          file_name = "combine/new_trace_simple";
           NRLib::OpenWrite(file, file_name);
           file << std::fixed
-               << std::setprecision(2);
-
-          for (int k = 0; k < trace.size(); k++)
-            file << trace[k] << " ";
-
+                << std::setprecision(6);
+          for (size_t k = 0; k < trace_new_simple.size(); k++)
+            file << trace_new_simple[k] << " ";
           file.close();
 
-
-          file_name = "new_trace";
-          //std::ofstream file_2;
+          file_name = "combine/old_trace_without_trend";
           NRLib::OpenWrite(file, file_name);
           file << std::fixed
-               << std::setprecision(2);
-
-          for (int k = 0; k < trace_new.size(); k++)
-            file << trace_new[k] << " ";
-
+                << std::setprecision(6);
+          for (size_t k = 0; k < old_trace.size(); k++)
+            file << old_trace[k] << " ";
           file.close();
 
-          file_name = "rAmpFine";
-          //std::ofstream file_2;
+          file_name = "combine/rAmpFine";
           NRLib::OpenWrite(file, file_name);
           file << std::fixed
-               << std::setprecision(2);
-
+                << std::setprecision(6);
           for (int k = 0; k < rmt; k++)
             file << rAmpFine[k] << " ";
-
           file.close();
 
-          int b = 0;
+          file_name = "combine/new_trace_resampled";
+          NRLib::OpenWrite(file, file_name);
+          file << std::fixed
+               << std::setprecision(6);
+          for (size_t k = 0; k < new_traces[i_interval].size(); k++)
+            file << new_traces[i_interval][k] << " ";
+          file.close();
+
+
+
+
+          //std::vector<float> data_trace_trend_long;
+          //trend_inc = (trend_last - trend_first) / (rmt - 1);
+
+          //data_trace_trend_long.resize(rmt);
+          //for (int k_trace = 0; k_trace < rmt; k_trace++) {
+          //  data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
+          //}
+
+          //file_name = "combine/trend_long";
+          //NRLib::OpenWrite(file, file_name);
+          //file << std::fixed
+          //     << std::setprecision(6);
+          //for (int k = 0; k < data_trace_trend_long.size(); k++)
+          //  file << data_trace_trend_long[k] << " ";
+          //file.close();
+
+          //Interplolate
+          //double x  = 0.0;
+          //double y  = 0.0;
+          //double z0 = 0.0;
+          //interval_simbox->getCoord(i, j, 0, x, y, z0);  // Get lateral position and z-start (z0)
+          //float  xf = static_cast<float>(x);
+          //float  yf = static_cast<float>(y);
+
+          //float z0_grid = static_cast<float>(z0);
+
+          //double z_min = 0.0;
+          //double z_max = 0.0;
+
+          //interval_simbox->getZCoord(0, xf, yf, z_min);
+          //interval_simbox->getZCoord(nz_old, xf, yf, z_max);
+
+          //float dz_data = static_cast<float>((z_max- z_min) / nz_old);
+          //float dz_min  = dz_data/4.0f;
+          //float z0_data = static_cast<float>(z_min);
+
+          //double dz = interval_simbox->getdz(i, j);
+          //float dz_grid = static_cast<float>(dz);
+
+
+          //Includes a shift
+          //InterpolateGridValues(trace_new,
+          //                      z0_grid,     // Centre of first cell
+          //                      dz_grid,
+          //                      rAmpFine,
+          //                      z0_data,     // Time of first data sample
+          //                      dz_min,
+          //                      rmt,
+          //                      nz_new,
+          //                      nz_new); //nzp
+
+          //H-Writing
+          //file_name = "combine/trace_interpolated";
+          //NRLib::OpenWrite(file, file_name);
+          //file << std::fixed
+          //      << std::setprecision(6);
+          //for (int k = 0; k < trace_new.size(); k++)
+          //  file << trace_new[k] << " ";
+          //file.close();
+
+
+          //Interpolate and shift trend before adding to grid_trace.
+          //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
+          //std::vector<float> trend_interpolated(nz_new);
+          //InterpolateAndShiftTrend(trend_interpolated,
+          //                         z0_grid,     // Centre of first cell
+          //                         dz_grid,
+          //                         data_trace_trend_long,
+          //                         z0_data,     // Time of first data sample
+          //                         dz_min,
+          //                         rmt,
+          //                         nz_new,
+          //                         nz_new); //nzp
+
+          //H-Writing
+          //file_name = "combine/trend_interpolated";
+          //NRLib::OpenWrite(file, file_name);
+          //file << std::fixed
+          //      << std::setprecision(6);
+          //for (int k = 0; k < trend_interpolated.size(); k++)
+          //  file << trend_interpolated[k] << " ";
+          //file.close();
+
+
+          //Add trend
+          //for (size_t k_trace = 0; k_trace < trace_new.size(); k_trace++)
+          //  trace_new[k_trace] += trend_interpolated[k_trace];
+
+          //file_name = "combine/new_trace_resampled";
+          //NRLib::OpenWrite(file, file_name);
+          //file << std::fixed
+          //     << std::setprecision(6);
+          //for (int k = 0; k < trace_new.size(); k++)
+          //  file << trace_new[k] << " ";
+          //file.close();
 
         }
 
@@ -706,12 +725,12 @@ void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommo
   }
 }
 
-void CravaResult::FindNz(const Simbox      & full_inversion_simbox,
-                         MultiIntervalGrid * multi_interval_grid,
-                         int               & nz,
-                         double            & dz)
+void CravaResult::FindDzMin(const Simbox      & full_inversion_simbox,
+                            MultiIntervalGrid * multi_interval_grid,
+                            //int               & nz,
+                            double            & dz)
 {
-  int max_nz      = 0;
+  //int max_nz      = 0;
   double min_dz   = std::numeric_limits<double>::infinity();
   int nx          = full_inversion_simbox.getnx();
   int ny          = full_inversion_simbox.getny();
@@ -720,7 +739,7 @@ void CravaResult::FindNz(const Simbox      & full_inversion_simbox,
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-      double min_dz_trace = 0.0;
+      double min_dz_trace = std::numeric_limits<double>::infinity();
 
       //Find minumum dz for each interval
       for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
@@ -733,20 +752,18 @@ void CravaResult::FindNz(const Simbox      & full_inversion_simbox,
 
         double min_dz_interval = (bot_value - top_value) / nz;
 
-        if (i_interval == 0)
-          min_dz_trace = min_dz_interval;
-        else if (min_dz_interval < min_dz_trace)
+        if (min_dz_interval < min_dz_trace)
           min_dz_trace = min_dz_interval;
 
       }
 
-      double top_value = full_inversion_simbox.getTop(i, j);
-      double bot_value = full_inversion_simbox.getBot(i, j);
+      //double top_value = full_inversion_simbox.getTop(i, j);
+      //double bot_value = full_inversion_simbox.getBot(i, j);
 
-      int max_nz_trace = (bot_value - top_value) / min_dz_trace;
+      //int max_nz_trace = static_cast<int>((bot_value - top_value) / min_dz_trace);
 
-      if (max_nz_trace > max_nz)
-        max_nz = max_nz_trace;
+      //if (max_nz_trace > max_nz)
+      //  max_nz = max_nz_trace;
 
       if (min_dz_trace < min_dz)
         min_dz = min_dz_trace;
@@ -754,6 +771,315 @@ void CravaResult::FindNz(const Simbox      & full_inversion_simbox,
     }
   }
 
-  nz = max_nz;
+  //nz = max_nz;
   dz = min_dz;
+}
+
+//void CravaResult::ResampleTrace(const std::vector<float> & data_trace,
+//                                const rfftwnd_plan       & fftplan1,
+//                                const rfftwnd_plan       & fftplan2,
+//                                fftw_real                * rAmpData,
+//                                fftw_real                * rAmpFine,
+//                                int                        cnt,
+//                                int                        rnt,
+//                                int                        cmt,
+//                                int                        rmt)
+//{
+//  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+//  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+//
+//  //
+//  // Fill vector to be FFT'ed
+//  //
+//  int n_data = static_cast<int>(data_trace.size());
+//
+//  for (int i = 0 ; i < n_data ; i++) {
+//    rAmpData[i] = data_trace[i];
+//  }
+//  // Pad with zeros
+//  for (int i = n_data ; i < rnt ; i++) {
+//    rAmpData[i] = 0.0f;
+//  }
+//
+//  //
+//  // Transform to Fourier domain
+//  //
+//  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+//
+//  //
+//  // Fill fine-sampled grid
+//  //
+//  for (int i = 0 ; i < cnt ; i++) {
+//    cAmpFine[i].re = cAmpData[i].re;
+//    cAmpFine[i].im = cAmpData[i].im;
+//  }
+//  // Pad with zeros (cmt is always greater than cnt)
+//  for (int i = cnt ; i < cmt ; i++) {
+//    cAmpFine[i].re = 0.0f;
+//    cAmpFine[i].im = 0.0f;
+//  }
+//
+//  //
+//  // Fine-sampled grid: Fourier --> Time
+//  //
+//  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+//
+//  //
+//  // Scale and fill grid_trace
+//  //
+//  float scale = 1/static_cast<float>(rnt);
+//  for (int i = 0 ; i < rmt ; i++) {
+//    rAmpFine[i] = scale*rAmpFine[i];
+//  }
+//}
+
+//void CravaResult::InterpolateGridValues(std::vector<float> & grid_trace,
+//                                        float                z0_grid,
+//                                        float                dz_grid,
+//                                        fftw_real          * rAmpFine,
+//                                        float                z0_data,
+//                                        float                dz_fine,
+//                                        int                  n_fine,
+//                                        int                  nz,
+//                                        int                  nzp)
+//{
+//  //
+//  // Bilinear interpolation
+//  //
+//  // refk establishes link between traces order and grid order
+//  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
+//  // In grid :    B B B B B B C C C A A A
+//
+//  float z0_shift    = z0_grid - z0_data;
+//  float inv_dz_fine = 1.0f/dz_fine;
+//
+//  int n_grid = static_cast<int>(grid_trace.size());
+//
+//  for (int k = 0; k < n_grid; k++) {
+//    int refk = GetZSimboxIndex(k, nz, nzp);
+//    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
+//    int   l1 = static_cast<int>(floor(dl));
+//    int   l2 = static_cast<int>(ceil(dl));
+//
+//    if (l2 < 0 || l1 > n_fine - 1) {
+//      grid_trace[k] = 0.0f;
+//    }
+//    else {
+//      if (l1 < 0) {
+//        grid_trace[k] = rAmpFine[l2];
+//      }
+//      else if (l2 > n_fine - 1) {
+//        grid_trace[k] = rAmpFine[l1];
+//      }
+//      else if (l1 == l2) {
+//        grid_trace[k] = rAmpFine[l1];
+//      }
+//      else {
+//        float w1 = ceil(dl) - dl;
+//        float w2 = dl - floor(dl);
+//        grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
+//      }
+//    }
+//  }
+//}
+
+//int CravaResult::GetZSimboxIndex(int k,
+//                                 int nz,
+//                                 int nzp)
+//{
+//  int refk;
+//
+//  if (k < (nz + nzp)/2)
+//    refk=k;
+//  else
+//    refk=k-nzp;
+//
+//  return refk;
+//}
+
+//void CravaResult::InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
+//                                           float                      z0_grid,
+//                                           float                      dz_grid,
+//                                           const std::vector<float> & trend_long,
+//                                           float                      z0_data,
+//                                           float                      dz_fine,
+//                                           int                        n_fine,
+//                                           int                        nz,
+//                                           int                        nzp)
+//{
+//  //
+//  // Bilinear interpolation
+//  //
+//  // refk establishes link between traces order and grid order
+//  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
+//  // In grid :    B B B B B B C C C A A A
+//
+//  float z0_shift    = z0_grid - z0_data;
+//  float inv_dz_fine = 1.0f/dz_fine;
+//
+//  int n_grid = static_cast<int>(interpolated_trend.size());
+//
+//  for (int k = 0 ; k < n_grid ; k++) {
+//    int refk = GetZSimboxIndex(k, nz, nzp);
+//    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
+//    int   l1 = static_cast<int>(floor(dl));
+//    int   l2 = static_cast<int>(ceil(dl));
+//
+//    if (l2 < 0 || l1 > n_fine - 1) {
+//      if (l2 < 0)
+//        interpolated_trend[k] = trend_long[0];
+//      if (l1 > n_fine -1)
+//        interpolated_trend[k] = trend_long[n_fine - 1];
+//    }
+//    else {
+//      if (l1 < 0) {
+//        interpolated_trend[k] = trend_long[l2];
+//      }
+//      else if (l2 > n_fine - 1) {
+//        interpolated_trend[k] = trend_long[l1];
+//      }
+//      else if (l1 == l2) {
+//        interpolated_trend[k] = trend_long[l1];
+//      }
+//      else {
+//        float w1 = ceil(dl) - dl;
+//        float w2 = dl - floor(dl);
+//        interpolated_trend[k] = w1*trend_long[l1] + w2*trend_long[l2];
+//      }
+//    }
+//  }
+//}
+
+void CravaResult::ResampleSimple(std::vector<float>       & new_trace, //H REMOVE
+                                 const std::vector<float> & old_trace)
+{
+
+  int nt = old_trace.size();
+  int mt = new_trace.size();
+
+  int cnt = nt/2 + 1;
+  int rnt = 2*cnt;
+  int cmt = mt/2 + 1;
+  int rmt = 2*cmt;
+
+  //int rnt = old_trace.size();
+  //int rmt = new_trace.size();
+
+  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+
+  fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+  fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+
+  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+
+  //
+  // Fill vector to be FFT'ed
+  //
+  int n_data = static_cast<int>(old_trace.size());
+
+  for (int i = 0 ; i < n_data ; i++) {
+    rAmpData[i] = old_trace[i];
+  }
+
+  // Transform to Fourier domain
+  //
+  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+
+  //
+  // Fill fine-sampled grid
+  //
+  for (int i = 0; i < cnt; i++) {
+    cAmpFine[i].re = cAmpData[i].re;
+    cAmpFine[i].im = cAmpData[i].im;
+  }
+  // Pad with zeros (cmt is always greater than cnt)
+  for (int i = cnt; i < cmt; i++) {
+    cAmpFine[i].re = 0.0f;
+    cAmpFine[i].im = 0.0f;
+  }
+
+  //
+  // Fine-sampled grid: Fourier --> Time
+  //
+  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+
+  //
+  // Scale and fill grid_trace
+  //
+  float scale = 1/static_cast<float>(rnt);
+  for (int i = 0; i < rmt; i++) {
+    rAmpFine[i] = scale*rAmpFine[i];
+  }
+
+  for (int i = 0; i < mt; i++) {
+    new_trace[i] = rAmpFine[i];
+  }
+
+
+  //int nt = new_trace.size();
+  //int mt = 4*nt;
+
+  //rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  //rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+
+  //int cnt = nt/2 + 1;
+  //int rnt = 2*cnt;
+  //int cmt = mt/2 + 1;
+  //int rmt = 2*cmt;
+
+  //fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+  //fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+
+  //fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+  //fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+
+  ////
+  //// Fill vector to be FFT'ed
+  ////
+  //int n_data = static_cast<int>(old_trace.size());
+
+  //for (int i = 0 ; i < n_data ; i++) {
+  //  rAmpData[i] = old_trace[i];
+  //}
+  ////// Pad with zeros
+  ////for (int i = n_data ; i < rnt ; i++) {
+  ////  rAmpData[i] = 0.0f;
+  ////}
+
+  ////
+  //// Transform to Fourier domain
+  ////
+  //rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+
+  ////
+  //// Fill fine-sampled grid
+  ////
+  //for (int i = 0; i < cnt; i++) {
+  //  cAmpFine[i].re = cAmpData[i].re;
+  //  cAmpFine[i].im = cAmpData[i].im;
+  //}
+  //// Pad with zeros (cmt is always greater than cnt)
+  //for (int i = cnt; i < cmt; i++) {
+  //  cAmpFine[i].re = 0.0f;
+  //  cAmpFine[i].im = 0.0f;
+  //}
+
+  ////
+  //// Fine-sampled grid: Fourier --> Time
+  ////
+  //rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+
+  ////
+  //// Scale and fill grid_trace
+  ////
+  //float scale = 1/static_cast<float>(rnt);
+  //for (int i = 0 ; i < rmt ; i++) {
+  //  rAmpFine[i] = scale*rAmpFine[i];
+  //}
+
+
+
+
 }
