@@ -73,7 +73,9 @@ namespace NRLib {
     /// Remove discrete log
     /// Does nothing if there is no log with the given name.
     void RemoveDiscLog(const std::string& name);
-    ///
+    /// Change case of all logs to uppercase, to remove case sensitivity on log names
+    void MakeLogsUppercase();
+    /// Set name of well
     void SetWellName(const std::string& wellname);
     ///
     const std::string& GetWellName() const { return well_name_; };
