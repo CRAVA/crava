@@ -237,9 +237,6 @@
     <ClCompile Include="src\waveletfilter.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="libs\nrlib\well\well.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\welldata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1049,6 +1046,9 @@
     </ClCompile>
     <ClCompile Include="src\surfacefrompoints.cpp">
       <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\well\well.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
