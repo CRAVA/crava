@@ -6076,8 +6076,6 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
               grid_trace[k_trace] += trend_interpolated[k_trace];
           }
 
-          //err_text += err_text_tmp;
-
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
@@ -6133,18 +6131,16 @@ int CommonData::GetFillNumber(int i, int n, int np) {
   int refi     =  0;
   int BeloWnp, AbovEn;
 
-  if (i< np)
-  {
-    if (i<n)
+  if (i< np) {
+    if (i<n) {
       // then it is in the main cube
       refi  =  i;
-    else
-    {
+    }
+    else {
       // Get cyclic extention
       BeloWnp  = np-i-1;
       AbovEn   = i-n+1;
-      if (AbovEn < BeloWnp)
-      {
+      if (AbovEn < BeloWnp) {
         // Then the index is closer to end than start.
         refi=std::max(n-AbovEn,n/2);
       } else {
@@ -6153,8 +6149,7 @@ int CommonData::GetFillNumber(int i, int n, int np) {
       }//endif
     }//endif
   }//endif
-  else
-  {
+  else {
     // This happens when the index is larger than the padding size
     // this happens in some cases because rnxp_ is larger than nxp_
     // and the x cycle is of length rnxp_
@@ -6217,7 +6212,7 @@ void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
   //
   int n_smooth = static_cast<int>(floor(smooth_length/dz_data));
 
-  for (int k = 0 ; k < n_smooth ; k++) {
+  for (int k = 0; k < n_smooth; k++) {
     double theta   = static_cast<double>(k)/static_cast<double>(n_smooth);
     float  sinT    = static_cast<float>(std::sin(NRLib::PiHalf*theta));
     data_trace[k] *= sinT*sinT;
@@ -6226,7 +6221,7 @@ void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
   int n_data = data_trace.size();
   int kstart = n_data - n_smooth;
 
-  for (int k = 0 ; k < n_smooth ; k++) {
+  for (int k = 0; k < n_smooth; k++) {
     double theta   = static_cast<double>(k + 1)/static_cast<double>(n_smooth);
     float  cosT    = static_cast<float>(std::cos(NRLib::PiHalf*theta));
     data_trace[kstart + k] *= cosT*cosT;
@@ -6251,11 +6246,11 @@ void CommonData::ResampleTrace(const std::vector<float> & data_trace,
   //
   int n_data = static_cast<int>(data_trace.size());
 
-  for (int i = 0 ; i < n_data ; i++) {
+  for (int i = 0; i < n_data; i++) {
     rAmpData[i] = data_trace[i];
   }
   // Pad with zeros
-  for (int i = n_data ; i < rnt ; i++) {
+  for (int i = n_data; i < rnt; i++) {
     rAmpData[i] = 0.0f;
   }
 
@@ -6267,12 +6262,12 @@ void CommonData::ResampleTrace(const std::vector<float> & data_trace,
   //
   // Fill fine-sampled grid
   //
-  for (int i = 0 ; i < cnt ; i++) {
+  for (int i = 0; i < cnt; i++) {
     cAmpFine[i].re = cAmpData[i].re;
     cAmpFine[i].im = cAmpData[i].im;
   }
   // Pad with zeros (cmt is always greater than cnt)
-  for (int i = cnt ; i < cmt ; i++) {
+  for (int i = cnt; i < cmt; i++) {
     cAmpFine[i].re = 0.0f;
     cAmpFine[i].im = 0.0f;
   }
@@ -6286,7 +6281,7 @@ void CommonData::ResampleTrace(const std::vector<float> & data_trace,
   // Scale and fill grid_trace
   //
   float scale = 1/static_cast<float>(rnt);
-  for (int i = 0 ; i < rmt ; i++) {
+  for (int i = 0; i < rmt; i++) {
     rAmpFine[i] = scale*rAmpFine[i];
   }
 }
@@ -6313,7 +6308,7 @@ void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
 
   int n_grid = static_cast<int>(grid_trace.size());
 
-  for (int k = 0 ; k < n_grid ; k++) {
+  for (int k = 0; k < n_grid; k++) {
     int refk = GetZSimboxIndex(k, nz, nzp);
     float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
     int   l1 = static_cast<int>(floor(dl));
@@ -6363,7 +6358,7 @@ void CommonData::InterpolateAndShiftTrend(std::vector<float>       & interpolate
 
   int n_grid = static_cast<int>(interpolated_trend.size());
 
-  for (int k = 0 ; k < n_grid ; k++) {
+  for (int k = 0; k < n_grid; k++) {
     int refk = GetZSimboxIndex(k, nz, nzp);
     float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
     int   l1 = static_cast<int>(floor(dl));

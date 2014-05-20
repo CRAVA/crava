@@ -31,12 +31,15 @@ public:
 
   ~CravaResult();
 
-  //void AddParameters(SeismicParametersHolder & seismic_parameters,
-  //                   std::string             & interval_name);
-
   void CombineResults(ModelSettings                        * model_settings,
                       CommonData                           * common_data,
                       std::vector<SeismicParametersHolder> & seismic_paramters_intervals);
+
+  void CombineResult(StormContGrid         *& final_grid,
+                     std::vector<FFTGrid *> & post_vp_intervals,
+                     MultiIntervalGrid      * multi_interval_grid,
+                     const std::vector<int> & erosion_priorities,
+                     double                   dz_min);
 
   void WriteResults(ModelSettings * model_settings,
                     CommonData    * common_data,
@@ -64,7 +67,6 @@ public:
 
   void FindDzMin(const Simbox      & full_inversion_simbox,
                  MultiIntervalGrid * multi_interval_grid,
-                 //int               & nz,
                  double            & dz);
 
   //void ResampleTrace(const std::vector<float> & data_trace,
@@ -126,9 +128,13 @@ private:
   FFTGrid                        * cr_cov_vp_rho_;
   FFTGrid                        * cr_cov_vs_rho_;
 
-  FFTGrid                        * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
-  FFTGrid                        * post_vs_;
-  FFTGrid                        * post_rho_;
+  //FFTGrid                        * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
+  //FFTGrid                        * post_vs_;
+  //FFTGrid                        * post_rho_;
+
+  StormContGrid                  * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
+  StormContGrid                  * post_vs_;
+  StormContGrid                  * post_rho_;
 
   FFTGrid                        * post_vp_kriging_; //From avoinversion doPredictionKriging()
   FFTGrid                        * post_vs_kriging_;
