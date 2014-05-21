@@ -23,9 +23,9 @@ SeismicParametersHolder::SeismicParametersHolder(void)
   postVp_            = NULL;
   postVs_            = NULL;
   postRho_           = NULL;
-  postVpKriging_     = NULL;
-  postVsKriging_     = NULL;
-  postRhoKriging_    = NULL;
+  postVpKriged_      = NULL;
+  postVsKriged_      = NULL;
+  postRhoKriged_     = NULL;
   block_grid_        = NULL;
   facies_prob_undef_ = NULL;
   quality_grid_      = NULL;
@@ -72,11 +72,14 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
   if (postRho_ != NULL)
     delete postRho_;
 
-  if (postVpKriging_ != NULL)
-    delete postVpKriging_;
+  if (postVpKriged_ != NULL)
+    delete postVpKriged_;
 
-  if (postVsKriging_ != NULL)
-    delete postVsKriging_;
+  if (postVsKriged_ != NULL)
+    delete postVsKriged_;
+
+  if (postRhoKriged_ != NULL)
+    delete postRhoKriged_;
 
   if (block_grid_ != NULL)
     delete block_grid_;
@@ -867,11 +870,14 @@ void SeismicParametersHolder::releaseGrids()
   if (postRho_ != NULL)
     delete postRho_;
 
-  if (postVpKriging_ != NULL)
-    delete postVpKriging_;
+  if (postVpKriged_ != NULL)
+    delete postVpKriged_;
 
-  if (postVsKriging_ != NULL)
-    delete postVsKriging_;
+  if (postVsKriged_ != NULL)
+    delete postVsKriged_;
+
+  if (postRhoKriged_ != NULL)
+    delete postRhoKriged_;
 
   if (block_grid_ != NULL)
     delete block_grid_;

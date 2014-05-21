@@ -37,9 +37,9 @@ public:
   FFTGrid                     * GetPostVs()                        { return postVs_     ;}
   FFTGrid                     * GetPostRho()                       { return postRho_    ;}
 
-  FFTGrid                     * GetPostVpKriging()                 { return postVpKriging_  ;}
-  FFTGrid                     * GetPostVsKriging()                 { return postVsKriging_  ;}
-  FFTGrid                     * GetPostRhoKriging()                { return postRhoKriging_ ;}
+  FFTGrid                     * GetPostVpKriged()                  { return postVpKriged_  ;}
+  FFTGrid                     * GetPostVsKriged()                  { return postVsKriged_  ;}
+  FFTGrid                     * GetPostRhoKriged()                 { return postRhoKriged_ ;}
 
   NRLib::Matrix               & GetPostVar0()                      { return postVar0_     ;}
   std::vector<float>          & GetPostCovVp00()                   { return postCovVp00_  ;}
@@ -81,9 +81,9 @@ public:
   void SetPostVs(FFTGrid * vs)                               { postVs_  = new FFTGrid(vs)                           ;}
   void SetPostRho(FFTGrid * rho)                             { postRho_ = new FFTGrid(rho)                          ;}
 
-  void SetPostVpKriging(FFTGrid * vp)                        { postVpKriging_  = new FFTGrid(vp)                    ;}
-  void SetPostVsKriging(FFTGrid * vs)                        { postVsKriging_  = new FFTGrid(vs)                    ;}
-  void SetPostRhoKriging(FFTGrid * rho)                      { postRhoKriging_ = new FFTGrid(rho)                   ;}
+  void SetPostVpKriging(FFTGrid * vp)                        { postVpKriged_  = new FFTGrid(vp)                     ;}
+  void SetPostVsKriging(FFTGrid * vs)                        { postVsKriged_  = new FFTGrid(vs)                     ;}
+  void SetPostRhoKriging(FFTGrid * rho)                      { postRhoKriged_ = new FFTGrid(rho)                    ;}
 
   void SetPostVar0(NRLib::Matrix & postVar0)                 { postVar0_     = postVar0                             ;}
   void SetPostCovVp00(std::vector<float> & postCovVp00)      { postCovVp00_  = postCovVp00                          ;}
@@ -230,9 +230,9 @@ private:
   FFTGrid * postVs_;
   FFTGrid * postRho_;
 
-  FFTGrid * postVpKriging_; //From avoinversion doPredictionKriging()
-  FFTGrid * postVsKriging_;
-  FFTGrid * postRhoKriging_;
+  FFTGrid * postVpKriged_; //From avoinversion doPredictionKriging()
+  FFTGrid * postVsKriged_;
+  FFTGrid * postRhoKriged_;
 
   NRLib::Matrix      postVar0_;
   std::vector<float> postCovVp00_;        // Posterior covariance in (i,j) = (0,0)

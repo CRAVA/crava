@@ -206,7 +206,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
   // 17. Depth Conversion
-  if (multiple_interval_grid_->GetNIntervals() == 1 && model_settings->getDoDepthConversion())
+  if (model_settings->getDoDepthConversion())
     setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, err_text);
 
   //Punkt o: diverse:

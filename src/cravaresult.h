@@ -19,10 +19,12 @@
 #include "src/commondata.h"
 #include "src/seismicparametersholder.h"
 #include "src/krigingdata3d.h"
+#include "src/parameteroutput.h"
 
 class FFTGrid;
 class Simbox;
 class CommonData;
+class ParameterOutput;
 
 class CravaResult
 {
@@ -69,40 +71,6 @@ public:
                  MultiIntervalGrid * multi_interval_grid,
                  double            & dz);
 
-  //void ResampleTrace(const std::vector<float> & data_trace,
-  //                   const rfftwnd_plan       & fftplan1,
-  //                   const rfftwnd_plan       & fftplan2,
-  //                   fftw_real                * rAmpData,
-  //                   fftw_real                * rAmpFine,
-  //                   int                        cnt,
-  //                   int                        rnt,
-  //                   int                        cmt,
-  //                   int                        rmt);
-
-  //void InterpolateGridValues(std::vector<float> & grid_trace,
-  //                           float                z0_grid,
-  //                           float                dz_grid,
-  //                           fftw_real          * rAmpFine,
-  //                           float                z0_data,
-  //                           float                dz_fine,
-  //                           int                  n_fine,
-  //                           int                  nz,
-  //                           int                  nzp);
-
-  //int GetZSimboxIndex(int k,
-  //                    int nz,
-  //                    int nzp);
-
-  //void InterpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
-  //                              float                      z0_grid,
-  //                              float                      dz_grid,
-  //                              const std::vector<float> & trend_long,
-  //                              float                      z0_data,
-  //                              float                      dz_fine,
-  //                              int                        n_fine,
-  //                              int                        nz,
-  //                              int                        nzp);
-
   void ResampleSimple(std::vector<float>       & new_trace,
                       const std::vector<float> & old_trace);
 
@@ -136,9 +104,13 @@ private:
   StormContGrid                  * post_vs_;
   StormContGrid                  * post_rho_;
 
-  FFTGrid                        * post_vp_kriging_; //From avoinversion doPredictionKriging()
-  FFTGrid                        * post_vs_kriging_;
-  FFTGrid                        * post_rho_kriging_;
+  FFTGrid                        * post_vp_kriged_test_; //From avoinversion doPredictionKriging()
+  //FFTGrid                        * post_vs_kriged_;
+  //FFTGrid                        * post_rho_kriged_;
+
+  StormContGrid                  * post_vp_kriged_; //From avoinversion doPredictionKriging()
+  StormContGrid                  * post_vs_kriged_;
+  StormContGrid                  * post_rho_kriged_;
 
   FFTGrid                        * background_vp_;
   FFTGrid                        * background_vs_;

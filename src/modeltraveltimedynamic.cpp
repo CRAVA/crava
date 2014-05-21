@@ -182,7 +182,7 @@ ModelTravelTimeDynamic::processRMSData(FFTGrid                 *& rms_data,
                           sgriLabel,
                           offset,
                           timeDepthMapping,
-                          timeCutMapping,
+                          //timeCutMapping,
                           *modelSettings->getTraceHeaderFormatOutput());
     }
 

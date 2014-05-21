@@ -7,32 +7,131 @@
 #include "src/parameteroutput.h"
 #include "src/modelsettings.h"
 #include "src/simbox.h"
-#include "src/modelgeneral.h"
+//#include "src/modelgeneral.h"
+#include "src/gridmapping.h"
 #include "src/io.h"
 
+//void
+//ParameterOutput::WriteParameters(const Simbox        * simbox,
+//                                 ModelGeneral         * modelGeneral,
+//                                 const ModelSettings * model_settings,
+//                                 FFTGrid       * vp,
+//                                 FFTGrid       * vs,
+//                                 FFTGrid       * rho,
+//                                 int                   output_flag,
+//                                 bool                  file_grid,
+//                                 int                   sim_num,
+//                                 bool                  kriged)
+//{
+//  std::string prefix;
+//  std::string suffix;
+//  std::string file_name;
+//
+//  if(sim_num >= 0) {
+//    prefix = IO::PrefixSimulations();
+//    suffix = "_"+NRLib::ToString(sim_num+1);
+//  }
+//  else {
+//    prefix = IO::PrefixPredictions();
+//    suffix = "";
+//  }
+//
+//  if(kriged)
+//    suffix = "_Kriged"+suffix;
+//
+//  if((output_flag & IO::MURHO) > 0)
+//  {
+//    file_name = prefix+"MuRho"+suffix;
+//    computeMuRho(simbox, modelGeneral, model_settings, vp, vs, rho, file_grid, file_name);
+//  }
+//  if((outputFlag & IO::LAMBDARHO) > 0)
+//  {
+//    fileName = prefix+"LambdaRho"+suffix;
+//    computeLambdaRho(simbox, modelGeneral, modelSettings, vp, vs, rho, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::LAMELAMBDA) > 0)
+//  {
+//    fileName = prefix+"LameLambda"+suffix;
+//    computeLameLambda(simbox, modelGeneral, modelSettings, vp, vs, rho, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::LAMEMU) > 0)
+//  {
+//    fileName = prefix+"LameMu"+suffix;
+//    computeLameMu(simbox, modelGeneral,  modelSettings, vs, rho, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::POISSONRATIO) > 0)
+//  {
+//    fileName = prefix+"PoissonRatio"+suffix;
+//    computePoissonRatio(simbox, modelGeneral, modelSettings, vp, vs, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::AI) > 0)
+//  {
+//    fileName = prefix+"AI"+suffix;
+//    computeAcousticImpedance(simbox, modelGeneral, modelSettings, vp, rho, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::SI) > 0)
+//  {
+//    fileName = prefix+"SI"+suffix;
+//    computeShearImpedance(simbox, modelGeneral, modelSettings, vs, rho, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::VPVSRATIO) > 0)
+//  {
+//    fileName = prefix+"VpVsRatio"+suffix;
+//    computeVpVsRatio(simbox, modelGeneral, modelSettings, vp, vs, fileGrid, fileName);
+//  }
+//  if((outputFlag & IO::VP) > 0)
+//  {
+//    fileName = prefix+"Vp"+suffix;
+//    vp->setAccessMode(FFTGrid::RANDOMACCESS);
+//    vp->expTransf();
+//    writeToFile(simbox, modelGeneral, modelSettings, vp, fileName, "Inverted Vp");
+//    if(simNum<0) //prediction, need grid unharmed.
+//      vp->logTransf();
+//    vp->endAccess();
+//  }
+//  if((outputFlag & IO::VS) > 0)
+//  {
+//    fileName = prefix+"Vs"+suffix;
+//    vs->setAccessMode(FFTGrid::RANDOMACCESS);
+//    vs->expTransf();
+//    writeToFile(simbox, modelGeneral, modelSettings, vs, fileName, "Inverted Vs");
+//    if(simNum<0) //prediction, need grid unharmed.
+//      vs->logTransf();
+//    vs->endAccess();
+//  }
+//  if((outputFlag & IO::RHO) > 0)
+//  {
+//    fileName = prefix+"Rho"+suffix;
+//    rho->setAccessMode(FFTGrid::RANDOMACCESS);
+//    rho->expTransf();
+//    writeToFile(simbox, modelGeneral, modelSettings, rho, fileName, "Inverted density");
+//    if(simNum<0) //prediction, need grid unharmed.
+//      rho->logTransf();
+//    rho->endAccess();
+//  }
+//}
+
 void
-ParameterOutput::writeParameters(const Simbox        * simbox,
-                                 ModelGeneral        * modelGeneral,
-                                 const ModelSettings * modelSettings,
-                                 FFTGrid             * alpha,
-                                 FFTGrid             * beta,
-                                 FFTGrid             * rho,
-                                 int                   outputFlag,
-                                 bool                  fileGrid,
-                                 int                   simNum,
+ParameterOutput::WriteParameters(const Simbox        * simbox,
+                                 GridMapping         * time_depth_mapping,
+                                 const ModelSettings * model_settings,
+                                 StormContGrid       * vp,
+                                 StormContGrid       * vs,
+                                 StormContGrid       * rho,
+                                 int                   output_flag,
+                                 //bool                  file_grid,
+                                 int                   sim_num,
                                  bool                  kriged)
 {
   std::string prefix;
   std::string suffix;
-  std::string fileName;
+  std::string file_name;
 
-  if(simNum >= 0)
-  {
+  if(sim_num >= 0) {
     prefix = IO::PrefixSimulations();
-    suffix = "_"+NRLib::ToString(simNum+1);
+    suffix = "_"+NRLib::ToString(sim_num+1);
   }
-  else
-  {
+  else {
     prefix = IO::PrefixPredictions();
     suffix = "";
   }
@@ -40,421 +139,736 @@ ParameterOutput::writeParameters(const Simbox        * simbox,
   if(kriged)
     suffix = "_Kriged"+suffix;
 
-  if((outputFlag & IO::MURHO) > 0)
-  {
-    fileName = prefix+"MuRho"+suffix;
-    computeMuRho(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
+  if((output_flag & IO::MURHO) > 0) {
+    file_name = prefix+"MuRho"+suffix;
+    ComputeMuRho(simbox, time_depth_mapping, model_settings, vp, vs, rho, file_name);
   }
-  if((outputFlag & IO::LAMBDARHO) > 0)
-  {
-    fileName = prefix+"LambdaRho"+suffix;
-    computeLambdaRho(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
+  if((output_flag & IO::LAMBDARHO) > 0) {
+    file_name = prefix+"LambdaRho"+suffix;
+    ComputeLambdaRho(simbox, time_depth_mapping, model_settings, vp, vs, rho, file_name);
   }
-  if((outputFlag & IO::LAMELAMBDA) > 0)
-  {
-    fileName = prefix+"LameLambda"+suffix;
-    computeLameLambda(simbox, modelGeneral, modelSettings, alpha, beta, rho, fileGrid, fileName);
+  if((output_flag & IO::LAMELAMBDA) > 0) {
+    file_name = prefix+"LameLambda"+suffix;
+    ComputeLameLambda(simbox, time_depth_mapping, model_settings, vp, vs, rho, file_name);
   }
-  if((outputFlag & IO::LAMEMU) > 0)
-  {
-    fileName = prefix+"LameMu"+suffix;
-    computeLameMu(simbox, modelGeneral,  modelSettings, beta, rho, fileGrid, fileName);
+  if((output_flag & IO::LAMEMU) > 0) {
+    file_name = prefix+"LameMu"+suffix;
+    ComputeLameMu(simbox, time_depth_mapping,  model_settings, vs, rho, file_name);
   }
-  if((outputFlag & IO::POISSONRATIO) > 0)
-  {
-    fileName = prefix+"PoissonRatio"+suffix;
-    computePoissonRatio(simbox, modelGeneral, modelSettings, alpha, beta, fileGrid, fileName);
+  if((output_flag & IO::POISSONRATIO) > 0) {
+    file_name = prefix+"PoissonRatio"+suffix;
+    ComputePoissonRatio(simbox, time_depth_mapping, model_settings, vp, vs, file_name);
   }
-  if((outputFlag & IO::AI) > 0)
-  {
-    fileName = prefix+"AI"+suffix;
-    computeAcousticImpedance(simbox, modelGeneral, modelSettings, alpha, rho, fileGrid, fileName);
+  if((output_flag & IO::AI) > 0) {
+    file_name = prefix+"AI"+suffix;
+    ComputeAcousticImpedance(simbox, time_depth_mapping, model_settings, vp, rho, file_name);
   }
-  if((outputFlag & IO::SI) > 0)
-  {
-    fileName = prefix+"SI"+suffix;
-    computeShearImpedance(simbox, modelGeneral, modelSettings, beta, rho, fileGrid, fileName);
+  if((output_flag & IO::SI) > 0) {
+    file_name = prefix+"SI"+suffix;
+    ComputeShearImpedance(simbox, time_depth_mapping, model_settings, vs, rho, file_name);
   }
-  if((outputFlag & IO::VPVSRATIO) > 0)
-  {
-    fileName = prefix+"VpVsRatio"+suffix;
-    computeVpVsRatio(simbox, modelGeneral, modelSettings, alpha, beta, fileGrid, fileName);
+  if((output_flag & IO::VPVSRATIO) > 0) {
+    file_name = prefix+"VpVsRatio"+suffix;
+    ComputeVpVsRatio(simbox, time_depth_mapping, model_settings, vp, vs, file_name);
   }
-  if((outputFlag & IO::VP) > 0)
-  {
-    fileName = prefix+"Vp"+suffix;
-    alpha->setAccessMode(FFTGrid::RANDOMACCESS);
-    alpha->expTransf();
-    writeToFile(simbox, modelGeneral, modelSettings, alpha, fileName, "Inverted Vp");
-    if(simNum<0) //prediction, need grid unharmed.
-      alpha->logTransf();
-    alpha->endAccess();
+  if((output_flag & IO::VP) > 0) {
+    file_name = prefix+"Vp"+suffix;
+
+    ExpTransf(vp);
+
+    WriteToFile(simbox, time_depth_mapping, model_settings, vp, file_name, "Inverted Vp");
+    //if (sim_num < 0) //prediction, need grid unharmed.
+    //  vp->logTransf();
+
   }
-  if((outputFlag & IO::VS) > 0)
-  {
-    fileName = prefix+"Vs"+suffix;
-    beta->setAccessMode(FFTGrid::RANDOMACCESS);
-    beta->expTransf();
-    writeToFile(simbox, modelGeneral, modelSettings, beta, fileName, "Inverted Vs");
-    if(simNum<0) //prediction, need grid unharmed.
-      beta->logTransf();
-    beta->endAccess();
+  if((output_flag & IO::VS) > 0) {
+    file_name = prefix+"Vs"+suffix;
+
+    ExpTransf(vs);
+
+    WriteToFile(simbox, time_depth_mapping, model_settings, vs, file_name, "Inverted Vs");
+    //if (sim_num < 0) //prediction, need grid unharmed.
+    //  vs->logTransf();
+
   }
-  if((outputFlag & IO::RHO) > 0)
-  {
-    fileName = prefix+"Rho"+suffix;
-    rho->setAccessMode(FFTGrid::RANDOMACCESS);
-    rho->expTransf();
-    writeToFile(simbox, modelGeneral, modelSettings, rho, fileName, "Inverted density");
-    if(simNum<0) //prediction, need grid unharmed.
-      rho->logTransf();
-    rho->endAccess();
+  if((output_flag & IO::RHO) > 0) {
+    file_name = prefix+"Rho"+suffix;
+
+    ExpTransf(rho);
+
+    WriteToFile(simbox, time_depth_mapping, model_settings, rho, file_name, "Inverted density");
+    //if (sim_num < 0) //prediction, need grid unharmed.
+    //  rho->logTransf();
+
   }
 }
 
+//void
+//ParameterOutput::computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                          FFTGrid * Vp, FFTGrid * Rho ,
+//                                          bool file_grid, const std::string & file_name)
+//{
+//  if(Vp->getIsTransformed()) Vp->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vp->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* prImpedance;
+//  prImpedance = createFFTGrid(Vp, file_grid);
+//  prImpedance->setType(FFTGrid::PARAMETER);
+//  prImpedance->createRealGrid();
+//  prImpedance->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  prImpedance->getrsize();
+//  double ijkA, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkA = Vp->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(ijkA + ijkR);
+//    prImpedance->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Rho->endAccess();
+//
+//  prImpedance->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, prImpedance, file_name, "Acoustic Impedance");
+//  delete prImpedance;
+//}
+
 void
-ParameterOutput::computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                          FFTGrid * Alpha, FFTGrid * Rho ,
-                                          bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeAcousticImpedance(const Simbox        * simbox,
+                                          GridMapping         * time_depth_mapping,
+                                          const ModelSettings * model_settings,
+                                          StormContGrid       * vp,
+                                          StormContGrid       * rho,
+                                          const std::string   & file_name)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+  StormContGrid * pr_impedance = new StormContGrid(*vp);
 
-  Alpha->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
+  float ijk_a    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
 
-  FFTGrid* prImpedance;
-  prImpedance = createFFTGrid(Alpha, fileGrid);
-  prImpedance->setType(FFTGrid::PARAMETER);
-  prImpedance->createRealGrid();
-  prImpedance->setAccessMode(FFTGrid::WRITE);
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
 
-  int i;
-  int rSize =  prImpedance->getrsize();
-  double ijkA, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkA + ijkR);
-    prImpedance->setNextReal(float( compVal));
+        ijk_a    = vp->GetValue(i, j, k);
+        ijk_r    = rho->GetValue(i, j, k);
+        comp_val = exp(ijk_a + ijk_r);
+
+        pr_impedance->SetValue(i, j, k, comp_val);
+
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Rho->endAccess();
+  WriteToFile(simbox, time_depth_mapping, model_settings, pr_impedance, file_name, "Acoustic Impedance");
 
-  prImpedance->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, prImpedance, fileName, "Acoustic Impedance");
-  delete prImpedance;
-}
-
-void
-ParameterOutput::computeShearImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                       FFTGrid * Beta, FFTGrid * Rho,
-                                       bool fileGrid, const std::string & fileName)
-{
-
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
-
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
-
-  FFTGrid* shImpedance;
-  shImpedance  = createFFTGrid(Beta, fileGrid);
-  shImpedance->setType(FFTGrid::PARAMETER);
-  shImpedance->createRealGrid();
-  shImpedance->setAccessMode(FFTGrid::WRITE);
-  int i;
-  int rSize =  shImpedance->getrsize();
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkB + ijkR);
-    shImpedance->setNextReal(float( compVal));
-  }
-
-  Beta->endAccess();
-  Rho->endAccess();
-
-  shImpedance->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, shImpedance, fileName, "Shear impedance");
-  delete shImpedance;
+  delete pr_impedance;
 }
 
 
+//void
+//ParameterOutput::computeShearImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                       FFTGrid * Vs, FFTGrid * Rho,
+//                                       bool file_grid, const std::string & file_name)
+//{
+//
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vs->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* shImpedance;
+//  shImpedance  = createFFTGrid(Vs, file_grid);
+//  shImpedance->setType(FFTGrid::PARAMETER);
+//  shImpedance->createRealGrid();
+//  shImpedance->setAccessMode(FFTGrid::WRITE);
+//  int i;
+//  int rSize =  shImpedance->getrsize();
+//  double ijkB, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkB = Vs->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(ijkB + ijkR);
+//    shImpedance->setNextReal(float( compVal));
+//  }
+//
+//  Vs->endAccess();
+//  Rho->endAccess();
+//
+//  shImpedance->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, shImpedance, file_name, "Shear impedance");
+//  delete shImpedance;
+//}
+
 void
-ParameterOutput::computeVpVsRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                  FFTGrid * Alpha, FFTGrid * Beta,
-                                  bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeShearImpedance(const Simbox        * simbox,
+                                       GridMapping         * time_depth_mapping,
+                                       const ModelSettings * model_settings,
+                                       StormContGrid       * vs,
+                                       StormContGrid       * rho,
+                                       const std::string   & file_name)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed())  Beta->invFFTInPlace();
+  StormContGrid * sh_impedance = new StormContGrid(*vs);
 
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
+  float ijk_b    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
 
-  FFTGrid* ratioVpVs;
-  ratioVpVs = createFFTGrid(Alpha, fileGrid);
-  ratioVpVs->setType(FFTGrid::PARAMETER);
-  ratioVpVs->createRealGrid();
-  ratioVpVs->setAccessMode(FFTGrid::WRITE);
-  int i;
-  int rSize =  ratioVpVs->getrsize();
-  double ijkA, ijkB, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    compVal = exp(ijkA - ijkB);
-    ratioVpVs->setNextReal(float( compVal));
+  for (size_t i = 0; i < vs->GetNI(); i++) {
+    for (size_t j = 0; j < vs->GetNJ(); j++) {
+      for (size_t k = 0; k < vs->GetNK(); k++) {
+
+        ijk_b    = vs->GetValue(i, j, k);
+        ijk_r    = rho->GetValue(i, j, k);
+        comp_val = exp(ijk_b + ijk_r);
+
+        sh_impedance->SetValue(i, j, k, comp_val);
+
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Beta->endAccess();
+  WriteToFile(simbox, time_depth_mapping, model_settings, sh_impedance, file_name, "Shear impedance");
 
-  ratioVpVs->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, ratioVpVs, fileName, "Vp-Vs ratio");
-  delete ratioVpVs;
+  delete sh_impedance;
 }
 
+
+//void
+//ParameterOutput::computeVpVsRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                  FFTGrid * Vp, FFTGrid * Vs,
+//                                  bool file_grid, const std::string & file_name)
+//{
+//  if(Vp->getIsTransformed()) Vp->invFFTInPlace();
+//  if(Vs->getIsTransformed())  Vs->invFFTInPlace();
+//
+//  Vp->setAccessMode(FFTGrid::READ);
+//  Vs->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* ratioVpVs;
+//  ratioVpVs = createFFTGrid(Vp, file_grid);
+//  ratioVpVs->setType(FFTGrid::PARAMETER);
+//  ratioVpVs->createRealGrid();
+//  ratioVpVs->setAccessMode(FFTGrid::WRITE);
+//  int i;
+//  int rSize =  ratioVpVs->getrsize();
+//  double ijkA, ijkB, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkA = Vp->getNextReal();
+//    ijkB = Vs->getNextReal();
+//    compVal = exp(ijkA - ijkB);
+//    ratioVpVs->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Vs->endAccess();
+//
+//  ratioVpVs->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, ratioVpVs, file_name, "Vp-Vs ratio");
+//  delete ratioVpVs;
+//}
+
 void
-ParameterOutput::computePoissonRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                     FFTGrid * Alpha, FFTGrid * Beta,
-                                     bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeVpVsRatio(const Simbox        * simbox,
+                                  GridMapping         * time_depth_mapping,
+                                  const ModelSettings * model_settings,
+                                  StormContGrid       * vp,
+                                  StormContGrid       * vs,
+                                  const std::string   & file_name)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
+  StormContGrid * ratio_vp_vs = new StormContGrid(*vp);
 
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
+  float ijk_a    = 0.0f;
+  float ijk_b    = 0.0f;
+  float comp_val = 0.0f;
 
-  FFTGrid* poiRat;
-  poiRat  = createFFTGrid(Alpha, fileGrid);
-  poiRat->setType(FFTGrid::PARAMETER);
-  poiRat->createRealGrid();
-  poiRat->setAccessMode(FFTGrid::WRITE);
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
 
-  int i;
-  int rSize =  poiRat->getrsize();
-  double ijkA, ijkB, compVal, vRatioSq;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA      = Alpha->getNextReal();
-    ijkB      = Beta->getNextReal();
-    vRatioSq  = exp(2*(ijkA-ijkB));
-    compVal   = 0.5*(vRatioSq - 2)/(vRatioSq - 1);
-    poiRat->setNextReal(float( compVal));
+        ijk_a    = vp->GetValue(i, j, k);
+        ijk_b    = vs->GetValue(i, j, k);
+        comp_val = exp(ijk_a - ijk_b);
+
+        ratio_vp_vs->SetValue(i, j, k, comp_val);
+
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Beta->endAccess();
+  WriteToFile(simbox, time_depth_mapping, model_settings, ratio_vp_vs, file_name, "Vp-Vs ratio");
 
-  poiRat->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, poiRat, fileName, "Poisson ratio");
-  delete poiRat;
+  delete ratio_vp_vs;
 }
 
+
+
+//void
+//ParameterOutput::computePoissonRatio(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                     FFTGrid * Vp, FFTGrid * Vs,
+//                                     bool file_grid, const std::string & file_name)
+//{
+//  if(Vp->getIsTransformed()) Vp->invFFTInPlace();
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//
+//  Vp->setAccessMode(FFTGrid::READ);
+//  Vs->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* poiRat;
+//  poiRat  = createFFTGrid(Vp, file_grid);
+//  poiRat->setType(FFTGrid::PARAMETER);
+//  poiRat->createRealGrid();
+//  poiRat->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  poiRat->getrsize();
+//  double ijkA, ijkB, compVal, vRatioSq;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkA      = Vp->getNextReal();
+//    ijkB      = Vs->getNextReal();
+//    vRatioSq  = exp(2*(ijkA-ijkB));
+//    compVal   = 0.5*(vRatioSq - 2)/(vRatioSq - 1);
+//    poiRat->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Vs->endAccess();
+//
+//  poiRat->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, poiRat, file_name, "Poisson ratio");
+//  delete poiRat;
+//}
+
 void
-ParameterOutput::computeLameMu(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                               FFTGrid * Beta, FFTGrid * Rho,
-                               bool fileGrid, const std::string & fileName )
+ParameterOutput::ComputePoissonRatio(const Simbox        * simbox,
+                                     GridMapping         * time_depth_mapping,
+                                     const ModelSettings * model_settings,
+                                     StormContGrid       * vp,
+                                     StormContGrid       * vs,
+                                     const std::string   & file_name)
 {
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+  StormContGrid * poi_rat = new StormContGrid(*vp);
 
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
+  float ijk_a      = 0.0f;
+  float ijk_b      = 0.0f;
+  float comp_val   = 0.0f;
+  float v_ratio_sq = 0.0f;
 
-  FFTGrid* mu;
-  mu  = createFFTGrid(Beta, fileGrid);
-  mu->setType(FFTGrid::PARAMETER);
-  mu->createRealGrid();
-  mu->setAccessMode(FFTGrid::WRITE);
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
 
-  int i;
-  int rSize =  mu->getrsize();
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkR+2*ijkB-13.81551); // -13.81551 in the exponent divides by 1 000 000
-    mu->setNextReal(float( compVal));
+        ijk_a      = vp->GetValue(i, j, k);
+        ijk_b      = vs->GetValue(i, j, k);
+        v_ratio_sq = exp(2*(ijk_a-ijk_b));
+        comp_val   = static_cast<float>(0.5*(v_ratio_sq - 2)/(v_ratio_sq - 1));
+
+        poi_rat->SetValue(i, j, k, comp_val);
+
+      }
+    }
   }
 
-  Beta->endAccess();
-  Rho->endAccess();
-  mu->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, mu, fileName, "Lame mu");
+  WriteToFile(simbox, time_depth_mapping, model_settings, poi_rat, file_name, "Poisson ratio");
+
+  delete poi_rat;
+}
+
+
+
+//void
+//ParameterOutput::computeLameMu(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                               FFTGrid * Vs, FFTGrid * Rho,
+//                               bool file_grid, const std::string & file_name )
+//{
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vs->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* mu;
+//  mu  = createFFTGrid(Vs, file_grid);
+//  mu->setType(FFTGrid::PARAMETER);
+//  mu->createRealGrid();
+//  mu->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  mu->getrsize();
+//  double ijkB, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkB = Vs->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(ijkR+2*ijkB-13.81551); // -13.81551 in the exponent divides by 1 000 000
+//    mu->setNextReal(float( compVal));
+//  }
+//
+//  Vs->endAccess();
+//  Rho->endAccess();
+//  mu->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, mu, file_name, "Lame mu");
+//
+//  delete mu;
+//}
+
+void
+ParameterOutput::ComputeLameMu(const Simbox        * simbox,
+                               GridMapping         * time_depth_mapping,
+                               const ModelSettings * model_settings,
+                               StormContGrid       * vs,
+                               StormContGrid       * rho,
+                               const std::string   & file_name)
+{
+  StormContGrid * mu = new StormContGrid(*mu);
+
+  float ijk_b    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
+
+  for (size_t i = 0; i < vs->GetNI(); i++) {
+    for (size_t j = 0; j < vs->GetNJ(); j++) {
+      for (size_t k = 0; k < vs->GetNK(); k++) {
+
+        ijk_b    = vs->GetValue(i, j, k);
+        ijk_r    = rho->GetValue(i, j, k);
+        comp_val = static_cast<float>(exp(ijk_r+2*ijk_b-13.81551)); // -13.81551 in the exponent divides by 1 000 000
+
+        mu->SetValue(i, j, k, comp_val);
+
+      }
+    }
+  }
+
+  WriteToFile(simbox, time_depth_mapping, model_settings, mu, file_name, "Lame mu");
 
   delete mu;
 }
 
+//void
+//ParameterOutput::computeLameLambda(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                   FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho,
+//                                   bool file_grid, const std::string & file_name)
+//{
+//  if(Vp->getIsTransformed()) Vp->invFFTInPlace();
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vp->setAccessMode(FFTGrid::READ);
+//  Vs->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* lambda;
+//  lambda  = createFFTGrid(Vp, file_grid);
+//  lambda->setType(FFTGrid::PARAMETER);
+//  lambda->createRealGrid();
+//  lambda->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  lambda->getrsize();
+//  double ijkA, ijkB, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkA = Vp->getNextReal();
+//    ijkB = Vs->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(ijkR)*(exp(2*ijkA-13.81551)-2*exp(2*ijkB-13.81551)); // -13.81551 in the exponent divides by 1 000 000
+//    lambda->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Vs->endAccess();
+//  Rho->endAccess();
+//
+//  lambda->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, lambda, file_name, "Lame lambda");
+//
+//  delete lambda;
+//}
+
 void
-ParameterOutput::computeLameLambda(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                   FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                                   bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeLameLambda(const Simbox        * simbox,
+                                   GridMapping         * time_depth_mapping,
+                                   const ModelSettings * model_settings,
+                                   StormContGrid       * vp,
+                                   StormContGrid       * vs,
+                                   StormContGrid       * rho,
+                                   const std::string   & file_name)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+  StormContGrid * lambda = new StormContGrid(*vp);
 
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
+  float ijk_a    = 0.0f;
+  float ijk_b    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
 
-  FFTGrid* lambda;
-  lambda  = createFFTGrid(Alpha, fileGrid);
-  lambda->setType(FFTGrid::PARAMETER);
-  lambda->createRealGrid();
-  lambda->setAccessMode(FFTGrid::WRITE);
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
 
-  int i;
-  int rSize =  lambda->getrsize();
-  double ijkA, ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(ijkR)*(exp(2*ijkA-13.81551)-2*exp(2*ijkB-13.81551)); // -13.81551 in the exponent divides by 1 000 000
-    lambda->setNextReal(float( compVal));
+        ijk_a    = vp->GetValue(i, j, k);
+        ijk_b    = vs->GetValue(i, j, k);
+        ijk_r    = rho->GetValue(i, j, k);
+        comp_val = static_cast<float>(exp(ijk_r)*(exp(2*ijk_a-13.81551)-2*exp(2*ijk_b-13.81551))); // -13.81551 in the exponent divides by 1 000 000
+
+        lambda->SetValue(i, j, k, comp_val);
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
-
-  lambda->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, lambda, fileName, "Lame lambda");
+  WriteToFile(simbox, time_depth_mapping, model_settings, lambda, file_name, "Lame lambda");
 
   delete lambda;
 }
 
+//void
+//ParameterOutput::computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                                  FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho,
+//                                  bool file_grid, const std::string & file_name)
+//{
+//  if(Vp->getIsTransformed()) Vp->invFFTInPlace();
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vp->setAccessMode(FFTGrid::READ);
+//  Vs->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* lambdaRho;
+//  lambdaRho  = createFFTGrid(Vp, file_grid);
+//  lambdaRho->setType(FFTGrid::PARAMETER);
+//  lambdaRho->createRealGrid();
+//  lambdaRho->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  lambdaRho->getrsize();
+//  double ijkA, ijkB, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkA = Vp->getNextReal();
+//    ijkB = Vs->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(2.0*(ijkA +ijkR)-13.81551)-2.0*exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
+//    lambdaRho->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Vs->endAccess();
+//  Rho->endAccess();
+//
+//  lambdaRho->endAccess();
+//
+//  writeToFile(simbox, modelGeneral, model_settings, lambdaRho, file_name, "Lambda rho");
+//  delete lambdaRho;
+//}
+
 void
-ParameterOutput::computeLambdaRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                                  FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                                  bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeLambdaRho(const Simbox        * simbox,
+                                  GridMapping         * time_depth_mapping,
+                                  const ModelSettings * model_settings,
+                                  StormContGrid       * vp,
+                                  StormContGrid       * vs,
+                                  StormContGrid       * rho,
+                                  const std::string   & file_name)
 {
-  if(Alpha->getIsTransformed()) Alpha->invFFTInPlace();
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
 
-  Alpha->setAccessMode(FFTGrid::READ);
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
+  StormContGrid * lambda_rho = new StormContGrid(*vp);
 
-  FFTGrid* lambdaRho;
-  lambdaRho  = createFFTGrid(Alpha, fileGrid);
-  lambdaRho->setType(FFTGrid::PARAMETER);
-  lambdaRho->createRealGrid();
-  lambdaRho->setAccessMode(FFTGrid::WRITE);
+  float ijk_a    = 0.0f;
+  float ijk_b    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
 
-  int i;
-  int rSize =  lambdaRho->getrsize();
-  double ijkA, ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkA = Alpha->getNextReal();
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(2.0*(ijkA +ijkR)-13.81551)-2.0*exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
-    lambdaRho->setNextReal(float( compVal));
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
+
+        ijk_a    = vp->GetValue(i, j, k);
+        ijk_b    = vs->GetValue(i, j, k);
+        ijk_r    = rho->GetValue(i, j, k);
+        comp_val = static_cast<float>(exp(2.0*(ijk_a +ijk_r)-13.81551)-2.0*exp(2.0*(ijk_b +ijk_r)-13.81551)); // -13.81551 in the exponent divides by 1e6=(1 000 000)
+
+        lambda_rho->SetValue(i, j, k, comp_val);
+
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
+  WriteToFile(simbox, time_depth_mapping, model_settings, lambda_rho, file_name, "Lambda rho");
 
-  lambdaRho->endAccess();
-
-  writeToFile(simbox, modelGeneral, modelSettings, lambdaRho, fileName, "Lambda rho");
-  delete lambdaRho;
+  delete lambda_rho;
 }
 
+//void
+//ParameterOutput::computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * model_settings,
+//                              FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho,
+//                              bool file_grid, const std::string & file_name)
+//{
+//  if(Vs->getIsTransformed()) Vs->invFFTInPlace();
+//  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+//
+//  Vs->setAccessMode(FFTGrid::READ);
+//  Rho->setAccessMode(FFTGrid::READ);
+//
+//  FFTGrid* muRho;
+//  muRho = createFFTGrid(Vp, file_grid);
+//  muRho->setType(FFTGrid::PARAMETER);
+//  muRho->createRealGrid();
+//  muRho->setAccessMode(FFTGrid::WRITE);
+//
+//  int i;
+//  int rSize =  muRho->getrsize();
+//  double ijkB, ijkR, compVal;
+//  for(i=0; i  <  rSize; i++)
+//  {
+//    ijkB = Vs->getNextReal();
+//    ijkR = Rho->getNextReal();
+//    compVal = exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
+//    muRho->setNextReal(float( compVal));
+//  }
+//
+//  Vp->endAccess();
+//  Vs->endAccess();
+//  Rho->endAccess();
+//
+//  muRho->endAccess();
+//  writeToFile(simbox, modelGeneral, model_settings, muRho, file_name, "Mu rho");
+//
+//  delete muRho;
+//}
+
 void
-ParameterOutput::computeMuRho(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
-                              FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho,
-                              bool fileGrid, const std::string & fileName)
+ParameterOutput::ComputeMuRho(const Simbox        * simbox,
+                              GridMapping         * time_depth_mapping,
+                              const ModelSettings * model_settings,
+                              StormContGrid       * vp,
+                              StormContGrid       * vs,
+                              StormContGrid       * rho,
+                              const std::string   & file_name)
 {
-  if(Beta->getIsTransformed()) Beta->invFFTInPlace();
-  if(Rho->getIsTransformed()) Rho->invFFTInPlace();
+  StormContGrid * mu_rho;
+  mu_rho = new StormContGrid(*vp);
 
-  Beta->setAccessMode(FFTGrid::READ);
-  Rho->setAccessMode(FFTGrid::READ);
+  float ijk_b    = 0.0f;
+  float ijk_r    = 0.0f;
+  float comp_val = 0.0f;
+  for (size_t i = 0; i < vp->GetNI(); i++) {
+    for (size_t j = 0; j < vp->GetNJ(); j++) {
+      for (size_t k = 0; k < vp->GetNK(); k++) {
 
-  FFTGrid* muRho;
-  muRho = createFFTGrid(Alpha, fileGrid);
-  muRho->setType(FFTGrid::PARAMETER);
-  muRho->createRealGrid();
-  muRho->setAccessMode(FFTGrid::WRITE);
+        ijk_b    = vs->GetValue(i,j,k);
+        ijk_r    = rho->GetValue(i,j,k);
+        comp_val = static_cast<float>(exp(2.0*(ijk_b +ijk_r)-13.81551)); // -13.81551 in the exponent divides by 1e6=(1 000 000)
 
-  int i;
-  int rSize =  muRho->getrsize();
-  double ijkB, ijkR, compVal;
-  for(i=0; i  <  rSize; i++)
-  {
-    ijkB = Beta->getNextReal();
-    ijkR = Rho->getNextReal();
-    compVal = exp(2.0*(ijkB +ijkR)-13.81551); // -13.81551 in the exponent divides by 1e6=(1 000 000)
-    muRho->setNextReal(float( compVal));
+        mu_rho->SetValue(i,j,k, comp_val);
+
+      }
+    }
   }
 
-  Alpha->endAccess();
-  Beta->endAccess();
-  Rho->endAccess();
+  WriteToFile(simbox, time_depth_mapping, model_settings, mu_rho, file_name, "Mu rho");
 
-  muRho->endAccess();
-  writeToFile(simbox, modelGeneral, modelSettings, muRho, fileName, "Mu rho");
-
-  delete muRho;
+  delete mu_rho;
 }
 
-FFTGrid*
-ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool fileGrid)
-{
-  int nx  = referenceGrid->getNx();
-  int ny  = referenceGrid->getNy();
-  int nz  = referenceGrid->getNz();
-  int nxp = referenceGrid->getNxp();
-  int nyp = referenceGrid->getNyp();
-  int nzp = referenceGrid->getNzp();
-
-  FFTGrid * fftGrid;
-
-  if(fileGrid)
-    fftGrid = new FFTFileGrid(nx,ny,nz,nxp,nyp,nzp);
-  else
-    fftGrid = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
-
-  return(fftGrid);
-}
+//FFTGrid*
+//ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool file_grid)
+//{
+//  int nx  = referenceGrid->getNx();
+//  int ny  = referenceGrid->getNy();
+//  int nz  = referenceGrid->getNz();
+//  int nxp = referenceGrid->getNxp();
+//  int nyp = referenceGrid->getNyp();
+//  int nzp = referenceGrid->getNzp();
+//
+//  FFTGrid * fftGrid;
+//
+//  if(file_grid)
+//    fftGrid = new FFTFileGrid(nx,ny,nz,nxp,nyp,nzp);
+//  else
+//    fftGrid = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
+//
+//  return(fftGrid);
+//}
 
 void
-ParameterOutput::writeToFile(const Simbox        * simbox,
-                             ModelGeneral        * modelGeneral,
-                             const ModelSettings * modelSettings,
+ParameterOutput::WriteToFile(const Simbox        * simbox,
+                             GridMapping         * time_depth_mapping,
+                             const ModelSettings * model_settings,
                              FFTGrid             * grid,
-                             const std::string   & fileName,
-                             const std::string   & sgriLabel,
+                             const std::string   & file_name,
+                             const std::string   & sgri_label,
                              bool                  padding)
 {
-  GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
-  GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
+  //GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
+  //GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
   float         seismicStartTime = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-  TraceHeaderFormat *format = modelSettings->getTraceHeaderFormatOutput();
+  TraceHeaderFormat *format = model_settings->getTraceHeaderFormatOutput();
+
+  grid->writeFile(file_name,
+                  IO::PathToInversionResults(),
+                  simbox,
+                  sgri_label,
+                  seismicStartTime,
+                  time_depth_mapping,
+                  *format,
+                  padding);
+}
+
+void
+ParameterOutput::WriteToFile(const Simbox        * simbox,
+                             GridMapping         * time_depth_mapping,
+                             const ModelSettings * model_settings,
+                             StormContGrid       * grid,
+                             const std::string   & file_name,
+                             const std::string   & sgri_label,
+                             bool                  padding)
+{
+  //GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
+  //GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
+  float         seismic_start_time = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
+  TraceHeaderFormat *format = model_settings->getTraceHeaderFormatOutput();
 
   //H-Writing
-  //grid->writeFile(fileName, //H FIX to use new simbox instead of timeCutMapping
-  //                IO::PathToInversionResults(),
-  //                simbox,
-  //                sgriLabel,
-  //                seismicStartTime,
-  //                timeDepthMapping,
-  //                timeCutMapping,
-  //                *format,
-  //                padding);
+  grid->writeFile(file_name,
+                  IO::PathToInversionResults(),
+                  simbox,
+                  sgri_label,
+                  seismic_start_time,
+                  time_depth_mapping,
+                  //timeCutMapping,
+                  *format,
+                  padding);
+}
+
+void
+ParameterOutput::ExpTransf(StormContGrid * grid)
+{
+  float value = 0.0f;
+  for (size_t i = 0; i < grid->GetNI(); i++) {
+    for (size_t j = 0; j < grid->GetNJ(); j++) {
+      for (size_t k = 0; k < grid->GetNK(); k++) {
+
+        value = grid->GetValue(i, j, k);
+
+        if (value != RMISSING) {
+          value = exp(value);
+          grid->SetValue(i, j, k, value);
+        }
+
+      }
+    }
+  }
+
 }
