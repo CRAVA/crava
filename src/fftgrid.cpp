@@ -1977,16 +1977,17 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void
-FFTGrid::writeFile(const std::string       & fName,
-                   const std::string       & subDir,
-                   const Simbox            * simbox,
-                   const std::string         label,
-                   const float               z0,
-                   const GridMapping       * depthMap,
-                   const GridMapping       * timeMap,
-                   const TraceHeaderFormat & thf,
-                   bool                      padding,
-                   bool                      scientific_format)
+FFTGrid::writeFile(const std::string              & fName,
+                   const std::string              & subDir,
+                   const Simbox                   * simbox,
+                   const std::string                label,
+                   const float                      z0,
+                   const GridMapping              * depthMap,
+                   const GridMapping              * timeMap,
+                   const TraceHeaderFormat        & thf,
+                   bool                             padding,
+                   bool                             scientific_format,
+                   const std::vector<std::string> & headerText)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
@@ -2005,7 +2006,7 @@ FFTGrid::writeFile(const std::string       & fName,
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((formatFlag_ & IO::SEGY) >0)
-        FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
+        FFTGrid::writeSegyFile(fileName, simbox, z0, thf, headerText);
       if ((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
       if ((formatFlag_ & IO::CRAVA) >0)
@@ -2115,17 +2116,26 @@ FFTGrid::writeStormFile(const std::string & fileName,
 
 
 int
-FFTGrid::writeSegyFile(const std::string       & fileName,
-                       const Simbox            * simbox,
-                       float                     z0,
-                       const TraceHeaderFormat & thf)
+FFTGrid::writeSegyFile(const std::string              & fileName,
+                       const Simbox                   * simbox,
+                       float                            z0,
+                       const TraceHeaderFormat        & thf,
+                       const std::vector<std::string> & headerText)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
 
   std::string gfName = fileName + IO::SuffixSegy();
   //SegY * segy = new SegY(gfName, simbox);
-  TextualHeader header = TextualHeader::standardHeader();
+  TextualHeader header;
+  if(headerText.size() == 0)
+    header = TextualHeader::standardHeader();
+  else {
+    for(size_t i=0;i<headerText.size();i++) {
+      header.SetLine(i+1, headerText[i]);
+    }
+  }
+
   float dz = float(floor(simbox->getdz()+0.5));
   if(dz==0)
     dz = 1.0;
