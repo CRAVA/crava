@@ -52,18 +52,20 @@ public:
                                                          FFTGrid  * meanVs,
                                                          FFTGrid  * meanRho);
 
-  void                          setCorrelationParameters(const NRLib::Matrix       & priorVar0,
-                                                         const std::vector<double> & priorCorrT,
-                                                         const Surface             * priorCorrXY,
-                                                         const int                 & minIntFq,
-                                                         const float               & corrGradI,
-                                                         const float               & corrGradJ,
-                                                         const int                 & nx,
-                                                         const int                 & ny,
-                                                         const int                 & nz,
-                                                         const int                 & nxPad,
-                                                         const int                 & nyPad,
-                                                         const int                 & nzPad);
+  void                          setCorrelationParameters(bool                                 estimated,
+                                                         const NRLib::Matrix                & priorVar0,
+                                                         const std::vector<NRLib::Matrix>   & auto_cov,
+                                                         const std::vector<double>          & priorCorrT,
+                                                         const Surface                      * priorCorrXY,
+                                                         const int                          & minIntFq,
+                                                         const float                        & corrGradI,
+                                                         const float                        & corrGradJ,
+                                                         const int                          & nx,
+                                                         const int                          & ny,
+                                                         const int                          & nz,
+                                                         const int                          & nxPad,
+                                                         const int                          & nyPad,
+                                                         const int                          & nzPad);
 
   void                          allocateGrids(const int nx,
                                               const int ny,
@@ -76,6 +78,12 @@ public:
   NRLib::Matrix                 getPriorVar0(void) const;
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
+
+  fftw_real                   * ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov, 
+                                                   int                                  minIntFq,
+                                                   int                                  nzp,
+                                                   size_t                               i,
+                                                   size_t                               j) const;
 
   fftw_real                   * computeCircCorrT(const std::vector<double> & priorCorrT,
                                                  const int                 & minIntFq,
@@ -110,17 +118,27 @@ public:
 private:
   void                          createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
 
-  void                          initializeCorrelations(const Surface             * priorCorrXY,
-                                                       const std::vector<double> & priorCorrT,
-                                                       const float               & corrGradI,
-                                                       const float               & corrGradJ,
-                                                       const int                 & lowIntCut,
-                                                       const int                 & nzp);
+  void                          InitializeCorrelations(bool                                  cov_estimated,
+                                                       const Surface                       * priorCorrXY,
+                                                       const std::vector<NRLib::Matrix>    & auto_cov,
+                                                       const std::vector<double>           & priorCorrT,
+                                                       const float                         & corrGradI,
+                                                       const float                         & corrGradJ,
+                                                       const int                           & lowIntCut,
+                                                       const int                           & nzp);
+
+  void                          FillInLateralCorr(const Surface       * prior_corr_xy,
+                                                  const fftw_real     * circ_auto_cov,
+                                                  float                 grad_I,
+                                                  float                 grad_J);
 
   FFTGrid                     * createFFTGrid(int nx,  int ny,  int nz,
                                               int nxp, int nyp, int nzp,
                                               bool fileGrid);
 
+  void                          MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
+                                                     int          minIntFq,
+                                                     int          nzp) const;
 
   void                          makeCircCorrTPosDef(fftw_real * circCorrT,
                                                     const int & minIntFq,

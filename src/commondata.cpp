@@ -147,7 +147,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 13. Setup of prior correlation
   if(read_seismic_){
     if(model_settings->getEstimateCorrelations() == true){
-      model_settings->SetMinBlocksForCorrEstimation(100); // As a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
+      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(read_wells_ && setup_multigrid_){
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(),  mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
             prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, prior_cov_estimated_, err_text);
@@ -447,7 +447,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
       // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
       // if multiple intervals
-      if (model_settings->getIntervalNames().size() > 0) {
+      if (model_settings->GetMultipleIntervalSetting()) {
         SetSurfaces(model_settings, full_inversion_simbox, true, input_files, err_text);
       }
       // single interval described by either one or two surfaces
@@ -5409,7 +5409,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 
     //Intervals not used, no need to resample
     // Alternative: create a readCravaFile for NRLibGrid. Padding?
-    if (model_settings->getIntervalNames().size() == 0) {
+    if (model_settings->GetMultipleIntervalSetting() == false) {
       int nx = interval_simboxes[0].getnx();
       int ny = interval_simboxes[0].getny();
       int nz = interval_simboxes[0].getnz();
@@ -7689,7 +7689,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
         // Number of bins
-        int n_corr_T = interval_simboxes[i].getnz();
+        int n_corr_T = interval_simboxes[i].GetNZpad();
         if((n_corr_T % 2) == 0)
           n_corr_T = n_corr_T/2+1;
         else
@@ -7782,54 +7782,39 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             }
 
             std::vector<NRLib::Matrix> prior_auto_cov_temp;
+            int n_est_nonzero;
             if(analyze->GetEnoughData() == true){
-              prior_auto_cov_temp = analyze->GetAutoCovariance();
+              prior_auto_cov_temp   = analyze->GetAutoCovariance();
+              n_est_nonzero         = analyze->GetMaxLagWithNonZeroAutoCovData();
             }
+            // If interval i does not have enough data for estimation, use the estimation over all intervals
             else{
-              prior_auto_cov_temp = analyze_all->GetAutoCovariance();
+              // If dz for interval i is not equal to the minimum resolution min_dz, resample auto_cov
+              if(dz_min != interval_simboxes[i].getdz())
+                ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i].getdz());
+              else{
+                prior_auto_cov_temp   = analyze_all->GetAutoCovariance();
+                n_est_nonzero         = analyze_all->GetMaxLagWithNonZeroAutoCovData();
+              }
             }
 
-            // Erik N: HERE! dz can be different between intervals
-            int nd_max        = analyze->GetNumberOfLags();
-            int n_est_nonzero = analyze->GetNumberOfAutoCovData();
             int n_est = std::min(n_est_nonzero, n_corr_T);
             if(n_est_nonzero<n_corr_T) {
               LogKit::LogFormatted(LogKit::High,
-                  "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
+                  "\nOnly able to estimate the autocovariance for %d of the predefined vector size of %d dz lags. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
             }
             
             for(int j=0; j<n_est; j++){
               prior_auto_cov_[i][j] = prior_auto_cov_temp[j];
             }
-
-
-            //prior_var_0_[i] = analyze->getPointVar0();
-
-            /*
-            std::vector<float> est_corr_T;
-            if (analyze->GetEnoughData() == true){
-              est_corr_T = analyze->GetCorrT();
-            }
-            else{
-              est_corr_T = analyze_all->GetCorrT();
-            }
-
-            if(estimate_temp_corr) {
-              //corr_T.resize(n_corr_T);
-              int n_est = analyze->GetNumberOfLags();
-              int j, max = n_est;
-              if(max > n_corr_T)
-                max = n_corr_T;
-              for(j = 0; j < max; j++)
-                prior_corr_T_[i][j] = est_corr_T[j];
-              if(j<n_corr_T) {
-                LogKit::LogFormatted(LogKit::High,
-                  "\nOnly able to estimate %d of %d lags needed in temporal correlation. The rest are set to 0.\n", n_est, n_corr_T);
-                for(;j<n_corr_T;j++)
-                  prior_corr_T_[i][j] = 0.0f;
+            for(int j = n_est; j < n_corr_T; j++){
+              prior_auto_cov_[i][j].resize(3,3);
+              for (size_t k = 0; k < 3; k++){
+                for (size_t l = 0; l < 3; l++)
+                  prior_auto_cov_[i][j](k,l) = 0.0;
               }
             }
-            */
+
           }
           delete analyze;
 
@@ -7838,14 +7823,26 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         if (failed_param_cov || failed_temp_corr)
           failed = true;
 
+        //
+        // Print results ----------------------------------
+        //
 
         if (!failed) {
 
           CheckCovarianceParameters(prior_param_cov_[i]);
 
-          //if(print_result)
-          //  WriteFilePriorVariances(model_settings, corr_T, prior_corr_XY_[i], dt);
-          //PrintPriorVariances();
+          
+          if(estimate_param_cov || estimate_temp_corr){
+            WriteFilePriorVariances(model_settings, prior_auto_cov_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i].getdz());
+            if(print_result)
+              PrintPriorVariances(interval_names);
+          }
+          else{
+            WriteFilePriorVariances(model_settings, prior_param_cov_[i], prior_corr_T_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i].getdz());
+            if(print_result)
+              PrintPriorVariances(interval_names);
+          }
+          
 
         }
       }
@@ -7995,6 +7992,11 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
                                                      std::string                                      & err_txt){
 
   LogKit::LogFormatted(LogKit::Low,"\nGenerating covariances from rock physics\n");
+
+  if(probability.size() == 0){
+    err_txt += "No rock physics models associated with the inversion interval(s). \n";
+    return;
+  }
 
   // order the facies prob vector after the facies_names vector
   std::vector<float> facies_prob(facies_names.size());
@@ -8636,157 +8638,187 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
 }
 
 
+void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
+                                             double                                                  dz_min,
+                                             std::vector<NRLib::Matrix>                            & prior_auto_cov,
+                                             double                                                  dz)
+{
+  // prior_auto_cov_dz_min has been estimated over all intervals, so its size must be >= the size of prior_auto_cov
+  assert (prior_auto_cov.size() != prior_auto_cov.size());
+  double    fraction_1            = 0;
+  double    fraction_2            = 0;
+  size_t    cell_coarse           = 0;
+  size_t    cell_fine_1           = 0;
+  size_t    cell_fine_2           = 0;
+
+  // ************************************************************
+  //    1 2 3 4 5 6 7 8 9 ... 
+  //   |*|*|*|*|*|*|*|*|*|*|*|*|..      <-- FINE RESOLUTION
+  //  
+  //  | * | * | * | * | * |             <-- COARSE RESOLUTION
+  //    1   2   3   4   5
+  //
+  // Interpolation: 
+  // Coarse cell 1 is equal to fine cell 1
+  // Coarse cell 2 is interpolated around fine cell 3
+  // Coarse cell 3 is interpolated around fine cell 5 etc..
+  // ************************************************************
+
+  while (cell_coarse < prior_auto_cov.size()){
+    if (cell_coarse == 0){
+      for(size_t i = 0;  i < 3; i++){
+        for(size_t j = 0; j < 3; j++){
+          prior_auto_cov[0](i,j) = prior_auto_cov_dz_min[0](i,j);
+        }
+      }
+    }
+    else{
+      cell_fine_1 = static_cast<int>((cell_coarse*dz)/dz_min);
+      cell_fine_2 = cell_fine_1 + 1;
+      for(size_t i = 0;  i < 3; i++){
+        for(size_t j = 0; j < 3; j++){
+          fraction_1  = prior_auto_cov_dz_min[cell_fine_2](i,j) - prior_auto_cov_dz_min[cell_fine_1](i,j);
+          fraction_2  = (cell_coarse*dz - cell_fine_1*dz_min)/dz_min;
+          prior_auto_cov[cell_coarse](i,j) = prior_auto_cov_dz_min[cell_fine_1](i,j) + fraction_1*fraction_2;
+        }
+      }
+    }
+
+    cell_coarse++;  // move one cell 
+  }
+}
 
 //--------------------------------------------------------------------
-/*
-void  CommonData::WriteFilePriorVariances(const ModelSettings      * model_settings,
-                                          const std::vector<float> & prior_corr_T,
-                                          const Surface            * prior_corr_XY,
-                                          const float              & dt) const
+void  CommonData::WriteFilePriorVariances(const ModelSettings       * model_settings,
+                                          const NRLib::Matrix       & prior_param_cov,
+                                          const std::vector<double> & prior_corr_T,
+                                          const Surface             * prior_corr_XY,
+                                          const std::string         & interval_name,
+                                          const float               & dz) const
 {
-  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
-  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
-  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
-  std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
-  std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
+  std::string base_name1;
+  std::string base_name2;
+  std::string base_name3;
+  if(interval_name != ""){
+    base_name1 = IO::PrefixPrior() + IO::FileParameterCov() + "_" + interval_name + "_" + IO::SuffixCrava();
+    base_name2 = IO::PrefixPrior() + IO::FileTemporalCorr() + "_" + interval_name + "_" + IO::SuffixCrava();
+    base_name3 = IO::PrefixPrior() + IO::FileLateralCorr() + "_" + interval_name;
+  }
+  else{
+    base_name1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
+    base_name2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
+    base_name3 = IO::PrefixPrior() + IO::FileLateralCorr();
+  }
+  std::string file_name1 = IO::makeFullFileName(IO::PathToCorrelations(), base_name1);
+  std::string file_name2 = IO::makeFullFileName(IO::PathToCorrelations(), base_name2);
 
   std::ofstream file;
-  NRLib::OpenWrite(file, fileName1);
+  NRLib::OpenWrite(file, file_name1);
   file << std::fixed
        << std::right
        << std::setprecision(10);
   for(int i=0 ; i<3 ; i++) {
     for(int j=0 ; j<3 ; j++) {
-      file << std::setw(13) << prior_var0_(i,j) << " ";
+      file << std::setw(13) << prior_param_cov(i,j) << " ";
     }
     file << "\n";
   }
   file.close();
 
-  NRLib::OpenWrite(file, fileName2);
+  NRLib::OpenWrite(file, file_name2);
   file << std::fixed
        << std::right
        << std::setprecision(8)
-       << dt << "\n";
+       << dz << "\n";
   for(int i=0 ; i<static_cast<int>(prior_corr_T.size()); i++) {
     file << std::setw(11) << prior_corr_T[i] << "\n";
   }
   file.close();
 
-  IO::writeSurfaceToFile(*prior_corr_XY, baseName3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+  IO::writeSurfaceToFile(*prior_corr_XY, base_name3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
 }
-*/
 
 //--------------------------------------------------------------------
-/*
-void  CommonData::PrintPriorVariances() const{
+void CommonData::WriteFilePriorVariances(const ModelSettings                * model_settings,
+                                         const std::vector<NRLib::Matrix>   & prior_auto_cov,
+                                         const Surface                      * prior_corr_XY,
+                                         const std::string                  & interval_name,
+                                         double                               dz) const
+{
+  std::string base_name1;
+  std::string base_name2;
+  if(interval_name != ""){
+    base_name1 = IO::PrefixPrior() + IO::FileParameterAutoCov() + "_" + interval_name + "_" + IO::SuffixCrava();
+    base_name2 = IO::PrefixPrior() + IO::FileLateralCorr() + "_" + interval_name;
+  }
+  else{
+    base_name1 = IO::PrefixPrior() + IO::FileParameterAutoCov() + IO::SuffixCrava();
+    base_name2 = IO::PrefixPrior() + IO::FileLateralCorr();
+  }
+  std::string file_name1 = IO::makeFullFileName(IO::PathToCorrelations(), base_name1);
+  std::string file_name2 = IO::makeFullFileName(IO::PathToCorrelations(), base_name2);
+
+  std::ofstream file;
+  NRLib::OpenWrite(file, file_name1);
+  file << std::fixed
+       << std::right
+       << "dz = "
+       << std::setprecision(10)
+       << dz << "\n";
+  for(size_t t = 0; t < prior_auto_cov.size(); t++){
+  file << "i = " << t << ":\n";
+  for(int i=0 ; i<3 ; i++) {
+    for(int j=0 ; j<3 ; j++) {
+      file << std::setw(13) << prior_auto_cov[t](i,j) << " ";
+    }
+    file << "\n";
+  }
+  file << "\n";
+  }
+  file.close();
+
+  IO::writeSurfaceToFile(*prior_corr_XY, base_name2, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+}
+
+//--------------------------------------------------------------------
+
+void  CommonData::PrintPriorVariances(const std::vector<std::string> & interval_names) const{
 
   LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
-  LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
-  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"Inversion grid:   %.1e   %.1e   %.1e (used by program)\n",prior_var_0(0,0),prior_var_0(1,1),prior_var_0(2,2));
+  for (size_t i = 0; i < interval_names.size(); i++){
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"Interval: " + interval_names[i] + "\n\n");
+    LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
+    LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"Interval + + :   %.1e   %.1e   %.1e (used by program)\n",prior_param_cov_[i](0,0),prior_param_cov_[i](1,1),prior_param_cov_[i](2,2));
 
-  float corr01 = static_cast<float>(priorVar0_(0,1)/(sqrt(priorVar0_(0,0)*priorVar0_(1,1))));
-  float corr02 = static_cast<float>(priorVar0_(0,2)/(sqrt(priorVar0_(0,0)*priorVar0_(2,2))));
-  float corr12 = static_cast<float>(priorVar0_(1,2)/(sqrt(priorVar0_(1,1)*priorVar0_(2,2))));
-  LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
-  LogKit::LogFormatted(LogKit::Low,"\n");
+    float corr01 = static_cast<float>(prior_param_cov_[i](0,1)/(sqrt(prior_param_cov_[i](0,0)*prior_param_cov_[i](1,1))));
+    float corr02 = static_cast<float>(prior_param_cov_[i](0,2)/(sqrt(prior_param_cov_[i](0,0)*prior_param_cov_[i](2,2))));
+    float corr12 = static_cast<float>(prior_param_cov_[i](1,2)/(sqrt(prior_param_cov_[i](1,1)*prior_param_cov_[i](2,2))));
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+    LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+    LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+    LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+    LogKit::LogFormatted(LogKit::Low,"\n");
 
-  if (std::abs(corr01) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
-    TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+    if (std::abs(corr01) > 1.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+      TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+    }
+    if (std::abs(corr02) > 1.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+      TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+    }
+    if (std::abs(corr12) > 1.0) {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+      TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
+    }
   }
-  if (std::abs(corr02) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
-    TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
-  }
-  if (std::abs(corr12) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
-    TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
-  }
 }
 
 
-/*
-void CommonData::WriteFilePriorVariances(const ModelSettings * model_settings,
-const std::vector<float> & prior_corr_T,
-const Surface * prior_corr_XY,
-const float & dt) const
-{
-std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
-std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
-std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
-std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
-std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
-
-std::ofstream file;
-NRLib::OpenWrite(file, fileName1);
-file << std::fixed
-<< std::right
-<< std::setprecision(10);
-for(int i=0 ; i<3 ; i++) {
-for(int j=0 ; j<3 ; j++) {
-file << std::setw(13) << prior_var0_(i,j) << " ";
-}
-file << "\n";
-}
-file.close();
-
-NRLib::OpenWrite(file, fileName2);
-file << std::fixed
-<< std::right
-<< std::setprecision(8)
-<< dt << "\n";
-for(int i=0 ; i<static_cast<int>(prior_corr_T.size()); i++) {
-file << std::setw(11) << prior_corr_T[i] << "\n";
-}
-file.close();
-
-IO::writeSurfaceToFile(*prior_corr_XY, baseName3, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
-}
-*/
-
-//--------------------------------------------------------------------
-/*
-void CommonData::PrintPriorVariances() const{
-
-LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
-LogKit::LogFormatted(LogKit::Low,"\n");
-LogKit::LogFormatted(LogKit::Low,"Variances ln Vp ln Vs ln Rho \n");
-LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
-LogKit::LogFormatted(LogKit::Low,"Inversion grid: %.1e %.1e %.1e (used by program)\n",prior_var_0(0,0),prior_var_0(1,1),prior_var_0(2,2));
-
-float corr01 = static_cast<float>(priorVar0_(0,1)/(sqrt(priorVar0_(0,0)*priorVar0_(1,1))));
-float corr02 = static_cast<float>(priorVar0_(0,2)/(sqrt(priorVar0_(0,0)*priorVar0_(2,2))));
-float corr12 = static_cast<float>(priorVar0_(1,2)/(sqrt(priorVar0_(1,1)*priorVar0_(2,2))));
-LogKit::LogFormatted(LogKit::Low,"\n");
-LogKit::LogFormatted(LogKit::Low,"Corr | ln Vp ln Vs ln Rho \n");
-LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-LogKit::LogFormatted(LogKit::Low,"ln Vp | %5.2f %5.2f %5.2f \n",1.0f, corr01, corr02);
-LogKit::LogFormatted(LogKit::Low,"ln Vs | %5.2f %5.2f \n",1.0f, corr12);
-LogKit::LogFormatted(LogKit::Low,"ln Rho | %5.2f \n",1.0f);
-LogKit::LogFormatted(LogKit::Low,"\n");
-
-if (std::abs(corr01) > 1.0) {
-LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
-TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
-}
-if (std::abs(corr02) > 1.0) {
-LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
-TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
-}
-if (std::abs(corr12) > 1.0) {
-LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
-TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
-}
-}
-*/
 
 void CommonData::WriteBlockedWells(std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                    const ModelSettings                      * model_settings,
@@ -9219,7 +9251,7 @@ void CommonData::PrintSettings(ModelSettings    * model_settings,
     else
       LogKit::LogFormatted(LogKit::Low,"  Top surface                              : "+top_name+"\n");
 
-    if (model_settings->getIntervalNames().size() == 0) {
+    if (model_settings->GetMultipleIntervalSetting() == false) {
 
       const std::string & base_name = input_files->getTimeSurfFile(1);
 
@@ -9699,7 +9731,14 @@ void CommonData::SetDebugLevel(ModelSettings * model_settings)
 
 }
 
-std::string CommonData::ConvertInt(int number){
+std::string CommonData::ConvertFloatToString(float number){
+  std::ostringstream ss;
+  ss << number;
+  std::string s(ss.str());
+  return s;
+}
+
+std::string CommonData::ConvertIntToString(int number){
     if (number == 0)
         return "0";
     std::string temp="";

@@ -87,7 +87,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
       //
       // INVERSION/ESTIMATION
       //
-      if (model_settings->getIntervalNames().size() > 0)
+      if (model_settings->GetMultipleIntervalSetting() == true)
         multi_interval_ = true;
 
       //Facies-names

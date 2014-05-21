@@ -218,6 +218,7 @@ public:
   //std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   //std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   //std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  bool                             GetMultipleIntervalSetting()         const { return multiple_intervals_                        ;}
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
@@ -447,6 +448,7 @@ public:
   void setCorrDirIntervalBaseConform(const std::string & interval_name, bool intervalBaseConformCorrelation) { intervalBaseConformCorrelation_[interval_name] = intervalBaseConformCorrelation ;}
   void setCorrDirIntervalUsed(bool intervalCorrelationUsed) { intervalCorrelationUsed_ = intervalCorrelationUsed ;}
 
+  void SetMultipleIntervals(bool b)                       { multiple_intervals_ = b                              ;}
   void addIntervalName(std::string name)                  { interval_names_.push_back(name)                      ;}
   void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
   void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
@@ -581,6 +583,7 @@ private:
 
   int                               erosion_priority_top_surface_;// Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
   std::map<std::string, int>        erosion_priority_interval_base_surface_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
+  bool                              multiple_intervals_;          // Multiple interval setting being used
   std::vector<std::string>          interval_names_;              // Interval names for multiple interval inversion
   std::map<std::string, float>      vpvs_ratio_interval_;         // Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
 
