@@ -32,6 +32,7 @@ ModelSettings::ModelSettings(void)
     estimateSNRatio_(0),
     estimateLocalNoise_(0),
     estimateGlobalWaveletScale_(0),
+    multiple_intervals_(false),
     constBackValue_(3),
     indBGTrend_(0),
     indWavelet_(0),

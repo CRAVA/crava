@@ -514,7 +514,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     nz[s] = interval_simboxes[s].getnz();
     n_layers += nz[s];
   }
-  const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the first simbox
+  const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the smallest dz
 
   for(int s = 0; s < n_intervals; s++){
     std::string interval_name = multiple_interval_grid->GetIntervalName(s);

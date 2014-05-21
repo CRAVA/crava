@@ -38,6 +38,7 @@ public:
   inline static  std::string    FileDebug(void)                    { return std::string("debug")                    ;}
   inline static  std::string    FileError(void)                    { return std::string("error")                    ;}
   inline static  std::string    FileTasks(void)                    { return std::string("tasks")                    ;}
+  inline static  std::string    FileParameterAutoCov()             { return std::string("Parameter_Autocovariance") ;}
   inline static  std::string    FileParameterCov(void)             { return std::string("Parameter_Covariance")     ;}
   inline static  std::string    FileLateralCorr(void)              { return std::string("Lateral_Correlation")      ;}
   inline static  std::string    FileTemporalCorr(void)             { return std::string("Temporal_Correlation")     ;}

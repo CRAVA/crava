@@ -1288,16 +1288,20 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   parseEarthModel(root,errTxt);
   parsePriorLocalWavelet(root, errTxt);
 
-  Vario* vario = NULL;
+  Vario * vario = NULL;
   if(parseVariogram(root, "lateral-correlation", vario, errTxt) == true) {
     if (vario != NULL) {
       modelSettings_->setLateralCorr(vario);
     }
+
   }
 
   std::string filename;
   if(parseFileName(root, "temporal-correlation", filename, errTxt) == true){
     inputFiles_->setTempCorrFile(filename);
+    if (modelSettings_->GetMultipleIntervalSetting()){
+      errTxt += "Temporal correlation files cannot be used in combination with multiple intervals.\n";
+    }
   }
 
   float tempCorrRange;
@@ -1996,7 +2000,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
   }
 
   //If facies are given as probabilities under parseFacies and multiinterval are used, set all intervals equal to this value.
-  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
+  if(modelSettings_->GetMultipleIntervalSetting() == true && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
     for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
       const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
       const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProbsInterval("");
@@ -4307,6 +4311,8 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   legalCommands.push_back("interval");
 
   modelSettings_->setParallelTimeSurfaces(false);
+  modelSettings_->SetMultipleIntervals(true);
+
   modelSettings_->setErosionPriorityTopSurface(1); //default is 1
 
   if(parseTopSurface(root, err_txt) == false){
@@ -4365,6 +4371,8 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("velocity-field-from-inversion");
 
   modelSettings_->setParallelTimeSurfaces(false);
+  modelSettings_->SetMultipleIntervals(false);
+  modelSettings_->addIntervalName("");
 
   if(parseTopSurface(root, errTxt) == false)
     errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
@@ -4586,6 +4594,8 @@ XmlModelFile::parseIntervalOneSurface(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("sample-density");
 
   modelSettings_->setParallelTimeSurfaces(true);
+  modelSettings_->SetMultipleIntervals(false);
+  modelSettings_->addIntervalName("");
 
   std::string filename;
   if(parseFileName(root, "reference-surface", filename, errTxt) == true)
@@ -6106,16 +6116,16 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
       int n_intervals                         = interval_names.size();
 
-      if (interval_names.size() == 0)
-        n_intervals = 1;
+      //if (interval_names.size() == 0)
+      //  n_intervals = 1;
 
       for (int i = 0; i < n_intervals; i++) {
         std::map<std::string, float> facies_probabilities;
 
-        if (interval_names.size() == 0)
-          facies_probabilities = modelSettings_->getPriorFaciesProbsInterval("");
-        else
-          facies_probabilities = modelSettings_->getPriorFaciesProbsInterval(interval_names[i]);
+        //if (interval_names.size() == 0)
+        //  facies_probabilities = modelSettings_->getPriorFaciesProbsInterval("");
+        //else
+        facies_probabilities = modelSettings_->getPriorFaciesProbsInterval(interval_names[i]);
 
         for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
@@ -6154,7 +6164,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
   }
 
 
-  if(modelSettings_->getIntervalNames().size() > 0) { //Interval model is used
+  if(modelSettings_->GetMultipleIntervalSetting() == true) { //Interval model is used
 
     const std::vector<std::string> & interval_names = modelSettings_->getIntervalNames();
 

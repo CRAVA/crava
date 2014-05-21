@@ -172,14 +172,14 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
   if(!enough_data_for_corr_estimation){
     if (interval_simboxes.size() > 1){
-      TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) +
-        " blocks are needed; currently there are "+ CommonData::ConvertInt(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
+      TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+        " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in all intervals.\n");
     }
     else{
       std::string interval_name = interval_simboxes[0]->GetIntervalName();
-      TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertInt(min_blocks_with_data_for_corr_estim_) +
-        " blocks are needed; currently there are "+ CommonData::ConvertInt(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
+      TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+        " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in interval '"+ interval_name + "'.\n");
     }
     return;
@@ -230,10 +230,11 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
     CalculateNumberOfLags(n_lags, dz_min, dz_rel, interval_simboxes);
 
-    corr_T_.resize(n_lags, 0);
+    //corr_T_.resize(n_lags, 0);
+    auto_cov_.resize(n_lags);
 
     EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs_for_correlation, interval_simboxes, log_data_vp, log_data_vs, log_data_rho, 
-      all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, var_vs_resid, dz_min, n_lags, max_lag_with_data_, err_txt);
+      all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, var_vs_resid, dz_min, n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
 
     SetParameterCov(auto_cov_[0], var_0_, 3);
 
@@ -775,6 +776,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                                                            double                                             & var_vs_resid,
                                                            float                                                min_dz,
                                                            int                                                  max_nd,
+                                                           int                                                  min_blocks_with_data_for_corr_estim,
                                                            int                                                & max_lag_with_data,
                                                            std::string                                        & err_text)
 {
@@ -990,30 +992,61 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
     }
     time(&timeend);
-    printf("\nWell %s processed in %ld seconds.",well_names[i],timeend-timestart);
+    printf("\nWell %s processed in %ld seconds.", well_names[i].c_str(), timeend-timestart);
   }
 
+  // Calculate autocovariances
+  //
+  if(all_Vs_logs_synthetic){
+    LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance and corr(Vp, Vs) and corr(Vs, Rho) are set to 0.7.\n");
+  }
   for (int i = 0; i < max_lag_with_data; i++){
-    if(count[i](0,0)<2)
-    {
-      err_text += "Not enough well data within simulation area to estimate autocovariance of Vp for time lag "+CommonData::ConvertInt(i*min_dz)+ " +.\n";
-    }
-    if(count[i](2,2)<2)
-    {
-      err_text += "Not enough well data within simulation area to estimate autocovariance of Rho for time lag "+CommonData::ConvertInt(i*min_dz)+ ".\n";
-    }
-  }
+    // If there is not enough data to estimate autocovariance within the first ~50 lags, return an error
+    int n_vp = count[i](0,0);
+    int n_vs = count[i](1,1);
+    int n_rho = count[i](2,2);
 
-  if(err_text == "")
-  { //
-    // Calculate autocovariances
-    //
-    if(all_Vs_logs_synthetic){
-      LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance and corr(Vp, Vs) and corr(Vs, Rho) are set to 0.7.\n");
+    double c_vp = temp_auto_cov[i](0,0);
+    double c_vs = temp_auto_cov[i](1,1);
+    double c_rho = temp_auto_cov[i](2,2);
+
+    if (i < static_cast<int>(min_blocks_with_data_for_corr_estim/2)){
+      if(count[i](0,0)<2)
+      {
+        err_text += "Not enough well data within simulation area to estimate autocovariance of Vp for time lag = "+ CommonData::ConvertIntToString(i) +", dz = " + CommonData::ConvertFloatToString(min_dz) +" +.\n";
+      }
+      if(count[i](2,2)<2)
+      {
+        err_text += "Not enough well data within simulation area to estimate autocovariance of Rho for time lag "+ CommonData::ConvertIntToString(i) +", dz = "+ CommonData::ConvertFloatToString(min_dz) + ".\n";
+      }
+      if (err_text == ""){
+        temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
+        temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
+        if(all_Vs_logs_synthetic){
+          temp_auto_cov[i](1,1) = 2*temp_auto_cov[i](0,0);
+        } else if (count[i](1,1) > 1){
+          temp_auto_cov[i](1,1) = temp_auto_cov[i](1,1) / (count[i](1,1) - 1);
+        } else{
+          err_text += "There is not enough data in the Vs logs.\n";
+        }
+      }
     }
-    for (int i = 0; i < max_lag_with_data; i++){
-      temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
-      temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
+    // If there is not enough data to estimate autocovariance for lags > 50, set to 0 and return a warning
+    else{
+      if(count[i](0,0)<2){
+        temp_auto_cov[i](0,0) = 0.0;
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vp autocovariance for time lag %i, dz = %d could not be estimated and is set to 0.\n", i, min_dz);
+      }
+      else{
+        temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
+      }
+      if(count[i](2,2)<2){
+        temp_auto_cov[i](2,2) = 0.0;
+        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Rho autocovariance for time lag %i, dz = %d could not be estimated and is set to 0.\n", i, min_dz);
+      }
+      else{
+        temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
+      }
       if(all_Vs_logs_synthetic){
         temp_auto_cov[i](1,1) = 2*temp_auto_cov[i](0,0);
       } else if (count[i](1,1) > 1){
@@ -1022,20 +1055,30 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         err_text += "There is not enough data in the Vs logs.\n";
       }
     }
+  }
+
+  if(err_text == ""){ 
 
     // Default covariance between Vp and Vs. Value is explained in Jira issue CRA-220.
     for (int i = 0; i < max_lag_with_data; i++){
-      temp_auto_cov[i](0,1)  = std::sqrt(temp_auto_cov[i](0,0))*std::sqrt(temp_auto_cov[i](1,1))*0.70;
-      temp_auto_cov[i](0,2)  = 0.0;
-      temp_auto_cov[i](1,2)  = 0.0;
+      
       if(count[i](0,1) > 1){
         temp_auto_cov[i](0,1) = temp_auto_cov[i](0,1)/(count[i](0,1) - 1);
+      }
+      else{
+        temp_auto_cov[i](0,1)  = std::sqrt(temp_auto_cov[i](0,0))*std::sqrt(temp_auto_cov[i](1,1))*0.70;
       }
       if(count[i](0,2) > 1){
         temp_auto_cov[i](0,2) = temp_auto_cov[i](0,2)/(count[i](0,2) - 1);
       }
+      else{
+        temp_auto_cov[i](0,2)  = 0.0;
+      }
       if(count[i](1,2) > 1){
         temp_auto_cov[i](1,2) = temp_auto_cov[i](1,2)/(count[i](1,2) - 1);
+      }
+      else{
+        temp_auto_cov[i](1,2)  = 0.0;
       }
       temp_auto_cov[i](1,0) = temp_auto_cov[i](0,1);
       temp_auto_cov[i](2,0) = temp_auto_cov[i](2,0);
@@ -1183,7 +1226,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // n=nend;
   //
   time(&timeend_tot);
-  LogKit::LogFormatted(LogKit::Low,"\nEstimate parameter variance and parameter temporal correlation in %d seconds.\n",
+  LogKit::LogFormatted(LogKit::Low,"\nEstimated parameter variance and parameter temporal correlation in %d seconds.\n",
                    static_cast<int>(timeend_tot-timestart_tot));
 
 }
