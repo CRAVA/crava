@@ -209,6 +209,65 @@ void StormContGrid::WriteToFile(const std::string& filename, const std::string& 
     file << 0;
 }
 
+void StormContGrid::WriteToSgriFile(const std::string & file_name,
+                                    const std::string & file_name_header,
+                                    const std::string & label,
+                                    double              simbox_dz,
+                                    Endianess           file_format) const
+{
+  // Header
+  double vert_scale = 0.001;
+  double hor_scale  = 0.001;
+
+  std::ofstream header_file;
+  NRLib::OpenWrite(header_file, file_name_header);
+
+  header_file << "NORSAR General Grid Format v1.0\n";
+  header_file << "3\n";
+  header_file << "X (km)\n";
+  header_file << "Y (km)\n";
+  header_file << "T (s)\n";
+  header_file << "FFT-grid\n";
+  header_file << "1\n";
+  header_file << label << std::endl;
+  header_file << "1 1 1\n";
+
+  double z_max = GetZMax();
+  double z_min = GetZMin();
+
+/*  float dz = static_cast<float> (floor(simbox->getdz()+0.5)); //To have the same sampling as in SegY
+  if (dz == 0.0)
+    dz = 1.0; */
+  float dz = static_cast<float> (simbox_dz);
+  int nz = static_cast<int> (ceil((z_max - z_min)/dz));
+  int ny = GetNJ();
+  int nx = GetNI();
+  header_file << nx << " " << ny << " " << nz << std::endl;
+  header_file << std::setprecision(10);
+  header_file << GetDX()*hor_scale << " " << GetDY()*hor_scale << " " << dz*vert_scale << std::endl;
+  double x0 = GetXMin() + 0.5 * GetDX();
+  double y0 = GetYMin() + 0.5 * GetDY();
+  double z0 = z_min + 0.5 * dz;
+  header_file << x0*hor_scale << " " << y0*hor_scale << " " << z0*vert_scale << std::endl;
+  header_file << GetAngle() << " 0\n";
+  header_file << missing_code_ << std::endl;
+
+  //fName = fileName + IO::SuffixSgri();
+  header_file << file_name << std::endl;
+  header_file << "0\n";
+
+  std::ofstream file;
+  OpenWrite(file, file_name, std::ios::out | std::ios::binary);
+
+  file.precision(14);
+
+  // Data
+  WriteBinaryFloatArray(file, begin(), end(), file_format);
+
+  // Final 0 (Number of barriers)
+  file << 0;
+}
+
 
 /// \todo Common implementation with StormFaciesGrid
 size_t StormContGrid::FindIndex(double x, double y, double z) const

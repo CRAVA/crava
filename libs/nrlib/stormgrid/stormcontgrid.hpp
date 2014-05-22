@@ -85,6 +85,13 @@ namespace NRLib {
                      bool plainAscii=false,
                      Endianess file_format = END_BIG_ENDIAN,
                      bool remove_path = true) const;
+
+    void WriteToSgriFile(const std::string & file_name,
+                         const std::string & file_name_header,
+                         const std::string & label,
+                         double              simbox_dz,
+                         Endianess           file_format = END_BIG_ENDIAN) const;
+
     /// \throw IOError if the file can not be opened.
     /// \throw FileFormatError if file format is not either storm_binary or storm_ascii, or if grid contains barriers.
     void ReadFromFile(const std::string& filename, bool commonPath = true, Endianess file_format = END_BIG_ENDIAN);

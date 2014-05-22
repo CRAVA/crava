@@ -319,7 +319,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
            float                     z0,
            const TraceHeaderFormat & thf,
            double                    simbox_dz,
-           double                    inline_0,
+           double                    inline_0, //H Replace with a geometry created outside?
            double                    crossline_0,
            double                    il_step_x,
            double                    il_step_y,
@@ -390,8 +390,8 @@ SegY::SegY(const StormContGrid     * storm_grid,
         //double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
 
         double rel_thick = 1; //Default value to be used outside grid.
-        double z_top = storm_grid->GetTopSurface().GetZ(x,y);
-        double z_bot = storm_grid->GetBotSurface().GetZ(x,y);
+        double z_top     = storm_grid->GetTopSurface().GetZ(x,y);
+        double z_bot     = storm_grid->GetBotSurface().GetZ(x,y);
         if (storm_grid->GetTopSurface().IsMissing(z_top) == false &&
             storm_grid->GetBotSurface().IsMissing(z_bot) == false)
           rel_thick = (z_bot-z_top)/storm_grid->GetLZ();
@@ -409,13 +409,10 @@ SegY::SegY(const StormContGrid     * storm_grid,
           trace[k] = 0;
 //          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
         for(;k < end_data; k++) {
-          //trace[k] = this->getRegularZInterpolatedRealValue(i,j,z0,dz,k,z,gdz);
+
           float value = 0.0f;
 
           //Interpolation (from FFTGrid::getRegularZInterpolatedRealValue)
-
-          //GetRegularZInterpolated(i, j, z0,   dz,   k,    z,      gdz);
-          //                       (i, j, z0Reg,dzReg,kReg, z0Grid, dzGrid) const
 
           float z_tmp  = static_cast<float> (z0+dz*k);
           float t      = static_cast<float> ((z_tmp-z)/gdz);
@@ -426,7 +423,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
 
           if (k_grid<0) {
             if (k_grid<-1)
-              value = rmissing_; //return(RMISSING);
+              value = rmissing_;
             else {
               k_grid = 0;
               t      = 0;
@@ -434,7 +431,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
           }
           else if (k_grid>nk-2) {
             if (k_grid > nk-1)
-              value = rmissing_; //return(RMISSING);
+              value = rmissing_;
             else {
               k_grid = nk-2;
               t      = 1;
