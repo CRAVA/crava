@@ -92,6 +92,14 @@ public:
   void              Dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              DumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
+  void              WriteToFile(const Simbox        * simbox,
+                                GridMapping         * time_depth_mapping,
+                                const ModelSettings * model_settings,
+                                FFTGrid             * grid,
+                                const std::string   & file_name,
+                                const std::string   & sgri_label,
+                                bool                  padding = false);
+
 private:
 
   void              CopyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,

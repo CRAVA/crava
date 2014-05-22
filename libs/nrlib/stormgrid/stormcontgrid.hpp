@@ -28,6 +28,13 @@
 #include "../grid/grid.hpp"
 #include "../iotools/fileio.hpp"
 
+//#include "../../../src/definitions.h"
+//#include "../../../src/simbox.h"
+//#include "traceheaderformat.h"
+//#include "nrlib/segy/segy.hpp"
+//class Simbox;
+//class TraceHeaderFormat;
+
 namespace NRLib {
   class StormContGrid : public Grid<float>, public Volume {
   public:
@@ -102,6 +109,10 @@ namespace NRLib {
                                                    const size_t & ind2,
                                                    const double & t) const;
 
+    //float GetRegularZInterpolated(int i, int j, double z0Reg,
+    //                              double dzReg, int kReg,
+    //                              double z0Grid, double dzGrid) const;
+
     float  GetValueZInterpolated(double x, double y, double z)const;
     float  GetValueClosestInZ(double x, double y, double z)const;
     double GetZMin()const      { return Volume::GetZMin(GetNI(), GetNJ()); }
@@ -109,6 +120,20 @@ namespace NRLib {
 
     void   FindCenterOfCell(size_t  i, size_t  j, size_t  k,
                             double& x, double& y, double& z) const;
+
+    //void WriteSegyFile(const std::string       & fileName,
+    //                   const Simbox            * simbox,
+    //                   float                     z0,
+    //                   const TraceHeaderFormat & thf);
+
+    void WriteCravaFile(const std::string & file_name,
+                        double              inline_0,
+                        double              crossline_0,
+                        double              il_step_x,
+                        double              il_step_y,
+                        double              xl_step_x,
+                        double              xl_step_y);
+
   private:
     double RecalculateLZ();
     void ReadSgriHeader(std::ifstream &headerFile, std::string &binFileName);

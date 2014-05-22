@@ -27,7 +27,7 @@
 #include "src/timeline.h"
 #include "src/state4d.h"
 #include "src/seismicparametersholder.h"
-#include "src/parameteroutput.h"
+//#include "src/parameteroutput.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -636,7 +636,7 @@ ModelGeneral::Do4DRockPhysicsInversion(ModelSettings* model_settings)
      std::string fileName;
      fileName= outPre + labels[i];
 
-     ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, predictions[i] , fileName, labels[i]);
+     WriteToFile(simbox_, time_depth_mapping_, model_settings, predictions[i] , fileName, labels[i]);
   }
 
   return 0;
@@ -660,7 +660,7 @@ ModelGeneral::DumpSeismicParameters(ModelSettings* model_settings, std::string i
 
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings,  current_state.GetMeanVp() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings,  current_state.GetMeanVp() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -670,7 +670,7 @@ ModelGeneral::DumpSeismicParameters(ModelSettings* model_settings, std::string i
   // */
   // write sigma current
   tag.str(std::string());tag.clear();label = "cov_vp_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, current_state.GetCovVp() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, current_state.GetCovVp() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -700,7 +700,7 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
 
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getMuVpStatic() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getMuVpStatic() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -710,7 +710,7 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
   // */
   // write mu dynamic
   tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getMuVpDynamic() , fileName, tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getMuVpDynamic() , fileName, tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -722,7 +722,7 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
 
   // write sigma static - static
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpStaticStatic() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpStaticStatic() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -738,7 +738,7 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
      // */
   // write sigma dynamic - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpDynamicDynamic() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpDynamicDynamic() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -754,7 +754,7 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
   // */
   // write sigma static - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpStaticDynamic() , fileName,  tag.str(),true);
+  WriteToFile(simbox_, time_depth_mapping_, model_settings, state4d_.getCovVpVpStaticDynamic() , fileName,  tag.str(),true);
 
   /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -814,3 +814,27 @@ ModelGeneral::Dump4Dparameters(ModelSettings* model_settings, std::string identi
 //    for (int j =0;j<nyp;j++)
 //       (*corrXY)(i+j*nxp)=helper.getRealValue(i,j,0)*scale;
 //}
+
+void
+ModelGeneral::WriteToFile(const Simbox        * simbox,
+                          GridMapping         * time_depth_mapping,
+                          const ModelSettings * model_settings,
+                          FFTGrid             * grid,
+                          const std::string   & file_name,
+                          const std::string   & sgri_label,
+                          bool                  padding)
+{
+  //GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
+  //GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
+  float seismic_start_time  = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
+  TraceHeaderFormat *format = model_settings->getTraceHeaderFormatOutput();
+
+  grid->writeFile(file_name,
+                  IO::PathToInversionResults(),
+                  simbox,
+                  sgri_label,
+                  seismic_start_time,
+                  time_depth_mapping,
+                  *format,
+                  padding);
+}
