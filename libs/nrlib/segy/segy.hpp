@@ -79,16 +79,21 @@ public:
       const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 
  /// Constructor for segy from storm cube
- SegY(const StormContGrid     * storm_grid,
-      float                     z0,
-      const TraceHeaderFormat & thf,
-      double                    simbox_dz,
-      double                    inline_0,
-      double                    crossline_0,
-      double                    il_step_x,
-      double                    il_step_y,
-      double                    xl_step_x,
-      double                    xl_step_y);
+ //SegY(const StormContGrid     * storm_grid,
+ //     float                     z0,
+ //     const TraceHeaderFormat & thf,
+ //     double                    simbox_dz,
+ //     double                    inline_0,
+ //     double                    crossline_0,
+ //     double                    il_step_x,
+ //     double                    il_step_y,
+ //     double                    xl_step_x,
+ //     double                    xl_step_y);
+
+ /// Constructor for segy from storm cube
+ SegY(const StormContGrid * storm_grid,
+      const std::string   & file_name = "",
+      bool                  write_to_file = true);
 
   ~SegY();
 

@@ -315,150 +315,223 @@ SegY::SegY(const std::string       & fileName,
   }
 }
 
-SegY::SegY(const StormContGrid     * storm_grid,
-           float                     z0,
-           const TraceHeaderFormat & thf,
-           double                    simbox_dz,
-           double                    inline_0, //H Replace with a geometry created outside?
-           double                    crossline_0,
-           double                    il_step_x,
-           double                    il_step_y,
-           double                    xl_step_x,
-           double                    xl_step_y)
+//SegY::SegY(const StormContGrid     * storm_grid,
+//           float                     z0,
+//           const TraceHeaderFormat & thf,
+//           double                    simbox_dz,
+//           double                    inline_0,
+//           double                    crossline_0,
+//           double                    il_step_x,
+//           double                    il_step_y,
+//           double                    xl_step_x,
+//           double                    xl_step_y)
+//{
+//  rmissing_      = segyRMISSING;
+//  geometry_      = NULL;
+//  binary_header_ = NULL;
+//  trace_header_format_ = thf;
+//
+//  TextualHeader header = TextualHeader::standardHeader();
+//  float dz = float(floor(simbox_dz+0.5));
+//  if (dz==0)
+//    dz = 1.0;
+//  int segynz;
+//
+//  double zmax = storm_grid->GetZMax(); //simbox->getMinMaxZ(zmin,zmax);
+//
+//  segynz = int(ceil((zmax-z0)/dz));
+//
+//  geometry_ = new SegyGeometry(storm_grid->GetXMin(), //simbox->getx0(),
+//                               storm_grid->GetYMin(), //simbox->gety0(),
+//                               storm_grid->GetDX(), //simbox->getdx(),
+//                               storm_grid->GetDY(), //simbox->getdy(),
+//                               storm_grid->GetNI(), //simbox->getnx(),
+//                               storm_grid->GetNJ(), //simbox->getny(),
+//                               inline_0, //simbox->getIL0(),
+//                               crossline_0, //simbox->getXL0(),
+//                               il_step_x, //simbox->getILStepX(),
+//                               il_step_y, //simbox->getILStepY(),
+//                               xl_step_x, //simbox->getXLStepX(),
+//                               xl_step_y, //simbox->getXLStepY(),
+//                               storm_grid->GetAngle()); //simbox->getAngle());
+//
+//  n_traces_  = geometry_->GetNx()*geometry_->GetNy();
+//  traces_.resize(n_traces_);
+//  for (size_t i = 0; i < n_traces_; i++) {
+//    traces_[i] = NULL;
+//  }
+//
+//  int k;
+//  double x,y,z;
+//  std::vector<float> trace(segynz);//Maximum amount of data needed.
+//  for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
+//    for(size_t i = 0; i < storm_grid->GetNI(); i++) {
+//
+//      double local_x = static_cast<double>(i * storm_grid->GetDX());
+//      double local_y = static_cast<double>(j * storm_grid->GetDY());
+//
+//      double x_min = storm_grid->GetXMin();
+//      double y_min = storm_grid->GetYMin();
+//      double angle = storm_grid->GetAngle();
+//
+//      x = std::cos(angle)*local_x - std::sin(angle)*local_y + x_min;
+//      y = std::sin(angle)*local_x + std::cos(angle)*local_y + y_min;
+//
+//      z = storm_grid->GetTopSurface().GetZ(x, y);
+//
+//      //simbox->getCoord(i, j, 0, x, y, z);
+//      //z = simbox->getTop(x,y);
+//
+//      if(z == rmissing_) { //RMISSING || z == WELLMISSING)
+//        for(k=0;k<segynz;k++)
+//          trace[k] = 0;
+//      }
+//      else {
+//        //double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
+//
+//        double rel_thick = 1; //Default value to be used outside grid.
+//        double z_top     = storm_grid->GetTopSurface().GetZ(x,y);
+//        double z_bot     = storm_grid->GetBotSurface().GetZ(x,y);
+//        if (storm_grid->GetTopSurface().IsMissing(z_top) == false &&
+//            storm_grid->GetBotSurface().IsMissing(z_bot) == false)
+//          rel_thick = (z_bot-z_top)/storm_grid->GetLZ();
+//
+//        double gdz = simbox_dz*rel_thick;
+//
+//        int first_data = static_cast<int>(floor(0.5+(z-z0)/dz));
+//        int end_data   = static_cast<int>(floor(0.5+((z-z0)+storm_grid->GetNK()*gdz)/dz)); //nz_
+//
+//        if (end_data > segynz) {
+//          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, end_data);
+//          end_data = segynz;
+//        }
+//        for (k = 0; k < first_data; k++)
+//          trace[k] = 0;
+////          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
+//        for(;k < end_data; k++) {
+//
+//          float value = 0.0f;
+//
+//          //Interpolation (from FFTGrid::getRegularZInterpolatedRealValue)
+//
+//          float z_tmp  = static_cast<float> (z0+dz*k);
+//          float t      = static_cast<float> ((z_tmp-z)/gdz);
+//          int   nk     = storm_grid->GetNK();
+//          int   k_grid = int(t);
+//
+//          t -= k_grid;
+//
+//          if (k_grid<0) {
+//            if (k_grid<-1)
+//              value = rmissing_;
+//            else {
+//              k_grid = 0;
+//              t      = 0;
+//            }
+//          }
+//          else if (k_grid>nk-2) {
+//            if (k_grid > nk-1)
+//              value = rmissing_;
+//            else {
+//              k_grid = nk-2;
+//              t      = 1;
+//            }
+//          }
+//
+//          if (value != rmissing_) {
+//            float v1 = storm_grid->GetValue(i, j, k_grid);
+//            float v2 = storm_grid->GetValue(i, j, k_grid+1);
+//            float v  = (1-t)*v1+t*v2;
+//
+//            value = v;
+//          }
+//
+//          trace[k] = value;
+//
+//        }
+//        for(;k<segynz;k++)
+//          trace[k] = 0;
+////          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
+//        float xx = static_cast<float>(x);
+//        float yy = static_cast<float>(y);
+//        StoreTrace(xx, yy, trace, NULL);
+//      }
+//    }
+//  }
+//}
+
+SegY::SegY(const StormContGrid * storm_grid,
+           const std::string   & file_name,
+           bool                  write_to_file)
 {
   rmissing_      = segyRMISSING;
   geometry_      = NULL;
   binary_header_ = NULL;
-  trace_header_format_ = thf;
 
+  int i,k,j;
   TextualHeader header = TextualHeader::standardHeader();
-  float dz = float(floor(simbox_dz+0.5));
-  if (dz==0)
-    dz = 1.0;
-  int segynz;
+  int nx = static_cast<int>(storm_grid->GetNI());
+  int ny = static_cast<int>(storm_grid->GetNJ());
+  SegyGeometry geometry(storm_grid->GetXMin(), storm_grid->GetYMin(), storm_grid->GetDX(), storm_grid->GetDY(),
+                        nx, ny, storm_grid->GetAngle());
+  float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
+  float z0 = 0.0;
+  int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
-  double zmax = storm_grid->GetZMax(); //simbox->getMinMaxZ(zmin,zmax);
+  //SegY segyout(file_name,0,nz,dz,header);
+  trace_header_format_ = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
+  z0_ = 0;
+  nz_ = nz;
+  dz_ = dz;
 
-  segynz = int(ceil((zmax-z0)/dz));
-
-  geometry_ = new SegyGeometry(storm_grid->GetXMin(), //simbox->getx0(),
-                               storm_grid->GetYMin(), //simbox->gety0(),
-                               storm_grid->GetDX(), //simbox->getdx(),
-                               storm_grid->GetDY(), //simbox->getdy(),
-                               storm_grid->GetNI(), //simbox->getnx(),
-                               storm_grid->GetNJ(), //simbox->getny(),
-                               inline_0, //simbox->getIL0(),
-                               crossline_0, //simbox->getXL0(),
-                               il_step_x, //simbox->getILStepX(),
-                               il_step_y, //simbox->getILStepY(),
-                               xl_step_x, //simbox->getXLStepX(),
-                               xl_step_y, //simbox->getXLStepY(),
-                               storm_grid->GetAngle()); //simbox->getAngle());
-
-  n_traces_  = geometry_->GetNx()*geometry_->GetNy();
-  traces_.resize(n_traces_);
-  for (size_t i = 0; i < n_traces_; i++) {
-    traces_[i] = NULL;
+  if (write_to_file) {
+    OpenWrite(file_, file_name, std::ios::out | std::ios::binary);
+    WriteMainHeader(header);
   }
 
-  int k;
-  double x,y,z;
-  std::vector<float> trace(segynz);//Maximum amount of data needed.
-  for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
-    for(size_t i = 0; i < storm_grid->GetNI(); i++) {
+  SetGeometry(&geometry);
 
-      double local_x = static_cast<double>(i * storm_grid->GetDX());
-      double local_y = static_cast<double>(j * storm_grid->GetDY());
+  std::vector<float> data_vec;
+  data_vec.resize(nz);
+  float x, y, xt, yt, z;
+  for(j = 0; j < ny; j++) {
+    for(i = 0; i < nx; i++) {
 
-      double x_min = storm_grid->GetXMin();
-      double y_min = storm_grid->GetYMin();
-      double angle = storm_grid->GetAngle();
+      xt = float((i+0.5)*geometry.GetDx());
+      yt = float((j+0.5)*geometry.GetDy());
+      x  = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
+      y  = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
 
-      x = std::cos(angle)*local_x - std::sin(angle)*local_y + x_min;
-      y = std::sin(angle)*local_x + std::cos(angle)*local_y + y_min;
+      double z_bot = storm_grid->GetBotSurface().GetZ(x,y);
+      double z_top = storm_grid->GetTopSurface().GetZ(x,y);
+      int    first_data = static_cast<int>(floor((z_top)/dz));
+      int    end_data   = static_cast<int>(floor((z_bot)/dz));
 
-      z = storm_grid->GetTopSurface().GetZ(x, y);
-
-      //simbox->getCoord(i, j, 0, x, y, z);
-      //z = simbox->getTop(x,y);
-
-      if(z == rmissing_) { //RMISSING || z == WELLMISSING)
-        for(k=0;k<segynz;k++)
-          trace[k] = 0;
+      if (end_data > nz) {
+        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, end_data);
+        end_data = nz;
       }
-      else {
-        //double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
-
-        double rel_thick = 1; //Default value to be used outside grid.
-        double z_top     = storm_grid->GetTopSurface().GetZ(x,y);
-        double z_bot     = storm_grid->GetBotSurface().GetZ(x,y);
-        if (storm_grid->GetTopSurface().IsMissing(z_top) == false &&
-            storm_grid->GetBotSurface().IsMissing(z_bot) == false)
-          rel_thick = (z_bot-z_top)/storm_grid->GetLZ();
-
-        double gdz = simbox_dz*rel_thick;
-
-        int first_data = static_cast<int>(floor(0.5+(z-z0)/dz));
-        int end_data   = static_cast<int>(floor(0.5+((z-z0)+storm_grid->GetNK()*gdz)/dz)); //nz_
-
-        if (end_data > segynz) {
-          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, end_data);
-          end_data = segynz;
-        }
-        for (k = 0; k < first_data; k++)
-          trace[k] = 0;
-//          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
-        for(;k < end_data; k++) {
-
-          float value = 0.0f;
-
-          //Interpolation (from FFTGrid::getRegularZInterpolatedRealValue)
-
-          float z_tmp  = static_cast<float> (z0+dz*k);
-          float t      = static_cast<float> ((z_tmp-z)/gdz);
-          int   nk     = storm_grid->GetNK();
-          int   k_grid = int(t);
-
-          t -= k_grid;
-
-          if (k_grid<0) {
-            if (k_grid<-1)
-              value = rmissing_;
-            else {
-              k_grid = 0;
-              t      = 0;
-            }
-          }
-          else if (k_grid>nk-2) {
-            if (k_grid > nk-1)
-              value = rmissing_;
-            else {
-              k_grid = nk-2;
-              t      = 1;
-            }
-          }
-
-          if (value != rmissing_) {
-            float v1 = storm_grid->GetValue(i, j, k_grid);
-            float v2 = storm_grid->GetValue(i, j, k_grid+1);
-            float v  = (1-t)*v1+t*v2;
-
-            value = v;
-          }
-
-          trace[k] = value;
-
-        }
-        for(;k<segynz;k++)
-          trace[k] = 0;
-//          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
-        float xx = static_cast<float>(x);
-        float yy = static_cast<float>(y);
-        StoreTrace(xx, yy, trace, NULL);
+      for (k = 0; k < first_data; k++) {
+        data_vec[k] = 0.0;
       }
+
+      for (k = first_data; k < end_data; k++) {
+        z = z0+k*dz;
+        data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
+      }
+      for (k = end_data; k < nz; k++) {
+        data_vec[k] = 0.0;
+      }
+      StoreTrace(x, y, data_vec, NULL);
     }
+
   }
+
+  if (write_to_file)
+    WriteAllTracesToFile();
+
 }
+
 
 SegY::~SegY()
 {
