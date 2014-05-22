@@ -54,37 +54,6 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   forward_modeling_ = model_settings->getForwardModeling();
 
-
-  //H-Test
-  //FFTFileGrid * test1 = new FFTFileGrid(10,10,10,10,10,10);
-  //test1->createRealGrid();
-  //test1->setAccessMode(FFTGrid::RANDOMACCESS);
-  //for (int k=0;k<10;k++)
-  //  for (int j=0;j<10;j++)
-  //    for (int i=0;i<10;i++)
-  //      test1->setRealValue(i, j, k, 1);
-
-  //bool file = test1->isFile();
-
-  //FFTFileGrid * test_1_filekopi = new FFTFileGrid(test1);
-
-
-  //FFTGrid * test_1_kopi_tilgrid = new FFTFileGrid(test1);
-
-  //test1->endAccess();
-  //test1->setAccessMode(FFTGrid::READ);
-
-  //FFTGrid * test1_kopi = new FFTGrid(test1);
-  //
-  //test1->endAccess();
-  //test1->setAccessMode(FFTGrid::RANDOMACCESS);
-
-  //FFTGrid * test1_referanse = new FFTGrid(*test1);
-  //for (int k=0;k<10;k++)
-  //  for (int j=0;j<10;j++)
-  //    for (int i=0;i<10;i++)
-  //      test1->setRealValue(i, j, k, 2);
-
   // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, err_text);
 

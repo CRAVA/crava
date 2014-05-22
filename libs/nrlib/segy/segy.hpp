@@ -32,6 +32,8 @@
 #include "../segy/segygeometry.hpp"
 #include "../segy/segytrace.hpp"
 
+#include "stormgrid/stormcontgrid.hpp"
+
 namespace NRLib {
 
 const int segyIMISSING = -99999;
@@ -75,6 +77,18 @@ public:
       float                     dz,
       const TextualHeader     & ebcdicHeader,
       const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+
+ /// Constructor for segy from storm cube
+ SegY(const StormContGrid     * storm_grid,
+      float                     z0,
+      const TraceHeaderFormat & thf,
+      double                    simbox_dz,
+      double                    inline_0,
+      double                    crossline_0,
+      double                    il_step_x,
+      double                    il_step_y,
+      double                    xl_step_x,
+      double                    xl_step_y);
 
   ~SegY();
 

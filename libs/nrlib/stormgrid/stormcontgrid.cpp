@@ -607,48 +607,74 @@ void StormContGrid::ReadSgriBinaryFile(const std::string& filename)
 }
 
 //void StormContGrid::WriteSegyFile(const std::string       & file_name,
-//                                  const Simbox            * simbox,
-//                                  float                     z0,
-//                                  const TraceHeaderFormat & thf)
+//                                  SegY * segy,
+//                                  double simbox_dz,
+//                                  //const Simbox            * simbox,
+//                                  float                     z0)
+//                                  //const TraceHeaderFormat & thf)
 //{
 //  //  long int timestart, timeend;
 //  //  time(&timestart);
 //
-//  std::string gf_name = file_name + IO::SuffixSegy();
+//  //std::string gf_name = file_name + IO::SuffixSegy();
 //  //SegY * segy = new SegY(gfName, simbox);
-//  TextualHeader header = TextualHeader::standardHeader();
-//  float dz = float(floor(simbox->getdz()+0.5));
-//  if(dz==0)
-//    dz = 1.0;
-//  int segynz;
-//  double zmin,zmax;
-//  simbox->getMinMaxZ(zmin,zmax);
-//  segynz = int(ceil((zmax-z0)/dz));
-//  SegY *segy = new SegY(gf_name.c_str(),z0,segynz,dz,header, thf);
-//  SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
-//                                             simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
-//                                             simbox->getILStepX(), simbox->getILStepY(),
-//                                             simbox->getXLStepX(), simbox->getXLStepY(),
-//                                             simbox->getAngle());
-//  segy->SetGeometry(geometry);
-//  delete geometry; //Call above takes a copy.
-//  LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+gf_name+"...");
+//  //TextualHeader header = TextualHeader::standardHeader();
+//  //float dz = float(floor(simbox->getdz()+0.5));
+//  //if(dz==0)
+//  //  dz = 1.0;
+//  //int segynz;
+//  //double zmin,zmax;
+//  //simbox->getMinMaxZ(zmin,zmax);
+//  //segynz = int(ceil((zmax-z0)/dz));
+//  //SegY *segy = new SegY(gf_name.c_str(),z0,segynz,dz,header, thf);
+//  //SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+//  //                                           simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+//  //                                           simbox->getILStepX(), simbox->getILStepY(),
+//  //                                           simbox->getXLStepX(), simbox->getXLStepY(),
+//  //                                           simbox->getAngle());
+//  //segy->SetGeometry(geometry);
+//  //delete geometry; //Call above takes a copy.
+//  //LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+gf_name+"...");
 //
-//  int i,j,k;
+//  int k;
 //  double x,y,z;
+//  int segynz = segy->GetNz();
+//  double dz = segy->GetDz();
 //  std::vector<float> trace(segynz);//Maximum amount of data needed.
-//  for (j = 0; j < simbox->getny(); j++) {
-//    for (i = 0; i < simbox->getnx(); i++) {
-//      simbox->getCoord(i, j, 0, x, y, z);
-//      z = simbox->getTop(x,y);
+//  for (size_t j = 0; j < GetNJ(); j++) {
+//    for (size_t i = 0; i < GetNI(); i++) {
 //
-//      if(z == RMISSING || z == WELLMISSING) {
+//      //Volume find x, y
+//      //z = GetValue(i, j, 0);
+//
+//      //FindXY(i, j); //H-ADD (have FindXYIndex)
+//      double local_x = static_cast<double>(i * GetDX());
+//      double local_y = static_cast<double>(j * GetDY());
+//
+//      LocalToGlobalCoord(local_x, local_y, x, y);
+//
+//      z = GetTopSurface().GetZ(x, y);
+//
+//      //simbox->getCoord(i, j, 0, x, y, z);
+//      //z = simbox->getTop(x,y);
+//
+//      //if(z == RMISSING || z == WELLMISSING) {
+//      if (z == missing_code_) {
 //        //printf("Missing trace.\n");
 //        for(k=0;k<segynz;k++)
 //          trace[k] = 0;
 //      }
 //      else {
-//        double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
+//        //double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
+//
+//        double relThick = 1; //Default value to be used outside grid.
+//        double zTop = GetTopSurface().GetZ(x,y);
+//        double zBot = GetBotSurface().GetZ(x,y);
+//        if(GetTopSurface().IsMissing(zTop) == false &&
+//            GetBotSurface().IsMissing(zBot) == false)
+//          relThick = (zBot-zTop)/GetLZ();
+//
+//        double gdz = simbox_dz * relThick;
 //        int    firstData = static_cast<int>(floor(0.5+(z-z0)/dz));
 //        int    endData   = static_cast<int>(floor(0.5+((z-z0)+GetNK()*gdz)/dz));
 //
@@ -673,9 +699,9 @@ void StormContGrid::ReadSgriBinaryFile(const std::string& filename)
 //
 //  segy->WriteAllTracesToFile();
 //
-//  delete segy; //Closes file.
+//  //delete segy; //Closes file.
 //  // delete [] value;
-//  LogKit::LogFormatted(LogKit::Low,"done\n");
+//  //LogKit::LogFormatted(LogKit::Low,"done\n");
 //  //  time(&timeend);
 //  //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
 //  //return(0);
@@ -757,9 +783,9 @@ StormContGrid::WriteCravaFile(const std::string & file_name,
     //  NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     float value = 0.0f;
-    for (int i = 0; i < GetNI(); i++) {
-      for (int j = 0; j < GetNJ(); j++) {
-        for (int k = 0; k < GetNK(); k++) {
+    for (size_t i = 0; i < GetNI(); i++) {
+      for (size_t j = 0; j < GetNJ(); j++) {
+        for (size_t k = 0; k < GetNK(); k++) {
           value = GetValue(i, j, k);
           NRLib::WriteBinaryFloat(bin_file, value);
         }

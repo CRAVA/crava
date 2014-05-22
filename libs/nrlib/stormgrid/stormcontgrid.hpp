@@ -34,6 +34,7 @@
 //#include "nrlib/segy/segy.hpp"
 //class Simbox;
 //class TraceHeaderFormat;
+//class SegY;
 
 namespace NRLib {
   class StormContGrid : public Grid<float>, public Volume {
@@ -122,9 +123,9 @@ namespace NRLib {
                             double& x, double& y, double& z) const;
 
     //void WriteSegyFile(const std::string       & fileName,
-    //                   const Simbox            * simbox,
-    //                   float                     z0,
-    //                   const TraceHeaderFormat & thf);
+    //                   SegY * segy,
+    //                   double simbox_dz,
+    //                   float                     z0);
 
     void WriteCravaFile(const std::string & file_name,
                         double              inline_0,
