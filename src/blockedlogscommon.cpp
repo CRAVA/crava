@@ -35,6 +35,12 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   use_for_filtering_            = well_data->GetUseForFiltering();
   well_name_                    = well_data->GetWellName();
   facies_log_defined_           = false;
+  first_S_                      = IMISSING;
+  last_S_                       = IMISSING;
+  first_M_                      = IMISSING;
+  last_M_                       = IMISSING;
+  first_B_                      = IMISSING;
+  last_B_                       = IMISSING;
   //n_blocks_with_data_.resize(1,0);
 
   // FACIES
@@ -78,6 +84,12 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   interpolate_                  = interpolate;
   is_deviated_                  = well_data->IsDeviated();
   facies_log_defined_           = false;
+  first_S_                      = IMISSING;
+  last_S_                       = IMISSING;
+  first_M_                      = IMISSING;
+  last_M_                       = IMISSING;
+  first_B_                      = IMISSING;
+  last_B_                       = IMISSING;
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
@@ -126,7 +138,11 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
                                      const StormContGrid & stormgrid)
 : first_M_(IMISSING),
-  last_M_(IMISSING)
+  last_M_(IMISSING),
+  first_S_(IMISSING),
+  last_S_ (IMISSING),
+  first_B_ (IMISSING),
+  last_B_ (IMISSING)
 {
 
   bool failed                   = false;
@@ -168,23 +184,25 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
 
   std::vector<int> b_ind(n_data_); // Gives which block each well log entry contributes to
 
-  FindSizeAndBlockPointers(stormgrid, b_ind, n_blocks_);
-  FindBlockIJK(stormgrid, b_ind);
+  FindSizeAndBlockPointers(stormgrid, b_ind, n_blocks_, err_text);
+  if(err_text == ""){
+    FindBlockIJK(stormgrid, b_ind);
 
-  for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_raw_logs_.begin(); it!=continuous_raw_logs_.end(); it++){
-    std::vector<double> temp_vector_blocked;
+    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_raw_logs_.begin(); it!=continuous_raw_logs_.end(); it++){
+      std::vector<double> temp_vector_blocked;
 
-    BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
 
-    continuous_logs_blocked_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-  }
+      continuous_logs_blocked_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+    }
 
-  //Create HighCutBackground blocked logs
-  const std::map<std::string, std::vector<double> > & background_resolution_logs = well_data->GetContLogBackgroundResolution();
-  for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
-    std::vector<double> temp_vector_blocked;
-    BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-    cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+    //Create HighCutBackground blocked logs
+    const std::map<std::string, std::vector<double> > & background_resolution_logs = well_data->GetContLogBackgroundResolution();
+    for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
+      std::vector<double> temp_vector_blocked;
+      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+      cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+    }
   }
 
 }
@@ -300,88 +318,89 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 
   try{
 
-    FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers, n_blocks, n_layers_adjusted_per_interval_);
-    FindBlockIJK(multiple_interval_grid, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(), b_ind);
+    FindSizeAndBlockPointers(multiple_interval_grid, b_ind, n_data, n_layers, n_blocks, n_layers_adjusted_per_interval_, err_text);
+    if (err_text == ""){
+      FindBlockIJK(multiple_interval_grid, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(), b_ind);
 
-    // Coordinate logs and necessary logs
+      // Coordinate logs and necessary logs
 
-    BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
-    BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
-    BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
+      BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
+      BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
+      BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
 
-    //Extrapolates if missing values in the beginning or end.
-    //FindXYZForVirtualPart(estimation_simbox); //TODO (CRA-660): Adjust for multiple_intervals
+      //Extrapolates if missing values in the beginning or end.
+      //FindXYZForVirtualPart(estimation_simbox); //TODO (CRA-660): Adjust for multiple_intervals
 
-    //HighCutSeismic blocked logs
-    const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
-    for (std::map<std::string, std::vector<double> >::const_iterator it = seismic_resolution_logs.begin(); it!=seismic_resolution_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      cont_logs_highcut_seismic_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      //HighCutSeismic blocked logs
+      const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
+      for (std::map<std::string, std::vector<double> >::const_iterator it = seismic_resolution_logs.begin(); it!=seismic_resolution_logs.end(); it++) {
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        cont_logs_highcut_seismic_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    //Create HighCutBackground blocked logs
-    const std::map<std::string, std::vector<double> > & background_resolution_logs = well->GetContLogBackgroundResolution();
-    for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      //Create HighCutBackground blocked logs
+      const std::map<std::string, std::vector<double> > & background_resolution_logs = well->GetContLogBackgroundResolution();
+      for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    // Continuous logs
-    for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      // Continuous logs
+      for(std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++){
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
-                                    n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
+      CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
+                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
 
-    // Discrete logs
-    if (facies_log_defined)
-      BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
+      // Discrete logs
+      if (facies_log_defined)
+        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
 
-    (void) discrete_raw_logs;
-    (void) discrete_logs_blocked;
+      (void) discrete_raw_logs;
+      (void) discrete_logs_blocked;
 
-    if(interpolate){
-      for(unsigned int i=1;i<n_data;i++) {
-        if(abs(b_ind[i]-b_ind[i-1]) > 1) {
-          int start, end;
-          if(b_ind[i] > b_ind[i-1]) {
-            start = b_ind[i-1];
-            end   = b_ind[i];
-          }
-          else {
-            start = b_ind[i];
-            end   = b_ind[i-1];
-          }
-          for(int j = start+1;j<end;j++) {
-            float t = static_cast<float>(j-start)/static_cast<float>(end-start);
-            // Coordinate logs
-            InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
-
-            // interpolate all blocked continuous logs
-            for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked.begin(); it!=continuous_logs_blocked.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
+      if(interpolate){
+        for(unsigned int i=1;i<n_data;i++) {
+          if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+            int start, end;
+            if(b_ind[i] > b_ind[i-1]) {
+              start = b_ind[i-1];
+              end   = b_ind[i];
             }
-            // interpolate all continuous logs with upper frequency cut
-            for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_seismic.begin(); it!=cont_logs_highcut_seismic.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
+            else {
+              start = b_ind[i];
+              end   = b_ind[i-1];
             }
-            // interpolate all continuous logs with upper frequency cut
-            for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_background.begin(); it!=cont_logs_highcut_background.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
-            }
+            for(int j = start+1;j<end;j++) {
+              float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+              // Coordinate logs
+              InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
+              InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
+              InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
 
+              // interpolate all blocked continuous logs
+              for(std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked.begin(); it!=continuous_logs_blocked.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+              // interpolate all continuous logs with upper frequency cut
+              for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_seismic.begin(); it!=cont_logs_highcut_seismic.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+              // interpolate all continuous logs with upper frequency cut
+              for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_background.begin(); it!=cont_logs_highcut_background.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+
+            }
           }
         }
       }
     }
-
   }catch(NRLib::Exception & e) {
     err_text += "Error: "+std::string(e.what());
     failed = true;
@@ -408,81 +427,83 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
   try {
 
-    FindSizeAndBlockPointers(estimation_simbox, b_ind, n_blocks);
-    FindBlockIJK(estimation_simbox, b_ind);
+    FindSizeAndBlockPointers(estimation_simbox, b_ind, n_blocks, err_text);
+    if(err_text == ""){
+      FindBlockIJK(estimation_simbox, b_ind);
 
-    // Coordinate logs and necessary logs
+      // Coordinate logs and necessary logs
 
-    BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
-    BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
-    BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
+      BlockCoordinateLog(b_ind, x_pos_raw_logs_, x_pos_blocked_);
+      BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked_);
+      BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked_);
 
-    //Extrapolates if missing values in the beginning or end.
-    FindXYZForVirtualPart(estimation_simbox);
+      //Extrapolates if missing values in the beginning or end.
+      FindXYZForVirtualPart(estimation_simbox);
 
-    // Continuous logs
-    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      // Continuous logs
+      for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_logs_raw_logs.begin(); it!=continuous_logs_raw_logs.end(); it++) {
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        continuous_logs_blocked.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    //HighCutSeismic blocked logs
-    const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
-    for (std::map<std::string, std::vector<double> >::const_iterator it = seismic_resolution_logs.begin(); it!=seismic_resolution_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      cont_logs_highcut_seismic_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      //HighCutSeismic blocked logs
+      const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
+      for (std::map<std::string, std::vector<double> >::const_iterator it = seismic_resolution_logs.begin(); it!=seismic_resolution_logs.end(); it++) {
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        cont_logs_highcut_seismic_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    //Create HighCutBackground blocked logs
-    const std::map<std::string, std::vector<double> > & background_resolution_logs = well->GetContLogBackgroundResolution();
-    for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
+      //Create HighCutBackground blocked logs
+      const std::map<std::string, std::vector<double> > & background_resolution_logs = well->GetContLogBackgroundResolution();
+      for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
+        std::vector<double> temp_vector_blocked;
+        BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+        cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+      }
 
-    CountBlocksWithData(x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
-                                    n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_);
+      CountBlocksWithData(x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
+                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_);
 
-    // Discrete logs
-    if (facies_log_defined)
-      BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
+      // Discrete logs
+      if (facies_log_defined)
+        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked_);
 
-    (void) discrete_logs_raw_logs;
-    (void) discrete_logs_blocked;
+      (void) discrete_logs_raw_logs;
+      (void) discrete_logs_blocked;
 
-    if (interpolate) {
-      for (unsigned int i=1;i<n_data;i++) {
-        if (abs(b_ind[i]-b_ind[i-1]) > 1) {
-          int start, end;
-          if (b_ind[i] > b_ind[i-1]) {
-            start = b_ind[i-1];
-            end   = b_ind[i];
-          }
-          else {
-            start = b_ind[i];
-            end   = b_ind[i-1];
-          }
-          for (int j = start+1;j<end;j++) {
-            float t = static_cast<float>(j-start)/static_cast<float>(end-start);
-            // Coordinate logs
-            InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
-            InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
-
-            // all blocked continuous logs
-            for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked.begin(); it!=continuous_logs_blocked.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
+      if (interpolate) {
+        for (unsigned int i=1;i<n_data;i++) {
+          if (abs(b_ind[i]-b_ind[i-1]) > 1) {
+            int start, end;
+            if (b_ind[i] > b_ind[i-1]) {
+              start = b_ind[i-1];
+              end   = b_ind[i];
             }
-            for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_seismic.begin(); it!=cont_logs_highcut_seismic.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
+            else {
+              start = b_ind[i];
+              end   = b_ind[i-1];
             }
-            for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_background.begin(); it!=cont_logs_highcut_background.end(); ++it){
-              InterpolateContinuousLog(it->second, start, end, j, t);
-            }
+            for (int j = start+1;j<end;j++) {
+              float t = static_cast<float>(j-start)/static_cast<float>(end-start);
+              // Coordinate logs
+              InterpolateContinuousLog(x_pos_blocked_, start, end, j, t);
+              InterpolateContinuousLog(y_pos_blocked_, start, end, j, t);
+              InterpolateContinuousLog(z_pos_blocked_, start, end, j, t);
 
+              // all blocked continuous logs
+              for (std::map<std::string,std::vector<double> >::iterator it=continuous_logs_blocked.begin(); it!=continuous_logs_blocked.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+              for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_seismic.begin(); it!=cont_logs_highcut_seismic.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+              for (std::map<std::string,std::vector<double> >::iterator it=cont_logs_highcut_background.begin(); it!=cont_logs_highcut_background.end(); ++it){
+                InterpolateContinuousLog(it->second, start, end, j, t);
+              }
+
+            }
           }
         }
       }
@@ -501,7 +522,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
                                                   int                             n_data,
                                                   int                           & n_layers,
                                                   unsigned int                  & n_blocks,
-                                                  std::map<std::string, int>    & n_layers_adjusted_per_interval){
+                                                  std::map<std::string, int>    & n_layers_adjusted_per_interval,
+                                                  std::string                   & err_text){
 
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   int   n_intervals                           = static_cast<int>(interval_simboxes.size());
@@ -546,6 +568,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     }
     if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING)
       break;
+  }
+  if(first_S_ == IMISSING){
+    err_text += "Well " + GetWellName() + " does not pass through any of the inversion interval(s). \n";
+    return;
   }
   //
   // Find last cell in last simbox where the well log is observed
@@ -674,9 +700,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   delete [] simbox_ind;
 }
 
-void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                                  std::vector<int>     & b_ind,
-                                                  unsigned int         & n_blocks){
+void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
+                                                  std::vector<int>              & b_ind,
+                                                  unsigned int                  & n_blocks,
+                                                  std::string                   & err_text){
   int   nd = static_cast<int>(b_ind.size());
   const std::vector<double> & x_pos = GetXposRawLogs();
   const std::vector<double> & y_pos = GetYposRawLogs();
@@ -694,6 +721,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
       first_M_ = m;
       break;
     }
+  }
+  if (first_M_ == IMISSING){
+    err_text += "Well "+GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
+    return;
   }
   //
   // Find last cell in Simbox that the well hits
@@ -786,9 +817,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox         * const e
 }
 
 //------------------------------------------------------------------------------
-void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                                  std::vector<int>     & b_ind,
-                                                  unsigned int         & n_blocks)
+void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
+                                                  std::vector<int>              & b_ind,
+                                                  unsigned int                  & n_blocks,
+                                                  std::string                   & err_text)
 {
   int missing = 99999;
   int nd      = n_data_;
@@ -813,6 +845,12 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const StormContGrid  & stormgr
       break;
     }
   }
+
+  if(first_M_ == IMISSING){
+    err_text += "Well "+ GetWellName() +" was not found within the estimation simbox surrounding the inversion intervals.\n";
+    return;
+  }
+
   size_t old_I = first_I;
   size_t old_J = first_J;
   size_t old_K = first_K;
@@ -2380,21 +2418,21 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   delete [] cpp_r;
 }
 
-void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>          & blocked_log,
+void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>          & log,
                                                 std::vector<double>                & trend,
                                                 const std::vector<Surface *>       & limits){
-  if (blocked_log.size() > 0 && trend.size() > 0) {
+  if (log.size() > 0 && trend.size() > 0) {
     std::vector<int> count(n_layers_);
     for (int k = 0 ; k < n_layers_ ; k++) {
       trend[k] = 0.0;
       count[k] = 0;
     }
     for (int m = 0 ; m < static_cast<int>(n_blocks_); m++) {
-      if (blocked_log[m] != RMISSING) {
+      if (log[m] != RMISSING) {
         if (limits.size() == 0 ||
            (limits[0]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) <= z_pos_blocked_[m] &&
             limits[1]->GetZ(x_pos_blocked_[m],y_pos_blocked_[m]) >= z_pos_blocked_[m])) {
-          trend[k_pos_[m]] += blocked_log[m];
+          trend[k_pos_[m]] += log[m];
           count[k_pos_[m]]++;
         }
       }
@@ -2406,12 +2444,12 @@ void BlockedLogsCommon::GetVerticalTrendLimited(const std::vector<double>       
         trend[k] = RMISSING;
     }
     if (interpolate_)
-      InterpolateTrend(blocked_log,trend,limits);
+      InterpolateTrend(log,trend,limits);
 
   }
   else {
-    if (blocked_log.size() == 0)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrendLimited(): Trying to use an undefined blocked log\n");
+    if (log.size() == 0)
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrendLimited(): Trying to use an undefined log\n");
     if (trend.size() == 0)
       LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrendLimited(): Trying to use an undefined trend\n");
     exit(1);
@@ -2534,9 +2572,9 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   std::vector<double> vs_vert(n_layers_);
   std::vector<double> rho_vert(n_layers_);
 
-  GetVerticalTrend(GetVpBlocked(), vp_vert);
-  GetVerticalTrend(GetVsBlocked(), vs_vert);
-  GetVerticalTrend(GetRhoBlocked(), rho_vert);
+  GetVerticalTrend(GetVpRawLogs(), vp_vert);
+  GetVerticalTrend(GetVsRawLogs(), vs_vert);
+  GetVerticalTrend(GetRhoRawLogs(), rho_vert);
 
   for (i = start; i < start+length-1; i++) {
     double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
@@ -2559,17 +2597,17 @@ double BlockedLogsCommon::ComputeElasticImpedance(double        vp,
   return ang_imp;
 }
 
-void BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_log,
+void BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & log,
                                          std::vector<double>        & trend) {
-  if (blocked_log.size() > 0 && trend.size() > 0) {
+  if (log.size() > 0 && trend.size() > 0) {
     std::vector<double> count(n_layers_);
     for (int k = 0 ; k < n_layers_ ; k++) {
       trend[k] = 0.0;
       count[k] = 0;
     }
     for (int m = 0 ; m < static_cast<int>(n_blocks_) ; m++) {
-      if (blocked_log[m] != RMISSING) {
-        trend[k_pos_[m]] += blocked_log[m];
+      if (log[m] != RMISSING) {
+        trend[k_pos_[m]] += log[m];
         count[k_pos_[m]]++;
       }
     }
@@ -2580,12 +2618,12 @@ void BlockedLogsCommon::GetVerticalTrend(const std::vector<double>  & blocked_lo
         trend[k] = RMISSING;
     }
     if (interpolate_ == true)
-      InterpolateTrend(blocked_log, trend);
+      InterpolateTrend(log, trend);
 
   }
   else {
-    if (blocked_log.size() == 0)
-      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrend(): Trying to use an undefined blocked log\n");
+    if (log.size() == 0)
+      LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrend(): Trying to use an undefined log\n");
     if (trend.size() == 0)
       LogKit::LogFormatted(LogKit::Low,"ERROR in BlockedLogsCommon::GetVerticalTrend(): Trying to use an undefined trend\n");
     exit(1);

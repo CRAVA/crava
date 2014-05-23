@@ -40,6 +40,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   setup_traveltime_inversion_(false),
   refmat_from_file_global_vpvs_(false),
   velocity_from_inversion_(false),
+  prior_cov_estimated_(false),
   multiple_interval_grid_(NULL),
   time_line_(NULL),
   time_depth_mapping_(NULL),
@@ -91,11 +92,14 @@ CommonData::CommonData(ModelSettings * model_settings,
     temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, err_text);
 
   // 6. Optimization of well location
-  if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_)
+  if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
+  if (!model_settings->getOptimizeWellLocation())
+    optimize_well_location_ = true;
 
   // 7. Wavelet Handling
-  wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, wavelets_, local_noise_scales_, local_shifts_,
+  if (block_wells_ && optimize_well_location_)
+    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, wavelets_, local_noise_scales_, local_shifts_,
                                       local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, err_text);
 
   // 9. Trend Cubes
@@ -4139,13 +4143,13 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   LogKit::WriteHeader("Blocking wells for estimation");
 
-  // Continuous parameters that are to be used in BlockedLogs
+  // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked_.push_back("Vp");
   continuous_logs_to_be_blocked_.push_back("Vs");
   continuous_logs_to_be_blocked_.push_back("Rho");
   continuous_logs_to_be_blocked_.push_back("MD");
 
-  // Discrete parameters that are to be used in BlockedLogs
+  // Discrete parameters that are to be used in BlockedLogsCommon
 
 
   // Block logs to surrounding estimation simbox
@@ -4295,6 +4299,11 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     mapped_blocked_logs.erase(it);
     mapped_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, new BlockedLogsCommon(&wells[w], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                                                                             estimation_simbox, model_settings->getRunFromPanel(), err_text) ) );
+    if(err_text != ""){
+      err_text += "The well " + well_name + " does not pass through the inversion area after optimization of the well location.\n";
+      TaskList::addTask("Well "+ well_name +" does not pass through the inversion area after optimization of the well location. Either remove the well or expand the area.\n");
+      return false;
+    }
     LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
     wells[w].GetWellName().c_str(), k_move, i_move, delta_X, j_move, delta_Y);
   }
@@ -7547,6 +7556,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
   prior_corr_T_.resize(n_intervals);
   prior_param_cov_.resize(n_intervals);
   prior_corr_XY_.resize(n_intervals);
+  prior_auto_cov_.resize(n_intervals);
 
   if (model_settings->getDoInversion() || print_result)
   {
@@ -7680,8 +7690,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     const std::string & corr_time_file    = input_files->getTempCorrFile();
     bool temporal_corr_range_given        = (input_files->getTempCorrFile() == "" && model_settings->getUseVerticalVariogram());
     bool estimate_temp_corr               = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
-    if (estimate_param_cov || estimate_temp_corr) 
-      prior_auto_cov_.resize(interval_simboxes.size());
 
     bool failed_temp_corr                 = false;
     failed_param_cov                     = false;
