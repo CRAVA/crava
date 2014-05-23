@@ -584,21 +584,22 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void
-FFTFileGrid::writeFile(const std::string & fileName,
-                       const std::string & subDir,
-                       const Simbox      * simbox,
-                       const std::string   sgriLabel,
-                       const float         z0,
-                       const GridMapping * depthMap,
-                       const GridMapping * timeMap,
-                       const TraceHeaderFormat & thf,
-                       bool                padding,
-                       bool                scientific_format)
+FFTFileGrid::writeFile(const std::string              & fileName,
+                       const std::string              & subDir,
+                       const Simbox                   * simbox,
+                       const std::string                sgriLabel,
+                       const float                      z0,
+                       const GridMapping              * depthMap,
+                       const GridMapping              * timeMap,
+                       const TraceHeaderFormat        & thf,
+                       bool                             padding,
+                       bool                             scientific_format,
+                       const std::vector<std::string> & headerText)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding, scientific_format);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding, scientific_format, headerText);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -617,12 +618,13 @@ FFTFileGrid::writeStormFile(const std::string & fileName, const Simbox * simbox,
 
 
 int
-FFTFileGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, const TraceHeaderFormat &thf)
+FFTFileGrid::writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0, const TraceHeaderFormat &thf,
+                           const std::vector<std::string> & headerText)
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  int ok = FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
+  int ok = FFTGrid::writeSegyFile(fileName, simbox, z0, thf, headerText);
   if(accMode_ != RANDOMACCESS)
     unload();
   return(ok);

@@ -503,6 +503,7 @@ WellData::readLASWell(const std::string              & wellFileName,
   try
   {
     NRLib::LasWell well(wellFileName);
+    well.MakeLogsUppercase();
     processNRLibWell(well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, false);
     if(errTxt_ == "") {
       xpos0_ = xpos_[0];
@@ -573,7 +574,7 @@ WellData::processNRLibWell(const NRLib::Well              & well,
   if(well.HasContLog("UTMY") == true)
     logs[1] = &(well.GetContLog("UTMY"));
   else if(well.HasContLog("NORTHING") == true)
-    logs[0] = &(well.GetContLog("NORTHING"));
+    logs[1] = &(well.GetContLog("NORTHING"));
   else {
     error_ = 1;
     errTxt_ += "Could not find log 'UTMY' or 'NORTHING' in well file "+wellFileName+".\n";

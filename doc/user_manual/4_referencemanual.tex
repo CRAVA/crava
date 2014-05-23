@@ -1021,7 +1021,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 
 \paragraph{\hbracket{rock-physics-distributions}}\newkw{rock-physics-distributions}
  \slist
-   \item \Description Writes rock physics distribution per facies, in a vp, vs, and density STORM-grid. Only available when facies probabilities are computed.
+   \item \Description Writes rock physics distribution per facies, in a vp, vs, and density grid. That is, the x-axis is Vp values, y-axis is Vs values and z-axis is density values. The value in each cell is the probability density of this set of elastic values for this facies. The probability density is scaled by a factor of 1000000. The physical density values (z-axis) are scaled by a factor of 1000. Only available when facies probabilities are computed.
    \item \Argument 'yes' or 'no'
    \item \Default 'no'
 \elist
