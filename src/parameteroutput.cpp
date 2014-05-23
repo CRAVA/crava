@@ -531,7 +531,7 @@ ParameterOutput::ComputeLameMu(const Simbox        * simbox,
                                StormContGrid       * rho,
                                const std::string   & file_name)
 {
-  StormContGrid * mu = new StormContGrid(*mu);
+  StormContGrid * mu = new StormContGrid(*vs);
 
   float ijk_b    = 0.0f;
   float ijk_r    = 0.0f;
@@ -835,12 +835,10 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
                              const std::string   & sgri_label,
                              bool                  padding)
 {
-  //GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
-  //GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
-  float         seismic_start_time = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-  TraceHeaderFormat *format = model_settings->getTraceHeaderFormatOutput();
 
-  //H-Writing
+  float         seismic_start_time = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
+  TraceHeaderFormat * format       = model_settings->getTraceHeaderFormatOutput();
+
   WriteFile(model_settings,
             grid,
             file_name,
@@ -849,7 +847,6 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
             sgri_label,
             seismic_start_time,
             time_depth_mapping,
-            //timeCutMapping,
             *format,
             padding);
 }
@@ -875,7 +872,6 @@ ParameterOutput::ExpTransf(StormContGrid * grid)
 
 }
 
-
 void
 ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            StormContGrid           * storm_grid,
@@ -886,14 +882,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const float               z0,
                            const GridMapping       * depth_map,
                            const TraceHeaderFormat & thf,
-                           bool padding)
+                           bool  padding)
 {
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
   int domain_flag       = model_settings->getOutputGridDomain();
 
-  if (format_flag > 0) //Output format specified.
-  {
+  if (format_flag > 0) {//Output format specified.
     if ((domain_flag & IO::TIMEDOMAIN) > 0) {
       //if(timeMap == NULL) { //No resampling of storm
         if ((format_flag & IO::STORM) > 0)
@@ -914,10 +909,11 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+file_name_segy+"...");
 
-        //SegY * segy = new SegY(storm_grid, z0, thf, simbox->getdz(), simbox->getIL0(), simbox->getXL0(),
-        //                       simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY());
-        //segy->WriteAllTracesToFile();
-        SegY * segy = new SegY(storm_grid, file_name_segy, true);
+        SegY * segy = new SegY(storm_grid,
+                               z0,
+                               file_name_segy,
+                               true,
+                               thf); //Write to file
 
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
@@ -967,14 +963,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
             for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
               for (size_t k = 0; k < storm_grid->GetNK(); k++) {
                 (*storm_cube_depth)(i, j, k) = storm_grid->GetValue(i, j, k);
-
               }
             }
           }
 
           std::string file_name_segy = file_name + IO::SuffixSegy();
 
-          SegY * segy = new SegY(storm_cube_depth, file_name_segy, true);
+          SegY * segy = new SegY(storm_cube_depth, z0, file_name_segy, true);
           delete segy;
           delete storm_cube_depth;
 
@@ -987,7 +982,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         // Writes also segy in depth if required
-        WriteResampledStormCube(storm_grid, depth_map, depth_name, simbox, format_flag);
+        WriteResampledStormCube(storm_grid, depth_map, depth_name, simbox, format_flag, z0);
       }
     }
   }
@@ -998,7 +993,8 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
                                          const GridMapping   * gridmapping,
                                          const std::string   & file_name,
                                          const Simbox        * simbox,
-                                         const int             format)
+                                         const int             format,
+                                         float                 z0)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
 
@@ -1008,16 +1004,14 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
 
   double x,y;
   int nz = static_cast<int>(mapping->GetNK());
-  for (int i = 0; i < storm_grid->GetNI(); i++) {
-    for (int j = 0; j < storm_grid->GetNJ(); j++) {
+  for (size_t i = 0; i < storm_grid->GetNI(); i++) {
+    for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
       simbox->getXYCoord(i,j,x,y);
       for (int k = 0; k < nz; k++) {
         time = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
 
-        double x_tmp, y_tmp, z_tmp;
-        storm_grid->FindCenterOfCell(i, j, kindex, x_tmp, y_tmp, z_tmp);
-        float value = storm_grid->GetValueZInterpolated(x_tmp, y_tmp, z_tmp);
+        float value = storm_grid->GetValueZInterpolated(x, y, kindex);
 
         //float value = getRealValueInterpolated(i,j,kindex);
         (*outgrid)(i,j,k) = value;
@@ -1043,7 +1037,7 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
   if((format & IO::SEGY) > 0) {
     gf_name =  file_name + IO::SuffixSegy();
 
-    SegY * segy = new SegY(outgrid, gf_name, true);
+    SegY * segy = new SegY(outgrid, z0, gf_name, true);
     delete segy;
 
     //writeSegyFromStorm(outgrid, gf_name);

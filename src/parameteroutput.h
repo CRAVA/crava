@@ -54,11 +54,11 @@ public:
                             const std::string       & fName,
                             const std::string       & subDir,
                             const Simbox            * simbox,
-                            const std::string         label,
-                            const float               z0,
-                            const GridMapping       * depthMap,
-                            const TraceHeaderFormat & thf,
-                            bool padding = false);
+                            const std::string         label = "NO_LABEL",
+                            const float               z0 = 0.0,
+                            const GridMapping       * depthMap = NULL,
+                            const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                            bool                      padding = false);
 
 private:
   //static void      computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
@@ -152,6 +152,7 @@ private:
                                            const GridMapping   * gridmapping,
                                            const std::string   & file_name,
                                            const Simbox        * simbox,
-                                           const int             format);
+                                           const int             format,
+                                           float                 z0);
 };
 #endif

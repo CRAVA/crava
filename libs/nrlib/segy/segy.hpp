@@ -91,9 +91,11 @@ public:
  //     double                    xl_step_y);
 
  /// Constructor for writing of segy from storm cube
- SegY(const StormContGrid * storm_grid,
-      const std::string   & file_name = "",
-      bool                  write_to_file = true);
+ SegY(const StormContGrid     * storm_grid,
+      float                     z0,
+      const std::string       & file_name = "",
+      bool                      write_to_file = true,
+      const TraceHeaderFormat & trace_header_format = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 
   ~SegY();
 

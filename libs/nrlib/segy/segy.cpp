@@ -460,9 +460,11 @@ SegY::SegY(const std::string       & fileName,
 //  }
 //}
 
-SegY::SegY(const StormContGrid * storm_grid,
-           const std::string   & file_name,
-           bool                  write_to_file)
+SegY::SegY(const StormContGrid     * storm_grid,
+           float                     z0,
+           const std::string       & file_name,
+           bool                      write_to_file,
+           const TraceHeaderFormat & trace_header_format)
 {
   rmissing_      = segyRMISSING;
   geometry_      = NULL;
@@ -475,12 +477,12 @@ SegY::SegY(const StormContGrid * storm_grid,
   SegyGeometry geometry(storm_grid->GetXMin(), storm_grid->GetYMin(), storm_grid->GetDX(), storm_grid->GetDY(),
                         nx, ny, storm_grid->GetAngle());
   float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
-  float z0 = 0.0;
+  //float z0 = 0.0;
   int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
   //SegY segyout(file_name,0,nz,dz,header);
-  trace_header_format_ = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
-  z0_ = 0;
+  trace_header_format_ = trace_header_format;
+  z0_ = z0;
   nz_ = nz;
   dz_ = dz;
 

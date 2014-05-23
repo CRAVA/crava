@@ -74,6 +74,9 @@ public:
   void ResampleSimple(std::vector<float>       & new_trace,
                       const std::vector<float> & old_trace);
 
+  StormContGrid * CreateStormGrid(const Simbox & simbox,
+                                  FFTGrid      * fft_grid);
+
   //GET FUNCTIONS
 
   //SET FUNCTIONS
@@ -104,7 +107,7 @@ private:
   StormContGrid                  * post_vs_;
   StormContGrid                  * post_rho_;
 
-  FFTGrid                        * post_vp_kriged_test_; //From avoinversion doPredictionKriging()
+  //FFTGrid                        * post_vp_kriged_; //From avoinversion doPredictionKriging()
   //FFTGrid                        * post_vs_kriged_;
   //FFTGrid                        * post_rho_kriged_;
 
@@ -112,9 +115,9 @@ private:
   StormContGrid                  * post_vs_kriged_;
   StormContGrid                  * post_rho_kriged_;
 
-  FFTGrid                        * background_vp_;
-  FFTGrid                        * background_vs_;
-  FFTGrid                        * background_rho_;
+  StormContGrid                  * background_vp_;
+  StormContGrid                  * background_vs_;
+  StormContGrid                  * background_rho_;
 
   std::vector<FFTGrid *>           simulations_seed0_; //Vector over number of simulations
   std::vector<FFTGrid *>           simulations_seed1_;
@@ -128,19 +131,19 @@ private:
   std::vector<float>               post_cov_vs00_;
   std::vector<float>               post_cov_rho00_;
 
-  std::vector<FFTGrid *>           synt_seismic_data_; //Vector angles
-  std::vector<FFTGrid *>           synt_residuals_;
+  std::vector<StormContGrid *>     synt_seismic_data_; //Vector angles
+  std::vector<StormContGrid *>     synt_residuals_;
 
-  FFTGrid                        * block_grid_;
+  StormContGrid                  * block_grid_;
 
-  std::vector<FFTGrid *>           facies_prob_;
-  FFTGrid                        * facies_prob_undef_;
+  std::vector<StormContGrid *>     facies_prob_;
+  StormContGrid                  * facies_prob_undef_;
 
-  std::vector<FFTGrid *>           facies_prob_geo_;
+  std::vector<StormContGrid *>     facies_prob_geo_;
 
-  std::vector<FFTGrid *>           lh_cubes_;
+  std::vector<StormContGrid*>      lh_cubes_;
 
-  FFTGrid                        * quality_grid_;
+  StormContGrid                  * quality_grid_;
 
   int                              n_intervals_;
 
