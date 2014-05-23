@@ -36,7 +36,6 @@
 #include "src/fftgrid.h"
 #include "src/gridmapping.h"
 #include "src/simbox.h"
-//#include "src/welldata.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
 #include "src/tasklist.h"
@@ -179,11 +178,11 @@ int main(int argc, char** argv)
   try
   {
     XmlModelFile modelFile(argv[1]);
-    InputFiles     * inputFiles     = modelFile.getInputFiles();
-    ModelSettings  * modelSettings  = modelFile.getModelSettings();
-    CommonData     * common_data    = NULL;
-    ModelGeneral   * modelGeneral   = NULL;
-    ModelAVOStatic * modelAVOstatic = NULL;
+    InputFiles         * inputFiles         = modelFile.getInputFiles();
+    ModelSettings      * modelSettings      = modelFile.getModelSettings();
+    CommonData         * common_data        = NULL;
+    ModelGeneral       * modelGeneral       = NULL;
+    ModelAVOStatic     * modelAVOstatic     = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
 
     CravaResult * cravaResult = new CravaResult();
@@ -227,12 +226,9 @@ int main(int argc, char** argv)
 
       //Priormodell i 3D
 
-      //From NRLib::Grid to FFT-grid, need to fill in padding.
-      //SeismicParametersHolder seismicParametersInterval;
-
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
-      //Forventningsgrid (fra multisonegrid)
+      //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
       seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
                                                                              simbox->GetNXpad(),
                                                                              simbox->GetNYpad(),
@@ -240,7 +236,7 @@ int main(int argc, char** argv)
 
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-      cravaResult->AddBackgroundVp(interval_name, seismicParametersIntervals[i_interval].GetMeanVp());
+      cravaResult->AddBackgroundVp(interval_name, seismicParametersIntervals[i_interval].GetMeanVp()); //H Lagre dem (referanse) til NRLib::Grid istedetfor fftgrid?
       cravaResult->AddBackgroundVs(interval_name, seismicParametersIntervals[i_interval].GetMeanVs());
       cravaResult->AddBackgroundRho(interval_name, seismicParametersIntervals[i_interval].GetMeanRho());
 
@@ -284,9 +280,6 @@ int main(int argc, char** argv)
       //ii.  Inversion
       //iii. Move model one time-step ahead
 
-      //Skal ikke være en egen doFirstAVOInversion (det som er spesielt i denne skal være gjort i CommonData eller flyttes til doAVOInversion)
-      //Må skille ut forward-modelling her et sted.
-
       if(modelGeneral->GetTimeLine() == NULL) {//Forward modelling.
 
 
@@ -294,31 +287,7 @@ int main(int argc, char** argv)
       else {
         int  eventType;
         int  eventIndex;
-        //double  oldTime;
-        //bool failedFirst = false;
         modelGeneral->GetTimeLine()->ReSet();
-        //modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, oldTime);
-        //
-        //
-        //switch(eventType) {
-        //case TimeLine::AVO :
-        //  failedFirst = doTimeLapseAVOInversion(modelSettings, modelGeneral, modelAVOstatic, common_data, seismicParametersInterval, eventIndex, i_interval);
-        //  break;
-        //case TimeLine::TRAVEL_TIME :
-        //  failedFirst = doTimeLapseTravelTimeInversion(modelSettings, modelGeneral, inputFiles, eventIndex, seismicParametersInterval);
-        //  break;
-        //case TimeLine::GRAVITY :
-        //  failedFirst = doTimeLapseGravimetricInversion(modelSettings, modelGeneral, modelGravityStatic, common_data, inputFiles, eventIndex, seismicParametersInterval);
-        //  break;
-        //default :
-        //  errTxt += "Error: Unknown inverstion type.\n";
-        //  break;
-        //}
-
-        //if(failedFirst == true || errTxt != "")
-        //  return(1);
-
-        //delete timeBGSimbox;
 
         double time;
         int time_index = 0;
@@ -365,63 +334,18 @@ int main(int argc, char** argv)
 
           first = false;
         }
-
-
-        //Add results to a sepate results class (CravaResult).
-        // Store from SeismicParametersHolder, state4D and filter well logs (if facies is to be predicted).
-        // 3D inverson, store results per interval in a multiintervalgrid (similar to background models)
-
-        //std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-        //cravaResult->AddParameters(seismicParametersIntervals[i_interval], interval_name);
-
-       }
+      }
     } //interval_loop
 
 
     //Combine interval grids to one grid per parameter
     cravaResult->CombineResults(modelSettings,
                                 common_data,
-                                seismicParametersIntervals); //Not working
+                                seismicParametersIntervals);
 
     //Write results
-    const Simbox & simbox = common_data->GetFullInversionSimbox();
     cravaResult->WriteResults(modelSettings,
-                              common_data,
-                              simbox);
-
-    /*
-
-    ModelGeneral: Ingen utskrift
-    ModelAVOStatic: Ingen utskrift
-
-    ModelAVODynamic:
-      Utskrift:
-      seisCube(fftgrid) (Seismic resamplet til intervall (fftgrid), men har allerede seismic lagret samlet i CommonData på forskjellig format)
-      wavelets (Er forskjellig per intervall, ok å skrive ut i modelAVODynamic?)
-
-   AVOInversion:
-      Utskrift:
-      x PriorCorrT: seismicParameters.writeFilePriorCorrT
-      x corrTFiltered: seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);
-      x seismicParameters.writeFilePostVariances
-      x seismicParameters.writeFilePostCovGrids
-      x WriteBlockedWells
-
-      x computePostMeanResidAndFFTCov: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_, outputGridsElastic_, fileGrid_, -1, false);
-      x doPredictionKriging: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_, outputGridsElastic_, fileGrid_, -1, true);
-      x simulate: ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2, outputGridsElastic_, fileGrid_, simNr, kriging);
-      x doPostKriging: kd.writeToFile (KrigingData, only based on blocked_wells_).
-      x computeFaciesProb: ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,""); Facies, Undef, LHCube
-      x computeSyntSeismic: imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-      x KrigAll: blockGrid->writeFile
-      x QualityGrid ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
-
-   Ekstra:
-      x Bakgrunn:      fra background.cpp (Alt utskrift der er kommentert ut).
-      x CommonData::BlockWellsForEstimation::WriteBlockedWells (hvis estimation mode)
-
-    */
-
+                              common_data);
 
     if(modelSettings->getDo4DInversion())
     {

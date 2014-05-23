@@ -44,8 +44,7 @@ public:
                      double                   dz_min);
 
   void WriteResults(ModelSettings * model_settings,
-                    CommonData    * common_data,
-                    const Simbox  & simbox);
+                    CommonData    * common_data);
 
   void WriteFilePriorCorrT(fftw_real   * prior_corr_T,
                            const int   & nzp,

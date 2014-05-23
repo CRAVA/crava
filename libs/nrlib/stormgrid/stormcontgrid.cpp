@@ -665,143 +665,6 @@ void StormContGrid::ReadSgriBinaryFile(const std::string& filename)
 
 }
 
-//void StormContGrid::WriteSegyFile(const std::string       & file_name,
-//                                  SegY * segy,
-//                                  double simbox_dz,
-//                                  //const Simbox            * simbox,
-//                                  float                     z0)
-//                                  //const TraceHeaderFormat & thf)
-//{
-//  //  long int timestart, timeend;
-//  //  time(&timestart);
-//
-//  //std::string gf_name = file_name + IO::SuffixSegy();
-//  //SegY * segy = new SegY(gfName, simbox);
-//  //TextualHeader header = TextualHeader::standardHeader();
-//  //float dz = float(floor(simbox->getdz()+0.5));
-//  //if(dz==0)
-//  //  dz = 1.0;
-//  //int segynz;
-//  //double zmin,zmax;
-//  //simbox->getMinMaxZ(zmin,zmax);
-//  //segynz = int(ceil((zmax-z0)/dz));
-//  //SegY *segy = new SegY(gf_name.c_str(),z0,segynz,dz,header, thf);
-//  //SegyGeometry * geometry = new SegyGeometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
-//  //                                           simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
-//  //                                           simbox->getILStepX(), simbox->getILStepY(),
-//  //                                           simbox->getXLStepX(), simbox->getXLStepY(),
-//  //                                           simbox->getAngle());
-//  //segy->SetGeometry(geometry);
-//  //delete geometry; //Call above takes a copy.
-//  //LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+gf_name+"...");
-//
-//  int k;
-//  double x,y,z;
-//  int segynz = segy->GetNz();
-//  double dz = segy->GetDz();
-//  std::vector<float> trace(segynz);//Maximum amount of data needed.
-//  for (size_t j = 0; j < GetNJ(); j++) {
-//    for (size_t i = 0; i < GetNI(); i++) {
-//
-//      //Volume find x, y
-//      //z = GetValue(i, j, 0);
-//
-//      //FindXY(i, j); //H-ADD (have FindXYIndex)
-//      double local_x = static_cast<double>(i * GetDX());
-//      double local_y = static_cast<double>(j * GetDY());
-//
-//      LocalToGlobalCoord(local_x, local_y, x, y);
-//
-//      z = GetTopSurface().GetZ(x, y);
-//
-//      //simbox->getCoord(i, j, 0, x, y, z);
-//      //z = simbox->getTop(x,y);
-//
-//      //if(z == RMISSING || z == WELLMISSING) {
-//      if (z == missing_code_) {
-//        //printf("Missing trace.\n");
-//        for(k=0;k<segynz;k++)
-//          trace[k] = 0;
-//      }
-//      else {
-//        //double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
-//
-//        double relThick = 1; //Default value to be used outside grid.
-//        double zTop = GetTopSurface().GetZ(x,y);
-//        double zBot = GetBotSurface().GetZ(x,y);
-//        if(GetTopSurface().IsMissing(zTop) == false &&
-//            GetBotSurface().IsMissing(zBot) == false)
-//          relThick = (zBot-zTop)/GetLZ();
-//
-//        double gdz = simbox_dz * relThick;
-//        int    firstData = static_cast<int>(floor(0.5+(z-z0)/dz));
-//        int    endData   = static_cast<int>(floor(0.5+((z-z0)+GetNK()*gdz)/dz));
-//
-//        if(endData > segynz) {
-//          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", GetNK(), endData);
-//          endData = segynz;
-//        }
-//        for(k=0;k<firstData;k++)
-//          trace[k] = 0;
-////          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
-//        for(;k<endData;k++)
-//          trace[k] = GetRegularZInterpolated(i,j,z0,dz,k,z,gdz);
-//        for(;k<segynz;k++)
-//          trace[k] = 0;
-////          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
-//        float xx = static_cast<float>(x);
-//        float yy = static_cast<float>(y);
-//        segy->StoreTrace(xx, yy, trace, NULL);
-//      }
-//    }
-//  }
-//
-//  segy->WriteAllTracesToFile();
-//
-//  //delete segy; //Closes file.
-//  // delete [] value;
-//  //LogKit::LogFormatted(LogKit::Low,"done\n");
-//  //  time(&timeend);
-//  //printf("\n Write SEGY was performed in %ld seconds.\n",timeend-timestart);
-//  //return(0);
-//}
-
-//float
-//StormContGrid::GetRegularZInterpolated(int i, int j, double z0Reg,
-//                                       double dzReg, int kReg,
-//                                       double z0Grid, double dzGrid) const
-//{
-//  float z     = static_cast<float> (z0Reg+dzReg*kReg);
-//  float t     = static_cast<float> ((z-z0Grid)/dzGrid);
-//  int   nk    = GetNK();
-//  int   kGrid = int(t);
-//
-//  t -= kGrid;
-//
-//
-//  if(kGrid<0) {
-//    if(kGrid<-1)
-//      return(missing_code_); //RMISSING
-//    else {
-//      kGrid = 0;
-//      t = 0;
-//    }
-//  }
-//  else if(kGrid>nk-2) {
-//    if(kGrid > nk-1)
-//      return(missing_code_); //RMISSING
-//    else {
-//      kGrid = nk-2;
-//      t = 1;
-//    }
-//  }
-//
-//  float v1 = (*this) (i,j,kGrid); //getRealValue(i,j,kGrid);
-//  float v2 = (*this) (i,j,kGrid+1); //getRealValue(i,j,kGrid+1);
-//  float v  = (1-t)*v1+t*v2;
-//  return(v);
-//}
-
 void
 StormContGrid::WriteCravaFile(const std::string & file_name,
                               double              inline_0,
@@ -832,12 +695,10 @@ StormContGrid::WriteCravaFile(const std::string & file_name,
     NRLib::WriteBinaryDouble(bin_file, xl_step_x); //simbox->getXLStepX());
     NRLib::WriteBinaryDouble(bin_file, xl_step_y); //simbox->getXLStepY());
     NRLib::WriteBinaryDouble(bin_file, GetAngle()); //simbox->getAngle());
-    NRLib::WriteBinaryInt(bin_file, GetNI());
-    NRLib::WriteBinaryInt(bin_file, GetNJ());
-    NRLib::WriteBinaryInt(bin_file, GetNK());
-    //NRLib::WriteBinaryInt(bin_file, rnxp_);
-    //NRLib::WriteBinaryInt(bin_file, nyp_);
-    //NRLib::WriteBinaryInt(bin_file, nzp_);
+    NRLib::WriteBinaryInt(bin_file, GetNI()); //NRLib::WriteBinaryInt(bin_file, rnxp_);
+    NRLib::WriteBinaryInt(bin_file, GetNJ()); //NRLib::WriteBinaryInt(bin_file, nyp_);
+    NRLib::WriteBinaryInt(bin_file, GetNK()); //NRLib::WriteBinaryInt(bin_file, nzp_);
+
     //for(int i=0;i<rsize_;i++)
     //  NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 

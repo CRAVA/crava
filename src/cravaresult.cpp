@@ -32,7 +32,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   MultiIntervalGrid * multi_interval_grid = common_data->GetMultipleIntervalGrid();
   int n_intervals = multi_interval_grid->GetNIntervals();
 
-  if (n_intervals > 0) { //H Fix
+  if (n_intervals > 1) { //H Fix
 
    const Simbox & full_inversion_simbox        = common_data->GetFullInversionSimbox();
    const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
@@ -136,11 +136,13 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     //H-TODO Remove this, computeSyntSeismic will be moved until after post_vp_ grids are made
     int n_angles = seismic_parameters_intervals[0].GetSyntSeismicData().size();
     synt_seismic_data_.resize(n_angles);
-    synt_residuals_.resize(n_angles);
-    for (int i = 0; i < n_angles; i++) {
+    for (int i = 0; i < n_angles; i++)
       synt_seismic_data_[i] = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetSyntSeismicData()[i]);
-      synt_residuals_[i]    = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetSyntResiduals()[i]);
-    }
+
+    n_angles = seismic_parameters_intervals[0].GetSyntResiduals().size();
+    synt_residuals_.resize(n_angles);
+    for (int i = 0; i < n_angles; i++)
+      synt_residuals_[i] = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetSyntResiduals()[i]);
 
     block_grid_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetBlockGrid());
 
@@ -148,8 +150,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     facies_prob_.resize(n_facies);
     for (int i = 0; i < n_facies; i++) {
       facies_prob_[i]    = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetFaciesProb()[i]);
-      facies_prob_undef_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetFaciesProbUndefined());
     }
+    facies_prob_undef_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetFaciesProbUndefined());
 
     n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
     facies_prob_geo_.resize(n_facies);
@@ -388,19 +390,16 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
 
 
 void CravaResult::WriteResults(ModelSettings * model_settings,
-                               CommonData    * common_data,
-                               const Simbox  & simbox)
+                               CommonData    * common_data)
 {
   //Move writing rutines from modelavodynamic and avoinversion here
 
   //Results are combined to one grid in CombineResults first
+  const Simbox & simbox = common_data->GetFullInversionSimbox();
 
   float dt = static_cast<float>(simbox.getdz());
-  //int nz   = simbox.getnz();
-  int nzp  = simbox.GetNZpad();
 
   int output_grids_elastic = model_settings->getOutputGridsElastic();
-  //bool file_grid           = model_settings->getFileGrid();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
   if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
@@ -436,7 +435,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     fftw_free(corr_T_);
 
     if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-      WriteFilePriorCorrT(corr_T_filtered_, nzp, dt); // No zeros in the middle
+      WriteFilePriorCorrT(corr_T_filtered_, simbox.GetNZpad(), dt); // No zeros in the middle
       delete [] corr_T_filtered_;
     }
 
