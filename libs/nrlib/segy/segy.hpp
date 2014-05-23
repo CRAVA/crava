@@ -90,7 +90,7 @@ public:
  //     double                    xl_step_x,
  //     double                    xl_step_y);
 
- /// Constructor for segy from storm cube
+ /// Constructor for writing of segy from storm cube
  SegY(const StormContGrid * storm_grid,
       const std::string   & file_name = "",
       bool                  write_to_file = true);

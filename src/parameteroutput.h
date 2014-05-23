@@ -41,14 +41,24 @@ public:
                                const std::string   & sgriLabel,
                                bool                  padding=false);
 
-  static void      WriteToFile(const Simbox        * simbox,
-                               GridMapping         * time_depth_mapping,
-                               const ModelSettings * model_settings,
-                               FFTGrid             * grid,
-                               const std::string   & file_name,
-                               const std::string   & sgri_label,
-                               bool                  padding = false);
+  //static void      WriteToFile(const Simbox        * simbox,
+  //                             GridMapping         * time_depth_mapping,
+  //                             const ModelSettings * model_settings,
+  //                             FFTGrid             * grid,
+  //                             const std::string   & file_name,
+  //                             const std::string   & sgri_label,
+  //                             bool                  padding = false);
 
+  static void     WriteFile(const ModelSettings     * model_settings,
+                            StormContGrid           * storm_grid,
+                            const std::string       & fName,
+                            const std::string       & subDir,
+                            const Simbox            * simbox,
+                            const std::string         label,
+                            const float               z0,
+                            const GridMapping       * depthMap,
+                            const TraceHeaderFormat & thf,
+                            bool padding = false);
 
 private:
   //static void      computeAcousticImpedance(const Simbox * simbox, ModelGeneral * modelGeneral, const ModelSettings * modelSettings,
@@ -137,5 +147,11 @@ private:
   //static FFTGrid * createFFTGrid(FFTGrid * referenceGrid, bool fileGrid);
 
   static void      ExpTransf(StormContGrid * grid);
+
+  static void      WriteResampledStormCube(const StormContGrid * storm_grid,
+                                           const GridMapping   * gridmapping,
+                                           const std::string   & file_name,
+                                           const Simbox        * simbox,
+                                           const int             format);
 };
 #endif

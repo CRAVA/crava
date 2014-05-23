@@ -494,16 +494,16 @@ SegY::SegY(const StormContGrid * storm_grid,
   std::vector<float> data_vec;
   data_vec.resize(nz);
   float x, y, xt, yt, z;
-  for(j = 0; j < ny; j++) {
-    for(i = 0; i < nx; i++) {
+  for (j = 0; j < ny; j++) {
+    for (i = 0; i < nx; i++) {
 
       xt = float((i+0.5)*geometry.GetDx());
       yt = float((j+0.5)*geometry.GetDy());
       x  = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
       y  = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
 
-      double z_bot = storm_grid->GetBotSurface().GetZ(x,y);
-      double z_top = storm_grid->GetTopSurface().GetZ(x,y);
+      double z_bot      = storm_grid->GetBotSurface().GetZ(x,y);
+      double z_top      = storm_grid->GetTopSurface().GetZ(x,y);
       int    first_data = static_cast<int>(floor((z_top)/dz));
       int    end_data   = static_cast<int>(floor((z_bot)/dz));
 
@@ -516,7 +516,7 @@ SegY::SegY(const StormContGrid * storm_grid,
       }
 
       for (k = first_data; k < end_data; k++) {
-        z = z0+k*dz;
+        z           = z0 + k*dz;
         data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
       }
       for (k = end_data; k < nz; k++) {
