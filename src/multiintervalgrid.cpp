@@ -12,9 +12,16 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      InputFiles     * input_files,
                                      const Simbox   * estimation_simbox,
                                      std::string    & err_text,
-                                     bool           & failed) {
+                                     bool           & failed)
+{
 
   interval_names_                                                 = model_settings->getIntervalNames();
+  n_intervals_                                                    = static_cast<int>(interval_names_.size());
+  desired_grid_resolution_.resize(n_intervals_);
+  relative_grid_resolution_.resize(n_intervals_);
+  erosion_priorities_.resize(n_intervals_+1);
+  interval_simboxes_.resize(n_intervals_);
+  std::vector<Surface>    eroded_surfaces(n_intervals_+1);
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   dz_min_                                                         = 10000;
@@ -27,62 +34,15 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     LogKit::WriteHeader("Setting up multiple interval grid");
     multiple_interval_setting_ = true;
   }
-  n_intervals_ = static_cast<int>(interval_names_.size());
 
-  Surface               * top_surface = NULL;
-  Surface               * base_surface = NULL;
-  std::vector<Surface>    eroded_surfaces(n_intervals_+1);
+  std::vector<Surface>    surfaces(n_intervals_+1);                 //Store surfaces.
+
+  // Temp variables
   std::string             previous_interval_name("");
   std::string             top_surface_file_name_temp("");
   std::string             base_surface_file_name_temp("");
-  std::vector<Surface>    surfaces;
-  //std::vector<int>        erosion_priorities_;
-
-  desired_grid_resolution_.resize(n_intervals_);
-  relative_grid_resolution_.resize(n_intervals_);
-  eroded_surfaces.resize(n_intervals_+1);
-  surfaces.resize(n_intervals_+1); //Store surfaces.
-  erosion_priorities_.resize(n_intervals_+1);
-  interval_simboxes_.resize(n_intervals_);
-
-  //if (interval_names_.size() > 0) {
-  //  multiple_interval_setting_ = true;
-  //  desired_grid_resolution_.resize(n_intervals_);
-  //  relative_grid_resolution_.resize(n_intervals_);
-  //  n_intervals_ = static_cast<int>(interval_names_.size());
-  //  eroded_surfaces.resize(n_intervals_ + 1);
-  //  LogKit::WriteHeader("Setting up multiple interval grid");
-  //  surfaces.resize(n_intervals_+1); //Store surfaces.
-  //  erosion_priorities_.resize(n_intervals_+1);
-  //  interval_simboxes_.resize(n_intervals_);
-  //  parameters_.resize(n_intervals_);
-  //  for (size_t i = 0; i < n_intervals_; i++) {
-  //    parameters_[i].resize(3);
-  //    for (int j = 0; j < 3; j++)
-  //      parameters_[i][j] = new NRLib::Grid<float>();
-  //  }
-
-  //  background_vs_vp_ratios_.resize(n_intervals_);
-  //  prior_facies_prob_cubes_.resize(n_intervals_);
-  //}
-  //// if there is only one interval
-  //else {
-  //  multiple_interval_setting_ = false;
-  //  desired_grid_resolution_.resize(1);
-  //  relative_grid_resolution_.resize(1);
-  //  eroded_surfaces.resize(2);
-  //  n_intervals_ = 1;
-  //  LogKit::WriteHeader("Setting up grid");
-  //  surfaces.resize(1);
-  //  interval_simboxes_.resize(1);
-  //  interval_names_.push_back("");
-  //  background_parameters_.resize(1);
-  //  background_parameters_[0].resize(3);
-  //  for (size_t i = 0; i < 3; i++)
-  //    background_parameters_[0][i] = new NRLib::Grid<float>();
-  //  background_vs_vp_ratios_.resize(1);
-  //  prior_facies_prob_cubes_.resize(1);
-  //}
+  Surface               * top_surface                             = NULL;
+  Surface               * base_surface                            = NULL;
 
   // 1. ERODE SURFACES AND SET SURFACES OF SIMBOXES -----------------------------------------
 
@@ -125,7 +85,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     // if multiple-intervals is NOT used in model settings
     else {
 
-      //int nz = model_settings->getTimeNz();
       int nz = model_settings->getTimeNzInterval("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
@@ -157,7 +116,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       }
 
       desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
-
     }
   }
   catch(NRLib::Exception & e){
@@ -196,7 +154,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     }
   }
 
-  // Add inn surface files.
+  // Add surface files.
   surface_files_.push_back(input_files->getTimeSurfFile(0));
 
   const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getIntervalBaseTimeSurfaces();
@@ -340,6 +298,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         corr_dir = true;
         Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
         interval_simboxes[i]    = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, corr_surf, err_text, failed);
+        delete corr_surf;
       }
       // Case 2: Top and base correlation surfaces
       else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
@@ -348,6 +307,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
                                                 corr_surf_top, corr_surf_base);
+        delete corr_surf_top;
+        delete corr_surf_base;
       }
       // Case 3: Top conform and base conform if (i) both are set conform or (ii) if no other corr surfaces have been defined
       else if ((it_top_conform->second == true && it_base_conform->second == true) ||
@@ -359,14 +320,16 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         corr_dir = true;
         Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                corr_surf_top, NULL);
+                                                corr_surf_top, &base_surface);
+        delete corr_surf_top;
       }
       // Case 5: Top conform and base correlation surface
       else if (it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
         corr_dir = true;
         Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
         interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                NULL, corr_surf_base);
+                                                &top_surface, corr_surf_base);
+        delete corr_surf_base;
       }
       // else something is wrong
       else{

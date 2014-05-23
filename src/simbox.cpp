@@ -15,6 +15,9 @@
 #include "src/fftgrid.h"
 #include "src/definitions.h"
 
+//
+// Empty constructor
+//
 Simbox::Simbox(void)
   : Volume()
 {
@@ -36,9 +39,12 @@ Simbox::Simbox(void)
   lz_eroded_   = 0;
 }
 
+//
+// Constructor where a simple geometric cube defines the simbox
+//
 Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
-               double ly, double lz, double rot, double dx, double dy, double dz) :
-  Volume()
+               double ly, double lz, double rot, double dx, double dy, double dz)
+               :  Volume()
 {
   interval_name_ = "";
   status_      = BOXOK;
@@ -73,51 +79,12 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   grad_y_      = 0;
 }
 
-Simbox::Simbox(const Simbox             * estimation_simbox,
-               const std::string        & interval_name,
-               int                        n_layers,
-               const Surface            & top_surface,
-               const Surface            & base_surface,
-               std::string              & err_text,
-               bool                     & failed):
-Volume(*estimation_simbox){
-  interval_name_  = interval_name;
-  status_         = NODEPTH;
-  cosrot_         = cos(estimation_simbox->getAngle());
-  sinrot_         = sin(estimation_simbox->getAngle());
-  dx_             = estimation_simbox->getdx();
-  dy_             = estimation_simbox->getdy();
-  dz_             = estimation_simbox->getdz();
-  nx_             = estimation_simbox->getnx();
-  ny_             = estimation_simbox->getny();
-  nz_             = 1; // temporarily
-  inLine0_        = estimation_simbox->getIL0();
-  crossLine0_     = estimation_simbox->getXL0();
-  ilStepX_        = estimation_simbox->getILStepX();
-  ilStepY_        = estimation_simbox->getILStepY();
-  xlStepX_        = estimation_simbox->getXLStepX();
-  xlStepY_        = estimation_simbox->getXLStepY();
-  constThick_     = estimation_simbox->constThick_;
-  minRelThick_    = estimation_simbox->minRelThick_;
-  topName_        = estimation_simbox->topName_;
-  botName_        = estimation_simbox->botName_;
-  top_eroded_surface_  = NULL;
-  base_eroded_surface_ = NULL;
-  grad_x_         = 0;
-  grad_y_         = 0;
-  // Set Eroded surfaces in the simbox
-  SetErodedSurfaces(top_surface, base_surface);
-  // Set surfaces in the volume
-  // This should set the status to BOXOK
-  setDepth(top_surface, base_surface, n_layers);
-  if(status_!=BOXOK){
-    failed = true;
-    err_text+="Simbox setup failed: there is a problem with the surfaces.";
-  }
-}
 
-Simbox::Simbox(const Simbox * simbox) :
-  Volume(*simbox)
+//
+// Constructor that copies all simbox data from simbox
+//
+Simbox::Simbox(const Simbox * simbox) 
+  :  Volume(*simbox)
 {
   interval_name_ = "";
   status_      = simbox->status_;
@@ -144,7 +111,70 @@ Simbox::Simbox(const Simbox * simbox) :
   grad_y_      = 0;
 }
 
-//Constructor for intervals with one correlation direction ----------------
+//
+// Constructor that copies the area from estimation_simbox and where
+// top surface and base_surface both define the inversion interval
+// and correlation surfaces
+//
+Simbox::Simbox(const Simbox             * estimation_simbox,
+               const std::string        & interval_name,
+               int                        n_layers,
+               const Surface            & top_surface,
+               const Surface            & base_surface,
+               std::string              & err_text,
+               bool                     & failed)
+: Volume(*estimation_simbox),
+  top_eroded_surface_(NULL),
+  base_eroded_surface_(NULL)
+{
+  interval_name_  = interval_name;
+  status_         = NODEPTH;
+  cosrot_         = cos(estimation_simbox->getAngle());
+  sinrot_         = sin(estimation_simbox->getAngle());
+  dx_             = estimation_simbox->getdx();
+  dy_             = estimation_simbox->getdy();
+  dz_             = estimation_simbox->getdz();
+  nx_             = estimation_simbox->getnx();
+  ny_             = estimation_simbox->getny();
+  nz_             = 1; // temporarily
+  inLine0_        = estimation_simbox->getIL0();
+  crossLine0_     = estimation_simbox->getXL0();
+  ilStepX_        = estimation_simbox->getILStepX();
+  ilStepY_        = estimation_simbox->getILStepY();
+  xlStepX_        = estimation_simbox->getXLStepX();
+  xlStepY_        = estimation_simbox->getXLStepY();
+  constThick_     = estimation_simbox->constThick_;
+  minRelThick_    = estimation_simbox->minRelThick_;
+  topName_        = top_surface.GetName();
+  botName_        = base_surface.GetName();
+  grad_x_         = 0;
+  grad_y_         = 0;
+
+  if (estimation_simbox->CheckSurface(top_surface) == false){
+    err_text += "Error: Surface "+ topName_ +" does not cover volume.\n";
+    failed = true;
+  }
+  if(estimation_simbox->CheckSurface(base_surface) == false){
+    err_text += "Error: Surface"+ botName_ +"does not cover volume.\n";
+    failed  = true;
+  }
+    // Set Eroded surfaces in the simbox
+  if(!failed){
+    SetErodedSurfaces(top_surface, base_surface);
+    // Set surfaces in the volume
+    // This should set the status to BOXOK
+    setDepth(top_surface, base_surface, n_layers);
+  }
+  if(status_!=BOXOK){
+    failed = true;
+    err_text+="Simbox setup failed: there is a problem with the surfaces.";
+  }
+}
+
+
+//
+// Constructor for intervals with one correlation direction
+//
 Simbox::Simbox(const Simbox         * simbox,
                const std::string    & interval_name,
                int                    n_layers,
@@ -152,14 +182,15 @@ Simbox::Simbox(const Simbox         * simbox,
                const Surface        & bot_surface,
                Surface              * single_corr_surface,
                std::string          & err_text,
-               bool                 & failed):
-  Volume(*simbox){
+               bool                 & failed)
+: Volume(*simbox)
+{
 
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());
   sinrot_         = sin(simbox->GetAngle());
-  SetAngle(simbox->GetAngle());
+  SetAngle (simbox->GetAngle());
   dx_             = simbox->getdx();
   dy_             = simbox->getdy();
   nx_             = simbox->getnx();
@@ -174,7 +205,7 @@ Simbox::Simbox(const Simbox         * simbox,
   SetSurfaces(top_surface, bot_surface);
 
   if (simbox->CheckSurface(*single_corr_surface) != true) {
-    err_text += "Error: Correlation surface does not cover volume.\n";
+    err_text += "Error: Correlation surface "+single_corr_surface->GetName()+" does not cover volume.\n";
     failed = true;
   }
   // Extend simbox as in ModelGeneral::SetupExtendedTimeSimbox
@@ -262,8 +293,8 @@ Simbox::Simbox(const Simbox         * simbox,
                std::string          & err_text,
                bool                 & failed,
                const Surface        * top_corr_surface,
-               const Surface        * base_corr_surface):
-  Volume(){
+               const Surface        * base_corr_surface)
+: Volume(){
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -280,17 +311,28 @@ Simbox::Simbox(const Simbox         * simbox,
   ilStepY_        = simbox->getILStepY();
   xlStepX_        = simbox->getXLStepX();
   xlStepY_        = simbox->getXLStepY();
-  // HOW SHOULD THIS BE DONE?
-  (void) top_surface;
-  (void) base_surface;
-  (void) top_corr_surface;
-  (void) base_corr_surface;
-  (void) err_text;
-  (void) failed;
+
+  if (simbox->CheckSurface(*top_corr_surface) == false) {
+    err_text += "Error: Top correlation surface"+top_corr_surface->GetName() +"does not cover volume.\n";
+    failed = true;
+  }
+  if (simbox->CheckSurface(*base_corr_surface) == false){
+    err_text += "Error: Base correlation surface"+base_corr_surface->GetName() +"does not cover volume.\n";
+    failed = true;
+  }
+
+  if(!failed){
+    NRLib::Vector corr_plane_parameters_top = FindPlane(top_corr_surface);
+    NRLib::Vector corr_plane_parameters_base = FindPlane(base_corr_surface);
+
+  }
+
 }
 
 Simbox::~Simbox()
 {
+  delete top_eroded_surface_;
+  delete base_eroded_surface_;
 }
 
 int
@@ -1153,7 +1195,7 @@ bool Simbox::CheckErodedSurfaces() const
   return true;
 }
 
-double Simbox::RecalculateErodedLZ()
+double Simbox::RecalculateErodedLZ() const
 {
   double lz = 0;
   if (this->getlx() > 0.0 || this->getly() > 0.0) { //Only do if area is initialized.

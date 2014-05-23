@@ -177,7 +177,7 @@ public:
 private:
 
   bool           CheckErodedSurfaces() const;
-  double         RecalculateErodedLZ();
+  double         RecalculateErodedLZ() const;
 
   int            nx_pad_;                      ///< Number of cells to pad in x direction
   int            ny_pad_;
