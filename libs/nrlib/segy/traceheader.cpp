@@ -374,7 +374,7 @@ TraceHeader::TraceHeader(const TraceHeaderFormat& format)
   : format_(format),
     status_(0),
     scal_co_(1),
-    scalcoinitial_(0)
+    scalcoinitial_(1)
 {
   memset(buffer_, 0, 240);
   rmissing_ = RMISSING;
