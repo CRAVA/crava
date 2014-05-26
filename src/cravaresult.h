@@ -21,10 +21,14 @@
 #include "src/krigingdata3d.h"
 #include "src/parameteroutput.h"
 
+//#include "src/wavelet.h"
+#include "src/wavelet1D.h"
+
 class FFTGrid;
 class Simbox;
 class CommonData;
 class ParameterOutput;
+class Wavelet1D;
 
 class CravaResult
 {
@@ -76,19 +80,38 @@ public:
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid);
 
+  void WriteBackgrounds(const ModelSettings     * model_settings,
+                        const Simbox            * simbox,
+                        GridMapping             * depth_mapping,
+                        const TraceHeaderFormat & thf);
+
+  void ExpTransf(StormContGrid * grid);
+
+  void ComputeSyntSeismic(const ModelSettings * model_settings,
+                          const Simbox * simbox,
+                          StormContGrid * vp,
+                          StormContGrid * vs,
+                          StormContGrid * rho);
+
+  StormContGrid * ComputeSeismicImpedance(StormContGrid * vp,
+                                          StormContGrid * vs,
+                                          StormContGrid * rho,
+                                          float        ** reflection_matrix,
+                                          int             angle);
+
   //GET FUNCTIONS
 
   //SET FUNCTIONS
-  void AddBackgroundVp(std::string interval_name, FFTGrid * vp)   { background_vp_intervals_[interval_name]  = new FFTGrid(vp)  ;}
-  void AddBackgroundVs(std::string interval_name, FFTGrid * vs)   { background_vs_intervals_[interval_name]  = new FFTGrid(vs)  ;}
-  void AddBackgroundRho(std::string interval_name, FFTGrid * rho) { background_rho_intervals_[interval_name] = new FFTGrid(rho) ;}
+  void AddBackgroundVp(FFTGrid * vp)   { background_vp_intervals_.push_back(new FFTGrid(vp))   ;}
+  void AddBackgroundVs(FFTGrid * vs)   { background_vs_intervals_.push_back(new FFTGrid(vs))   ;}
+  void AddBackgroundRho(FFTGrid * rho) { background_rho_intervals_.push_back(new FFTGrid(rho)) ;}
 
 private:
 
   //Resuls per interval
-  std::map<std::string, FFTGrid *> background_vp_intervals_;
-  std::map<std::string, FFTGrid *> background_vs_intervals_;
-  std::map<std::string, FFTGrid *> background_rho_intervals_;
+  std::vector<FFTGrid *> background_vp_intervals_;
+  std::vector<FFTGrid *> background_vs_intervals_;
+  std::vector<FFTGrid *> background_rho_intervals_;
 
   //Results combined
   FFTGrid                        * cov_vp_;
@@ -105,10 +128,6 @@ private:
   StormContGrid                  * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
   StormContGrid                  * post_vs_;
   StormContGrid                  * post_rho_;
-
-  //FFTGrid                        * post_vp_kriged_; //From avoinversion doPredictionKriging()
-  //FFTGrid                        * post_vs_kriged_;
-  //FFTGrid                        * post_rho_kriged_;
 
   StormContGrid                  * post_vp_kriged_; //From avoinversion doPredictionKriging()
   StormContGrid                  * post_vs_kriged_;
@@ -144,65 +163,10 @@ private:
 
   StormContGrid                  * quality_grid_;
 
+  std::vector<Wavelet *>           wavelets_; //Vector angles
+  float                         ** reflection_matrix_;
+
   int                              n_intervals_;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //std::map<std::string, FFTGrid *> post_vp_intervals_;
-  //std::map<std::string, FFTGrid *> post_vs_intervals_;
-  //std::map<std::string, FFTGrid *> post_rho_intervals_;
-
-  //std::map<std::string, FFTGrid *> post_vp_kriging_intervals_;
-  //std::map<std::string, FFTGrid *> post_vs_kriging_intervals_;
-  //std::map<std::string, FFTGrid *> post_rho_kriging_intervals_;
-
-  //std::map<std::string, fftw_real *> corr_T_intervals_;
-  //std::map<std::string, fftw_real *> corr_T_filtered_intervals_;
-
-  //std::map<std::string, NRLib::Matrix>       post_var0_intervals_;
-  //std::map<std::string, std::vector<float> > post_cov_vp00_intervals_;        // Posterior covariance in (i,j) = (0,0)
-  //std::map<std::string, std::vector<float> > post_cov_vs00_intervals_;
-  //std::map<std::string, std::vector<float> > post_cov_rho00_intervals_;
-
-  //std::map<std::string, FFTGrid *> cov_vp_intervals_;
-  //std::map<std::string, FFTGrid *> cov_vs_intervals_;
-  //std::map<std::string, FFTGrid *> cov_rho_intervals_;
-  //std::map<std::string, FFTGrid *> cr_cov_vp_vs_intervals_;
-  //std::map<std::string, FFTGrid *> cr_cov_vp_rho_intervals_;
-  //std::map<std::string, FFTGrid *> cr_cov_vs_rho_intervals_;
-
-  //std::map<std::string, std::vector<FFTGrid *> > simulations_seed0_intervals_; //Vector over number of simulations
-  //std::map<std::string, std::vector<FFTGrid *> > simulations_seed1_intervals_;
-  //std::map<std::string, std::vector<FFTGrid *> > simulations_seed2_intervals_;
-
-  //std::map<std::string, std::vector<FFTGrid *> > synt_seismic_data_intervals_; //Vector over angles
-  //std::map<std::string, std::vector<FFTGrid *> > synt_residuals_intervals_;
-
-  //std::map<std::string, FFTGrid *> block_grid_intervals_;
-
-  //std::map<std::string, std::vector<FFTGrid *> > facies_prob_intervals_; //Vector over facies
-  //std::map<std::string, FFTGrid *> facies_prob_undef_intervals_;
-
-  //std::map<std::string, std::vector<FFTGrid *> > facies_prob_geo_intervals_; //Vector over facies
-
-  //std::map<std::string, std::vector<FFTGrid *> > lh_cubes_intervals_;
-
-  //std::map<std::string, FFTGrid *> quality_grid_intervals_;
-
 
 };
 

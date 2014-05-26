@@ -201,6 +201,42 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
 }
 
 void
+GridMapping::setMappingFromVelocity(StormContGrid * velocity, const Simbox * timeSimbox, int format)
+{
+  if(simbox_!=NULL)  //Allow this to be called to override old mappings.
+  {
+    if(surfaceMode_ == TOPGIVEN) {
+      if(z1Grid_ != NULL) {
+        delete z1Grid_;
+        z1Grid_ = NULL;
+      }
+    }
+    else if(surfaceMode_ == BOTTOMGIVEN) {
+      if(z0Grid_ != NULL) {
+        delete z0Grid_;
+        z0Grid_ = NULL;
+      }
+    }
+    delete simbox_;
+    simbox_ = NULL;
+  }
+  if(mapping_!=NULL)
+    delete mapping_;
+  mapping_ = NULL;
+
+  //int format = velocity->getOutputFormat();
+  bool failed = false;
+  std::string errText("");
+  calculateSurfaceFromVelocity(velocity, timeSimbox);
+  setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
+  makeTimeDepthMapping(velocity, timeSimbox);
+  if (failed) {
+    LogKit::LogFormatted(LogKit::Error,"\n%s\n",errText.c_str());
+    exit(1);
+  }
+}
+
+void
 GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
                                           const Simbox * timeSimbox)
 {

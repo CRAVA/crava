@@ -43,6 +43,8 @@ public:
 
   void            setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox);
 
+  void            setMappingFromVelocity(StormContGrid * velocity, const Simbox * timeSimbox, int format);
+
   //Please do not renumber the modes below. It is very convenient that TOPGIVEN+BOTTOMGIVEN = BOTHGIVEN.
   enum            surfaceModes{NONEGIVEN = 0, TOPGIVEN = 1, BOTTOMGIVEN = 2, BOTHGIVEN = 3};
 

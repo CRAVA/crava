@@ -250,9 +250,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if(modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
 
-    //H Moved computation of synthetic seismic until after postVp, postVs and postRho are combined for intervals.
-    if(modelSettings->getGenerateSeismicAfterInv())
-      computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
+    //Computation of SyntSeismic is moved until after intervalgrids are combined in CravaResult
+    //seismicParameters.AddReflectionMatrix(A_);
+
+    //if(modelSettings->getGenerateSeismicAfterInv())
+    //  computeSyntSeismic(postVp_, postVs_, postRho_, seismicParameters);
+
     //
     // Temporary placement.
     //
@@ -268,7 +271,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
 
-    computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
+    //computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
   }
 
   postVp_ ->fftInPlace();
@@ -1702,109 +1705,109 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
 }
 
 
-void
-AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters)
-{
-  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
-
-  bool fftDomain = vp->getIsTransformed();
-  if(fftDomain == true) {
-    vp->invFFTInPlace();
-    vs->invFFTInPlace();
-    rho->invFFTInPlace();
-  }
-
-  for (int l=0;l<ntheta_;l++) {
-    FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
-    imp->setAccessMode(FFTGrid::RANDOMACCESS);
-    for (int i=0;i<nx_; i++) {
-      for (int j=0;j<ny_;j++) {
-        Wavelet1D impVec(0,nz_, nzp_);
-        //impVec.setupAsVector();
-        int k;
-        for (k=0;k<nz_;k++){
-          float value = imp->getRealValue(i, j, k, true);
-          impVec.setRAmp(value, k);
-        }
-        //Tapering:
-        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
-        for (;k<nzp_;k++) {
-          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
-          impVec.setRAmp(value, k);
-        }
-        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
-        resultVec.fft1DInPlace();
-
-        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
-
-        float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
-
-        for (int k=0;k<(nzp_/2 +1);k++) {
-          fftw_complex r = resultVec.getCAmp(k);
-          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
-          fftw_complex s;
-          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
-          s.im = -r.re*w.im+r.im*w.re;
-          resultVec.setCAmp(s,k);
-        }
-        delete localWavelet;
-
-        resultVec.invFFT1DInPlace();
-        for (int k=0;k<nzp_;k++){
-          float value = resultVec.getRAmp(k);
-          imp->setRealValue(i, j, k, value, true);
-        }
-      }
-    }
-
-    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
-    std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-      (modelSettings_->getForwardModeling() == true))
-      seismicParameters.AddSyntSeismicData(imp);
-
-    // H-Writing
-      //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-
-    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-      FFTGrid * imp_residual = new FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-
-      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-
-      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
-      std::string errText;
-      seis.readCravaFile(fileName, errText);
-      if(errText == "") {
-        seis.setAccessMode(FFTGrid::RANDOMACCESS);
-        for (int k=0;k<nz_;k++) {
-          for (int j=0;j<ny_;j++) {
-            for (int i=0;i<nx_;i++) {
-              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
-              imp_residual->setRealValue(i, j, k, residual);
-            }
-          }
-        }
-        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
-        fileName = IO::PrefixSyntheticResiduals() + angle;
-        //H-Writing
-        //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-        seismicParameters.AddSyntResiduals(imp_residual);
-      }
-      else {
-        errText += "\nFailed to read temporary stored seismic data.\n";
-        LogKit::LogMessage(LogKit::Error,errText);
-      }
-    }
-    //delete imp;
-  }
-
-  if(fftDomain == true) {
-    vp->fftInPlace();
-    vs->fftInPlace();
-    rho->fftInPlace();
-  }
-}
+//void
+//AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters)
+//{
+//  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
+//
+//  bool fftDomain = vp->getIsTransformed();
+//  if(fftDomain == true) {
+//    vp->invFFTInPlace();
+//    vs->invFFTInPlace();
+//    rho->invFFTInPlace();
+//  }
+//
+//  for (int l=0;l<ntheta_;l++) {
+//    FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
+//    imp->setAccessMode(FFTGrid::RANDOMACCESS);
+//    for (int i=0;i<nx_; i++) {
+//      for (int j=0;j<ny_;j++) {
+//        Wavelet1D impVec(0,nz_, nzp_);
+//        //impVec.setupAsVector();
+//        int k;
+//        for (k=0;k<nz_;k++){
+//          float value = imp->getRealValue(i, j, k, true);
+//          impVec.setRAmp(value, k);
+//        }
+//        //Tapering:
+//        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
+//        for (;k<nzp_;k++) {
+//          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
+//          impVec.setRAmp(value, k);
+//        }
+//        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
+//        resultVec.fft1DInPlace();
+//
+//        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
+//
+//        float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
+//
+//        for (int k=0;k<(nzp_/2 +1);k++) {
+//          fftw_complex r = resultVec.getCAmp(k);
+//          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
+//          fftw_complex s;
+//          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
+//          s.im = -r.re*w.im+r.im*w.re;
+//          resultVec.setCAmp(s,k);
+//        }
+//        delete localWavelet;
+//
+//        resultVec.invFFT1DInPlace();
+//        for (int k=0;k<nzp_;k++){
+//          float value = resultVec.getRAmp(k);
+//          imp->setRealValue(i, j, k, value, true);
+//        }
+//      }
+//    }
+//
+//    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+//    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
+//    std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
+//    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+//      (modelSettings_->getForwardModeling() == true))
+//      //seismicParameters.AddSyntSeismicData(imp);
+//
+//    // H-Writing
+//      //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+//
+//    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
+//      FFTGrid * imp_residual = new FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+//
+//      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+//
+//      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
+//      std::string errText;
+//      seis.readCravaFile(fileName, errText);
+//      if(errText == "") {
+//        seis.setAccessMode(FFTGrid::RANDOMACCESS);
+//        for (int k=0;k<nz_;k++) {
+//          for (int j=0;j<ny_;j++) {
+//            for (int i=0;i<nx_;i++) {
+//              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
+//              imp_residual->setRealValue(i, j, k, residual);
+//            }
+//          }
+//        }
+//        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
+//        fileName = IO::PrefixSyntheticResiduals() + angle;
+//        //H-Writing
+//        //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+//        //seismicParameters.AddSyntResiduals(imp_residual);
+//      }
+//      else {
+//        errText += "\nFailed to read temporary stored seismic data.\n";
+//        LogKit::LogMessage(LogKit::Error,errText);
+//      }
+//    }
+//    //delete imp;
+//  }
+//
+//  if(fftDomain == true) {
+//    vp->fftInPlace();
+//    vs->fftInPlace();
+//    rho->fftInPlace();
+//  }
+//}
 
 
 //float

@@ -57,8 +57,8 @@ public:
   std::vector<FFTGrid *>        GetSimulationsSeed1()              { return simulations_seed1_ ;}
   std::vector<FFTGrid *>        GetSimulationsSeed2()              { return simulations_seed2_ ;}
 
-  std::vector<FFTGrid *>        GetSyntSeismicData()               { return synt_seismic_data_ ;}
-  std::vector<FFTGrid *>        GetSyntResiduals()                 { return synt_residuals_    ;}
+  //std::vector<FFTGrid *>        GetSyntSeismicData()               { return synt_seismic_data_ ;}
+  //std::vector<FFTGrid *>        GetSyntResiduals()                 { return synt_residuals_    ;}
 
   FFTGrid                     * GetBlockGrid()                     { return block_grid_        ;}
 
@@ -70,6 +70,8 @@ public:
   std::vector<FFTGrid *>        GetLHCube()                        { return lh_cube_           ;}
 
   FFTGrid                     * GetQualityGrid()                   { return quality_grid_      ;}
+
+  //float                      ** GetReflectionMatrix(int i)         { return reflection_matrix_[i] ;}
 
   void                          invFFTAllGrids();
   void                          invFFTCovGrids();
@@ -97,9 +99,8 @@ public:
   void AddSimulationSeed1(FFTGrid * seed1)                   { simulations_seed1_.push_back(new FFTGrid(seed1))     ;}
   void AddSimulationSeed2(FFTGrid * seed2)                   { simulations_seed2_.push_back(new FFTGrid(seed2))     ;}
 
-  void AddSyntSeismicData(FFTGrid * grid)                    { synt_seismic_data_.push_back(grid)                   ;}
-  //void AddSyntSeismicData(FFTGrid * grid)                    { synt_seismic_data_.push_back(copyFFTGrid(grid))      ;}
-  void AddSyntResiduals(FFTGrid * grid)                      { synt_residuals_.push_back(grid)                      ;}
+  //void AddSyntSeismicData(FFTGrid * grid)                    { synt_seismic_data_.push_back(grid)                   ;}
+  //void AddSyntResiduals(FFTGrid * grid)                      { synt_residuals_.push_back(grid)                      ;}
 
   void SetBlockGrid(FFTGrid * grid)                          { block_grid_ = grid                                   ;}
 
@@ -111,6 +112,8 @@ public:
   void AddLHCube(FFTGrid * lh_cube)                          { lh_cube_.push_back(lh_cube)                          ;}
 
   void SetQualityGrid(FFTGrid * grid)                        { quality_grid_ = grid                                 ;}
+
+  //void AddReflectionMatrix(float ** A)                       { reflection_matrix_.push_back(A)                      ;}
 
 
   void                          setBackgroundParameters(FFTGrid  * meanVp,
@@ -246,8 +249,8 @@ private:
   std::vector<FFTGrid *> simulations_seed1_;
   std::vector<FFTGrid *> simulations_seed2_;
 
-  std::vector<FFTGrid *> synt_seismic_data_; //Vector over angles
-  std::vector<FFTGrid *> synt_residuals_;
+  //std::vector<FFTGrid *> synt_seismic_data_; //Vector over angles
+  //std::vector<FFTGrid *> synt_residuals_;
 
   FFTGrid * block_grid_;
 
@@ -258,6 +261,8 @@ private:
   std::vector<FFTGrid *> lh_cube_;
 
   FFTGrid * quality_grid_;
+
+  //std::vector<float **> reflection_matrix_; //vector vintages
 
 
 };

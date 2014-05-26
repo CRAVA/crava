@@ -63,14 +63,14 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
   if (meanRho_ != NULL)
     delete meanRho_;
 
-  if (postVp_ != NULL)
-    delete postVp_;
+  //if (postVp_ != NULL) //H Failes if they are deleted under CreateStormGrid
+  //  delete postVp_;
 
-  if (postVs_ != NULL)
-    delete postVs_;
+  //if (postVs_ != NULL)
+  //  delete postVs_;
 
-  if (postRho_ != NULL)
-    delete postRho_;
+  //if (postRho_ != NULL)
+  //  delete postRho_;
 
   if (postVpKriged_ != NULL)
     delete postVpKriged_;
@@ -105,15 +105,15 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
       delete simulations_seed2_[i];
   }
 
-  for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
-    if (synt_seismic_data_[i] != NULL)
-      delete synt_seismic_data_[i];
-  }
+  //for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
+  //  if (synt_seismic_data_[i] != NULL)
+  //    delete synt_seismic_data_[i];
+  //}
 
-  for (size_t i = 0; i < synt_residuals_.size(); i++) {
-    if (synt_residuals_[i] != NULL)
-      delete synt_residuals_[i];
-  }
+  //for (size_t i = 0; i < synt_residuals_.size(); i++) {
+  //  if (synt_residuals_[i] != NULL)
+  //    delete synt_residuals_[i];
+  //}
 
   for (size_t i = 0; i < facies_prob_.size(); i++) {
     if (facies_prob_[i] != NULL)
@@ -903,15 +903,15 @@ void SeismicParametersHolder::releaseGrids()
       delete simulations_seed2_[i];
   }
 
-  for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
-    if (synt_seismic_data_[i] != NULL)
-      delete synt_seismic_data_[i];
-  }
+  //for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
+  //  if (synt_seismic_data_[i] != NULL)
+  //    delete synt_seismic_data_[i];
+  //}
 
-  for (size_t i = 0; i < synt_residuals_.size(); i++) {
-    if (synt_residuals_[i] != NULL)
-      delete synt_residuals_[i];
-  }
+  //for (size_t i = 0; i < synt_residuals_.size(); i++) {
+  //  if (synt_residuals_[i] != NULL)
+  //    delete synt_residuals_[i];
+  //}
 
   for (size_t i = 0; i < facies_prob_.size(); i++) {
     if (facies_prob_[i] != NULL)

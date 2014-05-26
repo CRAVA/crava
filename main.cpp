@@ -236,9 +236,9 @@ int main(int argc, char** argv)
 
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-      cravaResult->AddBackgroundVp(interval_name, seismicParametersIntervals[i_interval].GetMeanVp()); //H Lagre dem (referanse) til NRLib::Grid istedetfor fftgrid?
-      cravaResult->AddBackgroundVs(interval_name, seismicParametersIntervals[i_interval].GetMeanVs());
-      cravaResult->AddBackgroundRho(interval_name, seismicParametersIntervals[i_interval].GetMeanRho());
+      cravaResult->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
+      cravaResult->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
+      cravaResult->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
 
       //Realease background grids from common_data.
       common_data->ReleaseBackgroundGrids(i_interval);
@@ -335,6 +335,7 @@ int main(int argc, char** argv)
           first = false;
         }
       }
+
     } //interval_loop
 
 
