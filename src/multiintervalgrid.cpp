@@ -20,8 +20,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   desired_grid_resolution_.resize(n_intervals_);
   relative_grid_resolution_.resize(n_intervals_);
   erosion_priorities_.resize(n_intervals_+1);
-  interval_simboxes_.resize(n_intervals_);
-  std::vector<Surface>    eroded_surfaces(n_intervals_+1);
+  int n_surfaces                                                  = n_intervals_ + 1;
+  std::vector<Surface>    eroded_surfaces(n_surfaces);
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   dz_min_                                                         = 10000;
@@ -291,55 +291,52 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
     // Make extended interval_simbox for the inversion interval ---------------------------
 
-    if (interval_simboxes[i].status() == Simbox::EMPTY){
-
-      // Case 1: Single correlation surface
-      if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
-        corr_dir = true;
-        Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
-        interval_simboxes[i]    = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, corr_surf, err_text, failed);
-        delete corr_surf;
-      }
-      // Case 2: Top and base correlation surfaces
-      else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
-        corr_dir = true;
-        Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
-        Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
-        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                corr_surf_top, corr_surf_base);
-        delete corr_surf_top;
-        delete corr_surf_base;
-      }
-      // Case 3: Top conform and base conform if (i) both are set conform or (ii) if no other corr surfaces have been defined
-      else if ((it_top_conform->second == true && it_base_conform->second == true) ||
-               (it_single == corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end())){
-        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed);
-      }
-      // Case 4: Top correlation surface and base conform
-      else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true){
-        corr_dir = true;
-        Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
-        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                corr_surf_top, &base_surface);
-        delete corr_surf_top;
-      }
-      // Case 5: Top conform and base correlation surface
-      else if (it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
-        corr_dir = true;
-        Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
-        interval_simboxes[i] = Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
-                                                &top_surface, corr_surf_base);
-        delete corr_surf_base;
-      }
-      // else something is wrong
-      else{
-        err_text += "\nCorrelation directions are not set correctly for interval " + interval_name[i];
-        err_text += ".\n";
-        failed = true;
-      }
-
-
+    // Case 1: Single correlation surface
+    if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
+      corr_dir = true;
+      Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  estimation_simbox);
+      interval_simboxes.push_back( Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, corr_surf, err_text, failed));
+      delete corr_surf;
     }
+    // Case 2: Top and base correlation surfaces
+    else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
+      corr_dir = true;
+      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
+      interval_simboxes.push_back( Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
+                                              corr_surf_top, corr_surf_base));
+      delete corr_surf_top;
+      delete corr_surf_base;
+    }
+    // Case 3: Top conform and base conform if (i) both are set conform or (ii) if no other corr surfaces have been defined
+    else if ((it_top_conform->second == true && it_base_conform->second == true) ||
+              (it_single == corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end())){
+      interval_simboxes.push_back( Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed));
+    }
+    // Case 4: Top correlation surface and base conform
+    else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true){
+      corr_dir = true;
+      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  estimation_simbox);
+      interval_simboxes.push_back( Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
+                                              corr_surf_top, &base_surface));
+      delete corr_surf_top;
+    }
+    // Case 5: Top conform and base correlation surface
+    else if (it_top_conform == corr_dir_top_conform.end() && it_base_conform != corr_dir_base_conform.end()){
+      corr_dir = true;
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  estimation_simbox);
+      interval_simboxes.push_back( Simbox(estimation_simbox, interval_names[i], n_layers, top_surface, base_surface, err_text, failed,
+                                              &top_surface, corr_surf_base));
+      delete corr_surf_base;
+    }
+    // else something is wrong
+    else{
+      err_text += "\nCorrelation directions are not set correctly for interval " + interval_name[i];
+      err_text += ".\n";
+      failed = true;
+    }
+
+
     // Calculate Z padding ----------------------------------------------------------------
 
     if (!failed){
@@ -422,6 +419,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
   }
 }
 
+
 // --------------------------------------------------------------------------------
 Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file_name,
                                                      const Simbox         & estimation_simbox) const{
@@ -444,6 +442,7 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file
 
   return new_surface;
 }
+
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::FindSmallestSurfaceGeometry(const double   x0,

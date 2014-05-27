@@ -294,7 +294,8 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed,
                const Surface        * top_corr_surface,
                const Surface        * base_corr_surface)
-: Volume(){
+: Volume(*simbox)
+{
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -313,30 +314,62 @@ Simbox::Simbox(const Simbox         * simbox,
   xlStepY_        = simbox->getXLStepY();
 
   if (simbox->CheckSurface(*top_corr_surface) == false) {
-    err_text += "Error: Top correlation surface"+top_corr_surface->GetName() +"does not cover volume.\n";
+    err_text += "Error: Top correlation surface "+ top_corr_surface->GetName() +"does not cover volume.\n";
     failed = true;
   }
   if (simbox->CheckSurface(*base_corr_surface) == false){
-    err_text += "Error: Base correlation surface"+base_corr_surface->GetName() +"does not cover volume.\n";
+    err_text += "Error: Base correlation surface "+ base_corr_surface->GetName() +"does not cover volume.\n";
     failed = true;
   }
+
+  // Should the corr surfaces have the same resolution?
 
   if(!failed){
     NRLib::Vector corr_plane_parameters_top = FindPlane(top_corr_surface);
     NRLib::Vector corr_plane_parameters_base = FindPlane(base_corr_surface);
 
-  }
+    Surface * mean_surface;
+    // Use the finest resolution
+    double resolution_top   = top_corr_surface->GetDX()*top_corr_surface->GetDY();
+    double resolution_base  = base_corr_surface->GetDX()*base_corr_surface->GetDY();
+    if(resolution_top != resolution_base){
+      if(resolution_top > resolution_base){ // base surface has higher resolution
+        mean_surface = new Surface(*base_corr_surface);
+      }
+      else{
+        mean_surface = new Surface(*top_corr_surface);
+      }
 
+    }
+    else{
+      mean_surface = new Surface(*top_corr_surface);
+    }
+
+    // Initialize mean surface to 0
+    for(size_t i = 0; i < mean_surface->GetN(); i++)
+      (*mean_surface)(i) = 0;
+
+    // Find mean of top and base surface
+    mean_surface->AddNonConform(&(simbox->GetTopSurface()));
+    mean_surface->AddNonConform(&(simbox->GetBotSurface()));
+    mean_surface->Multiply(0.5);
+  }
 }
 
+//
+// Destructor
+//
 Simbox::~Simbox()
 {
   delete top_eroded_surface_;
   delete base_eroded_surface_;
 }
 
-int
-Simbox::getIndex(double x, double y, double z) const
+//
+// --------------------------------------------------------------------------
+//
+
+int Simbox::getIndex(double x, double y, double z) const
 
 {
   int index = IMISSING;

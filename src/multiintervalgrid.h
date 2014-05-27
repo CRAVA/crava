@@ -126,7 +126,7 @@ private:
 
   // CLASS VARIABLES
   double                                               dz_min_;                    // Highest vertical resolution in the interval simboxes
-  size_t                                               n_intervals_;
+  int                                                  n_intervals_;
   bool                                                 multiple_interval_setting_;
   std::vector<std::string>                             interval_names_;
   std::vector<int>                                     erosion_priorities_;
