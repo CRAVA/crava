@@ -3004,7 +3004,6 @@ void BlockedLogsCommon::WriteWell(const int                        formats,
                                   const std::vector<std::string> & facies_name,
                                   const std::vector<int>         & facies_label)
 {
-  //int formats = modelSettings->getWellFormatFlag();
   if ((formats & IO::RMSWELL) > 0) {
     WriteRMSWell(max_hz_background,
                  max_hz_seismic,

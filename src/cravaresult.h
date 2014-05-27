@@ -70,9 +70,12 @@ public:
                              std::string           interval_name = "") const;
 
   void WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                         const ModelSettings                        * model_settings,
-                         std::vector<std::string>                     facies_name,
-                         std::vector<int>                             facies_label);
+                         const ModelSettings                              * model_settings,
+                         std::vector<std::string>                           facies_name,
+                         std::vector<int>                                   facies_label);
+
+  void WriteWells(const std::vector<NRLib::Well> & wells,
+                  const ModelSettings      * model_settings);
 
   void FindDzMin(const Simbox      & full_inversion_simbox,
                  MultiIntervalGrid * multi_interval_grid,

@@ -4191,8 +4191,6 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     return false;
   }
 
-  //Moved this to cravaResult->WriteResult?
-
   return true;
 }
 
@@ -6948,16 +6946,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
   for (int i = 0; i < n_intervals; i++)
     background_vs_vp_ratios[i] = FindMeanVsVp(background_parameters[i][0], background_parameters[i][1]);
-
-  //if (failed == false) { //H Writing of background models missing.
-  //  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-  //    background->writeBackgrounds(timeSimbox,
-  //                                 timeDepthMapping,
-  //                                 timeCutMapping,
-  //                                 model_settings->getFileGrid(),
-  //                                 *model_settings->getTraceHeaderFormatOutput());
-  //  }
-  //}
 
   Timings::setTimePriorExpectation(wall,cpu);
 

@@ -578,6 +578,8 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
+    WriteWells(common_data->GetWells(), model_settings);
+
     WriteBackgrounds(model_settings,
                       &simbox,
                       time_depth_mapping,
@@ -642,6 +644,10 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
       WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
+    if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
+      WriteWells(common_data->GetWells(), model_settings);
+    }
+
 
     if (model_settings->getWritePrediction() || model_settings->getKrigingParameter() > 0) {
       KrigingData3D kd(common_data->GetBlockedLogs(), 1); // 1 = full resolution logs
@@ -836,9 +842,9 @@ void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
 }
 
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const ModelSettings                        * model_settings,
-                                    std::vector<std::string>                     facies_name,
-                                    std::vector<int>                             facies_label)
+                                    const ModelSettings                              * model_settings,
+                                    std::vector<std::string>                           facies_name,
+                                    std::vector<int>                                   facies_label)
 {
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
@@ -849,6 +855,17 @@ void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommo
                            model_settings->getMaxHzSeismic(),
                            facies_name,
                            facies_label);
+
+  }
+}
+
+void CravaResult::WriteWells(const std::vector<NRLib::Well> & wells,
+                             const ModelSettings      * model_settings)
+{
+  for (size_t i = 0; i < wells.size(); i++) {
+    wells[i].WriteWell(model_settings->getWellFormatFlag(),
+                       model_settings->getMaxHzBackground(),
+                       model_settings->getMaxHzSeismic());
 
   }
 }
