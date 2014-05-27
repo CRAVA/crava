@@ -1657,7 +1657,7 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
 
   KrigingData3D kd(blocked_wells_, 1); // 1 = full resolution logs
 
-  //H-Writing moved to cravaResult
+  //H-Writing moved to cravaResult (where kd is made from common_data->GetBlockedLogs())
   //std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
   //std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
   //kd.writeToFile(fileName);

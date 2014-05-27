@@ -23,9 +23,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
                                  CommonData                           * common_data,
                                  std::vector<SeismicParametersHolder> & seismic_parameters_intervals)
 {
-  //Combine interval grids to one grid
-  //Store final grid as stormgrid
+  //Combine interval grids to one stormgrid
   //Compaction: Use the finest dz between intervals
+
+  //H-TODO: CombineResult is not done
+  //  There is no smoothing between intervals
 
 
   MultiIntervalGrid * multi_interval_grid = common_data->GetMultipleIntervalGrid();
@@ -333,7 +335,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //Compute Synt seismic
 
   //H ComputeSeismicImpedance needs reflection matrix, but in avoinversion the reflection matrix is per interval
-  //reflection_matrix_ = seismic_parameters_intervals[0].GetReflectionMatrix(0);
   reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
   wavelets_          = common_data->GetWavelet(0);
 
@@ -346,7 +347,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
 
   //seismic_parameters_intervals[0].releaseGrids();
-
 
 }
 
@@ -375,7 +375,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         Simbox * interval_simbox       = multi_interval_grid->GetIntervalSimbox(i_interval);
         FFTGrid * interval_grid        = interval_grids[i_interval];
         //FFTGrid * cov_vp_interval = seismic_parameters_intervals[i_interval].GetPostVp();
-        std::vector<float> old_trace = interval_grid->getRealTrace2(i, j); //H old_trace is changed below.
+        std::vector<float> old_trace = interval_grid->getRealTrace2(i, j); //old_trace is changed below.
 
         double top_value = interval_simbox->getTop(i,j);
         double bot_value = interval_simbox->getBot(i,j);
@@ -387,7 +387,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
 
         //H-TEST For resampling
-        nz_new = nz_new + 50;
+        //nz_new = nz_new + 50;
 
         new_traces[i_interval].resize(nz_new);
 
@@ -408,7 +408,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         //std::vector<float> trace_new_simple(nz_new);
         //ResampleSimple(trace_new_simple, old_trace); //H Not working properly. Oscillates at the beginning and end.
 
-        //Alternative as in resampling of traces from CommonData::FillInData
+        //Alternative: Resampling of traces from CommonData::FillInData
         //Remove trend -> fft -> pad with zeroes -> resample -> ifft -> add trend
 
         //Remove trend from trace
@@ -563,10 +563,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   //CRA-544: Include blocked background logs when writing blocked logs to file
 
-  //H-Missing Write regular wells? Før: ModelAVODynamic if(estimationMode || (modelSettings->getWellOutputFlag() & IO::WELLS) > 0)   modelAVOstatic->writeWells(modelGeneral->getWells(), modelSettings);
-  //CRA-697
-
-  //Wavelets are written out both in commonData and modelavodynamic..
+  //Wavelets are written out both in commonData and modelavodynamic
 
 
   int output_grids_elastic = model_settings->getOutputGridsElastic();
@@ -574,9 +571,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
 
-    //WriteWells(common_data->GetWells()); //CRA-697
-
-    WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+     WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     WriteWells(common_data->GetWells(), model_settings);
 
@@ -1114,7 +1109,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
         delete localWavelet;
 
         resultVec.invFFT1DInPlace();
-        for (int k = 0; k < nzp; k++) {
+        for (int k = 0; k < nz; k++) { //nzp
           float value = resultVec.getRAmp(k);
           imp->SetValue(i, j, k, value);
         }

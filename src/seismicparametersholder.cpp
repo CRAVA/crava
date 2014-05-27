@@ -36,32 +36,32 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
-  if (covVp_ != NULL)
-    delete covVp_;
+  //if (covVp_ != NULL)//H Failes if they are deleted under CreateStormGrid
+  //  delete covVp_;
 
-  if (covVs_ != NULL)
-    delete covVs_;
+  //if (covVs_ != NULL)
+  //  delete covVs_;
 
-  if (covRho_ != NULL)
-    delete covRho_;
+  //if (covRho_ != NULL)
+  //  delete covRho_;
 
-  if (crCovVpVs_ != NULL)
-    delete crCovVpVs_ ;
+  //if (crCovVpVs_ != NULL)
+  //  delete crCovVpVs_ ;
 
-  if (crCovVpRho_ != NULL)
-    delete crCovVpRho_ ;
+  //if (crCovVpRho_ != NULL)
+  //  delete crCovVpRho_ ;
 
-  if (crCovVsRho_ != NULL)
-    delete crCovVsRho_;
+  //if (crCovVsRho_ != NULL)
+  //  delete crCovVsRho_;
 
-  if (meanVp_ != NULL)
-    delete meanVp_;
+  //if (meanVp_ != NULL)
+  //  delete meanVp_;
 
-  if (meanVs_ != NULL)
-    delete meanVs_;
+  //if (meanVs_ != NULL)
+  //  delete meanVs_;
 
-  if (meanRho_ != NULL)
-    delete meanRho_;
+  //if (meanRho_ != NULL)
+  //  delete meanRho_;
 
   //if (postVp_ != NULL) //H Failes if they are deleted under CreateStormGrid
   //  delete postVp_;
@@ -72,63 +72,53 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
   //if (postRho_ != NULL)
   //  delete postRho_;
 
-  if (postVpKriged_ != NULL)
-    delete postVpKriged_;
+  //if (postVpKriged_ != NULL)
+  //  delete postVpKriged_;
 
-  if (postVsKriged_ != NULL)
-    delete postVsKriged_;
+  //if (postVsKriged_ != NULL)
+  //  delete postVsKriged_;
 
-  if (postRhoKriged_ != NULL)
-    delete postRhoKriged_;
+  //if (postRhoKriged_ != NULL)
+  //  delete postRhoKriged_;
 
-  if (block_grid_ != NULL)
-    delete block_grid_;
+  //if (block_grid_ != NULL)
+  //  delete block_grid_;
 
-  if (facies_prob_undef_ != NULL)
-    delete facies_prob_undef_;
+  //if (facies_prob_undef_ != NULL)
+  //  delete facies_prob_undef_;
 
-  if (quality_grid_ != NULL)
-    delete quality_grid_;
+  //if (quality_grid_ != NULL)
+  //  delete quality_grid_;
 
-  for (size_t i = 0; i < simulations_seed0_.size(); i++) {
-    if (simulations_seed0_[i] != NULL)
-      delete simulations_seed0_[i];
-  }
-
-  for (size_t i = 0; i < simulations_seed1_.size(); i++) {
-    if (simulations_seed1_[i] != NULL)
-      delete simulations_seed1_[i];
-  }
-
-  for (size_t i = 0; i < simulations_seed2_.size(); i++) {
-    if (simulations_seed2_[i] != NULL)
-      delete simulations_seed2_[i];
-  }
-
-  //for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
-  //  if (synt_seismic_data_[i] != NULL)
-  //    delete synt_seismic_data_[i];
+  //for (size_t i = 0; i < simulations_seed0_.size(); i++) {
+  //  if (simulations_seed0_[i] != NULL)
+  //    delete simulations_seed0_[i];
   //}
 
-  //for (size_t i = 0; i < synt_residuals_.size(); i++) {
-  //  if (synt_residuals_[i] != NULL)
-  //    delete synt_residuals_[i];
+  //for (size_t i = 0; i < simulations_seed1_.size(); i++) {
+  //  if (simulations_seed1_[i] != NULL)
+  //    delete simulations_seed1_[i];
   //}
 
-  for (size_t i = 0; i < facies_prob_.size(); i++) {
-    if (facies_prob_[i] != NULL)
-      delete facies_prob_[i];
-  }
+  //for (size_t i = 0; i < simulations_seed2_.size(); i++) {
+  //  if (simulations_seed2_[i] != NULL)
+  //    delete simulations_seed2_[i];
+  //}
 
-  for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
-    if (facies_prob_geo_[i] != NULL)
-      delete facies_prob_geo_[i];
-  }
+  //for (size_t i = 0; i < facies_prob_.size(); i++) {
+  //  if (facies_prob_[i] != NULL)
+  //    delete facies_prob_[i];
+  //}
 
-  for (size_t i = 0; i < lh_cube_.size(); i++) {
-    if (lh_cube_[i] != NULL)
-      delete lh_cube_[i];
-  }
+  //for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
+  //  if (facies_prob_geo_[i] != NULL)
+  //    delete facies_prob_geo_[i];
+  //}
+
+  //for (size_t i = 0; i < lh_cube_.size(); i++) {
+  //  if (lh_cube_[i] != NULL)
+  //    delete lh_cube_[i];
+  //}
 
 
 }

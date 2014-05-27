@@ -43,7 +43,6 @@
 #include "nrlib/volume/volume.hpp"
 
 ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
-                                 //ModelAVOStatic          * model_avo_static,
                                  ModelGeneral            * model_general,
                                  CommonData              * common_data,
                                  SeismicParametersHolder & seismic_parameters,
@@ -58,9 +57,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
-
-  //timeDepthMapping ? "Skal evt. eksistera for heile resultate og ikkje per sone."
-  //timeCutMapping Er dekka av det ntye simboxformatet
 
   //estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
   //matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
@@ -163,8 +159,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     seis_cubes_[i]->endAccess();
 
-    if (segy != NULL)
-      delete segy;
+    //if (segy != NULL)
+    //  delete segy;
     if (storm != NULL)
       delete storm;
     if(grid_tmp != NULL)
