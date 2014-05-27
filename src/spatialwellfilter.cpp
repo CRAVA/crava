@@ -131,7 +131,6 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, BlockedLogs
 {
   float constant = parSpatialCorr->getRealValue(0, 0, 0);
 
-  //int n = well->getBlockedLogsOrigThick()->getNumberOfBlocks();
   int n = blocked_log->GetNumberOfBlocks();
   priorSpatialCorr_[wellnr] = new double *[n];
   n_[wellnr] = n;
@@ -139,9 +138,6 @@ void SpatialWellFilter::setPriorSpatialCorr(FFTGrid *parSpatialCorr, BlockedLogs
     priorSpatialCorr_[wellnr][i] = new double[n];
 
   int i1,j1,k1,l1, i2,j2,k2,l2;
-  //const int *ipos = well->getBlockedLogsOrigThick()->getIpos();
-  //const int *jpos = well->getBlockedLogsOrigThick()->getJpos();
-  //const int *kpos = well->getBlockedLogsOrigThick()->getKpos();
   const std::vector<int> & ipos = blocked_log->GetIposVector();
   const std::vector<int> & jpos = blocked_log->GetJposVector();
   const std::vector<int> & kpos = blocked_log->GetKposVector();

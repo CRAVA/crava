@@ -6743,11 +6743,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               }
 
               bg_blocked_log = new BlockedLogsCommon(&wells[j],
-                                                      cont_logs_to_be_blocked,
-                                                      disc_logs_to_be_blocked,
-                                                      bg_simbox,
-                                                      false,
-                                                      err_text);
+                                                     cont_logs_to_be_blocked,
+                                                     disc_logs_to_be_blocked,
+                                                     bg_simbox,
+                                                     false,
+                                                     err_text);
 
               bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bg_blocked_log));
             }
