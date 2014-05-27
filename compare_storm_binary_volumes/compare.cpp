@@ -25,22 +25,11 @@ NRLib::StormContGrid * readStormGrid(const std::string & filename)
     std::cout << "Aborting ...\n" << std::endl;
     exit(1);
   }
-
-  // Split change working directory and remove path from filename. This is
-  // needed for the StormContGrid reader to find the top and base surfaces
-
-  char buff[100];
-  std::string cwd  = getcwd(buff, 100);
-  std::string path = NRLib::GetPath(filename);
-  std::string file = NRLib::RemovePath(filename);
-
-  boost::filesystem::current_path(path);
-
   // Read and create grid
 
   NRLib::StormContGrid * grid = NULL;
   try {
-    grid = new NRLib::StormContGrid(file);
+    grid = new NRLib::StormContGrid(filename);
   }
   catch (NRLib::Exception & e) {
     std::cout << e.what() << std::endl;
@@ -49,7 +38,6 @@ NRLib::StormContGrid * readStormGrid(const std::string & filename)
     exit(1);
   }
 
-  boost::filesystem::current_path(cwd);
   return grid;
 }
 
