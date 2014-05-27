@@ -14,8 +14,8 @@ GCCWARNING := -Wall -pedantic -Wno-long-long -Werror
 #
 GXXWARNING  = -Wall -pedantic -Woverloaded-virtual -Wno-long-long -Werror -fno-strict-aliasing
 PROGRAM     = cravarun
-GRAMMAR     = grammar
-COMPARE     = compare
+GRAMMAR     = grammar.exe
+COMPARE     = compare.exe
 OPT         = -O2
 DEBUG       =
 PURIFY      =
