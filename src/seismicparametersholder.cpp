@@ -166,24 +166,28 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
 }
 
 void
-SeismicParametersHolder::setCorrelationParameters(const NRLib::Matrix       & priorVar0,
-                                                  const std::vector<double> & priorCorrT,
-                                                  const Surface             * priorCorrXY,
-                                                  const int                 & minIntFq,
-                                                  const float               & corrGradI,
-                                                  const float               & corrGradJ,
-                                                  const int                 & nx,
-                                                  const int                 & ny,
-                                                  const int                 & nz,
-                                                  const int                 & nxPad,
-                                                  const int                 & nyPad,
-                                                  const int                 & nzPad)
+SeismicParametersHolder::setCorrelationParameters(bool                                  corr_estimated,
+                                                  const NRLib::Matrix                 & priorVar0,
+                                                  const std::vector<NRLib::Matrix>    & auto_cov,
+                                                  const std::vector<double>           & priorCorrT,
+                                                  const Surface                       * priorCorrXY,
+                                                  const int                           & minIntFq,
+                                                  const float                         & corrGradI,
+                                                  const float                         & corrGradJ,
+                                                  const int                           & nx,
+                                                  const int                           & ny,
+                                                  const int                           & nz,
+                                                  const int                           & nxPad,
+                                                  const int                           & nyPad,
+                                                  const int                           & nzPad)
 {
   priorVar0_ = priorVar0;
 
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  initializeCorrelations(priorCorrXY,
+  InitializeCorrelations(corr_estimated,
+                         priorCorrXY,
+                         auto_cov,
                          priorCorrT,
                          corrGradI,
                          corrGradJ,
@@ -235,32 +239,64 @@ SeismicParametersHolder::createFFTGrid(int nx,  int ny,  int nz,
     fftGrid = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
   return(fftGrid);
 }
+
 //-------------------------------------------------------------------
 void
-SeismicParametersHolder::initializeCorrelations(const Surface             * priorCorrXY,
-                                                const std::vector<double> & priorCorrT,
-                                                const float               & corrGradI,
-                                                const float               & corrGradJ,
-                                                const int                 & lowIntCut,
-                                                const int                 & nzp)
+SeismicParametersHolder::InitializeCorrelations(bool                                  cov_estimated,
+                                                const Surface                       * prior_corr_xy,
+                                                const std::vector<NRLib::Matrix>    & auto_cov,
+                                                const std::vector<double>           & prior_corr_t,
+                                                const float                         & corr_grad_I,
+                                                const float                         & corr_grad_J,
+                                                const int                           & low_int_cut,
+                                                const int                           & nzp)
 {
-  fftw_real * circCorrT = computeCircCorrT(priorCorrT, lowIntCut, nzp);
+  //
+  // Erik N: If correlations are estimated, parameter covariance and temporal correlation
+  // are now integrated in auto_cov
+  //
+  if (cov_estimated){
+    std::vector<std::vector<fftw_real *> > circ_auto_cov;
+    circ_auto_cov.resize(3);
+    for(int i = 0; i < 3; i++){
+      circ_auto_cov[i].resize(3);
+      for(int j = 0; j < 3; j++){
+        circ_auto_cov [i][j]= ComputeCircAutoCov(auto_cov, low_int_cut, nzp, i, j);
+      }
+    }
 
-  covVp_     ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  covVs_     ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  covRho_    ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovVpVs_ ->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovVpRho_->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
-  crCovVsRho_->fillInParamCorr(priorCorrXY, circCorrT, corrGradI, corrGradJ);
+    covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
+    covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
+    covRho_     ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[2][2], corr_grad_I, corr_grad_J);
+    crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
+    crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
+    crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
 
-  covVp_     ->multiplyByScalar(static_cast<float>(priorVar0_(0,0)));
-  covVs_     ->multiplyByScalar(static_cast<float>(priorVar0_(1,1)));
-  covRho_    ->multiplyByScalar(static_cast<float>(priorVar0_(2,2)));
-  crCovVpVs_ ->multiplyByScalar(static_cast<float>(priorVar0_(0,1)));
-  crCovVpRho_->multiplyByScalar(static_cast<float>(priorVar0_(0,2)));
-  crCovVsRho_->multiplyByScalar(static_cast<float>(priorVar0_(1,2)));
+    for(int i = 0; i < 3; i++){
+      for (int j = 0; j < 3; j++){
+        fftw_free(circ_auto_cov[i][j]);
+      }
+    }
+  }
+  else{
+    fftw_real * circ_corr_t = computeCircCorrT(prior_corr_t, low_int_cut, nzp);
 
-  fftw_free(circCorrT);
+    covVp_     ->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    covVs_     ->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    covRho_    ->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVpVs_ ->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVpRho_->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVsRho_->fillInParamCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+
+    covVp_     ->multiplyByScalar(static_cast<float>(priorVar0_(0,0)));
+    covVs_     ->multiplyByScalar(static_cast<float>(priorVar0_(1,1)));
+    covRho_    ->multiplyByScalar(static_cast<float>(priorVar0_(2,2)));
+    crCovVpVs_ ->multiplyByScalar(static_cast<float>(priorVar0_(0,1)));
+    crCovVpRho_->multiplyByScalar(static_cast<float>(priorVar0_(0,2)));
+    crCovVsRho_->multiplyByScalar(static_cast<float>(priorVar0_(1,2)));
+
+    fftw_free(circ_corr_t);
+  }
 }
 
 //--------------------------------------------------------------------
@@ -469,6 +505,43 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
   parVar[2][1].im = -jk.im;
 }
 
+
+//--------------------------------------------------------------------
+fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov,
+                                                         int                                  minIntFq,
+                                                         int                                  nzp,
+                                                         size_t                               i,
+                                                         size_t                               j) const
+{
+  assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
+
+  size_t n = auto_cov.size();
+
+  fftw_real * circ_auto_cov = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
+
+  for(int k = 0; k < 2*(nzp/2+1); k++ ) {
+    if(k < nzp) {
+      size_t refk;
+
+      if(k < nzp/2+1)
+        refk = k;
+      else
+        refk = nzp - k;
+
+      if(refk < n)
+        circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk](i,j));
+      else
+        circ_auto_cov[k] = 0.0;
+    }
+    else
+      circ_auto_cov[k] = RMISSING;
+  }
+
+  MakeCircAutoCovPosDef(circ_auto_cov, minIntFq, nzp);
+
+  return circ_auto_cov;
+}
+
 //--------------------------------------------------------------------
 fftw_real *
 SeismicParametersHolder::computeCircCorrT(const std::vector<double> & priorCorrT,
@@ -504,6 +577,35 @@ SeismicParametersHolder::computeCircCorrT(const std::vector<double> & priorCorrT
   return circCorrT;
 
 }
+
+//--------------------------------------------------------------------
+void  SeismicParametersHolder::MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
+                                                     int          min_int_fq,
+                                                     int          nzp) const
+{
+  fftw_complex * fft_circ_auto_cov = FFTGrid::fft1DzInPlace(circ_auto_cov, nzp);
+
+  for (int k = 0; k < nzp/2+1; k++){
+    if (k < min_int_fq)
+      fft_circ_auto_cov[k].re = 0.0;
+    else
+      fft_circ_auto_cov[k].re = float(sqrt(fft_circ_auto_cov[k].re*fft_circ_auto_cov[k].re
+                                        + fft_circ_auto_cov[k].im*fft_circ_auto_cov[k].im));
+    fft_circ_auto_cov[k].im = 0.0;
+  }
+
+  circ_auto_cov = FFTGrid::invFFT1DzInPlace(fft_circ_auto_cov, nzp);
+  //
+  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
+  //           do we avoid this, or how do we flag the problem?
+  //
+  if(circ_auto_cov[0] < 1.5e-5){
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular parameter autocovariance is undefined. You\n");
+    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+  }
+
+}
+
 //--------------------------------------------------------------------
 
 void

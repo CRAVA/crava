@@ -359,15 +359,18 @@ private:
                                    int                             n_data,
                                    int                           & n_layers,
                                    unsigned int                  & n_blocks,
-                                   std::map<std::string, int>    & n_layers_adjusted_per_interval);
+                                   std::map<std::string, int>    & n_layers_adjusted_per_interval,
+                                   std::string                   & err_text);
 
-  void    FindSizeAndBlockPointers(const Simbox         * const estimation_simbox,
-                                   std::vector<int>     & b_ind,
-                                   unsigned int         & n_blocks);
+  void    FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
+                                   std::vector<int>              & b_ind,
+                                   unsigned int                  & n_blocks,
+                                   std::string                   & err_text);
 
-  void    FindSizeAndBlockPointers(const StormContGrid  & stormgrid,
-                                   std::vector<int>     & bInd,
-                                   unsigned int         & n_blocks);
+  void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
+                                   std::vector<int>              & bInd,
+                                   unsigned int                  & n_blocks,
+                                   std::string                   & err_text);
 
   void    FindBlockIJK(const Simbox                     * const estimation_simbox,
                        const std::vector<int>           & b_ind);

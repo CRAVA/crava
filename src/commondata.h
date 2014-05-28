@@ -86,15 +86,16 @@ public:
 
   //const std::vector<std::vector<double> >                            & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
 
-  bool                                      GetPriorCovEst()                      const { return prior_cov_estimated_                        ;}
+  bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
   const std::vector<std::vector<double> >                            & GetTGradY()                                      const { return t_grad_y_                                      ;}
   const NRLib::Grid2D<float>                                         & GetRefTimeGradX()                                const { return ref_time_grad_x_                               ;}
   const NRLib::Grid2D<float>                                         & GetRefTimeGradY()                                const { return ref_time_grad_y_                               ;}
 
-  const Surface                                                      * GetPriorCorrXY(int i_interval)                         { return prior_corr_XY_[i_interval]                     ;}
-  const NRLib::Matrix                                                & GetPriorParamCov(int i_interval)                       { return prior_param_cov_[i_interval]                   ;}
-  const std::vector<double>                                          & GetPriorCorrT(int i_interval)                          { return prior_corr_T_[i_interval]                      ;}
+  const std::vector<NRLib::Matrix>                                   & GetPriorAutoCov(int i_interval)                  const { return prior_auto_cov_[i_interval]                    ;}
+  const Surface                                                      * GetPriorCorrXY(int i_interval)                   const { return prior_corr_XY_[i_interval]                     ;}
+  const NRLib::Matrix                                                & GetPriorParamCov(int i_interval)                 const { return prior_param_cov_[i_interval]                   ;}
+  const std::vector<double>                                          & GetPriorCorrT(int i_interval)                    const { return prior_corr_T_[i_interval]                      ;}
 
   const std::vector<NRLib::Grid<float> *>                            & GetBackgroundParametersInterval(int i)           const { return background_parameters_[i]                      ;}
   double                                                             & GetBackgroundVsVpRatioInterval(int i)                  { return background_vs_vp_ratios_[i]                    ;}
@@ -160,12 +161,15 @@ public:
   //                                     std::vector<std::string>                   facies_name,
   //                                     std::vector<int>                           facies_label);
 
+  static std::string ConvertIntToString(int number);
   static void        GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                                   std::map<std::string, BlockedLogsCommon *> blocked_wells,
                                                   const float *                      const * reflection_matrix,
                                                   const Simbox                             * time_simbox);
 
   static std::string ConvertInt(int number);
+
+  static std::string ConvertFloatToString(float number);
 
   void               ReleaseBackgroundGrids(int i_interval);
 
@@ -712,6 +716,11 @@ private:
                                            bool                                                        & prior_cov_estimated,
                                            std::string                                                 & err_text);
 
+  void               ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
+                                                double                                                  dz_min,
+                                                std::vector<NRLib::Matrix>                            & prior_auto_cov,
+                                                double                                                  dz);
+
   void               CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
                                                         const std::map<std::string, float>               & probability,
                                                         const std::vector<std::string>                   & facies_names,
@@ -773,15 +782,30 @@ private:
 
   void               PrintPriorVariances() const;
 
-  void               ReadAngularCorrelations(ModelSettings                                  * model_settings,
-                                             std::vector<std::vector<std::vector<float> > > & angular_correlations);
+  void               WriteFilePriorVariances(const ModelSettings               * model_settings,
+                                             const NRLib::Matrix               & prior_param_cov,
+                                             const std::vector<double>         & prior_corr_T,
+                                             const Surface                     * prior_corr_XY,
+                                             const std::string                 & interval_name,
+                                             const float                       & dz) const;
+
+  void               WriteFilePriorVariances(const ModelSettings                * model_settings,
+                                             const std::vector<NRLib::Matrix>   & prior_auto_cov_,
+                                             const Surface                      * prior_corr_XY,
+                                             const std::string                  & interval_name,
+                                             double                               dz) const;
 
   int                ComputeTime(int year, int month, int day) const;
 
-  void               PrintSettings(ModelSettings    * model_settings,
-                                   const InputFiles * input_files);
+  void               PrintPriorVariances(const std::vector<std::string> & interval_names) const;
+
+  void               ReadAngularCorrelations(ModelSettings                                  * model_settings,
+                                             std::vector<std::vector<std::vector<float> > > & angular_correlations);
 
   void               SetDebugLevel(ModelSettings * model_settings);
+
+  void               PrintSettings(ModelSettings    * model_settings,
+                                   const InputFiles * input_files);
 
   // CLASS VARIABLES ---------------------------------------------------
 

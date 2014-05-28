@@ -19,10 +19,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   dz_min_                                                         = 10000;
 
-  //H Combined the if(multinterval) below
-  if (interval_names_.size() == 0) {
+  if (model_settings->GetMultipleIntervalSetting() == false) {
     LogKit::WriteHeader("Setting up grid");
-    interval_names_.push_back("");
     multiple_interval_setting_ = false;
   }
   else {

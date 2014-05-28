@@ -1274,6 +1274,53 @@ FFTGrid::fillInErrCorr(const Surface * priorCorrXY,
       endAccess();
 }
 
+void FFTGrid::FillInLateralCorr(const Surface   * prior_corr_xy,
+                                const fftw_real * circ_auto_cov,
+                                float             grad_I,
+                                float             grad_J)
+{
+  assert(istransformed_== false);
+
+  int baseK,cycleI,cycleJ;
+  float value,subK;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+        if(i < nxp_) {  // computes the index reference from the cube puts it in value
+          cycleI = i-nxp_;
+          if(i < -cycleI)
+            cycleI = i;
+          cycleJ = j-nyp_;
+          if(j < -cycleJ)
+            cycleJ = j;
+
+          subK  =  k+cycleI*grad_I+cycleJ*grad_J; //Subtract to counter rotation.
+          baseK =  int(floor(subK));
+          subK  -= baseK;
+          while(baseK < 0)
+            baseK += nzp_;       //Use cyclicity
+          while(baseK >= nzp_)
+            baseK -= nzp_;       //Use cyclicity
+          value = (1-subK)*circ_auto_cov[baseK];
+          if(baseK != nzp_-1)
+            value += subK*circ_auto_cov[baseK+1];
+          else
+            value += subK*circ_auto_cov[0];
+          value *= float( (*(prior_corr_xy))(i+nxp_*j));
+        }
+        else
+          value = RMISSING;
+
+        setNextReal(value);
+      }
+    }
+  }
+
+  endAccess();
+}
+
 void
 FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
                          const fftw_real * circCorrT,

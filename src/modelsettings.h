@@ -221,6 +221,7 @@ public:
   //std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
   //std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
   //std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
+  bool                             GetMultipleIntervalSetting()         const { return multiple_intervals_                        ;}
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
@@ -450,9 +451,10 @@ public:
   void setCorrDirBaseConform(const std::string & interval_name, bool baseConformCorrelation) { baseConformCorrelation_[interval_name] = baseConformCorrelation ;}
   void setCorrDirUsed(bool correlationUsed)                                                  { correlationUsed_                       = correlationUsed        ;}
 
-  void addIntervalName(std::string name)                                         { interval_names_.push_back(name)                           ;}
-  void setIntervalNames(const std::vector<std::string> & interval_names)         { interval_names_ = interval_names                          ;}
-  void setErosionPriority(const std::string & interval_name, const int priority) { erosion_priority_base_surfaces_[interval_name] = priority ;}
+  void SetMultipleIntervals(bool b)                       { multiple_intervals_ = b                              ;}
+  void addIntervalName(std::string name)                  { interval_names_.push_back(name)                      ;}
+  void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
+  //void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
@@ -584,6 +586,7 @@ private:
 
   int                               erosion_priority_top_surface_;   ///< Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
   std::map<std::string, int>        erosion_priority_base_surfaces_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
+  bool                              multiple_intervals_;          // Multiple interval setting being used
   std::vector<std::string>          interval_names_;                 ///< Interval names for multiple interval inversion
   std::map<std::string, float>      vp_vs_ratio_;                    /// Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
 

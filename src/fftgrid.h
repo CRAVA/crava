@@ -99,6 +99,11 @@ public:
                                      float           gradI,
                                      float           gradJ);
 
+  void                 FillInLateralCorr(const Surface   * prior_corr_xy,
+                                         const fftw_real * circ_auto_cov,
+                                         float             grad_I,
+                                         float             grad_J);
+
   void                 fillInParamCorr(const Surface   * priorCorrXY,
                                        const fftw_real * circCorrT,
                                        float             gradI,

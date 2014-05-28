@@ -52,9 +52,9 @@ public:
   //NRLib::Grid2D<double> & GetVar0()     const { return Var0_         ;}
   const NRLib::Matrix                    & GetVar0(void)          const { return var_0_                           ;}
   //const NRLib::Matrix       & GetPointVar0(void)    const { return point_var_0_                               ;}
-  const std::vector<float>               & GetCorrT(void)         const { return corr_T_                          ;}
+  //const std::vector<float>               & GetCorrT(void)         const { return corr_T_                          ;}
   int                                      GetNumberOfLags(void)  const { return n_lags_                          ;}
-  int                                      GetNumberOfAutoCovData()const{return max_lag_with_data_                ;}
+  int                                      GetMaxLagWithNonZeroAutoCovData() const {return max_lag_with_data_                ;}
   bool                                     GetEnoughData()        const { return enough_data_for_corr_estimation_ ;}
   const std::vector<NRLib::Matrix>       & GetAutoCovariance()    const {return        auto_cov_                  ;}
 
@@ -107,6 +107,7 @@ private:
                                                  double                                             & var_vs_resid,
                                                  float                                                dt,
                                                  int                                                  max_nd,
+                                                 int                                                  min_blocks_with_data_for_corr_estim,
                                                  int                                                & max_lag_with_data,
                                                  std::string                                        & err_text);
 
@@ -189,7 +190,7 @@ private:
   std::vector<NRLib::Matrix >                           auto_cov_;
   NRLib::Matrix                                         var_0_;
   //NRLib::Matrix                                       point_var_0_;
-  std::vector<float>                                    corr_T_;
+  //std::vector<float>                                    corr_T_;
   int                                                   n_lags_;
   int                                                   max_lag_with_data_;
 
