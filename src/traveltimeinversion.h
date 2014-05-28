@@ -11,6 +11,7 @@
 #include "lib/utils.h"
 
 class ModelGeneral;
+class ModelSettings;
 class SeismicParametersHolder;
 class ModelTravelTimeStatic;
 class ModelTravelTimeDynamic;
@@ -26,6 +27,8 @@ class TravelTimeInversion
 {
 public:
   TravelTimeInversion(ModelGeneral            * modelGeneral,
+                      const ModelSettings     * modelSettings,
+                      int                       vintage,
                       ModelTravelTimeStatic   * modelTravelTimeStatic,
                       ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                       SeismicParametersHolder & seismicParameters);

@@ -124,9 +124,11 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
-  modelGeneral->dumpSeismicParameters(modelSettings,"_AfterAVO",vintage ,  seismicParameters);
+  if(modelSettings->getDebugLevel()>0)
+    modelGeneral->dumpSeismicParameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  seismicParameters);
   modelGeneral->updateState4D(seismicParameters);
-  modelGeneral->dump4Dparameters(modelSettings,"_AfterAVO",vintage ,  true);
+  if(modelSettings->getDebugLevel()>0)
+    modelGeneral->dump4Dparameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  true);
   return(failedLoadingModel);
 }
 
@@ -150,11 +152,10 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
 
   if(failedLoadingModel == false) {
     TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
+                                                                          modelSettings,vintage,
                                                                           modelTravelTimeStatic,
                                                                           modelTravelTimeDynamic,
                                                                           seismicParameters);
-
-    modelGeneral->dump4Dparameters(modelSettings,"AfterTraveltimeInversion_",vintage,true);
 
     delete travel_time_inversion;
   }

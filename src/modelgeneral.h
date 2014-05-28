@@ -232,7 +232,7 @@ public:
 
   void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
   void              dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=false);
-  void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
+  void              dumpSeismicParameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:
   void              processWells(std::vector<WellData *> & wells,

@@ -223,7 +223,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           NRLib::Matrix initialCov(6,6);
           process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
 
-          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 100000->10000 for speed during testing
           timeEvolution_.SetInitialMean(initialMean);
           timeEvolution_.SetInitialCov(initialCov);
         }
@@ -4795,26 +4795,25 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
 {
   if(time_change > 0) { // Only evolve and merge at positive time change
 
-    bool debug = true;
+    bool debug = ( modelSettings->getDebugLevel()>0 );
 
-    if (debug == true)
-      dump4Dparameters(modelSettings,
-                       "_BeforeEvolve_",
+    dump4Dparameters(modelSettings,
+                       "_End",
                        previous_vintage,debug);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
 
     if (debug == true)
       dump4Dparameters(modelSettings,
-                       "_AfterEvolve_",
-                       previous_vintage,debug);
+                       "_Initial",
+                       previous_vintage+1,debug);
 
     state4d_.merge(seismicParameters);
 
 
     if (debug == true)
       dumpSeismicParameters(modelSettings,
-                            "_prior",
+                            "_Initial",
                             previous_vintage + 1,
                             seismicParameters);
   }
@@ -4896,7 +4895,7 @@ ModelGeneral::updateState4DMu(FFTGrid * mu_vp_static,
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 {
-  dump4Dparameters(modelSettings,"_FinalInversion_End", 0);
+  dump4Dparameters(modelSettings,"_End", modelSettings->getNumberOfTimeLapses()-1);
   std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*timeLine_, rock_distributions_.begin()->second,  timeEvolution_);
   int nParamOut =predictions.size();
 
@@ -4927,7 +4926,7 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 
 
 void
-ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
+ModelGeneral::dumpSeismicParameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
 {
 
   std::string  label;
@@ -4944,7 +4943,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
-   /*
+   ///*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "mean_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -4953,7 +4952,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write sigma current
   tag.str(std::string());tag.clear();label = "cov_vp_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovAlpha() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovAlphaBeta() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -4979,10 +4978,12 @@ ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string i
   std::string fileName;
   std::stringstream tag;
 
+  if(timestep<0)
+
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),printPadding);
-  /*
+ // /*
   tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -4991,18 +4992,17 @@ ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string i
   // write mu dynamic
   tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),printPadding);
-   /*
+  // /*
   tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),printPadding);
   // */
 
-
   // write sigma static - static
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticStatic() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticStatic() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -5017,7 +5017,7 @@ ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string i
   // write sigma dynamic - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpDynamicDynamic() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsDynamicDynamic() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -5032,7 +5032,7 @@ ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string i
   // write sigma static - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticDynamic() , fileName,  tag.str(),true);
-  /*
+  // /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticDynamic() , fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
