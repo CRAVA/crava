@@ -35,6 +35,7 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
 : rms_data_(NULL),
   thisTimeLapse_(vintage)
 {
+  (void) modelSettings, modelGeneral;
   std::string errTxt = "";
 
   bool failed_surfaces = false;

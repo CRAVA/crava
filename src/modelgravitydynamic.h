@@ -35,7 +35,7 @@ public:
                       const ModelGeneral           * modelGeneral,
                       ModelGravityStatic           * modelGravityStatic,
                       CommonData                   * commonData,
-                      const InputFiles             * inputFiles,
+                      //const InputFiles             * inputFiles,
                       int                            t,
                       SeismicParametersHolder      & seismicParameters);
 

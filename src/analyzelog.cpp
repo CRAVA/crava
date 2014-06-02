@@ -150,9 +150,9 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   //
   // Covariance and correlation estimation with blocked logs
   //
-  std::map<std::string, std::vector<float> > log_data_vp;
-  std::map<std::string, std::vector<float> > log_data_vs;
-  std::map<std::string, std::vector<float> > log_data_rho;
+  std::map<std::string, std::vector<double> > log_data_vp;
+  std::map<std::string, std::vector<double> > log_data_vs;
+  std::map<std::string, std::vector<double> > log_data_rho;
 
   //
   // Find out if there is enough data for correlation estimation
@@ -209,7 +209,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     if(background[0][0]->GetN() == 0){
       std::vector<std::vector<NRLib::Grid<float> *> > temp_null;
       temp_null.resize(n_wells_);
-      for(size_t j = 0; j < n_wells_; j++)
+      for(int j = 0; j < n_wells_; j++)
         temp_null[j].resize(3);
       EstimateLnData(log_data_vp, temp_null, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vp", err_txt);
       EstimateLnData(log_data_vs, temp_null, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vs", err_txt);
@@ -232,7 +232,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     auto_cov_.resize(n_lags);
 
     EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs_for_correlation, interval_simboxes, log_data_vp, log_data_vs, log_data_rho,
-      all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, var_vs_resid, dz_min, n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
+      all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, var_vs_resid, static_cast<float>(dz_min), n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
 
     SetParameterCov(auto_cov_[0], var_0_, 3);
 
@@ -400,7 +400,7 @@ Analyzelog::CalculateNumberOfLags(int                                           
 }
 */
 
-void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >            & log_data,
+void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >            & log_data,
                                 const std::vector<std::vector<NRLib::Grid<float> *> > & background,
                                 const std::vector<std::string>                        & well_names,
                                 const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
@@ -408,7 +408,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
                                 const std::string                                     & log_name,
                                 std::string                                           & err_txt){
 
-  float global_mean   = 0.0;
+  double global_mean   = 0.0;
   int   count         = 0;
   int   nd            = 0;
   int   nd_tot        = 0;
@@ -416,15 +416,15 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
   //
   // These three data contain all data from all wells and all intervals
   //
-  std::vector<float>  ln_data;
-  std::vector<float>  low_freq_log;
-  std::vector<float>  mean;
+  std::vector<double>  ln_data;
+  std::vector<double>  low_freq_log;
+  std::vector<double>  mean;
 
   assert(log_name == "Vp" || log_name == "Vs" || log_name == "Rho");
 
   for (int i = 0; i < n_wells_; i++){
-    std::vector<float>              temp_log(0);
-    log_data.insert(std::pair<std::string, std::vector<float> >(well_names[i], temp_log));
+    std::vector<double>              temp_log(0);
+    log_data.insert(std::pair<std::string, std::vector<double> >(well_names[i], temp_log));
 
     std::vector<double> temp_low_freq_log =  mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetContLogHighCutBackground(log_name);
 
@@ -468,9 +468,9 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
       for (int j = 0; j < nd; j++){
         low_freq_log.push_back(temp_low_freq_log[j]);
         if(blocked_well_log[j] != RMISSING && mean[j] != RMISSING){
-          log_data.find(well_names[i])->second.push_back(static_cast<float>(blocked_well_log[j] - mean[j]));
-          global_mean   += static_cast<float>(blocked_well_log[j] - mean[j]);
-          ln_data.push_back(static_cast<float>(blocked_well_log[j] - mean[j]));
+          log_data.find(well_names[i])->second.push_back(blocked_well_log[j] - mean[j]);
+          global_mean   += blocked_well_log[j] - mean[j];
+          ln_data.push_back(blocked_well_log[j] - mean[j]);
           count++;
         }
         else{
@@ -499,7 +499,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
   if(count > 0){
     global_mean /= count;
     for(int i = 0 ; i < n_wells_ ; i++){
-      for(int k = 0 ; k < log_data.find(well_names[i])->second.size(); k++){
+      for(size_t k = 0 ; k < log_data.find(well_names[i])->second.size(); k++){
         if (log_data.find(well_names[i])->second[k] != RMISSING){
           log_data.find(well_names[i])->second[k] -= global_mean;
         }
@@ -511,9 +511,9 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<float> >      
   }
 }
 
-bool   Analyzelog::CheckConsistencyBackground(const std::vector<float>                              & ln_data_blocked,
-                                              const std::vector<float>                              & background,
-                                              const std::vector<float>                              & low_freq_log,
+bool   Analyzelog::CheckConsistencyBackground(const std::vector<double>                              & ln_data_blocked,
+                                              const std::vector<double>                              & background,
+                                              const std::vector<double>                              & low_freq_log,
                                               int                                                     nd_tot){
 
   bool    background_ok    = true;
@@ -765,9 +765,9 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                                                            const std::vector<std::string>                     & well_names,
                                                            const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
                                                            const std::vector<Simbox *>                        & interval_simboxes,
-                                                           const std::map<std::string, std::vector<float> >   & log_data_vp,
-                                                           const std::map<std::string, std::vector<float> >   & log_data_vs,
-                                                           const std::map<std::string, std::vector<float> >   & log_data_rho,
+                                                           const std::map<std::string, std::vector<double> >   & log_data_vp,
+                                                           const std::map<std::string, std::vector<double> >   & log_data_vs,
+                                                           const std::map<std::string, std::vector<double> >   & log_data_rho,
                                                            bool                                                 all_Vs_logs_synthetic,
                                                            bool                                                 all_Vs_logs_non_synthetic,
                                                            NRLib::Vector                                      & regression_coef,
@@ -816,7 +816,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     std::vector<double>                 vs;
     for (size_t i = 0; i < well_names.size(); i++){
       if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
-        int n_lags;
+        //int n_lags;
         for (size_t j = 0; j<interval_simboxes.size(); j++){
           const std::string interval_name         = interval_simboxes[j]->GetIntervalName();
           const std::vector<double> vp_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVpBlocked();
@@ -824,7 +824,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
           const std::vector<double> vs_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVsBlocked();
           const std::vector<double> z_pos         = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
           // Loop over all blocks
-          for (size_t k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
+          for (int k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
             if(vp_blocked[k] != RMISSING && rho_blocked[k] != RMISSING && vs_blocked[k] != RMISSING){
               //n_lags = static_cast<int>(std::floor(std::abs(z_pos[l] - z_pos[k])/min_dz + 0.5));
               n_data++;
@@ -853,7 +853,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       double residual;
       for (size_t i = 0; i < well_names.size(); i++){
         if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
-          int n_lags;
+          //int n_lags;
           for (size_t j = 0; j < interval_simboxes.size(); j++){
             const std::string interval_name         = interval_simboxes[j]->GetIntervalName();
             const std::vector<double> vp_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVpBlocked();
@@ -861,7 +861,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             const std::vector<double> vs_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVsBlocked();
             const std::vector<double> z_pos         = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
             // Loop over all blocks
-            for (size_t k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
+            for (int k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
               if(vp_blocked[k] != RMISSING && rho_blocked[k] != RMISSING && vs_blocked[k] != RMISSING){
                 residual = (regression_coef(0)*vp_blocked[k] + regression_coef(1)*rho_blocked[k] - vs[k]);
                 sum_resid_square += residual*residual;
@@ -887,9 +887,9 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       const std::vector<double> y_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetYposBlocked();
       const std::vector<double> z_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
       std::vector<double> z(nd);
-      const std::vector<float> log_vp   = log_data_vp.find(well_names[i])->second;
-      const std::vector<float> log_vs   = log_data_vs.find(well_names[i])->second;
-      const std::vector<float> log_rho  = log_data_rho.find(well_names[i])->second;
+      const std::vector<double> log_vp   = log_data_vp.find(well_names[i])->second;
+      const std::vector<double> log_vs   = log_data_vs.find(well_names[i])->second;
+      const std::vector<double> log_rho  = log_data_rho.find(well_names[i])->second;
       //
       // Calculate autocovariance
       //
@@ -897,12 +897,12 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       for (size_t k = 0; k < nd; k++){
         for (size_t l = k; l < nd; l++){
 
-          float xk = static_cast<float>(x_pos[k]);
-          float yk = static_cast<float>(y_pos[k]);
-          float xl = static_cast<float>(x_pos[l]);
-          float yl = static_cast<float>(y_pos[l]);
-          float z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(xk, yk))/interval_simboxes[j]->getRelThick(xk, yk);
-          float z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(xl, yl))/interval_simboxes[j]->getRelThick(xl, yl);
+          double xk = x_pos[k];
+          double yk = y_pos[k];
+          double xl = x_pos[l];
+          double yl = y_pos[l];
+          double z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(xk, yk))/interval_simboxes[j]->getRelThick(xk, yk);
+          double z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(xl, yl))/interval_simboxes[j]->getRelThick(xl, yl);
           lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
 
           // cov(vp_k, vp_l)
@@ -990,7 +990,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
     }
     time(&timeend);
-    int time = timeend - timestart;
+    int time = static_cast<int>(timeend - timestart);
     printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);
   }
 
@@ -1001,13 +1001,13 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   }
   for (int i = 0; i < max_lag_with_data; i++){
     // If there is not enough data to estimate autocovariance within the first ~50 lags, return an error
-    int n_vp = count[i](0,0);
-    int n_vs = count[i](1,1);
-    int n_rho = count[i](2,2);
+    //double n_vp = count[i](0,0);
+    //double n_vs = count[i](1,1);
+    //double n_rho = count[i](2,2);
 
-    double c_vp = temp_auto_cov[i](0,0);
-    double c_vs = temp_auto_cov[i](1,1);
-    double c_rho = temp_auto_cov[i](2,2);
+    //double c_vp = temp_auto_cov[i](0,0);
+    //double c_vs = temp_auto_cov[i](1,1);
+    //double c_rho = temp_auto_cov[i](2,2);
 
     if (i < static_cast<int>(min_blocks_with_data_for_corr_estim/2)){
       if(count[i](0,0)<2)
@@ -1118,8 +1118,8 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     c_next[i].resize(3,0.0);
   }
 
-  int   nipol;
-  float cipol;
+  double   nipol;
+  double   cipol;
 
   //
   // 3) Smooth observations by making a weighted average of each observation

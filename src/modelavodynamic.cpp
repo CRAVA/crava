@@ -144,7 +144,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
     common_data->FillInData(grid_tmp,
                             seis_cubes_[i],
-                            *simbox,
+                            simbox,
                             storm,
                             segy,
                             fft_grid_old,

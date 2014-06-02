@@ -34,27 +34,36 @@ public:
   Simbox(const Simbox         * simbox,
          const std::string    & interval_name,
          int                    n_layers,
+         double                 lz_limit,
          const Surface        & top_surface,
          const Surface        & bot_surface,
          Surface              * single_corr_surface,
+         int                    other_output,
+         int                    output_domain,
+         int                    output_format,
          std::string          & err_text,
          bool                 & failed);
 
   Simbox(const Simbox         * simbox,
          const std::string    & interval_name,
          int                    n_layers,
+         double                 lz_limit,
          const Surface        & top_surface,
          const Surface        & base_surface,
-         std::string          & err_text,
-         bool                 & failed,
          const Surface        * top_corr_surface,
-         const Surface        * base_corr_surface);
+         const Surface        * base_corr_surface,
+         int                    other_output,
+         int                    output_domain,
+         int                    output_format,
+         std::string          & err_text,
+         bool                 & failed);
 
   Simbox(const Simbox         * simbox);
 
   Simbox(const Simbox         * estimation_simbox,
          const std::string    & interval_name,
          int                    n_layers,
+         double                 lz_limit,
          const Surface        & top_surface,
          const Surface        & base_surface,
          std::string          & err_text,
@@ -177,7 +186,7 @@ public:
 private:
 
   bool           CheckErodedSurfaces() const;
-  double         RecalculateErodedLZ();
+  double         RecalculateErodedLZ() const;
 
   int            nx_pad_;                      ///< Number of cells to pad in x direction
   int            ny_pad_;

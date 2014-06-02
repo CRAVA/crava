@@ -104,7 +104,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
-    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, full_inversion_simbox_, trend_cubes_, err_text);
+    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, &full_inversion_simbox_, trend_cubes_, err_text);
   }
 
   // 10. Rock Physics
@@ -4063,11 +4063,8 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
         }
       }
       else {
-
-        int n_intervals = interval_names.size();
-        const std::string base_surface_file_name = input_files->getBaseTimeSurface(interval_names[n_intervals - 1]);
-        //const std::string base_surface_file_name = surface_file_names.back();
-
+        std::vector<std::string> interval_names = model_settings->getIntervalNames();
+        const std::string base_surface_file_name = input_files->getBaseTimeSurface(interval_names[interval_names.size() - 1]);
         if (NRLib::IsNumber(base_surface_file_name)){
           LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
           double x_min, x_max;
@@ -4129,9 +4126,11 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
                                          std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                          std::string                                                & err_text_common)
 {
-  std::string err_text = "";
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   LogKit::WriteHeader("Blocking wells for estimation");
+
+  std::string err_text                          = "";
+  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+
 
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked_.push_back("Vp");
@@ -4489,7 +4488,7 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
 bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings,
                                  InputFiles                     * input_files,
                                  MultiIntervalGrid              * multiple_interval_grid,
-                                 const Simbox                   & full_inversion_simbox,
+                                 const Simbox                   * full_inversion_simbox,
                                  std::vector<CravaTrend>        & trend_cubes,
                                  std::string                    & err_text_common) {
 
@@ -4555,9 +4554,9 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
       }
 
       trend_cubes[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
-                                  model_settings,
-                                  input_files,
-                                  interval_names[i],
+                                  //model_settings,
+                                  //input_files,
+                                  //interval_names[i],
                                   trend_cube_type,
                                   trend_cube_parameters,
                                   trend_cubes_interval,
@@ -5144,7 +5143,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
     }
   }
   else if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_CUBES) {
-    std::vector<Simbox> & interval_simboxes = multi_interval_grid->GetIntervalSimboxes();
+    std::vector<Simbox *>  interval_simboxes = multi_interval_grid->GetIntervalSimboxes();
     prior_facies_prob_cubes.resize(n_intervals);
 
     //If intervals, send in vector of simboxes and grids to ReadPriorFaciesProbCubes. Splitting of intervals is done in ReadGridFromFile.
@@ -5249,7 +5248,7 @@ void
 CommonData::ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
                                      ModelSettings                                    * model_settings,
                                      std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes, //Vector(facies) vector(intervals)
-                                     const std::vector<Simbox>                        & interval_simboxes,
+                                     const std::vector<Simbox *>                      & interval_simboxes,
                                      const Simbox                                     & full_inversion_simbox,
                                      std::string                                      & err_text)
 {
@@ -5278,7 +5277,7 @@ CommonData::ReadPriorFaciesProbCubes(const InputFiles                           
                        dummy2,
                        PARAMETER,
                        interval_simboxes,
-                       full_inversion_simbox,
+                       &full_inversion_simbox,
                        model_settings,
                        error_text);
 
@@ -5369,8 +5368,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                              const SegyGeometry                *& geometry,
                              const TraceHeaderFormat            * format,
                              int                                  grid_type,
-                             const std::vector<Simbox>          & interval_simboxes,
-                             const Simbox                       & inversion_simbox,
+                             const std::vector<Simbox *>          & interval_simboxes,
+                             const Simbox                       * inversion_simbox,
                              const ModelSettings                * model_settings,
                              std::string                        & err_text,
                              bool                                 nopadding)
@@ -5381,15 +5380,15 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 
   if (fileType == IO::CRAVA) {
 
-    int nx_pad = inversion_simbox.GetNXpad();
-    int ny_pad = inversion_simbox.GetNYpad();
+    int nx_pad = inversion_simbox->GetNXpad();
+    int ny_pad = inversion_simbox->GetNYpad();
     int nz_pad = 0;
 
     GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
 
-    FFTGrid *  crava_grid = CreateFFTGrid(inversion_simbox.getnx(),
-                                          inversion_simbox.getny(),
-                                          inversion_simbox.getnz(),
+    FFTGrid *  crava_grid = CreateFFTGrid(inversion_simbox->getnx(),
+                                          inversion_simbox->getny(),
+                                          inversion_simbox->getnz(),
                                           nx_pad,
                                           ny_pad,
                                           nz_pad,
@@ -5402,9 +5401,9 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
     //Intervals not used, no need to resample
     // Alternative: create a readCravaFile for NRLibGrid. Padding?
     if (model_settings->GetMultipleIntervalSetting() == false) {
-      int nx = interval_simboxes[0].getnx();
-      int ny = interval_simboxes[0].getny();
-      int nz = interval_simboxes[0].getnz();
+      int nx = interval_simboxes[0]->getnx();
+      int ny = interval_simboxes[0]->getny();
+      int nz = interval_simboxes[0]->getnz();
 
       interval_grids[0] = new NRLib::Grid<float>(nx, ny, nz);
 
@@ -5421,9 +5420,9 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
       LogKit::LogFormatted(LogKit::Low,"\n CRAVA input not allowed in multiple intervals");
       assert(0); //Do not currently allow use of crava format files with multizone.
       for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
-        int nx = interval_simboxes[i_interval].getnx();
-        int ny = interval_simboxes[i_interval].getny();
-        int nz = interval_simboxes[i_interval].getnz();
+        int nx = interval_simboxes[i_interval]->getnx();
+        int ny = interval_simboxes[i_interval]->getny();
+        int nz = interval_simboxes[i_interval]->getnz();
 
         interval_grids[i_interval]->Resize(nx, ny, nz);
 
@@ -5627,8 +5626,8 @@ void CommonData::GetZPaddingFromCravaFile(const std::string & file_name,
 void
 CommonData::ReadSegyFile(const std::string                 & file_name,
                          std::vector<NRLib::Grid<float> *> & interval_grids,
-                         const std::vector<Simbox>         & interval_simboxes,
-                         const NRLib::Volume               & volume,
+                         const std::vector<Simbox *>         & interval_simboxes,
+                         const NRLib::Volume               * volume,
                          const ModelSettings               * model_settings,
                          const SegyGeometry               *& geometry,
                          int                                 grid_type,
@@ -5679,7 +5678,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       float padding          = 2*guard_zone;
       bool  relative_padding = false;
 
-      segy->ReadAllTraces(&volume,
+      segy->ReadAllTraces(volume,
                           padding,
                           only_volume,
                           relative_padding);
@@ -5708,9 +5707,9 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       if (grid_type == DATA)
         geometry = new SegyGeometry(geo);
 
-      int xpad = interval_simboxes[i_interval].getnx();
-      int ypad = interval_simboxes[i_interval].getny();
-      int zpad = interval_simboxes[i_interval].getnz();
+      int xpad = interval_simboxes[i_interval]->getnx();
+      int ypad = interval_simboxes[i_interval]->getny();
+      int zpad = interval_simboxes[i_interval]->getnz();
 
       interval_grids[i_interval]->Resize(xpad, ypad, zpad);
 
@@ -5736,7 +5735,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
         delete fft_grid_tmp_2;
 
       if (missing_traces_simbox > 0) {
-        if (missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
+        if (missing_traces_simbox == interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny()) {
           err_text += "Error: Data in file "+file_name+" was completely outside the inversion area.\n";
           failed = true;
         }
@@ -5765,7 +5764,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       //}
       if (dead_traces_simbox > 0) {
         LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny())+"\n");
+                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
       }
     } //i_interval
   }
@@ -5775,7 +5774,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
 void CommonData::FillInData(NRLib::Grid<float> * grid_new,
                             FFTGrid            * fft_grid_new,
-                            const Simbox       & simbox,
+                            const Simbox       * simbox,
                             StormContGrid      * storm_grid,
                             const SegY         * segy,
                             FFTGrid            * fft_grid_old,
@@ -5875,12 +5874,12 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
       double x  = 0.0;
       double y  = 0.0;
       double z0 = 0.0;
-      simbox.getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
+      simbox->getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
       x  *= scalehor;
       y  *= scalehor;
       z0 *= scalevert;
 
-      double dz = simbox.getdz(refi, refj)*scalevert;
+      double dz = simbox->getdz(refi, refj)*scalevert;
       float  xf = static_cast<float>(x);
       float  yf = static_cast<float>(y);
 
@@ -5938,8 +5937,8 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
           double z_min = 0.0;
           double z_max = 0.0;
 
-          simbox.getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
-          simbox.getZCoord(fft_grid_old->getNz(), xf, yf, z_max);
+          simbox->getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
+          simbox->getZCoord(fft_grid_old->getNz(), xf, yf, z_max);
 
           dz_data = static_cast<float>((z_max- z_min) / fft_grid_old->getNz());
           dz_min = dz_data/4.0f;
@@ -6421,7 +6420,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                           std::vector<NRLib::Grid<float> *> & interval_grids,
                           const int                           grid_type,
                           const std::string                 & par_name,
-                          const std::vector<Simbox>         & interval_simboxes,
+                          const std::vector<Simbox *>         & interval_simboxes,
                           const ModelSettings               * model_settings,
                           std::string                       & err_text,
                           bool                                scale,
@@ -6448,9 +6447,9 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
     for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
 
-      int nx = interval_simboxes[i_interval].getnx();
-      int ny = interval_simboxes[i_interval].getny();
-      int nz = interval_simboxes[i_interval].getnz();
+      int nx = interval_simboxes[i_interval]->getnx();
+      int ny = interval_simboxes[i_interval]->getny();
+      int nz = interval_simboxes[i_interval]->getnz();
 
       interval_grids[i_interval]->Resize(nx, ny, nz, 0.0);
 
@@ -6487,7 +6486,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       }
 
       if (missing_traces_simbox > 0) { //outsideTraces
-        if (missing_traces_simbox == interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny()) {
+        if (missing_traces_simbox == interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny()) {
           err_text += "Error: Data in file \'"+file_name+"\' was completely outside the inversion area.\n";
           failed = true;
         }
@@ -6513,7 +6512,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       //}
       if (dead_traces_simbox > 0) {
         LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval].getnx()*interval_simboxes[i_interval].getny())+"\n");
+                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
       }
 
       //if (outsideTraces > 0) {
@@ -6542,7 +6541,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
 bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       InputFiles    * input_files,
-                                      const Simbox  & full_inversion_simbox,
+                                      Simbox        & full_inversion_simbox,
                                       GridMapping  *& time_depth_mapping,
                                       std::string   & err_text_common) {
 
@@ -6618,7 +6617,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       const std::vector<NRLib::Well>                             & wells,
                                       std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                       MultiIntervalGrid                                         *& multi_interval_grid,
-                                      const Simbox                                               * inversion_simbox,
+                                      Simbox                                                     * inversion_simbox,
                                       std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters, //vector (intervals) vector (parameters)
                                       std::vector<double>                                        & background_vs_vp_ratios,
                                       const std::vector<CravaTrend>                              & trend_cubes,
@@ -6680,7 +6679,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             interval_text = " for interval " + model_settings->getIntervalName(i);
           }
 
-          const Simbox       * simbox                = multi_interval_grid->GetIntervalSimbox(i);
+          Simbox             * simbox                = multi_interval_grid->GetIntervalSimbox(i);
           std::string interval_name                  = multi_interval_grid->GetIntervalName(i);
           NRLib::Grid<float> * velocity              = new NRLib::Grid<float>();
           Surface            * correlation_direction = NULL;
@@ -6846,7 +6845,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                            dummy2,
                            PARAMETER,
                            multi_interval_grid->GetIntervalSimboxes(),
-                           *inversion_simbox,
+                           inversion_simbox,
                            model_settings,
                            err_text_tmp);
 
@@ -7048,7 +7047,7 @@ void CommonData::ChangeSignGrid(NRLib::Grid<float> * grid) {
 }
 
 void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
-                              const Simbox        & simbox,
+                              Simbox              * simbox,
                               const ModelSettings * model_settings,
                               const std::string   & velocity_field,
                               bool                & velocity_from_inversion,
@@ -7069,7 +7068,7 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
     //ReadGrifFromFile is based on vector of simboxes and grids
     std::vector<NRLib::Grid<float> *> grids(1);
     grids[0] = velocity;
-    std::vector<Simbox> simboxes;
+    std::vector<Simbox *> simboxes;
     simboxes.push_back(simbox);
 
     ReadGridFromFile(velocity_field,
@@ -7460,7 +7459,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        const std::vector<NRLib::Well>                              & wells,
                                        double                                                        dz_min,
                                        const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                                       std::vector<Simbox>                                         & interval_simboxes,
+                                       std::vector<Simbox *>                                       & interval_simboxes,
                                        const std::vector<std::vector<float> >                      & prior_facies_prob,
                                        const std::vector<std::string>                              & facies_names,
                                        const std::vector<CravaTrend>                               & trend_cubes,
@@ -7608,7 +7607,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     //
 
     for (size_t i = 0; i < n_intervals; i++){
-      prior_corr_XY_[i] = FindCorrXYGrid(&(interval_simboxes[i]), model_settings);
+      prior_corr_XY_[i] = FindCorrXYGrid(interval_simboxes[i], model_settings);
     }
 
     //
@@ -7628,7 +7627,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
         // Number of bins
-        int n_corr_T = interval_simboxes[i].GetNZpad();
+        int n_corr_T = interval_simboxes[i]->GetNZpad();
         if((n_corr_T % 2) == 0)
           n_corr_T = n_corr_T/2+1;
         else
@@ -7639,7 +7638,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           if(temporal_corr_range_given == true) {
             prior_corr_T_[i].resize(n_corr_T+1,0);
             float temp_corr_range = model_settings->getTemporalCorrelationRange();
-            float dz = static_cast<float>(interval_simboxes[i].getdz());
+            float dz = static_cast<float>(interval_simboxes[i]->getdz());
             for(int j=0; j<=n_corr_T; j++){
               //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
               prior_corr_T_[i][j] = exp(-3*dz*j/temp_corr_range);
@@ -7683,10 +7682,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
           // First possibility: Estimate within this interval
           std::vector<Simbox *> temp_simbox;
-          temp_simbox.push_back(&interval_simboxes[i]);
+          temp_simbox.push_back(interval_simboxes[i]);
           std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
           current_background_interval.push_back(background[i]);
-          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, interval_simboxes[i].getdz(), model_settings, tmp_err_txt);
+          Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, interval_simboxes[i]->getdz(), model_settings, tmp_err_txt);
           if (tmp_err_txt != "") {
             err_text += tmp_err_txt;
             failed_param_cov = true;
@@ -7695,7 +7694,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL){
             std::vector<Simbox *> temp_simboxes;
             for (size_t j = 0; j < interval_simboxes.size(); j++)
-              temp_simboxes.push_back(&interval_simboxes[j]);
+              temp_simboxes.push_back(interval_simboxes[j]);
             analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, tmp_err_txt);
             if(analyze_all->GetEnoughData() == false){
               err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
@@ -7729,8 +7728,8 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             // If interval i does not have enough data for estimation, use the estimation over all intervals
             else{
               // If dz for interval i is not equal to the minimum resolution min_dz, resample auto_cov
-              if(dz_min != interval_simboxes[i].getdz())
-                ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i].getdz());
+              if(dz_min != interval_simboxes[i]->getdz())
+                ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i]->getdz());
               else{
                 prior_auto_cov_temp   = analyze_all->GetAutoCovariance();
                 n_est_nonzero         = analyze_all->GetMaxLagWithNonZeroAutoCovData();
@@ -7772,12 +7771,12 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
 
           if(estimate_param_cov || estimate_temp_corr){
-            WriteFilePriorVariances(model_settings, prior_auto_cov_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i].getdz());
+            WriteFilePriorVariances(model_settings, prior_auto_cov_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
             if(print_result)
               PrintPriorVariances(interval_names);
           }
           else{
-            WriteFilePriorVariances(model_settings, prior_param_cov_[i], prior_corr_T_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i].getdz());
+            WriteFilePriorVariances(model_settings, prior_param_cov_[i], prior_corr_T_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
             if(print_result)
               PrintPriorVariances(interval_names);
           }
@@ -8368,7 +8367,7 @@ void CommonData::ReadGravityDataFile(const std::string   & file_name,
 
 bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,
-                                          const Simbox  & inversion_simbox,
+                                          Simbox  * inversion_simbox,
                                           std::string   & err_text_common) {
 
   //This is from ModelTravelTimeDynamic. Need to add from ModelTravelTimeStatic when it is added.
@@ -8408,7 +8407,7 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
     //ReadGrifFromFile is based on vector of simboxes and grids
     std::vector<NRLib::Grid<float> *> rms_data_grids(1);
     rms_data_grids[0] = new NRLib::Grid<float>();
-    std::vector<Simbox> simboxes;
+    std::vector<Simbox *> simboxes;
     simboxes.push_back(inversion_simbox);
 
     ReadGridFromFile(file_name,
@@ -8445,7 +8444,7 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings * model_settings,
         LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
 
         if (geometry != NULL) {
-          double geo_angle = (-1)*inversion_simbox.getAngle()*(180/M_PI);
+          double geo_angle = (-1)*inversion_simbox->getAngle()*(180/M_PI);
           if (geo_angle < 0)
             geo_angle += 360.0;
           LogKit::LogFormatted(LogKit::Low,"RMS travel time data   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",
@@ -8633,7 +8632,7 @@ void  CommonData::WriteFilePriorVariances(const ModelSettings       * model_sett
                                           const std::vector<double> & prior_corr_T,
                                           const Surface             * prior_corr_XY,
                                           const std::string         & interval_name,
-                                          const float               & dz) const
+                                          const double               & dz) const
 {
   std::string base_name1;
   std::string base_name2;

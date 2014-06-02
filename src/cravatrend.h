@@ -25,9 +25,9 @@ public:
   //           const InputFiles             * inputFiles);
 
   CravaTrend(const Simbox                      * interval_simbox,
-             const ModelSettings               * model_settings,
-             const InputFiles                  * input_files,
-             const std::string                 & interval_name,
+             //const ModelSettings               * model_settings,
+             //const InputFiles                  * input_files,
+             //const std::string                 & interval_name,
              const std::vector<int>            & trend_cube_type,
              const std::vector<std::string>    & trend_cube_parameters,
              std::vector<NRLib::Grid<float> *> & trend_cubes,

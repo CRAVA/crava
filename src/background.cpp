@@ -78,8 +78,7 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
 
     ResampleBackgroundModel(parameters[0], parameters[1], parameters[2],
                             bg_simbox,
-                            simbox,
-                            model_settings);
+                            simbox);
   }
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
@@ -272,7 +271,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
       CalculateVelocityDeviations(velocity,
                                   simbox, blocked_logs,
                                   trend_vel, avg_dev_vel, avg_dev_vp,
-                                  model_settings->getOutputGridsElastic(),
+                                  //model_settings->getOutputGridsElastic(),
                                   n_wells);
 
       velocity->LogTransform(RMISSING);
@@ -1349,7 +1348,7 @@ Background::CalculateVelocityDeviations(NRLib::Grid<float>                      
                                         std::vector<double>                              & trend_vel,
                                         std::vector<double>                              & avg_dev_vel,
                                         std::vector<double>                              & avg_dev_vp,
-                                        int                                                output_flag,
+                                        //int                                                output_flag,
                                         int                                                n_wells)
 {
   //H Writing of NRLib::Grid missing.
@@ -2699,8 +2698,7 @@ Background::ResampleBackgroundModel(NRLib::Grid<float>  * bg_vp,
                                     NRLib::Grid<float>  * bg_vs,
                                     NRLib::Grid<float>  * bg_rho,
                                     const Simbox        * bg_simbox,
-                                    const Simbox        * simbox,
-                                    const ModelSettings * model_settings)
+                                    const Simbox        * simbox)
 {
   //bool is_file = model_settings->getFileGrid();
 
