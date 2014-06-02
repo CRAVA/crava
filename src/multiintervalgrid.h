@@ -32,10 +32,10 @@ public:
 
   // GET FUNCTIONS
   int                                                      GetNIntervals()                        const { return n_intervals_                 ;}
-  const std::vector<Simbox>                              & GetIntervalSimboxes()                  const { return interval_simboxes_           ;}
-  std::vector<Simbox>                                    & GetIntervalSimboxes()                        { return interval_simboxes_           ;}
-  const Simbox                                           * GetIntervalSimbox(int i)               const { return &interval_simboxes_[i]       ;}
-  Simbox                                                 * GetIntervalSimbox(int i)                     { return &interval_simboxes_[i]       ;}
+  const std::vector<Simbox *>                            & GetIntervalSimboxes()                  const { return interval_simboxes_           ;}
+  std::vector<Simbox *>                                  & GetIntervalSimboxes()                        { return interval_simboxes_           ;}
+  const Simbox                                           * GetIntervalSimbox(int i)               const { return interval_simboxes_[i]        ;}
+  Simbox                                                 * GetIntervalSimbox(int i)                     { return interval_simboxes_[i]        ;}
   const std::string                                      & GetIntervalName(int i)                 const { return interval_names_[i]           ;}
   const std::vector<std::string>                         & GetIntervalNames()                     const { return interval_names_              ;}
   const std::vector<int>                                 & GetErosionPriorities()                 const { return erosion_priorities_          ;}
@@ -54,7 +54,7 @@ private:
                               const Simbox                              * estimation_simbox,
                               const std::vector<std::string>            & interval_names,
                               const std::vector<Surface>                & eroded_surfaces,
-                              std::vector<Simbox>                       & interval_simboxes,
+                              std::vector<Simbox *>                       & interval_simboxes,
                               const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_top_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_base_surfaces,
@@ -81,7 +81,7 @@ private:
                             double                                      & relative_grid_resolution,
                             std::string                                 & err_text,
                             bool                                        & failed) const;
-  */
+ */
 
   Surface * MakeSurfaceFromFileName(const std::string        & file_name,
                                     const Simbox             & estimation_simbox) const;
@@ -110,7 +110,7 @@ private:
   void  EstimateZPaddingSize(Simbox          * simbox,
                              ModelSettings   * model_settings) const;
 
-  void  LogIntervalInformation(const Simbox         & simbox,
+  void  LogIntervalInformation(const Simbox         * simbox,
                                const std::string    & interval_name,
                                const std::string    & header_text1,
                                const std::string    & header_text2) const;
@@ -132,7 +132,8 @@ private:
   std::vector<int>                                     erosion_priorities_;
   std::vector<std::string>                             surface_files_;
 
-  std::vector<Simbox>                                  interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
+  std::vector<Simbox *>                                interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector
+
 
   std::vector<double>                                  desired_grid_resolution_;  // Max vertical distance between original interval surfaces divided by number of layers
   std::vector<double>                                  relative_grid_resolution_; // Actual grid resolution relative to the wanted grid resolution.

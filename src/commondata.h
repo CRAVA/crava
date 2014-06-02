@@ -115,7 +115,7 @@ public:
 
   void FillInData(NRLib::Grid<float> * grid,
                   FFTGrid            * fft_grid_new,
-                  const Simbox       & simbox,
+                  const Simbox       * simbox,
                   StormContGrid      * storm_grid,
                   const SegY         * segy,
                   FFTGrid            * fft_grid_old,
@@ -479,7 +479,7 @@ private:
   bool SetupTrendCubes(ModelSettings                     * model_settings,
                        InputFiles                        * input_files,
                        MultiIntervalGrid                 * multiple_interval_grid,
-                       const Simbox                      & full_inversion_simbox,
+                       const Simbox                      * full_inversion_simbox,
                        std::vector<CravaTrend>           & trend_cubes,
                        std::string                       & error_text);
 
@@ -522,7 +522,7 @@ private:
   void ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
                                 ModelSettings                                    * model_settings,
                                 std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                                const std::vector<Simbox>                        & interval_simboxes,
+                                const std::vector<Simbox *>                      & interval_simboxes,
                                 const Simbox                                     & full_inverion_simbox,
                                 std::string                                      & err_text);
 
@@ -533,8 +533,8 @@ private:
                         const SegyGeometry                *& geometry,
                         const TraceHeaderFormat            * format,
                         int                                  grid_type,
-                        const std::vector<Simbox>          & interval_simboxes,
-                        const Simbox                       & inversion_simbox,
+                        const std::vector<Simbox *>          & interval_simboxes,
+                        const Simbox                       * inversion_simbox,
                         const ModelSettings                * model_settings,
                         std::string                        & err_text,
                         bool                                 nopadding = true);
@@ -549,8 +549,8 @@ private:
 
   void ReadSegyFile(const std::string                 & file_name,
                     std::vector<NRLib::Grid<float> *> & interval_grids,
-                    const std::vector<Simbox>         & interval_simboxes,
-                    const NRLib::Volume               & volume, //Defines reading interval.
+                    const std::vector<Simbox *>         & interval_simboxes,
+                    const NRLib::Volume               * volume, //Defines reading interval.
                     const ModelSettings               * model_settings,
                     const SegyGeometry               *& geometry,
                     int                                 grid_type,
@@ -626,7 +626,7 @@ private:
                      std::vector<NRLib::Grid<float> *> & interval_grids,
                      const int                           grid_type,
                      const std::string                 & par_name,
-                     const std::vector<Simbox>         & interval_simboxes,
+                     const std::vector<Simbox *>         & interval_simboxes,
                      const ModelSettings               * model_settings,
                      std::string                       & err_text,
                      bool                                is_storm = true,
@@ -634,7 +634,7 @@ private:
 
   bool SetupDepthConversion(ModelSettings * model_settings,
                             InputFiles    * input_files,
-                            const Simbox  & full_inversion_simbox,
+                            Simbox        & full_inversion_simbox,
                             GridMapping   * time_depth_mapping,
                             std::string   & err_text_common);
 
@@ -643,7 +643,7 @@ private:
                             const std::vector<NRLib::Well>                             & wells,
                             std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                             MultiIntervalGrid                                         *& multi_interval_grid,
-                            const Simbox                                               * inversion_simbox,
+                            Simbox                                                     * inversion_simbox,
                             std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
                             std::vector<double>                                        & background_vs_vp_ratios,
                             const std::vector<CravaTrend>                              & trend_cubes,
@@ -661,7 +661,7 @@ private:
   void ChangeSignGrid(NRLib::Grid<float> * grid);
 
   void LoadVelocity(NRLib::Grid<float>  * velocity,
-                    const Simbox        & interval_simbox,
+                    Simbox              * interval_simbox,
                     const ModelSettings * model_settings,
                     const std::string   & velocity_field,
                     bool                & velocity_from_inversion,
@@ -697,7 +697,7 @@ private:
                              const std::vector<NRLib::Well>                              & wells,
                              double                                                        dz_min,
                              const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                             std::vector<Simbox>                                         & interval_simboxes,
+                             std::vector<Simbox *>                                       & interval_simboxes,
                              const std::vector<std::vector<float> >                      & prior_facies_prob,
                              const std::vector<std::string>                              & facies_names,
                              const std::vector<CravaTrend>                               & trend_cubes,
@@ -758,7 +758,7 @@ private:
 
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,
-                                 const Simbox  & inversion_simbox,
+                                 Simbox  * inversion_simbox,
                                  std::string   & err_text_common);
 
   void  ProcessHorizons(std::vector<Surface>   & horizons,
@@ -774,7 +774,7 @@ private:
                                 const std::vector<double>         & prior_corr_T,
                                 const Surface                     * prior_corr_XY,
                                 const std::string                 & interval_name,
-                                const float                       & dz) const;
+                                const double                       & dz) const;
 
   void WriteFilePriorVariances(const ModelSettings                * model_settings,
                                const std::vector<NRLib::Matrix>   & prior_auto_cov_,

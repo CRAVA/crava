@@ -1790,9 +1790,9 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
     errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
-  if(top_conform == true && base_conform == true)
-    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
-              + "where only one is allowed to be true.\n";
+  //if(top_conform == true && base_conform == true)
+  //  errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
+  //            + "where only one is allowed to be true.\n";
 
   bool interval_used = false;
 
@@ -1800,6 +1800,9 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
     if(interval_used == false)
       interval_used = true;
   }
+
+  if (interval_used == false && top_surface == false && base_surface == false && top_conform == false && base_conform == false && corr_file_used == false)
+    errTxt += "-No correlation surfaces have been defined under <correlation-direction>.\n";
 
   if(corr_file_used == true && interval_used == true)
     errTxt += "You cannot use both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
@@ -1828,6 +1831,19 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
 
   std::string interval_name;
   parseValue(root, "name", interval_name, errTxt);
+
+  const std::vector<std::string> interval_names =  modelSettings_->getIntervalNames();
+
+  bool correct_interval_name = false;
+  for(size_t i = 0; i < interval_names.size(); i++){
+    if (interval_names[i] == interval_name){
+      correct_interval_name = true;
+      break;
+    }
+  }
+  if(correct_interval_name == false){
+    errTxt += "The interval name \'" + interval_name + "\' specified under <correlation-direction> does not match any of the intervals under <project-settings>.\n";
+  }
 
   modelSettings_->setCorrDirIntervalUsed(true);
 
@@ -1864,25 +1880,29 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     modelSettings_->setCorrDirIntervalBaseConform(interval_name, true);
 
   if(single_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
-    errTxt += "For interval " + interval_name + " a single surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
+    errTxt += "-For interval " + interval_name + " a single surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
 
   if(top_surface == true && top_conform == true)
-    errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + " where only one is allowed.\n";
+    errTxt += "-Both <top-surface> and <top-conform> are given under <correlation-direction> for interval " + interval_name + " where only one is allowed.\n";
 
   if(base_surface == true && base_conform == true)
-    errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction>  for interval " + interval_name + " where only one is allowed.\n";
+    errTxt += "-Both <base-surface> and <base-conform> are given under <correlation-direction>  for interval " + interval_name + " where only one is allowed.\n";
 
   if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
-    errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction> for interval " + interval_name
+    errTxt += "-Either <base-surface> or <base-conform> is missing under <correlation-direction> for interval " + interval_name
               + ". One of these must be set if either <top-surface> or <top-conform> are used.\n";
 
   if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
-    errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction> for interval " + interval_name
+    errTxt += "-Either <top-surface> or <top-conform> is missing under <correlation-direction> for interval " + interval_name
               + ". One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
-  if(top_conform == true && base_conform == true)
-    errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +"> for interval " + interval_name +", "
-              + "where only one is allowed to be true.\n";
+  if (top_surface == false && base_surface == false && top_conform == false && base_conform == false)
+    errTxt += "-Neither a top correlation surface nor a base correlation surface has been defined under <correlation-direction> for interval "
+                + interval_name + ".\n";
+
+  //if(top_conform == true && base_conform == true)
+  //  errTxt += "-Both top-conform and base-conform are set to true under <" + root->ValueStr() +"> for interval " + interval_name +", "
+  //            + "where only one is allowed to be true.\n";
 
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -6237,7 +6257,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
             std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
 
             if(iter == rock_storage.end())
-              errTxt += "Problem with rock physics prior model under <volume-fractions> for interval "
+              errTxt += "-Problem with rock physics prior model under <volume-fractions> for interval "
                         + it->first + ". Facies '"+it->first+"' is not one of the rocks given in the rock physics model.\n";
           }
         }
@@ -6254,11 +6274,11 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
         for(std::map<std::string, float>::const_iterator it2 = facies_probabilities.begin(); it2 != facies_probabilities.end(); it2++) {
           if(volume_fractions.count(it2->first) == 0)
-            errTxt += "Facies " + it2->first + " is defined for <prior-probabilites> but not for <volume-fraction> for interval " + it->first + ".\n";
+            errTxt += "-Facies " + it2->first + " is defined for <prior-probabilites> but not for <volume-fraction> for interval " + it->first + ".\n";
         }
         for(std::map<std::string, float>::const_iterator it3 = volume_fractions.begin(); it3 != volume_fractions.end(); it3++) {
           if(facies_probabilities.count(it3->first) == 0)
-            errTxt += "Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
+            errTxt += "-Facies " + it3->first + " is defined for <volume-fractions> but not for <prior-probabilites> for interval " + it->first + ".\n";
         }
       }
     }
@@ -6267,7 +6287,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     if(modelSettings_->getCorrDirIntervalUsed() == true) {
       const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFiles();
       const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
-      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
+      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalBaseSurfaceFiles();
       const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConform();
       const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
 
@@ -6286,19 +6306,23 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       }
 
       if(top_count != base_count) //This shouldn't happen, there is a check in parseIntervalCorrelationDirection if either top or base is used without the other.
-        errTxt += "Some intervals in <correlation-direction> have defined a top-surface or top-conform without a base-surface or base-conform (or vice versa).\n";
+        errTxt += "-Some intervals in <correlation-direction> have defined a top-surface or top-conform surface without a base-surface or a base-conform surface (or vice versa).\n";
 
       size_t intervals_used = top_count + single_count;
       if(interval_names.size() != intervals_used)
-        errTxt += "The number of intervals specified in the model (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for <correlation-direction> under <prior-model> (" + NRLib::ToString(top_count + single_count) +").\n";
+        errTxt += "-The number of intervals in <project-settings> (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for <correlation-direction> under <prior-model> (" + NRLib::ToString(top_count + single_count) +").\n";
+
 
       for(size_t i = 0; i < interval_names.size(); i++) {
+        int n_ = interval_corr_dir_file.count(interval_names[i]);
+        n_ = interval_corr_dir_top_file.count(interval_names[i]);
+
         if(interval_corr_dir_file.count(interval_names[i]) == 0 &&
            interval_corr_dir_top_file.count(interval_names[i]) == 0 &&
            interval_corr_dir_base_file.count(interval_names[i]) == 0 &&
            interval_top_conform_correlation.count(interval_names[i]) == 0 &&
            interval_base_conform_correlation.count(interval_names[i]) == 0)
-           errTxt += "There is missing correlation direction under <prior-model>, <correlation-direction> for interval " + interval_names[i] + ".\n";
+           errTxt += "-There are missing correlation directions under <prior-model>, <correlation-direction> for interval \'" + interval_names[i] + "\'.\n";
       }
     }
   } //Interval

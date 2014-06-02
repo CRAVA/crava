@@ -91,7 +91,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   first_B_                      = IMISSING;
   last_B_                       = IMISSING;
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
   for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++){
     n_blocks_with_data_.insert(std::pair<std::string, int>(multiple_interval_grid->GetIntervalName(i), 0));
@@ -117,8 +117,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
       //
       // If there is only one interval
       //
-      n_layers_ = interval_simboxes[0].getnz();
-      BlockWell(&interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_, 
+      n_layers_ = interval_simboxes[0]->getnz();
+      BlockWell(interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_, 
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
     }
     else {
@@ -314,7 +314,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
                                                           bool                                                & failed,
                                                           std::string                                         & err_text){
   std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   try{
 
@@ -525,15 +525,15 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
                                                   std::map<std::string, int>    & n_layers_adjusted_per_interval,
                                                   std::string                   & err_text){
 
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-  int   n_intervals                           = static_cast<int>(interval_simboxes.size());
+  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  int   n_intervals                             = static_cast<int>(interval_simboxes.size());
   const std::vector<double> & x_pos             = GetXposRawLogs();
   const std::vector<double> & y_pos             = GetYposRawLogs();
   const std::vector<double> & z_pos             = GetZposRawLogs();
 
   std::vector<int> nz(n_intervals);           // nz is the number of layers in each simbox
   for(size_t s = 0; s < interval_simboxes.size(); s++){
-    nz[s] = interval_simboxes[s].getnz();
+    nz[s] = interval_simboxes[s]->getnz();
     n_layers += nz[s];
   }
   const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the smallest dz
@@ -556,8 +556,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   for (int n = 0 ; n < n_intervals; n++){
     for (int m = 0 ; m < n_data ; m++) {
       // The intervals are sometimes overlapping
-      if(interval_simboxes[n].IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
-        interval_simboxes[n].getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
+      if(interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
+        interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
         if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
           first_K = first_K*static_cast<int>(dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
           first_S_ = n;
@@ -582,8 +582,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   for (int n = n_intervals-1 ; n >= 0; n--){
     for (int m = n_data - 1 ; m > 0 ; m--) {
       // The intervals are sometimes overlapping
-      if(interval_simboxes[n].IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
-        interval_simboxes[n].getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
+      if(interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])){
+        interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
         if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
           last_K = last_K*static_cast<int>(dz_rel[n]);
           last_S_ = n;
@@ -623,8 +623,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //
   // ASSUMPTION: all simboxes have same nx and ny
   int * simbox_ind = new int[n_data];                                     // help hack
-  const int nx    = interval_simboxes[0].getnx();                         // help hack
-  const int ny    = interval_simboxes[0].getny();                         // help hack
+  const int nx    = interval_simboxes[0]->getnx();                         // help hack
+  const int ny    = interval_simboxes[0]->getny();                         // help hack
 
   simbox_ind[0] = nx*ny*old_K + nx*old_J + old_I;                         // help hack
 
@@ -633,7 +633,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     // to find out where the x,y,z-coordinates belong
     int simbox_number = multiple_interval_grid->WhichSimbox(x_pos[m], y_pos[m], z_pos[m]);
 
-    interval_simboxes[simbox_number].getIndexes(x_pos[m], y_pos[m], z_pos[m] , new_I , new_J , new_K);
+    interval_simboxes[simbox_number]->getIndexes(x_pos[m], y_pos[m], z_pos[m] , new_I , new_J , new_K);
 
     // Add the previous zones multiplied by relative vertical grid size
     double temp_K = new_K*dz_rel[simbox_number];      // temp_K is the adjusted vertical block number
@@ -680,11 +680,11 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
   n_blocks_ = 0;
   for (int i=0; i<first_S_; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;                      // 1. Add number of blocks from intervals above the first well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                      // 1. Add number of blocks from intervals above the first well obs
   for (int i=last_S_+1; i<n_intervals; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i].GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
   n_blocks_ += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_].GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks_ += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks_ += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
 
 
@@ -984,8 +984,8 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
                                         const std::vector<double>        & z_pos_raw_logs,
                                         const std::vector<int>           & bInd){
 
-  const std::vector<Simbox> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-  const std::vector<double> dz_rel            = multiple_interval_grid->GetDzRel();
+  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  const std::vector<double> dz_rel              = multiple_interval_grid->GetDzRel();
   i_pos_.resize(n_blocks_);
   j_pos_.resize(n_blocks_);
   k_pos_.resize(n_blocks_);
@@ -1010,13 +1010,13 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   int b = -1;   // block counter;
   int wl = -1;  // well log counter
   int first_I, first_J, first_K;
-  interval_simboxes[first_S_].getIndexes(x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], z_pos_raw_logs[first_M_], first_I, first_J, first_K);
+  interval_simboxes[first_S_]->getIndexes(x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], z_pos_raw_logs[first_M_], first_I, first_J, first_K);
   for (int s = 0 ;  s < first_S_; s++){
     //double dz     = interval_simboxes[s].getdz();
     //double dz_0   = 0;
     //interval_simboxes[s].getZCoord(0,x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], dz_0);
     //b = -1;
-    for(int k = 0; k < interval_simboxes[s].getnz(); k++){
+    for(int k = 0; k < interval_simboxes[s]->getnz(); k++){
       b++;
       s_pos_[b] = s;
       i_pos_[b] = first_I;
@@ -1064,7 +1064,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     wl++;
     if (bInd[wl] != bInd[wl - 1]) {
       b++;
-      interval_simboxes[first_S_].getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
+      interval_simboxes[first_S_]->getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
       s_pos_[b] = first_S_;
       i_pos_[b] = i;
       j_pos_[b] = j;
@@ -1092,7 +1092,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       wl++;
       if (bInd[wl] != bInd[wl - 1]) {
         b++;
-        interval_simboxes[s].getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
+        interval_simboxes[s]->getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
         s_pos_[b] = first_S_;
         i_pos_[b] = i;
         j_pos_[b] = j;
@@ -1108,9 +1108,9 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
 
   int last_I,  last_J,  last_K;
 
-  interval_simboxes[last_S_].getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
+  interval_simboxes[last_S_]->getIndexes(x_pos_raw_logs[last_M_], y_pos_raw_logs[last_M_], z_pos_raw_logs[last_M_], last_I, last_J, last_K);
   min_m = last_K+1;
-  max_m = interval_simboxes[last_S_].getnz();
+  max_m = interval_simboxes[last_S_]->getnz();
   for (int k = last_K + 1 ; k < max_m ; k++) {
     b++;
     s_pos_[b] = last_S_;
@@ -1121,7 +1121,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
 
   for (int s = last_S_+1; s < static_cast<int>(interval_simboxes.size()) ; s++){
     min_m = 0;
-    max_m = interval_simboxes[s].getnz();
+    max_m = interval_simboxes[s]->getnz();
     for (int k = min_m; k< max_m; k++){
       b++;
       s_pos_[b] = s;
@@ -1131,7 +1131,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     }
   }
 
-  dz_ = static_cast<float>(interval_simboxes[0].getRelThick(i_pos_[0],j_pos_[0])*interval_simboxes[0].getdz());
+  dz_ = static_cast<float>(interval_simboxes[0]->getRelThick(i_pos_[0],j_pos_[0])*interval_simboxes[0]->getdz());
   //dz_ = static_cast<float>(interval_simboxes[last_S_].getRelThick(i_pos_[0],j_pos_[0])*interval_simboxes[last_S_].getdz());
 
   bool debug = false;

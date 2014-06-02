@@ -89,12 +89,12 @@ namespace NRLib {
                      const Surface<double>& erosion_bot);
                      */
 
-    const Surface<double>& GetTopSurface() const {return *z_top_;}
-    const Surface<double>& GetBotSurface() const {return *z_bot_;}
+    const Surface<double> & GetTopSurface()       const {return *z_top_;}
+    const Surface<double> & GetBotSurface()       const {return *z_bot_;}
     //const Surface<double>& GetErosionTop() const {return *erosion_top_;}
     //const Surface<double>& GetErosionBot() const {return *erosion_bot_;}
-    Surface<double>& GetTopSurface()             {return *z_top_;}
-    Surface<double>& GetBotSurface()             {return *z_bot_;}
+    Surface<double>       & GetTopSurface()             {return *z_top_;}
+    Surface<double>       & GetBotSurface()             {return *z_bot_;}
 
     int IsInside(double x, double y) const;
     bool IsInside(double x, double y, double z)const;
