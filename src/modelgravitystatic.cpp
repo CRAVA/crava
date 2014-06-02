@@ -125,6 +125,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
                                        const Simbox              * simbox,
                                        int                   i_interval)
 {
+  (void) i_interval;
 
   failed_                 = false;
   before_injection_start_ = false; // When do we know what this should be??
@@ -235,6 +236,7 @@ ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
 void
 ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Simbox * fullTimeSimbox)
 {
+  (void) modelSettings;
   int nx = fullTimeSimbox->getnx();
   int ny = fullTimeSimbox->getny();
   int nz = fullTimeSimbox->getnz();
@@ -326,6 +328,7 @@ void
 ModelGravityStatic::SetUpscaledPaddingSize(ModelSettings * modelSettings,
                                            const Simbox  * simbox)
 {
+  (void) modelSettings;
   // Find original nxp, nyp, nzp
   int nxpad = simbox->GetNXpad();
   int nypad = simbox->GetNYpad();

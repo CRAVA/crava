@@ -644,7 +644,7 @@ private:
 
   bool               SetupDepthConversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,
-                                          const Simbox  & full_inversion_simbox,
+                                          Simbox        & full_inversion_simbox,
                                           GridMapping  *& time_depth_mapping,
                                           std::string   & err_text_common);
 
@@ -762,16 +762,20 @@ private:
                                          std::vector <float> & gravity_std_dev,
                                          std::string         & err_text);
 
+  /*
   bool               SetupTravelTimeInversion(ModelSettings * model_settings,
                                               InputFiles    * input_files,
                                               const Simbox  & inversion_simbox,
                                               std::string   & err_text_common);
+                                              */
 
   void               ProcessHorizons(std::vector<Surface>   & horizons,
                                      const InputFiles       * input_files,
                                      std::string            & err_text,
                                      bool                   & failed,
                                      int                      i_timelapse);
+
+  void               CheckCovarianceParameters(NRLib::Matrix            & param_cov);
 
   bool  SetupTravelTimeInversion(ModelSettings * model_settings,
                                  InputFiles    * input_files,

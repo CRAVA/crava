@@ -1844,7 +1844,7 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     errTxt += "The interval name \'" + interval_name + "\' specified under <correlation-direction> does not match any of the intervals under <project-settings>.\n";
   }
 
-  modelSettings_->setCorrDirIntervalUsed(true);
+  modelSettings_->setCorrDirUsed(true);
 
   bool single_surface = false;
   bool top_surface = false;
@@ -6283,12 +6283,12 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     }
 
     //Check that all intervals are used under correlation direction
-    if(modelSettings_->getCorrDirIntervalUsed() == true) {
-      const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirIntervalFiles();
-      const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirIntervalTopSurfaceFiles();
-      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirIntervalBaseSurfaceFiles();
-      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirIntervalTopConform();
-      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirIntervalBaseConform();
+    if(modelSettings_->getCorrDirUsed() == true) {
+      const std::map<std::string, std::string> & interval_corr_dir_file = inputFiles_->getCorrDirFiles();
+      const std::map<std::string, std::string> & interval_corr_dir_top_file = inputFiles_->getCorrDirTopSurfaceFiles();
+      const std::map<std::string, std::string> & interval_corr_dir_base_file = inputFiles_->getCorrDirBaseSurfaceFiles();
+      const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirTopConforms();
+      const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirBaseConforms();
 
       int single_count = interval_corr_dir_file.size();
 

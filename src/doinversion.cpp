@@ -40,7 +40,7 @@
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
-                       ModelGravityStatic      *& modelGravityStatic,
+                       //ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
@@ -216,7 +216,7 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                 ModelGeneral            * modelGeneral,
                                 ModelGravityStatic      * modelGravityStatic,
                                 CommonData              * commonData,
-                                InputFiles              * inputFiles,
+                                //InputFiles              * inputFiles,
                                 int                     & vintage,
                                 SeismicParametersHolder & seismicParameters)
 {
@@ -226,7 +226,7 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                                 modelGeneral,
                                                 modelGravityStatic,
                                                 commonData,
-                                                inputFiles,
+                                                //inputFiles,
                                                 vintage,
                                                 seismicParameters);
 

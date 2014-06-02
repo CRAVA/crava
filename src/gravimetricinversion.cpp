@@ -34,6 +34,7 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
                                            SeismicParametersHolder &  seismicParameters,
                                            ModelSettings           *  modelSettings)
 {
+  (void) modelSettings;
   LogKit::WriteHeader("Building Stochastic Model for Gravimetric Inversion");
 
   double wall=0.0, cpu=0.0;
@@ -618,6 +619,7 @@ void
   GravimetricInversion::CrCovLogTransform(FFTGrid * cov,    float mean_a, float mean_b)
 {
   // Obviously not yet implemented. Do we need this one??
+  (void) cov, mean_a, mean_b;
 }
 
 void

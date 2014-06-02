@@ -111,7 +111,7 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
                                          const ModelGeneral           * modelGeneral,
                                          ModelGravityStatic           * modelGravityStatic,
                                          CommonData                   * commonData,
-                                         const InputFiles             * inputFiles,
+                                         //const InputFiles             * inputFiles,
                                          int                            t,
                                          SeismicParametersHolder      & seismicParameters)
 
@@ -129,11 +129,11 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
   thisTimeLapse_          = t;
 
   bool failedLoadingModel = false;
-  bool failedReadingFile  = false;
+  //bool failedReadingFile  = false;
   std::string errText("");
 
-  int nObs = 30;     // should this be given in input file
-  int nColumns = 5;  // We require data files to have five columns
+ // int nObs = 30;     // should this be given in input file
+  //int nColumns = 5;  // We require data files to have five columns
 
   // Check that timeLapse is ok
   if(thisTimeLapse_ < 1 && thisTimeLapse_ > modelSettings->getNumberOfVintages()){

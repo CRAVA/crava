@@ -165,14 +165,16 @@ CravaTrend::CravaTrend()
 //}
 
 CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
-                       const ModelSettings               * model_settings,
-                       const InputFiles                  * input_files,
-                       const std::string                 & interval_name,
+                       //const ModelSettings               * model_settings,
+                       //const InputFiles                  * input_files,
+                       //const std::string                 & interval_name,
                        const std::vector<int>            & trend_cube_type,
                        const std::vector<std::string>    & trend_cube_parameters,
                        std::vector<NRLib::Grid<float> *> & trend_cubes,
-                       std::string                       & err_txt) {
+                       std::string                       & err_txt) 
+{
   // Class variables
+  (void) err_txt;
   n_samples_      = 1000;
   n_trend_cubes_  = static_cast<int>(trend_cube_parameters.size());
 

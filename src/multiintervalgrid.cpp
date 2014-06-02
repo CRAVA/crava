@@ -86,7 +86,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     // if multiple-intervals is NOT used in model settings
     else {
 
-      int nz = model_settings->getTimeNzInterval("");
+      int nz = model_settings->getTimeNz("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();

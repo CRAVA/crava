@@ -4064,7 +4064,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
       }
       else {
         std::vector<std::string> interval_names = model_settings->getIntervalNames();
-        const std::string base_surface_file_name = input_files->getIntervalBaseTimeSurface(interval_names[interval_names.size() - 1]);
+        const std::string base_surface_file_name = input_files->getBaseTimeSurface(interval_names[interval_names.size() - 1]);
         if (NRLib::IsNumber(base_surface_file_name)){
           LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
           double x_min, x_max;
@@ -4554,9 +4554,9 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
       }
 
       trend_cubes[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
-                                  model_settings,
-                                  input_files,
-                                  interval_names[i],
+                                  //model_settings,
+                                  //input_files,
+                                  //interval_names[i],
                                   trend_cube_type,
                                   trend_cube_parameters,
                                   trend_cubes_interval,
@@ -6541,7 +6541,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
 bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       InputFiles    * input_files,
-                                      const Simbox  & full_inversion_simbox,
+                                      Simbox        & full_inversion_simbox,
                                       GridMapping  *& time_depth_mapping,
                                       std::string   & err_text_common) {
 

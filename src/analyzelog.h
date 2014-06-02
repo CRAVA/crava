@@ -60,7 +60,7 @@ public:
 
 private:
 
-  void            EstimateLnData(std::map<std::string, std::vector<float> >             & log_data,
+  void            EstimateLnData(std::map<std::string, std::vector<double> >             & log_data,
                                  const std::vector<std::vector<NRLib::Grid<float> *> >  & background,
                                  const std::vector<std::string>                         & well_names,
                                  const std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs_for_correlation,
@@ -98,9 +98,9 @@ private:
                                                  const std::vector<std::string>                     & well_names,
                                                  const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
                                                  const std::vector<Simbox *>                        & interval_simboxes,
-                                                 const std::map<std::string, std::vector<float> >   & log_data_vp,
-                                                 const std::map<std::string, std::vector<float> >   & log_data_vs,
-                                                 const std::map<std::string, std::vector<float> >   & log_data_rho,
+                                                 const std::map<std::string, std::vector<double> >   & log_data_vp,
+                                                 const std::map<std::string, std::vector<double> >   & log_data_vs,
+                                                 const std::map<std::string, std::vector<double> >   & log_data_rho,
                                                  bool                                                 all_Vs_logs_synthetic,
                                                  bool                                                 all_Vs_logs_non_synthetic,
                                                  NRLib::Vector                                      & regression_coef,
@@ -166,9 +166,9 @@ private:
                                  double                   dz,
                                  std::string            & err_txt);
 
-  bool            CheckConsistencyBackground(const std::vector<float>                              & ln_data_blocked,
-                                              const std::vector<float>                              & background,
-                                              const std::vector<float>                              & low_freq_log,
+  bool            CheckConsistencyBackground(const std::vector<double>                              & ln_data_blocked,
+                                              const std::vector<double>                              & background,
+                                              const std::vector<double>                              & low_freq_log,
                                               int                                                     nd_tot);
 
   NRLib::Vector   Regress(const NRLib::Matrix                             & A,

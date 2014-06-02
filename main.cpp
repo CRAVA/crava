@@ -270,7 +270,7 @@ int main(int argc, char** argv)
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,
                         modelAVOstatic,
-                        modelGravityStatic,
+                        //modelGravityStatic,
                         modelSettings,
                         inputFiles,
                         seismicParametersIntervals[i_interval],
@@ -323,7 +323,7 @@ int main(int argc, char** argv)
                                                      modelGeneral,
                                                      modelGravityStatic,
                                                      common_data,
-                                                     inputFiles,
+                                                     //inputFiles,
                                                      eventIndex,
                                                      seismicParametersIntervals[i_interval]);
             break;

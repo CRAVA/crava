@@ -104,8 +104,7 @@ private:
                                        NRLib::Grid<float>  * bg_vs,
                                        NRLib::Grid<float>  * bg_rho,
                                        const Simbox        * bg_simbox,
-                                       const Simbox        * simbox,
-                                       const ModelSettings * model_settings);
+                                       const Simbox        * simbox);
 
   //void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
   //                                      FFTGrid * bgBeta,
@@ -274,7 +273,7 @@ private:
                                            std::vector<double>                              & trend_vel,
                                            std::vector<double>                              & avg_dev_vel,
                                            std::vector<double>                              & avg_dev_vp,
-                                           int                                                outputFlag,
+                                           //int                                                outputFlag,
                                            int                                                n_wells);
 
   void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
