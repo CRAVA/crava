@@ -207,7 +207,7 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
 
 }
 
-void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
+void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho, SeismicParametersHolder & seismicParameters,
                             bool trendsAlreadySubtracted, int debugflag, bool doSmoothing) {
   Require(!trendAlpha.getIsTransformed()
           && !trendBeta.getIsTransformed()
@@ -238,8 +238,10 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
         }
       }
     }
-    blockGrid->writeFile("BlockGrid",IO::PathToInversionResults(), &simbox_);
-    delete blockGrid;
+    //H-Writing
+    //blockGrid->writeFile("BlockGrid",IO::PathToInversionResults(), &simbox_);
+    seismicParameters.SetBlockGrid(blockGrid);
+    //delete blockGrid;
   }
 
   trendAlpha_ = &trendAlpha;
@@ -350,7 +352,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma)
         // set kriging vector
         SetKrigVector(kVec, gamma);
 
-        // kriging
+        // kriging;
         float result = pGrid->getRealValue(i_, j_, k_);
         if (result == RMISSING) {
           noRMissing_++;

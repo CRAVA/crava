@@ -14,6 +14,7 @@ class CovGridSeparated;
 #include "nrlib/flens/nrlib_flens.hpp"
 
 #include "src/box.h"
+#include "src/seismicparametersholder.h"
 
 class CKrigingAdmin
 {
@@ -30,7 +31,7 @@ public:
                 bool backgroundModel = false);
   ~CKrigingAdmin(void);
   enum Gamma {ALPHA_KRIG, BETA_KRIG, RHO_KRIG};
-  void KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
+  void KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho, SeismicParametersHolder & seismicParameters,
                bool trendsAlreadySubtracted = false, int debugFlag = 0, bool doSmoothing = false);
 
 private:

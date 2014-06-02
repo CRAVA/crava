@@ -11,15 +11,24 @@
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
-  meanVp_     = NULL;
-  meanVs_     = NULL;
-  meanRho_    = NULL;
-  covVp_      = NULL;
-  covVs_      = NULL;
-  covRho_     = NULL;
-  crCovVpVs_  = NULL;
-  crCovVpRho_ = NULL;
-  crCovVsRho_ = NULL;
+  meanVp_            = NULL;
+  meanVs_            = NULL;
+  meanRho_           = NULL;
+  covVp_             = NULL;
+  covVs_             = NULL;
+  covRho_            = NULL;
+  crCovVpVs_         = NULL;
+  crCovVpRho_        = NULL;
+  crCovVsRho_        = NULL;
+  postVp_            = NULL;
+  postVs_            = NULL;
+  postRho_           = NULL;
+  postVpKriged_      = NULL;
+  postVsKriged_      = NULL;
+  postRhoKriged_     = NULL;
+  block_grid_        = NULL;
+  facies_prob_undef_ = NULL;
+  quality_grid_      = NULL;
 
   priorVar0_.resize(3,3);
 }
@@ -27,40 +36,98 @@ SeismicParametersHolder::SeismicParametersHolder(void)
 //--------------------------------------------------------------------
 SeismicParametersHolder::~SeismicParametersHolder(void)
 {
-  if(covVp_!=NULL)
-    delete covVp_;
+  //if (covVp_ != NULL)//H Failes if they are deleted under CreateStormGrid
+  //  delete covVp_;
 
-  if(covVs_!=NULL)
-    delete covVs_;
+  //if (covVs_ != NULL)
+  //  delete covVs_;
 
-  if(covRho_!=NULL)
-    delete covRho_;
+  //if (covRho_ != NULL)
+  //  delete covRho_;
 
-  if(crCovVpVs_!=NULL)
-    delete crCovVpVs_ ;
+  //if (crCovVpVs_ != NULL)
+  //  delete crCovVpVs_ ;
 
-  if(crCovVpRho_!=NULL)
-    delete crCovVpRho_ ;
+  //if (crCovVpRho_ != NULL)
+  //  delete crCovVpRho_ ;
 
-  if(crCovVsRho_!=NULL)
-    delete crCovVsRho_;
+  //if (crCovVsRho_ != NULL)
+  //  delete crCovVsRho_;
 
-  if(meanVp_!=NULL)
-    delete meanVp_;
+  //if (meanVp_ != NULL)
+  //  delete meanVp_;
 
-  if(meanVs_!=NULL)
-    delete meanVs_;
+  //if (meanVs_ != NULL)
+  //  delete meanVs_;
 
-  if(meanRho_!=NULL)
-    delete meanRho_;
+  //if (meanRho_ != NULL)
+  //  delete meanRho_;
+
+  //if (postVp_ != NULL) //H Failes if they are deleted under CreateStormGrid
+  //  delete postVp_;
+
+  //if (postVs_ != NULL)
+  //  delete postVs_;
+
+  //if (postRho_ != NULL)
+  //  delete postRho_;
+
+  //if (postVpKriged_ != NULL)
+  //  delete postVpKriged_;
+
+  //if (postVsKriged_ != NULL)
+  //  delete postVsKriged_;
+
+  //if (postRhoKriged_ != NULL)
+  //  delete postRhoKriged_;
+
+  //if (block_grid_ != NULL)
+  //  delete block_grid_;
+
+  //if (facies_prob_undef_ != NULL)
+  //  delete facies_prob_undef_;
+
+  //if (quality_grid_ != NULL)
+  //  delete quality_grid_;
+
+  //for (size_t i = 0; i < simulations_seed0_.size(); i++) {
+  //  if (simulations_seed0_[i] != NULL)
+  //    delete simulations_seed0_[i];
+  //}
+
+  //for (size_t i = 0; i < simulations_seed1_.size(); i++) {
+  //  if (simulations_seed1_[i] != NULL)
+  //    delete simulations_seed1_[i];
+  //}
+
+  //for (size_t i = 0; i < simulations_seed2_.size(); i++) {
+  //  if (simulations_seed2_[i] != NULL)
+  //    delete simulations_seed2_[i];
+  //}
+
+  //for (size_t i = 0; i < facies_prob_.size(); i++) {
+  //  if (facies_prob_[i] != NULL)
+  //    delete facies_prob_[i];
+  //}
+
+  //for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
+  //  if (facies_prob_geo_[i] != NULL)
+  //    delete facies_prob_geo_[i];
+  //}
+
+  //for (size_t i = 0; i < lh_cube_.size(); i++) {
+  //  if (lh_cube_[i] != NULL)
+  //    delete lh_cube_[i];
+  //}
+
 
 }
 //--------------------------------------------------------------------
 
 void
-SeismicParametersHolder::setBackgroundParameters(FFTGrid  * meanVp,
-                                                 FFTGrid  * meanVs,
-                                                 FFTGrid  * meanRho)
+SeismicParametersHolder::setBackgroundParameters(FFTGrid * meanVp,
+                                                 FFTGrid * meanVs,
+                                                 FFTGrid * meanRho)
 {
   meanVp_   = meanVp;
   meanVs_   = meanVs;
@@ -98,8 +165,6 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
   meanRho_ = new FFTGrid(meanRho);
 }
 
-
-
 void
 SeismicParametersHolder::setCorrelationParameters(bool                                  corr_estimated,
                                                   const NRLib::Matrix                 & priorVar0,
@@ -116,42 +181,7 @@ SeismicParametersHolder::setCorrelationParameters(bool                          
                                                   const int                           & nyPad,
                                                   const int                           & nzPad)
 {
-  //priorVar0_.resize(3,3);
   priorVar0_ = priorVar0;
-
-  //priorVar0_(0,0) = static_cast<double>(priorVar0[0][0]);
-  //priorVar0_(1,0) = static_cast<double>(priorVar0[1][0]);
-  //priorVar0_(2,0) = static_cast<double>(priorVar0[2][0]);
-  //priorVar0_(0,1) = static_cast<double>(priorVar0[0][1]);
-  //priorVar0_(1,1) = static_cast<double>(priorVar0[1][1]);
-  //priorVar0_(2,1) = static_cast<double>(priorVar0[2][1]);
-  //priorVar0_(0,2) = static_cast<double>(priorVar0[0][2]);
-  //priorVar0_(1,2) = static_cast<double>(priorVar0[1][2]);
-  //priorVar0_(2,2) = static_cast<double>(priorVar0[2][2]);
-
-
-  // check if covariance is well conditioned and robustify
-  //NRLib::Vector eVals(3);
-  //NRLib::Matrix eVec(3,3);
-  //NRLib::Matrix tmp(3,3);
-  //tmp=priorVar0_;
-  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
-
-  //double maxVal = eVals(0);
-
-  //for(int i=1;i<3;i++)
-  //  if(maxVal<eVals(i))
-  //    maxVal=eVals(i);
-
-  //for(int k=0;k<3;k++){
-  //  if(eVals(k)<maxVal*0.001){
-  //    for(int i=0;i<3;i++)
-  //      for(int j=0;j<3;j++)
-  //        priorVar0_(i,j)+= eVec(k,i)*eVec(k,j)*(maxVal*0.0011-eVals(k));
-  //  }
-  //}
-  //tmp=priorVar0_;
-  //NRLib::ComputeEigenVectors(tmp,eVals,eVec);
 
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
@@ -477,7 +507,7 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 
 
 //--------------------------------------------------------------------
-fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov, 
+fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov,
                                                          int                                  minIntFq,
                                                          int                                  nzp,
                                                          size_t                               i,
@@ -559,7 +589,7 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
     if (k < min_int_fq)
       fft_circ_auto_cov[k].re = 0.0;
     else
-      fft_circ_auto_cov[k].re = float(sqrt(fft_circ_auto_cov[k].re*fft_circ_auto_cov[k].re 
+      fft_circ_auto_cov[k].re = float(sqrt(fft_circ_auto_cov[k].re*fft_circ_auto_cov[k].re
                                         + fft_circ_auto_cov[k].im*fft_circ_auto_cov[k].im));
     fft_circ_auto_cov[k].im = 0.0;
   }
@@ -645,44 +675,44 @@ SeismicParametersHolder::getPriorCorrTFiltered(int nz, int nzp) const
 }
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePriorCorrT(fftw_real   * priorCorrT,
-                                             const int   & nzp,
-                                             const float & dt) const
-{
-  // This is the cyclic and filtered version of CorrT
-  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
-  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed
-       << std::right
-       << std::setprecision(6)
-       << dt << "\n";
-  for(int i=0 ; i<nzp; i++) {
-    file << std::setw(9) << priorCorrT[i] << "\n";
-  }
-  file.close();
-}
+//void
+//SeismicParametersHolder::writeFilePriorCorrT(fftw_real   * priorCorrT,
+//                                             const int   & nzp,
+//                                             const float & dt) const
+//{
+//  // This is the cyclic and filtered version of CorrT
+//  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
+//  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed
+//       << std::right
+//       << std::setprecision(6)
+//       << dt << "\n";
+//  for(int i=0 ; i<nzp; i++) {
+//    file << std::setw(9) << priorCorrT[i] << "\n";
+//  }
+//  file.close();
+//}
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
-                                            const std::string        & subDir,
-                                            const std::string        & baseName) const
-{
-  std::string fileName = IO::makeFullFileName(subDir,baseName);
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed;
-  file << std::setprecision(6);
-  file << std::right;
-  float c0 = 1.0f/postCov[0];
-
-  for(int k=0 ; k < static_cast<int>(postCov.size()) ; k++)
-    file << std::setw(9) << postCov[k]*c0 << "\n";
-
-  file.close();
-}
+//void
+//SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
+//                                            const std::string        & subDir,
+//                                            const std::string        & baseName) const
+//{
+//  std::string fileName = IO::makeFullFileName(subDir,baseName);
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed;
+//  file << std::setprecision(6);
+//  file << std::right;
+//  float c0 = 1.0f/postCov[0];
+//
+//  for(int k=0 ; k < static_cast<int>(postCov.size()) ; k++)
+//    file << std::setw(9) << postCov[k]*c0 << "\n";
+//
+//  file.close();
+//}
 
 //--------------------------------------------------------------------
 void
@@ -792,71 +822,71 @@ SeismicParametersHolder::printPostVariances(const NRLib::Matrix & postVar0) cons
 }
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postVar0,
-                                                const std::vector<float> & postCovVp00,
-                                                const std::vector<float> & postCovVs00,
-                                                const std::vector<float> & postCovRho00) const
-{
-  std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
-  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
-
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName);
-  file << std::fixed;
-  file << std::right;
-  file << std::setprecision(6);
-  for(int i=0 ; i<3 ; i++) {
-    for(int j=0 ; j<3 ; j++) {
-      file << std::setw(10) << postVar0(i,j) << " ";
-    }
-    file << "\n";
-  }
-  file.close();
-
-  std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
-  std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
-  std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
-  writeFilePostCorrT(postCovVp00,  IO::PathToCorrelations(), baseName1);
-  writeFilePostCorrT(postCovVs00,  IO::PathToCorrelations(), baseName2);
-  writeFilePostCorrT(postCovRho00, IO::PathToCorrelations(), baseName3);
-}
+//void
+//SeismicParametersHolder::writeFilePostVariances(const NRLib::Matrix      & postVar0,
+//                                                const std::vector<float> & postCovVp00,
+//                                                const std::vector<float> & postCovVs00,
+//                                                const std::vector<float> & postCovRho00) const
+//{
+//  std::string baseName = IO::PrefixPosterior() + IO::FileParameterCov() + IO::SuffixGeneralData();
+//  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
+//
+//  std::ofstream file;
+//  NRLib::OpenWrite(file, fileName);
+//  file << std::fixed;
+//  file << std::right;
+//  file << std::setprecision(6);
+//  for(int i=0 ; i<3 ; i++) {
+//    for(int j=0 ; j<3 ; j++) {
+//      file << std::setw(10) << postVar0(i,j) << " ";
+//    }
+//    file << "\n";
+//  }
+//  file.close();
+//
+//  std::string baseName1 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vp" +IO::SuffixGeneralData();
+//  std::string baseName2 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Vs" +IO::SuffixGeneralData();
+//  std::string baseName3 = IO::PrefixPosterior() + IO::PrefixTemporalCorr()+"Rho"+IO::SuffixGeneralData();
+//  writeFilePostCorrT(postCovVp00,  IO::PathToCorrelations(), baseName1);
+//  writeFilePostCorrT(postCovVs00,  IO::PathToCorrelations(), baseName2);
+//  writeFilePostCorrT(postCovRho00, IO::PathToCorrelations(), baseName3);
+//}
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
-{
-  std::string fileName;
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
-  covVp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covVp_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
-  covVp_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
-  covVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
-  covVs_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
-  covRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  covRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
-  covRho_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
-  crCovVpVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVpVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
-  crCovVpVs_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
-  crCovVpRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVpRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
-  crCovVpRho_ ->endAccess();
-
-  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
-  crCovVsRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
-  crCovVsRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
-  crCovVsRho_ ->endAccess();
-}
+//void
+//SeismicParametersHolder::writeFilePostCovGrids(Simbox const * simbox) const
+//{
+//  std::string fileName;
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+//  covVp_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covVp_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vp");
+//  covVp_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+//  covVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for Vs");
+//  covVs_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+//  covRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  covRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior covariance for density");
+//  covRho_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+//  crCovVpVs_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVpVs_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,Vs)");
+//  crCovVpVs_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+//  crCovVpRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVpRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vp,density)");
+//  crCovVpRho_ ->endAccess();
+//
+//  fileName = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
+//  crCovVsRho_ ->setAccessMode(FFTGrid::RANDOMACCESS);
+//  crCovVsRho_ ->writeFile(fileName, IO::PathToCorrelations(), simbox, "Posterior cross-covariance for (Vs,density)");
+//  crCovVsRho_ ->endAccess();
+//}
 
 //-------------------------------------------------------------------
 fftw_real *
@@ -920,3 +950,100 @@ SeismicParametersHolder::createPostCov00(FFTGrid * postCov) const
   return postCov00;
 }
 //--------------------------------------------------------------------
+
+void SeismicParametersHolder::releaseGrids()
+{
+  if (postVp_ != NULL)
+    delete postVp_;
+
+  if (postVs_ != NULL)
+    delete postVs_;
+
+  if (postRho_ != NULL)
+    delete postRho_;
+
+  if (postVpKriged_ != NULL)
+    delete postVpKriged_;
+
+  if (postVsKriged_ != NULL)
+    delete postVsKriged_;
+
+  if (postRhoKriged_ != NULL)
+    delete postRhoKriged_;
+
+  if (block_grid_ != NULL)
+    delete block_grid_;
+
+  if (facies_prob_undef_ != NULL)
+    delete facies_prob_undef_;
+
+  if (quality_grid_ != NULL)
+    delete quality_grid_;
+
+  for (size_t i = 0; i < simulations_seed0_.size(); i++) {
+    if (simulations_seed0_[i] != NULL)
+      delete simulations_seed0_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed1_.size(); i++) {
+    if (simulations_seed1_[i] != NULL)
+      delete simulations_seed1_[i];
+  }
+
+  for (size_t i = 0; i < simulations_seed2_.size(); i++) {
+    if (simulations_seed2_[i] != NULL)
+      delete simulations_seed2_[i];
+  }
+
+  //for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
+  //  if (synt_seismic_data_[i] != NULL)
+  //    delete synt_seismic_data_[i];
+  //}
+
+  //for (size_t i = 0; i < synt_residuals_.size(); i++) {
+  //  if (synt_residuals_[i] != NULL)
+  //    delete synt_residuals_[i];
+  //}
+
+  for (size_t i = 0; i < facies_prob_.size(); i++) {
+    if (facies_prob_[i] != NULL)
+      delete facies_prob_[i];
+  }
+
+  for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
+    if (facies_prob_geo_[i] != NULL)
+      delete facies_prob_geo_[i];
+  }
+
+  for (size_t i = 0; i < lh_cube_.size(); i++) {
+    if (lh_cube_[i] != NULL)
+      delete lh_cube_[i];
+  }
+}
+
+//FFTGrid*
+//SeismicParametersHolder::copyFFTGrid(FFTGrid * fft_grid_old)
+//{
+//  FFTGrid* fft_grid;
+//  if(fft_grid_old->isFile())
+//    fft_grid = new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fft_grid_old));
+//  else
+//    fft_grid = new FFTGrid(fft_grid_old);
+//
+//  return(fft_grid);
+//}
+
+FFTGrid*
+SeismicParametersHolder::copyFFTGrid(FFTGrid * fft_grid_old)
+{
+  FFTGrid* fft_grid;
+  if(fft_grid_old->isFile()) {
+    fft_grid_old->endAccess();
+    fft_grid = new FFTFileGrid(reinterpret_cast<FFTFileGrid*>(fft_grid_old));
+    //fft_grid = new FFTGrid(reinterpret_cast<FFTGrid*>(fft_grid_old));
+  }
+  else
+    fft_grid = new FFTGrid(fft_grid_old);
+
+  return(fft_grid);
+}

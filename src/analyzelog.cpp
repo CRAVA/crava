@@ -12,8 +12,6 @@
 #include "src/modelsettings.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
-//#include "src/welldata.h"
-//#include "src/background.h"
 #include "src/blockedlogscommon.h"
 #include "src/simbox.h"
 #include "src/io.h"
@@ -233,7 +231,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     //corr_T_.resize(n_lags, 0);
     auto_cov_.resize(n_lags);
 
-    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs_for_correlation, interval_simboxes, log_data_vp, log_data_vs, log_data_rho, 
+    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs_for_correlation, interval_simboxes, log_data_vp, log_data_vs, log_data_rho,
       all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, var_vs_resid, dz_min, n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
 
     SetParameterCov(auto_cov_[0], var_0_, 3);
@@ -832,7 +830,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
               n_data++;
               vp.push_back(vp_blocked[k]);
               rho.push_back(rho_blocked[k]);
-              vs.push_back(vs_blocked[k]);                
+              vs.push_back(vs_blocked[k]);
             }
           }
         }
@@ -992,7 +990,8 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
     }
     time(&timeend);
-    printf("\nWell %s processed in %ld seconds.", well_names[i].c_str(), timeend-timestart);
+    int time = timeend - timestart;
+    printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);
   }
 
   // Calculate autocovariances
@@ -1057,11 +1056,11 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     }
   }
 
-  if(err_text == ""){ 
+  if(err_text == ""){
 
     // Default covariance between Vp and Vs. Value is explained in Jira issue CRA-220.
     for (int i = 0; i < max_lag_with_data; i++){
-      
+
       if(count[i](0,1) > 1){
         temp_auto_cov[i](0,1) = temp_auto_cov[i](0,1)/(count[i](0,1) - 1);
       }
@@ -1118,7 +1117,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     c_prev[i].resize(3,0.0);
     c_next[i].resize(3,0.0);
   }
-    
+
   int   nipol;
   float cipol;
 
@@ -1133,7 +1132,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       auto_cov[0](k,j) = auto_cov[0](j,k);
     }
   }
-    
+
   //CorrT[0]=corTT[0];
   for(int i=1; i<max_lag_with_data; i++){
     for(int j=0 ; j<3; j++){
@@ -1688,10 +1687,10 @@ void  Analyzelog::CheckVariances(const ModelSettings      * model_settings,
   //|
   //| The limits are for point variances. The minimum allowed variance
   //| for parameters will be scaled with 1/dt*dt
-  float minVarAlpha = model_settings->getVarAlphaMin();
-  float maxVarAlpha = model_settings->getVarAlphaMax();
-  float minVarBeta  = model_settings->getVarBetaMin();
-  float maxVarBeta  = model_settings->getVarBetaMax();
+  float minVarAlpha = model_settings->getVarVpMin();
+  float maxVarAlpha = model_settings->getVarVpMax();
+  float minVarBeta  = model_settings->getVarVsMin();
+  float maxVarBeta  = model_settings->getVarVsMax();
   float minVarRho   = model_settings->getVarRhoMin();
   float maxVarRho   = model_settings->getVarRhoMax();
 

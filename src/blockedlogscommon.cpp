@@ -591,10 +591,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
           break;
         }
       }
-    } //H-Added Correct?
-      if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING)
-        break;
-    //} //H
+    }
     if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING)
       break;
   }
@@ -2979,6 +2976,64 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
   }
 }
 
+void  BlockedLogsCommon::SetLogFromGrid(SegY         * segy,
+                                        const Simbox & simbox,
+                                        int            i_angle,
+                                        int            n_angles,
+                                        std::string    type)
+{
+  std::vector<double> blocked_log(n_blocks_);
+
+  double x     = 0.0;
+  double y     = 0.0;
+  double z     = 0.0;
+  double value = 0.0;
+
+  for (size_t m = 0 ; m < n_blocks_ ; m++) {
+
+    simbox.getCoord(i_pos_[m], j_pos_[m], k_pos_[m], x, y, z);
+    value = segy->GetValue(x, y, z);
+    blocked_log[m] = value;
+
+    //blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);
+  }
+
+  if (n_angles_ == 0)
+    n_angles_ = n_angles;
+
+  if (type == "SEISMIC_DATA") {
+    real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
+  }
+}
+
+void  BlockedLogsCommon::SetLogFromGrid(StormContGrid * storm,
+                                        int             i_angle,
+                                        int             n_angles,
+                                        std::string     type)
+{
+  std::vector<double> blocked_log(n_blocks_);
+
+  double grid_x = 0.0;
+  double grid_y = 0.0;
+  double grid_z = 0.0;
+  double value  = 0.0;
+
+  for (size_t m = 0 ; m < n_blocks_ ; m++) {
+    storm->FindCenterOfCell(i_pos_[m], j_pos_[m], k_pos_[m], grid_x, grid_y, grid_z);
+    value = storm->GetValueZInterpolated(grid_x, grid_y, grid_z);
+    blocked_log[m] = value;
+
+    //blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);
+  }
+
+  if (n_angles_ == 0)
+    n_angles_ = n_angles;
+
+  if (type == "SEISMIC_DATA") {
+    real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
+  }
+}
+
 
 //------------------------------------------------------------------------------
 void BlockedLogsCommon::WriteWell(const int                        formats,
@@ -2987,7 +3042,6 @@ void BlockedLogsCommon::WriteWell(const int                        formats,
                                   const std::vector<std::string> & facies_name,
                                   const std::vector<int>         & facies_label)
 {
-  //int formats = modelSettings->getWellFormatFlag();
   if ((formats & IO::RMSWELL) > 0) {
     WriteRMSWell(max_hz_background,
                  max_hz_seismic,

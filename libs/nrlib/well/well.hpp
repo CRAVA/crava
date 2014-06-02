@@ -144,11 +144,30 @@ namespace NRLib {
     /// Map integer log to facies name
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
 
+    void SetXPos0(double x_pos0) { x_pos0_ = x_pos0 ;}
+    void SetYPos0(double y_pos0) { y_pos0_ = y_pos0 ;}
+
+    double GetXPos0() { return x_pos0_ ;}
+    double GetYPos0() { return y_pos0_ ;}
+
     /// Set number of non-missing data
     void SetNumberOfNonMissingData(int n_data_nonmissing) { n_data_nonmissing_ = n_data_nonmissing ;}
 
     /// Set number of data
     void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+
+    /// Write wells
+    void WriteWell(int         well_format,
+                   const float max_hz_background,
+                   const float max_hz_seismic) const;
+
+    /// Write RMS Well
+    void WriteRMSWell(const float max_hz_background,
+                      const float max_hz_seismic) const;
+
+    /// Write Norsar Well
+    void WriteNorsarWell(const float max_hz_background,
+                         const float max_hz_seismic) const;
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
@@ -205,6 +224,9 @@ namespace NRLib {
     int                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
     int                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
     int                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
+
+    double                      x_pos0_;                       // x-coordinate from well file header
+    double                      y_pos0_;                       // y-coordinate from well file header
 
   };
 

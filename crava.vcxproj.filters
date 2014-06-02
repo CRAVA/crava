@@ -1005,6 +1005,9 @@
     <ClCompile Include="src\avoinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\cravaresult.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1693,6 +1696,9 @@
     </ClInclude>
     <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cravaresult.h">
+      <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

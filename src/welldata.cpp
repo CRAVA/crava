@@ -1073,10 +1073,10 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
   //
   bool debug = true;
 
-  float alpha_min = modelSettings_->getAlphaMin();
-  float alpha_max = modelSettings_->getAlphaMax();
-  float beta_min  = modelSettings_->getBetaMin();
-  float beta_max  = modelSettings_->getBetaMax();
+  float alpha_min = modelSettings_->getVpMin();
+  float alpha_max = modelSettings_->getVpMax();
+  float beta_min  = modelSettings_->getVsMin();
+  float beta_max  = modelSettings_->getVsMax();
   float rho_min   = modelSettings_->getRhoMin();
   float rho_max   = modelSettings_->getRhoMax();
 

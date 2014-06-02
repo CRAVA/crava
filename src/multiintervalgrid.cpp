@@ -50,7 +50,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   try{
     // if multiple-intervals keyword is used in model settings
     if (multiple_interval_setting_){
-      top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+      top_surface_file_name_temp = input_files->getTimeSurfTopFile();//getTimeSurfFile(0);
       erosion_priorities_[0] = erosion_priority_top_surface;
 
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
@@ -59,7 +59,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       for (int i = 0; i < n_intervals_; i++) {
 
         std::string interval_name = model_settings->getIntervalName(i);
-        base_surface_file_name_temp = input_files->getIntervalBaseTimeSurface(interval_name);
+        base_surface_file_name_temp = input_files->getBaseTimeSurface(interval_name);
         erosion_priorities_[i+1] = erosion_priority_base_surfaces.find(interval_name)->second;
 
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
@@ -70,7 +70,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
         for (int i = 0; i<n_intervals_; i++){
           desired_grid_resolution_[i] = FindResolution(&surfaces[i], &surfaces[i+1], estimation_simbox,
-                                                     model_settings->getTimeNzInterval(interval_names_[i]));
+                                                     model_settings->getTimeNz(interval_names_[i]));
         }
 
         ErodeAllSurfaces(eroded_surfaces,
@@ -89,17 +89,17 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       int nz = model_settings->getTimeNzInterval("");
 
       if (model_settings->getParallelTimeSurfaces() == false) {
-        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[0] = *top_surface;
 
-        base_surface_file_name_temp = input_files->getTimeSurfFile(1);
+        base_surface_file_name_temp = input_files->getBaseTimeSurface("");
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[1] = *base_surface;
 
       }
       else { //H added if only one surface-file is used, similar to setup of estimation_simbox.
-        top_surface_file_name_temp = input_files->getTimeSurfFile(0);
+        top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[0] = *top_surface;
 
@@ -109,9 +109,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
-        if (model_settings->getTimeNzInterval("") == RMISSING) { //Taken from simbox->SetDepth without nz
+        //if (model_settings->getTimeNz("") == IMISSING) { //Taken from simbox->SetDepth without nz
+        if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
-          model_settings->setTimeNzInterval("", nz);
+          model_settings->setTimeNz("", nz);
         }
 
       }
@@ -137,11 +138,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               interval_names_,
                               eroded_surfaces,
                               interval_simboxes_,
-                              input_files->getCorrDirIntervalFiles(),
-                              input_files->getCorrDirIntervalTopSurfaceFiles(),
-                              input_files->getCorrDirIntervalBaseSurfaceFiles(),
-                              model_settings->getCorrDirIntervalTopConform(),
-                              model_settings->getCorrDirIntervalBaseConform(),
+                              input_files->getCorrDirFiles(),
+                              input_files->getCorrDirTopSurfaceFiles(),
+                              input_files->getCorrDirBaseSurfaceFiles(),
+                              model_settings->getCorrDirTopConforms(),
+                              model_settings->getCorrDirBaseConforms(),
                               desired_grid_resolution_,
                               relative_grid_resolution_,
                               dz_min_,
@@ -156,9 +157,9 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   }
 
   // Add surface files.
-  surface_files_.push_back(input_files->getTimeSurfFile(0));
+  surface_files_.push_back(input_files->getTimeSurfTopFile());
 
-  const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getIntervalBaseTimeSurfaces();
+  const std::map<std::string, std::string> & interval_base_time_surfaces = input_files->getBaseTimeSurfaces();
   for (int i = 0; i > n_intervals_; i++) {
     surface_files_.push_back(interval_base_time_surfaces.find(interval_names_[i])->second);
   }
@@ -280,7 +281,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     Surface                top_surface                            = eroded_surfaces[i];
     Surface                base_surface                           = eroded_surfaces[i+1];
     std::string            interval_name                          = interval_names[i];
-    int                    n_layers                               = model_settings->getTimeNzInterval(interval_name);
+    int                    n_layers                               = model_settings->getTimeNz(interval_name);
     std::map<std::string, std::string>::const_iterator it_single  = corr_dir_single_surfaces.find(interval_name);
     std::map<std::string, std::string>::const_iterator it_top     = corr_dir_top_surfaces.find(interval_name);
     std::map<std::string, std::string>::const_iterator it_base    = corr_dir_base_surfaces.find(interval_name);

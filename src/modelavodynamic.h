@@ -23,7 +23,7 @@ class FFTGrid;
 class RandomGen;
 class GridMapping;
 class InputFiles;
-class ModelAVOStatic;
+//class ModelAVOStatic;
 class ModelGeneral;
 class SeismicParametersHolder;
 
@@ -31,7 +31,7 @@ class ModelAVODynamic
 {
 public:
   ModelAVODynamic(ModelSettings          *& model_settings,
-                  ModelAVOStatic          * model_avo_static,
+                  //ModelAVOStatic          * model_avo_static,
                   ModelGeneral            * model_general,
                   CommonData              * common_data,
                   SeismicParametersHolder & seismic_parameters,
@@ -97,14 +97,21 @@ private:
                                         int                      nyp,
                                         int                      nzp);
 
-  void              SetupErrorCorrelation(const std::vector<Grid2D *> & noiseScale,
-                                          const float                 * dataVariance,
-                                          float                       * errorVariance,
-                                          double                     ** errThetaCov);
+  void              SetupErrorCorrelation(const std::vector<Grid2D *>             & noise_scale,
+                                          const float                             * data_variance,
+                                          const std::vector<float>                & sn_ratio,
+                                          const std::vector<std::vector<float > > & angular_corr,
+                                          float                                   * error_variance,
+                                          double                                 ** err_theta_cov);
 
   float             ComputeWDCorrMVar(Wavelet1D* WD,
                                       fftw_real* corrT,
                                       int        nzp);
+
+  void              AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                   const std::vector<SeismicStorage>          & seismic_data,
+                                   const Simbox                               & simbox,
+                                   int                                          n_angles);
 
 
   int                               number_of_angles_;
