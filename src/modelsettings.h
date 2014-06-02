@@ -93,19 +93,21 @@ public:
   int                              getNumberOfWells(void)               const { return nWells_                                    ;}
   int                              getNumberOfSimulations(void)         const { return nSimulations_                              ;}
   float                            getTemporalCorrelationRange(void)    const { return temporalCorrelationRange_                  ;}
-  float                            getAlphaMin(void)                    const { return alpha_min_                                 ;}
-  float                            getAlphaMax(void)                    const { return alpha_max_                                 ;}
-  float                            getBetaMin(void)                     const { return beta_min_                                  ;}
-  float                            getBetaMax(void)                     const { return beta_max_                                  ;}
+  float                            getVpMin(void)                       const { return vp_min_                                    ;}
+  float                            getVpMax(void)                       const { return vp_max_                                    ;}
+  float                            getVsMin(void)                       const { return vs_min_                                    ;}
+  float                            getVsMax(void)                       const { return vs_max_                                    ;}
   float                            getRhoMin(void)                      const { return rho_min_                                   ;}
   float                            getRhoMax(void)                      const { return rho_max_                                   ;}
-  float                            getVarAlphaMin(void)                 const { return var_alpha_min_                             ;}
-  float                            getVarAlphaMax(void)                 const { return var_alpha_max_                             ;}
-  float                            getVarBetaMin(void)                  const { return var_beta_min_                              ;}
-  float                            getVarBetaMax(void)                  const { return var_beta_max_                              ;}
+  float                            getVarVpMin(void)                    const { return var_vp_min_                                ;}
+  float                            getVarVpMax(void)                    const { return var_vp_max_                                ;}
+  float                            getVarVsMin(void)                    const { return var_vs_min_                                ;}
+  float                            getVarVsMax(void)                    const { return var_vs_max_                                ;}
   float                            getVarRhoMin(void)                   const { return var_rho_min_                               ;}
   float                            getVarRhoMax(void)                   const { return var_rho_max_                               ;}
-  float                            getVpVsRatio(void)                   const { return vp_vs_ratio_                               ;}
+  //float                            getVpVsRatio(void)                   const { return vp_vs_ratio_                               ;}
+  float                            getVpVsRatio(std::string interval_name) const { return vp_vs_ratio_.find(interval_name)->second;}
+  const std::map<std::string, float> & getVpVsRatios()                  const { return vp_vs_ratio_                               ;}
   float                            getVpVsRatioFromWells(void)          const { return vp_vs_ratio_from_wells_                    ;}
   float                            getVpVsRatioMin(void)                const { return vp_vs_ratio_min_                           ;}
   float                            getVpVsRatioMax(void)                const { return vp_vs_ratio_max_                           ;}
@@ -148,7 +150,8 @@ public:
   double                           getTimeLz(void)                      const { return time_lz_                                   ;}
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   //int                              getTimeNz(void)                      const { return time_nz_                                   ;}
-  int                              getTimeNzInterval(std::string name)  const { return time_nz_interval_.find(name)->second       ;}
+  int                              getTimeNz(std::string interval_name) const { return time_nz_.find(interval_name)->second       ;}
+  const std::map<std::string, int> & getTimeNzs()                       const { return time_nz_                                   ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
@@ -222,22 +225,21 @@ public:
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
 
-  std::map<std::string, float>                         getVpVsRatioIntervals()                                          const { return vpvs_ratio_interval_                                                ;}
-  std::map<std::string, float>                         getPriorFaciesProbsInterval(std::string interval_name)           const { return priorFaciesProbInterval_.find(interval_name)->second                ;}
-  const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbIntervals()                            const { return priorFaciesProbInterval_                                            ;}
-  std::map<std::string, float>                         getVolumeFractionsProbInterval(std::string interval_name)        const { return volumefractionInterval_.find(interval_name)->second                 ;}
-  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbIntervals()                                const { return volumefractionInterval_                                             ;}
-  int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                                       ;}
-  const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_interval_base_surface_                             ;}
-  int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_interval_base_surface_.find(interval_name)->second ;}
+  std::map<std::string, float>                         getPriorFaciesProb(std::string interval_name)                    const { return priorFaciesProb_.find(interval_name)->second                ;}
+  const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbs()                                    const { return priorFaciesProb_                                            ;}
+  std::map<std::string, float>                         getVolumeFractionsProb(std::string interval_name)                const { return volumeFraction_.find(interval_name)->second                 ;}
+  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbs()                                        const { return volumeFraction_                                             ;}
+  int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                               ;}
+  const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_base_surfaces_                             ;}
+  int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_base_surfaces_.find(interval_name)->second ;}
 
-  bool                               getCorrDirTopConform(void)                       const { return topConformCorrelation_                             ;}
-  bool                               getCorrDirBaseConform(void)                      const { return baseConformCorrelation_                            ;}
-  const std::map<std::string, bool>& getCorrDirIntervalTopConform()                   const { return intervalTopConformCorrelation_                     ;}
-  bool                               getCorrDirIntervalTopConform(std::string name)   const { return intervalTopConformCorrelation_.find(name)->second  ;}
-  const std::map<std::string, bool>& getCorrDirIntervalBaseConform()                  const { return intervalBaseConformCorrelation_                    ;}
-  bool                               getCorrDirIntervalBaseConform(std::string name)  const { return intervalBaseConformCorrelation_.find(name)->second ;}
-  bool                               getCorrDirIntervalUsed(void)                     const { return intervalCorrelationUsed_                           ;}
+  //bool                               getCorrDirTopConform(void)                       const { return topConformCorrelation_                             ;}
+  //bool                               getCorrDirBaseConform(void)                      const { return baseConformCorrelation_                            ;}
+  const std::map<std::string, bool>& getCorrDirTopConforms()                  const { return topConformCorrelation_                     ;}
+  bool                               getCorrDirTopConform(std::string name)   const { return topConformCorrelation_.find(name)->second  ;}
+  const std::map<std::string, bool>& getCorrDirBaseConforms()                 const { return baseConformCorrelation_                    ;}
+  bool                               getCorrDirBaseConform(std::string name)  const { return baseConformCorrelation_.find(name)->second ;}
+  bool                               getCorrDirUsed(void)                     const { return correlationUsed_                           ;}
 
 
 
@@ -320,22 +322,22 @@ public:
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
-  void setAlphaMin(float alpha_min)                       { alpha_min_                = alpha_min                ;}
-  void setAlphaMax(float alpha_max)                       { alpha_max_                = alpha_max                ;}
-  void setBetaMin(float beta_min)                         { beta_min_                 = beta_min                 ;}
-  void setBetaMax(float beta_max)                         { beta_max_                 = beta_max                 ;}
+  void setVpMin(float vp_min)                             { vp_min_                   = vp_min                   ;}
+  void setVpMax(float vp_max)                             { vp_max_                   = vp_max                   ;}
+  void setVsMin(float vs_min)                             { vs_min_                   = vs_min                   ;}
+  void setVsMax(float vs_max)                             { vs_max_                   = vs_max                   ;}
   void setRhoMin(float rho_min)                           { rho_min_                  = rho_min                  ;}
   void setRhoMax(float rho_max)                           { rho_max_                  = rho_max                  ;}
-  void setVarAlphaMin(float var_alpha_min)                { var_alpha_min_            = var_alpha_min            ;}
-  void setVarAlphaMax(float var_alpha_max)                { var_alpha_max_            = var_alpha_max            ;}
-  void setVarBetaMin(float var_beta_min)                  { var_beta_min_             = var_beta_min             ;}
-  void setVarBetaMax(float var_beta_max)                  { var_beta_max_             = var_beta_max             ;}
+  void setVarVpMin(float var_vp_min)                      { var_vp_min_               = var_vp_min               ;}
+  void setVarVpMax(float var_vp_max)                      { var_vp_max_               = var_vp_max               ;}
+  void setVarVsMin(float var_vs_min)                      { var_vs_min_               = var_vs_min               ;}
+  void setVarVsMax(float var_vs_max)                      { var_vs_max_               = var_vs_max               ;}
   void setVarRhoMin(float var_rho_min)                    { var_rho_min_              = var_rho_min              ;}
   void setVarRhoMax(float var_rho_max)                    { var_rho_max_              = var_rho_max              ;}
-  void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
-  void addVpVsRatioInterval(std::string interval_name, float ratio){ vpvs_ratio_interval_[interval_name] = ratio ;}
+  //void setVpVsRatio(float vp_vs_ratio)                    { vp_vs_ratio_              = vp_vs_ratio              ;}
+  void addVpVsRatio(std::string interval_name, float ratio){ vp_vs_ratio_[interval_name] = ratio                 ;}
   void setErosionPriorityTopSurface(int priority)         { erosion_priority_top_surface_= priority              ;}
-  void setErosionPriorityBaseSurface(const std::string & interval_name, int erosion_pri) { erosion_priority_interval_base_surface_[interval_name] = erosion_pri; }
+  void setErosionPriorityBaseSurface(const std::string & interval_name, int erosion_pri) { erosion_priority_base_surfaces_[interval_name] = erosion_pri; }
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -377,7 +379,7 @@ public:
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
   //void setTimeNz(int time_nz)                             { time_nz_                  = time_nz                  ;}
-  void setTimeNzInterval(std::string name, int time_nz)   { time_nz_interval_[name]   = time_nz                  ;}
+  void setTimeNz(std::string interval_name, int time_nz)  { time_nz_[interval_name]   = time_nz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
@@ -411,10 +413,7 @@ public:
   void setFaciesLogGiven(bool faciesLogGiven)             { faciesLogGiven_           = faciesLogGiven           ;}
   void setPorosityLogGiven(bool porosityGiven)            { porosityLogGiven_         = porosityGiven            ;}
   //void addPriorFaciesProb(std::string name, float value)  { priorFaciesProb_[name]    = value                    ;}
-  void addVolumeFractionProb(std::string name, float value)  { volumeFractionProb_[name]    = value              ;}
-  void addPriorFaciesProbsInterval(std::string interval_name, std::map<std::string, float> prior_int_map)     { priorFaciesProbInterval_[interval_name]              = prior_int_map       ;}
-  void addPriorFaciesProbInterval(std::string interval_name, std::string facies_name, float value)            { priorFaciesProbInterval_[interval_name][facies_name] = value               ;}
-  void addVolumeFractionInterval(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumefractionInterval_[interval_name]               = volumefractions_map ;}
+  void addVolumeFractionProb(std::string name, float value) { volumeFractionProb_[name] = value                  ;}
   void setPriorFaciesProbGiven(int fpg)                   { priorFaciesProbGiven_     = fpg                      ;}
   void setDepthDataOk(bool depthDataOk)                   { depthDataOk_              = depthDataOk              ;}
   void setParallelTimeSurfaces(bool pTimeSurfaces)        { parallelTimeSurfaces_     = pTimeSurfaces            ;}
@@ -432,6 +431,10 @@ public:
   void setNoSeismicNeeded(bool seismicNeeded)             { noSeismicNeeded_          = seismicNeeded            ;}
   void addTimeGradientSettings(float distance, float alpha);
 
+  void addPriorFaciesProbs(std::string interval_name, std::map<std::string, float> prior_int_map)     { priorFaciesProb_[interval_name]              = prior_int_map       ;}
+  void addPriorFaciesProb(std::string interval_name, std::string facies_name, float value)            { priorFaciesProb_[interval_name][facies_name] = value               ;}
+  void addVolumeFraction(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumeFraction_[interval_name]               = volumefractions_map ;}
+
   void addDefaultVintage(void);
   void addDefaultTimeGradientSettings(void);
   void addDefaultSegyOffset(void)                         { segyOffset_.push_back(0.0f)                          ;}
@@ -444,14 +447,14 @@ public:
 
   //void setCorrDirTopConform(bool topConformCorrelation)   { topConformCorrelation_   = topConformCorrelation     ;}
   //void setCorrDirBaseConform(bool baseConformCorrelation) { baseConformCorrelation_  = baseConformCorrelation    ;}
-  void setCorrDirIntervalTopConform(const std::string & interval_name, bool intervalTopConformCorrelation)   { intervalTopConformCorrelation_[interval_name]  = intervalTopConformCorrelation  ;}
-  void setCorrDirIntervalBaseConform(const std::string & interval_name, bool intervalBaseConformCorrelation) { intervalBaseConformCorrelation_[interval_name] = intervalBaseConformCorrelation ;}
-  void setCorrDirIntervalUsed(bool intervalCorrelationUsed) { intervalCorrelationUsed_ = intervalCorrelationUsed ;}
+  void setCorrDirTopConform(const std::string & interval_name, bool topConformCorrelation)   { topConformCorrelation_[interval_name]  = topConformCorrelation  ;}
+  void setCorrDirBaseConform(const std::string & interval_name, bool baseConformCorrelation) { baseConformCorrelation_[interval_name] = baseConformCorrelation ;}
+  void setCorrDirUsed(bool correlationUsed)                                                  { correlationUsed_                       = correlationUsed        ;}
 
   void SetMultipleIntervals(bool b)                       { multiple_intervals_ = b                              ;}
   void addIntervalName(std::string name)                  { interval_names_.push_back(name)                      ;}
   void setIntervalNames(const std::vector<std::string> & interval_names) {interval_names_ = interval_names       ;}
-  void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
+  //void setErosionPriorityIntervals(const std::string & interval_name, const int priority) { erosion_priority_interval_base_surface_[interval_name] = priority;}
 
   void clearTimeLapse(void)                               { angle_.clear();
                                                             localTHF_.clear();
@@ -581,11 +584,11 @@ private:
 
   std::vector<float>                rickerPeakFrequency_;
 
-  int                               erosion_priority_top_surface_;// Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
-  std::map<std::string, int>        erosion_priority_interval_base_surface_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
+  int                               erosion_priority_top_surface_;   ///< Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
+  std::map<std::string, int>        erosion_priority_base_surfaces_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
   bool                              multiple_intervals_;          // Multiple interval setting being used
-  std::vector<std::string>          interval_names_;              // Interval names for multiple interval inversion
-  std::map<std::string, float>      vpvs_ratio_interval_;         // Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
+  std::vector<std::string>          interval_names_;                 ///< Interval names for multiple interval inversion
+  std::map<std::string, float>      vp_vs_ratio_;                    /// Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
 
   std::vector<int>                  waveletDim_;                 ///< Holds if 1D-wavelet (=0) or 3D-wavelet (=1)
   std::vector<float>                stretchFactor_;              ///< Stretch factor for pulse in 3D-wavelet
@@ -621,32 +624,32 @@ private:
   std::vector<std::string>          logNames_;                   ///< The keywords to look for for time, sonic, shear sonic and density
   std::vector<bool>                 inverseVelocity_;            ///< If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
 
-  int                               priorFaciesProbGiven_;
+  int                                                  priorFaciesProbGiven_;
   //std::map<std::string, float>      priorFaciesProb_;
-  std::map<std::string, float>      volumeFractionProb_;
-  std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
-  std::map<std::string, std::map<std::string, float> >      volumefractionInterval_;
+  std::map<std::string, float>                         volumeFractionProb_;
+  std::map<std::string, std::map<std::string, float> > priorFaciesProb_; ///< map interval map facies name
+  std::map<std::string, std::map<std::string, float> > volumeFraction_;  ///< map interval map facies name
 
   int                               nWells_;
   int                               nSimulations_;
 
-  float                             alpha_min_;                  ///< Vp - smallest allowed value
-  float                             alpha_max_;                  ///< Vp - largest allowed value
-  float                             beta_min_;                   ///< Vs - smallest allowed value
-  float                             beta_max_;                   ///< Vs - largest allowed value
+  float                             vp_min_;                     ///< Vp - smallest allowed value
+  float                             vp_max_;                     ///< Vp - largest allowed value
+  float                             vs_min_;                     ///< Vs - smallest allowed value
+  float                             vs_max_;                     ///< Vs - largest allowed value
   float                             rho_min_;                    ///< Rho - smallest allowed value
   float                             rho_max_;                    ///< Rho - largest allowed value
 
-  float                             var_alpha_min_;              ///<| These min and max values are used for consistency check. If
-  float                             var_alpha_max_;              ///<| variances are outside these ranges there is probably a
-  float                             var_beta_min_;               ///<| problem with the logs.
-  float                             var_beta_max_;               ///<|
+  float                             var_vp_min_;                 ///<| These min and max values are used for consistency check. If
+  float                             var_vp_max_;                 ///<| variances are outside these ranges there is probably a
+  float                             var_vs_min_;                 ///<| problem with the logs.
+  float                             var_vs_max_;                 ///<|
   float                             var_rho_min_;                ///<| The limits are for point variances. The minimum allowed variance
   float                             var_rho_max_;                ///<| for parameters will be scaled with 1/dt*dt
 
   float                             vp_vs_ratio_min_;            ///< Smallest Vp/Vs-ratio regarded as likely
   float                             vp_vs_ratio_max_;            ///< Largest Vp/Vs-ratio regarded as likely
-  float                             vp_vs_ratio_;                ///< Vp/Vs-ratio from input
+  //float                             vp_vs_ratio_;                ///< Vp/Vs-ratio from input
   bool                              vp_vs_ratio_from_wells_;     ///< Estimate Vp/Vs-ratio from well data
 
   float                             ref_depth_;                  ///< z0 - reference depth for target area
@@ -701,7 +704,7 @@ private:
   double                            time_dTop_;                  ///< Used when top and base surfaces are parallel
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
   double                            time_dz_;                    ///< Used when top and base surfaces are parallel
-  std::map<std::string, int>        time_nz_interval_;           ///< Number of layers for each interval
+  std::map<std::string, int>        time_nz_;                    ///< Number of layers for each interval
   //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 
@@ -760,18 +763,19 @@ private:
   double                            gradientSmoothingRange_;     ///< Controls smoothing of gradient used in 3D wavelet estimate/inversion
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
 
-  bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
-  bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
-  std::map<std::string, bool>       intervalTopConformCorrelation_;  ///< Should top correlation direction be equal to the top inversion surface per interval
-  std::map<std::string, bool>       intervalBaseConformCorrelation_; ///< Should base correlation direction be equal to the base inversion surface per interval
-  bool                              intervalCorrelationUsed_;    ///< Whether intervals are used for correlation direction
+  std::map<std::string, bool>       topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface per interval
+  std::map<std::string, bool>       baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface per interval
+  bool                              correlationUsed_;            ///< Whether intervals are used for correlation direction
+
+  std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
+  std::vector<int>                  trendCubeType_;               // Type of the trend cube
+
+  //bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
+  //bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
 
   //std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
   //std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
   //std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
-
-  std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
-  std::vector<int>                  trendCubeType_;               // Type of the trend cube
 
   std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
   std::map<std::string, DistributionsRockStorage *>                   rockStorage_;        // Rock physics rocks defined in predefinitions

@@ -155,6 +155,8 @@ RMSWell::RMSWell(const std::string& filename)
   // Find n_data including WELLMISSING values
   unsigned int n_data = GetContLog("TWT").size();
   this->SetNumberOfData(n_data);
+  SetXPos0(xpos0_);
+  SetYPos0(ypos0_);
 }
 
 

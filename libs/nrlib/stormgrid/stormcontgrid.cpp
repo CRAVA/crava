@@ -209,6 +209,65 @@ void StormContGrid::WriteToFile(const std::string& filename, const std::string& 
     file << 0;
 }
 
+void StormContGrid::WriteToSgriFile(const std::string & file_name,
+                                    const std::string & file_name_header,
+                                    const std::string & label,
+                                    double              simbox_dz,
+                                    Endianess           file_format) const
+{
+  // Header
+  double vert_scale = 0.001;
+  double hor_scale  = 0.001;
+
+  std::ofstream header_file;
+  NRLib::OpenWrite(header_file, file_name_header);
+
+  header_file << "NORSAR General Grid Format v1.0\n";
+  header_file << "3\n";
+  header_file << "X (km)\n";
+  header_file << "Y (km)\n";
+  header_file << "T (s)\n";
+  header_file << "FFT-grid\n";
+  header_file << "1\n";
+  header_file << label << std::endl;
+  header_file << "1 1 1\n";
+
+  double z_max = GetZMax();
+  double z_min = GetZMin();
+
+/*  float dz = static_cast<float> (floor(simbox->getdz()+0.5)); //To have the same sampling as in SegY
+  if (dz == 0.0)
+    dz = 1.0; */
+  float dz = static_cast<float> (simbox_dz);
+  int nz = static_cast<int> (ceil((z_max - z_min)/dz));
+  int ny = GetNJ();
+  int nx = GetNI();
+  header_file << nx << " " << ny << " " << nz << std::endl;
+  header_file << std::setprecision(10);
+  header_file << GetDX()*hor_scale << " " << GetDY()*hor_scale << " " << dz*vert_scale << std::endl;
+  double x0 = GetXMin() + 0.5 * GetDX();
+  double y0 = GetYMin() + 0.5 * GetDY();
+  double z0 = z_min + 0.5 * dz;
+  header_file << x0*hor_scale << " " << y0*hor_scale << " " << z0*vert_scale << std::endl;
+  header_file << GetAngle() << " 0\n";
+  header_file << missing_code_ << std::endl;
+
+  //fName = fileName + IO::SuffixSgri();
+  header_file << file_name << std::endl;
+  header_file << "0\n";
+
+  std::ofstream file;
+  OpenWrite(file, file_name, std::ios::out | std::ios::binary);
+
+  file.precision(14);
+
+  // Data
+  WriteBinaryFloatArray(file, begin(), end(), file_format);
+
+  // Final 0 (Number of barriers)
+  file << 0;
+}
+
 
 /// \todo Common implementation with StormFaciesGrid
 size_t StormContGrid::FindIndex(double x, double y, double z) const
@@ -604,4 +663,59 @@ void StormContGrid::ReadSgriBinaryFile(const std::string& filename)
 
   return;
 
+}
+
+void
+StormContGrid::WriteCravaFile(const std::string & file_name,
+                              double              inline_0,
+                              double              crossline_0,
+                              double              il_step_x,
+                              double              il_step_y,
+                              double              xl_step_x,
+                              double              xl_step_y)
+{
+  try {
+    std::ofstream bin_file;
+    //std::string f_name = file_name + IO::SuffixCrava();
+    NRLib::OpenWrite(bin_file, file_name, std::ios::out | std::ios::binary);
+
+    std::string file_type = "crava_fftgrid_binary";
+    bin_file << file_type << "\n";
+
+    NRLib::WriteBinaryDouble(bin_file, GetXMin()); //simbox->getx0());
+    NRLib::WriteBinaryDouble(bin_file, GetYMin()); //simbox->gety0());
+    NRLib::WriteBinaryDouble(bin_file, GetDX()); //simbox->getdx());
+    NRLib::WriteBinaryDouble(bin_file, GetDY()); //simbox->getdy());
+    NRLib::WriteBinaryInt(bin_file, GetNI()); //simbox->getnx());
+    NRLib::WriteBinaryInt(bin_file, GetNJ()); //simbox->getny());
+    NRLib::WriteBinaryDouble(bin_file, inline_0); //simbox->getIL0());
+    NRLib::WriteBinaryDouble(bin_file, crossline_0); //simbox->getXL0());
+    NRLib::WriteBinaryDouble(bin_file, il_step_x); //simbox->getILStepX());
+    NRLib::WriteBinaryDouble(bin_file, il_step_y); //simbox->getILStepY());
+    NRLib::WriteBinaryDouble(bin_file, xl_step_x); //simbox->getXLStepX());
+    NRLib::WriteBinaryDouble(bin_file, xl_step_y); //simbox->getXLStepY());
+    NRLib::WriteBinaryDouble(bin_file, GetAngle()); //simbox->getAngle());
+    NRLib::WriteBinaryInt(bin_file, GetNI()); //NRLib::WriteBinaryInt(bin_file, rnxp_);
+    NRLib::WriteBinaryInt(bin_file, GetNJ()); //NRLib::WriteBinaryInt(bin_file, nyp_);
+    NRLib::WriteBinaryInt(bin_file, GetNK()); //NRLib::WriteBinaryInt(bin_file, nzp_);
+
+    //for(int i=0;i<rsize_;i++)
+    //  NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
+
+    float value = 0.0f;
+    for (size_t i = 0; i < GetNI(); i++) {
+      for (size_t j = 0; j < GetNJ(); j++) {
+        for (size_t k = 0; k < GetNK(); k++) {
+          value = GetValue(i, j, k);
+          NRLib::WriteBinaryFloat(bin_file, value);
+        }
+      }
+    }
+
+    bin_file.close();
+  }
+  catch (NRLib::Exception & e) {
+    std::string message = "Error: "+std::string(e.what())+"\n";
+    throw Exception(message);
+  }
 }

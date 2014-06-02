@@ -114,8 +114,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   SpatialWellFilter * spatwellfilter = NULL;
 
-  bool multi_interval = modelGeneral->GetMultiInterval();
-
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -146,9 +144,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
     //H-Writing
-    float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz() && !multi_interval);
-    if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-      seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
+    //float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
+    //if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+    //  seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
+    seismicParameters.SetCorrT(corrT); //Need to store separatly because later CovVp is transformed
 
     errCorr_ = modelAVOstatic->GetErrCorr();
 
@@ -159,13 +158,16 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //computeVariances(corrT, modelSettings_);
 
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-    fftw_free(corrT);
+    //fftw_free(corrT);
 
     //H-Writing
-    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 && !multi_interval) {
+    if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
-      seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
-      delete [] corrTFiltered;
+      //seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
+
+      seismicParameters.SetCorrTFiltered(corrTFiltered);
+
+      //delete [] corrTFiltered;
     }
 
     if(simbox_->getIsConstantThick() == false)
@@ -226,10 +228,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seismicParameters.printPostVariances(postVar0_);
 
     //H-Writing
-    if((modelSettings->getOutputGridsOther() & IO::CORRELATION) && !multi_interval){
-      seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-      seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
-    }
+    //if(modelSettings->getOutputGridsOther() & IO::CORRELATION){
+    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
+    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
+    //}
 
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
@@ -248,13 +250,17 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if(modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
 
-    if(modelSettings->getGenerateSeismicAfterInv())
-      computeSyntSeismic(postVp_,postVs_,postRho_);
+    //Computation of SyntSeismic is moved until after intervalgrids are combined in CravaResult
+    //seismicParameters.AddReflectionMatrix(A_);
+
+    //if(modelSettings->getGenerateSeismicAfterInv())
+    //  computeSyntSeismic(postVp_, postVs_, postRho_, seismicParameters);
+
     //
     // Temporary placement.
     //
 
-    //H-Writing of wells: Why is this done for each timelapse? Move to after multiinterval
+    //H-Writing
     //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
     //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
     //}
@@ -265,7 +271,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   else{
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
 
-    computeSyntSeismic(postVp_,postVs_,postRho_);
+    //computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
   }
 
   postVp_ ->fftInPlace();
@@ -274,6 +280,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
   seismicParameters.FFTCovGrids();
+
+  seismicParameters.SetPostVar0(postVar0_);
+  seismicParameters.SetPostCovVp00(postCovVp00_);
+  seismicParameters.SetPostCovVs00(postCovVs00_);
+  seismicParameters.SetPostCovRho00(postCovRho00_);
+
 
   delete spatwellfilter;
 
@@ -1141,15 +1153,15 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
           }
         }
 
-        postVp_->setNextComplex(ijkMean[0]);
+        postVp_ ->setNextComplex(ijkMean[0]);
         postVs_ ->setNextComplex(ijkMean[1]);
-        postRho_  ->setNextComplex(ijkMean[2]);
-        postCovVp->setNextComplex(parVar[0][0]);
+        postRho_->setNextComplex(ijkMean[2]);
+        postCovVp ->setNextComplex(parVar[0][0]);
         postCovVs ->setNextComplex(parVar[1][1]);
-        postCovRho  ->setNextComplex(parVar[2][2]);
-        postCrCovVpVs->setNextComplex(parVar[0][1]);
-        postCrCovVpRho ->setNextComplex(parVar[0][2]);
-        postCrCovVsRho  ->setNextComplex(parVar[1][2]);
+        postCovRho->setNextComplex(parVar[2][2]);
+        postCrCovVpVs ->setNextComplex(parVar[0][1]);
+        postCrCovVpRho->setNextComplex(parVar[0][2]);
+        postCrCovVsRho->setNextComplex(parVar[1][2]);
 
         for (l=0;l<ntheta_;l++)
           seisData_[l]->setNextComplex(ijkRes[l]);
@@ -1214,7 +1226,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
-  if (modelGeneral_->GetVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it. //True implies multiinterval not used
+  if (modelGeneral_->GetVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
     LogKit::WriteHeader("Setup time-to-depth relationship");
     LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -1248,9 +1260,19 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   if (doing4DInversion_==false)
   {
     //H-Writing
-    //if(writePrediction_ == true )
-    //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-    //                                   outputGridsElastic_, fileGrid_, -1, false);
+    if(writePrediction_ == true ) {
+      seismicParameters.SetPostVp(postVp_);
+      seismicParameters.SetPostVs(postVs_);
+      seismicParameters.SetPostRho(postRho_);
+
+    //H-Writing
+      //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
+      //                                 outputGridsElastic_, fileGrid_, -1, false);
+
+    }
+
+
+
 
     writeBWPredicted();
   }
@@ -1406,18 +1428,21 @@ AVOInversion::SetComplexVector(NRLib::ComplexVector & V,
   }
 }
 
-
 void
 AVOInversion::doPredictionKriging(SeismicParametersHolder & seismicParameters)
 {
   if(writePrediction_ == true) { //No need to do this if output not requested.
     double wall2=0.0, cpu2=0.0;
     TimeKit::getTime(wall2,cpu2);
-    doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_);
+    doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_); //H-Writing inside
     Timings::setTimeKrigingPred(wall2,cpu2);
     //H-Writing
     //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
     //                                 outputGridsElastic_, fileGrid_, -1, true);
+
+    seismicParameters.SetPostVpKriging(postVp_);
+    seismicParameters.SetPostVsKriging(postVs_);
+    seismicParameters.SetPostRhoKriging(postRho_);
   }
 }
 
@@ -1583,17 +1608,18 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           if(kriging == true) {
             double wall2=0.0, cpu2=0.0;
             TimeKit::getTime(wall2,cpu2);
-            doPostKriging(seismicParameters, *seed0, *seed1, *seed2);
+            doPostKriging(seismicParameters, *seed0, *seed1, *seed2);  //H-Writing inside
             Timings::addToTimeKrigingSim(wall2,cpu2);
           }
 
-          //Only write simulated results if there is one interval
-          //H-Writing not working, need to change so it uses the new simboxes instead of timecutmapping (CRA-653)
-          //  Also move it to after multiinterval is ready for writing.
-          //if(modelGeneral_->GetMultiInterval() == false) {
-          //  ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-          //                                   outputGridsElastic_, fileGrid_, simNr, kriging);
-          //}
+          //H-Writing
+          //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
+          //                                 outputGridsElastic_, fileGrid_, simNr, kriging);
+
+          seismicParameters.AddSimulationSeed0(seed0);
+          seismicParameters.AddSimulationSeed1(seed1);
+          seismicParameters.AddSimulationSeed2(seed2);
+
 
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
@@ -1629,12 +1655,12 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
   CovGridSeparated covGridCrVpRho(*seismicParameters.GetCrCovVpRho());
   CovGridSeparated covGridCrVsRho(*seismicParameters.GetCrCovVsRho());
 
-  //KrigingData3D kd(wells_, nWells_, 1); // 1 = full resolution logs
   KrigingData3D kd(blocked_wells_, 1); // 1 = full resolution logs
 
-  std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-  std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
-  kd.writeToFile(fileName);
+  //H-Writing moved to cravaResult (where kd is made from common_data->GetBlockedLogs())
+  //std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+  //std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
+  //kd.writeToFile(fileName);
 
   CKrigingAdmin pKriging(*simbox_,
                          kd.getData(), kd.getNumberOfData(),
@@ -1642,7 +1668,7 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
                          covGridCrVpVs, covGridCrVpRho, covGridCrVsRho,
                          krigingParameter_);
 
-  pKriging.KrigAll(postVp, postVs, postRho, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
+  pKriging.KrigAll(postVp, postVs, postRho, seismicParameters, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging()); //H-Writing inside
 }
 
 FFTGrid *
@@ -1679,101 +1705,109 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
 }
 
 
-void
-AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho)
-{
-  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
-
-  bool fftDomain = vp->getIsTransformed();
-  if(fftDomain == true) {
-    vp->invFFTInPlace();
-    vs->invFFTInPlace();
-    rho->invFFTInPlace();
-  }
-
-  for (int l=0;l<ntheta_;l++) {
-    FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
-    imp->setAccessMode(FFTGrid::RANDOMACCESS);
-    for (int i=0;i<nx_; i++) {
-      for (int j=0;j<ny_;j++) {
-        Wavelet1D impVec(0,nz_, nzp_);
-        //impVec.setupAsVector();
-        int k;
-        for (k=0;k<nz_;k++){
-          float value = imp->getRealValue(i, j, k, true);
-          impVec.setRAmp(value, k);
-        }
-        //Tapering:
-        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
-        for (;k<nzp_;k++) {
-          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
-          impVec.setRAmp(value, k);
-        }
-        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
-        resultVec.fft1DInPlace();
-
-        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
-
-        float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
-
-        for (int k=0;k<(nzp_/2 +1);k++) {
-          fftw_complex r = resultVec.getCAmp(k);
-          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
-          fftw_complex s;
-          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
-          s.im = -r.re*w.im+r.im*w.re;
-          resultVec.setCAmp(s,k);
-        }
-        delete localWavelet;
-
-        resultVec.invFFT1DInPlace();
-        for (int k=0;k<nzp_;k++){
-          float value = resultVec.getRAmp(k);
-          imp->setRealValue(i, j, k, value, true);
-        }
-      }
-    }
-    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
-    std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-    //H-Writing
-    //if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-    //  (modelSettings_->getForwardModeling() == true))
-    //  imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-
-      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
-      std::string errText;
-      seis.readCravaFile(fileName, errText);
-      if(errText == "") {
-        seis.setAccessMode(FFTGrid::RANDOMACCESS);
-        for (int k=0;k<nz_;k++) {
-          for (int j=0;j<ny_;j++) {
-            for (int i=0;i<nx_;i++) {
-              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
-              imp->setRealValue(i, j, k, residual);
-            }
-          }
-        }
-        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
-        fileName = IO::PrefixSyntheticResiduals() + angle;
-        imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-      }
-      else {
-        errText += "\nFailed to read temporary stored seismic data.\n";
-        LogKit::LogMessage(LogKit::Error,errText);
-      }
-    }
-    delete imp;
-  }
-
-  if(fftDomain == true) {
-    vp->fftInPlace();
-    vs->fftInPlace();
-    rho->fftInPlace();
-  }
-}
+//void
+//AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters)
+//{
+//  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
+//
+//  bool fftDomain = vp->getIsTransformed();
+//  if(fftDomain == true) {
+//    vp->invFFTInPlace();
+//    vs->invFFTInPlace();
+//    rho->invFFTInPlace();
+//  }
+//
+//  for (int l=0;l<ntheta_;l++) {
+//    FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
+//    imp->setAccessMode(FFTGrid::RANDOMACCESS);
+//    for (int i=0;i<nx_; i++) {
+//      for (int j=0;j<ny_;j++) {
+//        Wavelet1D impVec(0,nz_, nzp_);
+//        //impVec.setupAsVector();
+//        int k;
+//        for (k=0;k<nz_;k++){
+//          float value = imp->getRealValue(i, j, k, true);
+//          impVec.setRAmp(value, k);
+//        }
+//        //Tapering:
+//        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
+//        for (;k<nzp_;k++) {
+//          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
+//          impVec.setRAmp(value, k);
+//        }
+//        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
+//        resultVec.fft1DInPlace();
+//
+//        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
+//
+//        float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
+//
+//        for (int k=0;k<(nzp_/2 +1);k++) {
+//          fftw_complex r = resultVec.getCAmp(k);
+//          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
+//          fftw_complex s;
+//          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
+//          s.im = -r.re*w.im+r.im*w.re;
+//          resultVec.setCAmp(s,k);
+//        }
+//        delete localWavelet;
+//
+//        resultVec.invFFT1DInPlace();
+//        for (int k=0;k<nzp_;k++){
+//          float value = resultVec.getRAmp(k);
+//          imp->setRealValue(i, j, k, value, true);
+//        }
+//      }
+//    }
+//
+//    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+//    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
+//    std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
+//    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+//      (modelSettings_->getForwardModeling() == true))
+//      //seismicParameters.AddSyntSeismicData(imp);
+//
+//    // H-Writing
+//      //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+//
+//    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
+//      FFTGrid * imp_residual = new FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+//
+//      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
+//
+//      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
+//      std::string errText;
+//      seis.readCravaFile(fileName, errText);
+//      if(errText == "") {
+//        seis.setAccessMode(FFTGrid::RANDOMACCESS);
+//        for (int k=0;k<nz_;k++) {
+//          for (int j=0;j<ny_;j++) {
+//            for (int i=0;i<nx_;i++) {
+//              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
+//              imp_residual->setRealValue(i, j, k, residual);
+//            }
+//          }
+//        }
+//        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
+//        fileName = IO::PrefixSyntheticResiduals() + angle;
+//        //H-Writing
+//        //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
+//        //seismicParameters.AddSyntResiduals(imp_residual);
+//      }
+//      else {
+//        errText += "\nFailed to read temporary stored seismic data.\n";
+//        LogKit::LogMessage(LogKit::Error,errText);
+//      }
+//    }
+//    //delete imp;
+//  }
+//
+//  if(fftDomain == true) {
+//    vp->fftInPlace();
+//    vs->fftInPlace();
+//    rho->fftInPlace();
+//  }
+//}
 
 
 //float
@@ -1891,9 +1925,9 @@ AVOInversion::printEnergyToScreen()
   LogKit::LogFormatted(LogKit::Low,"\nWavelet scale          :");
   for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %2.3e  ",seisWavelet_[i]->getScale());
   LogKit::LogFormatted(LogKit::Low,"\nEmpirical S/N          :");
-  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",empSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"   %5.2f        ",empSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\nModelled S/N           :");
-  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"    %5.2f      ",theoSNRatio_[i]);
+  for (i=0;i < ntheta_; i++) LogKit::LogFormatted(LogKit::Low,"   %5.2f        ",theoSNRatio_[i]);
   LogKit::LogFormatted(LogKit::Low,"\n");
 }
 
@@ -2042,7 +2076,6 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               filteredlogs,
                               blocked_wells_,
                               modelGeneral_->GetTrendCubes(),
-                              //nWells_,
                               simbox_->getdz(),
                               useFilter,
                               false,
@@ -2053,8 +2086,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
     }
     if(!modelSettings->getFaciesProbFromRockPhysics()){
-      fprob_->calculateConditionalFaciesProb(blocked_wells_, //wells_
-                                             //nWells_,
+      fprob_->calculateConditionalFaciesProb(blocked_wells_,
                                              modelAVOstatic_->GetFaciesEstimInterval(),
                                              facies_names,
                                              simbox_->getdz());
@@ -2066,12 +2098,16 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName +"With_Undef_"+ facies_names[i];
-        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+        //std::string fileName = baseName +"With_Undef_"+ facies_names[i];
+        //H-Writing
+        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+        seismicParameters.AddFaciesProb(grid);
       }
       FFTGrid * grid = fprob_->getFaciesProbUndef();
-      std::string fileName = baseName + "Undef";
-      ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+      //std::string fileName = baseName + "Undef";
+      //H-Writing
+      //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+      seismicParameters.AddFaciesProbUndef(grid);
     }
 
     fprob_->calculateFaciesProbGeomodel(modelGeneral_->GetPriorFacies(),
@@ -2081,8 +2117,10 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        std::string fileName = baseName + facies_names[i];
-        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+        //std::string fileName = baseName + facies_names[i];
+        //H-Writing
+        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
+        seismicParameters.AddFaciesProbGeomodel(grid);
       }
     }
     if(modelSettings->getFaciesProbFromRockPhysics() == false) {
@@ -2090,7 +2128,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       std::vector<double> pValue = fprob_->calculateChiSquareTest(blocked_wells_, modelAVOstatic_->GetFaciesEstimInterval());
 
       if (modelSettings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID)
-        QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, modelGeneral_);
+        QualityGrid qualityGrid(pValue, blocked_wells_, simbox_, modelSettings, seismicParameters);
     }
 
     if(likelihood != NULL) {
@@ -2098,8 +2136,10 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelGeneral_->GetPriorFacies(), modelGeneral_->GetPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + facies_names[i];
-        ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
-        delete grid;
+
+        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
+        seismicParameters.AddLHCube(grid);
+        //delete grid;
       }
     }
 
@@ -2520,27 +2560,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   delete [] sigmamdx;
 
 }
-
-//void AVOInversion::writeBWPredicted(void)
-//{
-//  int i;
-//  for (i=0; i<nWells_; i++)
-//  {
-//    BlockedLogs  * bw = wells_[i]->getBlockedLogsOrigThick();
-//
-//    postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postVp_,0,1,"ALPHA_PREDICTED");
-//    postVp_->endAccess();
-//
-//    postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postVs_,0,1,"BETA_PREDICTED");
-//    postVs_->endAccess();
-//
-//    postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-//    bw->setLogFromGrid(postRho_,0,1,"RHO_PREDICTED");
-//    postRho_->endAccess();
-//   }
-//}
 
 void AVOInversion::writeBWPredicted(void)
 {

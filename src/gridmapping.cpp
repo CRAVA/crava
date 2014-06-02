@@ -201,6 +201,42 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
 }
 
 void
+GridMapping::setMappingFromVelocity(StormContGrid * velocity, const Simbox * timeSimbox, int format)
+{
+  if(simbox_!=NULL)  //Allow this to be called to override old mappings.
+  {
+    if(surfaceMode_ == TOPGIVEN) {
+      if(z1Grid_ != NULL) {
+        delete z1Grid_;
+        z1Grid_ = NULL;
+      }
+    }
+    else if(surfaceMode_ == BOTTOMGIVEN) {
+      if(z0Grid_ != NULL) {
+        delete z0Grid_;
+        z0Grid_ = NULL;
+      }
+    }
+    delete simbox_;
+    simbox_ = NULL;
+  }
+  if(mapping_!=NULL)
+    delete mapping_;
+  mapping_ = NULL;
+
+  //int format = velocity->getOutputFormat();
+  bool failed = false;
+  std::string errText("");
+  calculateSurfaceFromVelocity(velocity, timeSimbox);
+  setDepthSimbox(timeSimbox, timeSimbox->getnz(), format, failed, errText);
+  makeTimeDepthMapping(velocity, timeSimbox);
+  if (failed) {
+    LogKit::LogFormatted(LogKit::Error,"\n%s\n",errText.c_str());
+    exit(1);
+  }
+}
+
+void
 GridMapping::calculateSurfaceFromVelocity(FFTGrid      * velocity,
                                           const Simbox * timeSimbox)
 {
@@ -399,21 +435,22 @@ GridMapping::calculateSurfaceFromVelocity(NRLib::Grid<float> * velocity,
 }
 
 void
-GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
-                              bool                           & failed,
-                              std::string                    & errText)
+GridMapping::setDepthSurfaces(const std::string & topSurfFile,
+                              const std::string & baseSurfFile,
+                              bool              & failed,
+                              std::string       & errText)
 {
-  if(surfFile[0]=="" && surfFile[1]=="")
+  if(topSurfFile=="" && baseSurfFile=="")
   {
     errText += "Both top and base depth surfaces are missing.\n";
     failed = 1;
   }
-  if(surfFile[0] != "")
+  if(topSurfFile != "")
   {
     try {
       if(z0Grid_ != NULL)
         delete z0Grid_;
-      Surface tmpSurf(surfFile[0]);
+      Surface tmpSurf(topSurfFile);
       z0Grid_ = new Surface(tmpSurf);
       surfaceMode_ = TOPGIVEN;
     }
@@ -422,12 +459,12 @@ GridMapping::setDepthSurfaces(const std::vector<std::string> & surfFile,
       failed = 1;
     }
   }
-  if(surfFile[1] != "")
+  if(baseSurfFile != "")
   {
     try {
       if(z1Grid_ != NULL)
         delete z1Grid_;
-      Surface tmpSurf(surfFile[1]);
+      Surface tmpSurf(baseSurfFile);
       z1Grid_ = new Surface(tmpSurf);
       if(surfaceMode_ == TOPGIVEN)
         surfaceMode_ = BOTHGIVEN;

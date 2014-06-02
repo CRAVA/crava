@@ -99,6 +99,8 @@ Well::ReadWell(const std::string              & file_name,
     n_data_    = well.GetNData();
     cont_log_  = well.GetContLog();
     disc_log_  = well.GetDiscLog();
+    x_pos0_    = well.GetXPos0();
+    y_pos0_    = well.GetYPos0();
 
     std::map<int, std::string> facies_map;
     if(well.HasDiscLog(facies_log))
@@ -410,5 +412,270 @@ int Well::CheckSimbox(Simbox * simbox) const
     }
   }
   return(error);
+}
+
+//----------------------------------------------------------------------------
+void Well::WriteWell(int         well_format,
+                     const float max_hz_background,
+                     const float max_hz_seismic) const
+{
+  if ((well_format & IO::RMSWELL) > 0)
+    WriteRMSWell(max_hz_background,
+                 max_hz_seismic);
+  if ((well_format & IO::NORSARWELL) > 0)
+    WriteNorsarWell(max_hz_background,
+                    max_hz_seismic);
+}
+
+void Well::WriteRMSWell(const float max_hz_background,
+                        const float max_hz_seismic) const
+{
+
+  std::string well_name(well_name_);
+  NRLib::Substitute(well_name,"/","_");
+  NRLib::Substitute(well_name," ","_");
+  std::string base_name      = IO::PrefixWells() + well_name + IO::SuffixRmsWells();
+  std::string well_file_name = IO::makeFullFileName(IO::PathToWells(), base_name);
+
+  std::ofstream file;
+  NRLib::OpenWrite(file, well_file_name);
+
+  unsigned int n_logs = 1+3*3;
+  //if (nFacies_ > 0)
+  if (has_facies_log_)
+    n_logs += 1;
+
+  std::vector<std::string> params(3);
+  params[0] = "Vp";
+  params[1] = "Vs";
+  params[2] = "Rho";
+
+  //
+  // Write HEADER
+  //
+  file << "1.0\n"
+       << "CRAVA\n"
+       << well_name_ << " "
+       << std::fixed
+       << std::setprecision(2)
+       << x_pos0_ << " "
+       << y_pos0_ << "\n"
+       << n_logs << "\n"
+       << "Time  UNK lin"
+       << std::endl;
+
+  for (int i =0 ; i < 3 ; i++) {
+    file << params[i] <<                                       "  UNK lin\n"
+         << params[i] << static_cast<int>(max_hz_background) << "  UNK lin\n"
+         << params[i] << static_cast<int>(max_hz_seismic)    << "  UNK lin\n";
+  }
+
+  if (has_facies_log_) {
+    file << "FaciesLog  DISC "; //faciesLogName_
+
+    for (size_t i = 0; i < facies_map_.size(); i++)
+      file << " " << i << " " << facies_map_.find(i)->second;
+    file << "\n";
+  }
+
+  const std::vector<double> & x_pos = cont_log_.find("X_pos")->second;
+  const std::vector<double> & y_pos = cont_log_.find("Y_pos")->second;
+  const std::vector<double> & z_pos = cont_log_.find("Z_pos")->second;
+
+  const std::vector<double> & vp  = cont_log_.find("Vp")->second;
+  const std::vector<double> & vs  = cont_log_.find("Vs")->second;
+  const std::vector<double> & rho = cont_log_.find("Rho")->second;
+
+  const std::vector<double> & vp_seismic_resolution  = cont_log_seismic_resolution_.find("Vp")->second;
+  const std::vector<double> & vs_seismic_resolution  = cont_log_seismic_resolution_.find("Vs")->second;
+  const std::vector<double> & rho_seismic_resolution = cont_log_seismic_resolution_.find("Rho")->second;
+
+  const std::vector<double> & vp_background_resolution  = cont_log_background_resolution_.find("Vp")->second;
+  const std::vector<double> & vs_background_resolution  = cont_log_background_resolution_.find("Vs")->second;
+  const std::vector<double> & rho_background_resolution = cont_log_background_resolution_.find("Rho")->second;
+
+  const std::vector<int> & facies = disc_log_.find("Facies")->second;
+
+  for (size_t i = 0; i < n_data_; i++) {
+    file << std::right
+         << std::fixed
+         << std::setprecision(4)
+         << std::setw(9) << x_pos[i] << " "
+         << std::setw(10)<< y_pos[i] << " "
+         << std::setw(7) << z_pos[i] << "  "
+         << std::setw(7) << z_pos[i] << "  "
+         << std::setprecision(5)
+         << std::setw(7) << (vp[i]==RMISSING                        ? WELLMISSING : vp[i])                        << " "
+         << std::setw(7) << (vp_background_resolution[i]==RMISSING  ? WELLMISSING : vp_background_resolution[i])  << " "
+         << std::setw(7) << (vp_seismic_resolution[i]==RMISSING     ? WELLMISSING : vp_seismic_resolution[i])     << " "
+         << std::setw(7) << (vs[i]==RMISSING                        ? WELLMISSING : vs[i])                        << " "
+         << std::setw(7) << (vs_background_resolution[i]==RMISSING  ? WELLMISSING : vs_background_resolution[i])  << " "
+         << std::setw(7) << (vs_seismic_resolution[i]==RMISSING     ? WELLMISSING : vs_seismic_resolution[i])     << " "
+         << std::setw(7) << (rho[i]==RMISSING                       ? WELLMISSING : rho[i])                       << " "
+         << std::setw(7) << (rho_background_resolution[i]==RMISSING ? WELLMISSING : rho_background_resolution[i]) << " "
+         << std::setw(7) << (rho_seismic_resolution[i]==RMISSING    ? WELLMISSING : rho_seismic_resolution[i])    << " ";
+
+      //if (nFacies_ > 0)
+      if (has_facies_log_)
+        file << std::setw(3) << (facies[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies[i]);
+
+    file << "\n";
+  }
+  file.close();
+}
+
+void Well::WriteNorsarWell(const float max_hz_background,
+                           const float max_hz_seismic) const
+{
+  std::string well_name(well_name_);
+  NRLib::Substitute(well_name,"/","_");
+  NRLib::Substitute(well_name," ","_");
+
+  //Handle main file.
+  std::string base_name = IO::PrefixWells() + well_name + IO::SuffixNorsarWells();
+  std::string file_name = IO::makeFullFileName(IO::PathToWells(), base_name);
+
+  const std::vector<double> & x_pos = cont_log_.find("X_pos")->second;
+  const std::vector<double> & y_pos = cont_log_.find("Y_pos")->second;
+  const std::vector<double> & z_pos = cont_log_.find("Z_pos")->second;
+
+  std::ofstream main_file;
+  NRLib::OpenWrite(main_file, file_name);
+  main_file << std::fixed
+            << std::setprecision(2);
+
+  std::vector<double> md_log;
+  bool has_md_log = false;
+  if (cont_log_.find("MD") != cont_log_.end()) {
+    has_md_log = true;
+    md_log = cont_log_.find("MD")->second;
+  }
+
+  std::vector<double> md(n_data_, 0); //nd_
+  if (has_md_log)
+    md[0] = md_log[0];
+  double dmax = 0;
+  double dmin = 1e+30;
+  for (size_t i = 1; i < n_data_; i++) {
+    double dx = x_pos[i]-x_pos[i-1];
+    double dy = y_pos[i]-y_pos[i-1];
+    double dz = z_pos[i]-z_pos[i-1];
+    double d  = sqrt(dx*dx+dy*dy+dz*dz);
+    if (d > dmax)
+      dmax = d;
+    else if (d<dmin)
+      dmin = d;
+    if (has_md_log)
+      md[i] = md_log[i];
+    else
+      md[i] = md[i-1] + d;
+  }
+  main_file << "[Version information]\nVERSION 1000\nFORMAT ASCII\n\n";
+  main_file << "[Well information]\n";
+  main_file << "MDMIN      m       " << 0.0f << "\n";
+  main_file << "MDMAX      m       " << md[n_data_-1] << "\n";
+  main_file << "MDMINSTEP  m       " << dmin << "\n";
+  main_file << "MDMAXSTEP  m       " << dmax << "\n";
+  main_file << "UTMX       m       " << x_pos[0] << "\n";
+  main_file << "UTMY       m       " << y_pos[0] << "\n";
+  main_file << "EKB        m       " << 0.0f << "\n";
+  main_file << "UNDEFVAL   no_unit " << WELLMISSING << "\n\n";
+
+  main_file << "[Well track data information]\n";
+  main_file << "NUMMD  " << n_data_ << "\n";
+  main_file << "NUMPAR 4\n";
+  main_file << "MD      m\n";
+  main_file << "TWT     s\n";
+  main_file << "UTMX    m\n";
+  main_file << "UTMY    m\n\n";
+
+  std::string log_base_name = IO::PrefixWells() + well_name + IO::SuffixNorsarLog();
+  std::string log_file_name = IO::makeFullFileName(IO::PathToWells(), log_base_name);
+  std::string only_name     = NRLib::RemovePath(log_file_name);
+
+  //bool got_facies = nFacies_ > 0;
+
+  int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
+  if (has_facies_log_)
+    n_logs += 1;
+
+  std::vector<std::string> params(3);
+  params[0] = "VP";
+  params[1] = "VS";
+  params[2] = "Rho";
+
+  std::vector<std::string> unit(3);
+  unit[0] = "m/s";
+  unit[1] = "m/s";
+  unit[2] = "g/cm^3";
+
+  main_file << "[Well log data information]\n";
+  main_file << "LOGNAME log\n";
+  main_file << "IN_FILE " << only_name << "\n";
+  main_file << "NUMPAR " << n_logs+1 << "\n"; //Also count md.
+  main_file << "NUMLINES " << n_data_ << "\n";
+  main_file << "MD      m\n";
+  for (int i =0 ; i<3 ; i++) {
+    main_file << params[i] << " " << unit[i] << "\n";
+    main_file << params[i] << static_cast<int>(max_hz_background) << " " << unit[i] << "\n";
+    main_file << params[i] << static_cast<int>(max_hz_seismic)    << " " << unit[i] << "\n";
+  }
+
+  if (has_facies_log_)
+    main_file << "FACIES no_unit\n";
+  main_file.close();
+
+
+  //Write the two other files.
+  std::string base_track_name = IO::PrefixWells() + well_name + IO::SuffixNorsarTrack();
+  std::string track_file_name = IO::makeFullFileName(IO::PathToWells(), base_track_name);
+  std::ofstream track_file;
+  NRLib::OpenWrite(track_file, track_file_name);
+  track_file << std::right
+             << std::fixed
+             << std::setprecision(2)
+             << "[NORSAR Well Track]\n";
+
+  //Note: logFileName created above, needed in mainFile.
+  std::ofstream log_file;
+  NRLib::OpenWrite(log_file, log_file_name);
+  log_file << "[NORSAR Well Log]\n";
+
+  const std::vector<double> & vp  = cont_log_.find("Vp")->second;
+  const std::vector<double> & vs  = cont_log_.find("Vs")->second;
+  const std::vector<double> & rho = cont_log_.find("Rho")->second;
+
+  const std::vector<double> & vp_seismic_resolution  = cont_log_seismic_resolution_.find("Vp")->second;
+  const std::vector<double> & vs_seismic_resolution  = cont_log_seismic_resolution_.find("Vs")->second;
+  const std::vector<double> & rho_seismic_resolution = cont_log_seismic_resolution_.find("Rho")->second;
+
+  const std::vector<double> & vp_background_resolution  = cont_log_background_resolution_.find("Vp")->second;
+  const std::vector<double> & vs_background_resolution  = cont_log_background_resolution_.find("Vs")->second;
+  const std::vector<double> & rho_background_resolution = cont_log_background_resolution_.find("Rho")->second;
+
+  const std::vector<int> & facies = disc_log_.find("Facies")->second;
+
+  for (size_t i = 0; i < n_data_; i++) {
+    track_file << std::setw(7) << md[i] << " " << std::setw(7) << z_pos[i]
+               << " " << std::setw(10)<< x_pos[i] << " " << std::setw(10)<< y_pos[i] << "\n";
+
+    log_file   << std::right << std::fixed << std::setprecision(2)
+               << std::setw(7) << md[i] << " "
+               << std::setw(7) << (vp[i]==RMISSING                        ? WELLMISSING : vp[i])                        << " "
+               << std::setw(7) << (vp_background_resolution[i]==RMISSING  ? WELLMISSING : vp_background_resolution[i])  << " "
+               << std::setw(7) << (vp_seismic_resolution[i]==RMISSING     ? WELLMISSING : vp_seismic_resolution[i])     << " "
+               << std::setw(7) << (vs[i]==RMISSING                        ? WELLMISSING : vs[i])                        << " "
+               << std::setw(7) << (vs_background_resolution[i]==RMISSING  ? WELLMISSING : vs_background_resolution[i])  << " "
+               << std::setw(7) << (vs_seismic_resolution[i]==RMISSING     ? WELLMISSING : vs_seismic_resolution[i])     << " "
+               << std::setprecision(5)
+               << std::setw(7) << (rho[i]==RMISSING                       ? WELLMISSING : rho[i])                       << " "
+               << std::setw(7) << (rho_background_resolution[i]==RMISSING ? WELLMISSING : rho_background_resolution[i]) << " "
+               << std::setw(7) << (rho_seismic_resolution[i]==RMISSING    ? WELLMISSING : rho_seismic_resolution[i])    << " ";
+    if (has_facies_log_)
+      log_file << (facies[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies[i])     << "  ";
+    log_file << "\n";
+  }
+  track_file.close();
+  log_file.close();
 }
 

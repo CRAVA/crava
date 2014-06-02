@@ -54,7 +54,7 @@ public:
                          const std::string   sgriLabel = "NO_LABEL",
                          const float         z0        = 0.0,
                          const GridMapping * depthMap  = NULL,
-                         const GridMapping * timeMap   = NULL,
+                         //const GridMapping * timeMap   = NULL,
                          const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
                          bool padding=false);  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,

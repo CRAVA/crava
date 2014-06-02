@@ -45,7 +45,7 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
                                const Simbox          * simbox,
                                int                     i_interval)
 {
-  forward_modeling_        = model_settings->getForwardModeling();
+  forward_modeling_ = model_settings->getForwardModeling();
 
   if (model_settings->getForwardModeling() == false)
   {
@@ -150,7 +150,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   int n_grid_covariances  = 6;                                      // Covariances, padded
   int n_grid_seismic_data = model_settings->getNumberOfAngles(0);     // One for each angle stack, padded
 
-  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProbsInterval(""); //Used to find number of facies grids needed
+  std::map<std::string, float> facies_prob = model_settings->getPriorFaciesProb(""); //Used to find number of facies grids needed
 
   int n_grid_facies       = static_cast<int>(facies_prob.size())+1; // One for each facies, one for undef, unpadded.
   int n_grid_histograms   = static_cast<int>(facies_prob.size());   // One for each facies, 2MB.
@@ -282,24 +282,25 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   }
 }
 
-void ModelAVOStatic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                    std::vector<FFTGrid *>                     seis_cube,
-                                    int                                        n_angles)
-{
-  for (int i_angle = 0; i_angle < n_angles; i_angle++) {
-    seis_cube[i_angle]->setAccessMode(FFTGrid::RANDOMACCESS);
+//void ModelAVOStatic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+//                                    std::vector<FFTGrid *>                     seis_cube,
+//                                    int                                        n_angles)
+//{
+//  for (int i_angle = 0; i_angle < n_angles; i_angle++) {
+//    seis_cube[i_angle]->setAccessMode(FFTGrid::RANDOMACCESS);
+//
+//    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+//      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+//      BlockedLogsCommon * blocked_log = iter->second;
+//
+//      blocked_log->SetLogFromGrid(seis_cube[i_angle], i_angle, n_angles, "SEISMIC_DATA");
+//    }
+//
+//    seis_cube[i_angle]->endAccess();
+//  }
+//}
 
-    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-      BlockedLogsCommon * blocked_log = iter->second;
 
-      blocked_log->SetLogFromGrid(seis_cube[i_angle], i_angle, n_angles, "SEISMIC_DATA");
-    }
-    //for(int i=0;i<nWells;i++)
-    //  wells[i]->getBlockedLogsOrigThick()->setLogFromGrid(seisCube[iAngle],iAngle,nAngles,"SEISMIC_DATA");
-    seis_cube[i_angle]->endAccess();
-  }
-}
 
 //-------------------------------------------------------------------
 FFTGrid *

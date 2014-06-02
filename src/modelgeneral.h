@@ -28,8 +28,6 @@
 
 struct irapgrid;
 class Corr;
-//class Wavelet;
-//class Vario;
 class Simbox;
 class FFTGrid;
 class RandomGen;
@@ -50,21 +48,20 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                             * GetTimeSimbox()            const { return simbox_                  ;}
-  RandomGen                                * GetRandomGen()             const { return random_gen_              ;}
-  GridMapping                              * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
-  CravaTrend                               & GetTrendCubes()                  { return trend_cubes_             ;}
-  CravaTrend                                 GetTrendCubes()            const { return trend_cubes_             ;}
-  bool                                       GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
-  bool                                       GetMultiInterval()         const { return multi_interval_          ;}
-  State4D                                    GetState4D()               const { return state4d_                 ;}
-  TimeLine                                 * GetTimeLine()              const { return time_line_               ;}
-  std::map<std::string, BlockedLogsCommon *> GetBlockedWells()                { return blocked_logs_            ;}
-  const std::vector<float>                 & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
-  const std::vector<FFTGrid *>             & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
-  const std::vector<std::string>           & GetFaciesNames(void)       const { return facies_names_            ;}
-  std::vector<int>                           GetFaciesLabel()           const { return facies_labels_           ;}
-  bool                                       GetIs4DActive()            const { return(do_4D_inversion_)        ;}
+  const Simbox                               * GetTimeSimbox()            const { return simbox_                  ;}
+  RandomGen                                  * GetRandomGen()             const { return random_gen_              ;}
+  GridMapping                                * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
+  CravaTrend                                 & GetTrendCubes()                  { return trend_cubes_             ;}
+  CravaTrend                                   GetTrendCubes()            const { return trend_cubes_             ;}
+  bool                                         GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
+  State4D                                      GetState4D()               const { return state4d_                 ;}
+  TimeLine                                   * GetTimeLine()              const { return time_line_               ;}
+  std::map<std::string, BlockedLogsCommon *> & GetBlockedWells()                { return blocked_logs_            ;}
+  const std::vector<float>                   & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
+  const std::vector<FFTGrid *>               & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
+  const std::vector<std::string>             & GetFaciesNames(void)       const { return facies_names_            ;}
+  std::vector<int>                             GetFaciesLabel()           const { return facies_labels_           ;}
+  bool                                         GetIs4DActive()            const { return(do_4D_inversion_)        ;}
 
   void AddFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
   void AddFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
@@ -79,10 +76,10 @@ public:
                                   int nzp,
                                   bool fileGrid);
 
-  void              CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
-                                                        const std::vector<float>                         & probability,
-                                                        NRLib::Grid2D<double>                            & param_corr,
-                                                        std::string                                      & errTxt);
+  //void              CalculateCovariancesFromRockPhysics(const std::vector<DistributionsRock *>           & rock,
+  //                                                      const std::vector<float>                         & probability,
+  //                                                      NRLib::Grid2D<double>                            & param_corr,
+  //                                                      std::string                                      & errTxt);
 
   void              Complete4DBackground(const int nx,const int ny, const int nz, const int nxPad, const int nyPad, const int nzPad,NRLib::Vector &initial_mean,NRLib::Matrix &initial_cov);
 
@@ -95,6 +92,14 @@ public:
   void              Dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              DumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
+  void              WriteToFile(const Simbox        * simbox,
+                                GridMapping         * time_depth_mapping,
+                                const ModelSettings * model_settings,
+                                FFTGrid             * grid,
+                                const std::string   & file_name,
+                                const std::string   & sgri_label,
+                                bool                  padding = false);
+
 private:
 
   void              CopyCorrelationsTo4DState(SeismicParametersHolder                    & seismicParameters,
@@ -106,19 +111,19 @@ private:
                                  NRLib::Vector           & initialMean,
                                  NRLib::Matrix           & initialCov);
 
-  void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
-                                                       const std::vector<float>               & probability,
-                                                       const std::vector<double>              & trend_position,
-                                                       NRLib::Grid2D<double>                  & sigma_sum) const;
+  //void              CalculateCovarianceInTrendPosition(const std::vector<DistributionsRock *> & rock_distribution,
+  //                                                     const std::vector<float>               & probability,
+  //                                                     const std::vector<double>              & trend_position,
+  //                                                     NRLib::Grid2D<double>                  & sigma_sum) const;
 
-  void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
-                                              FFTGrid ** seisCube,
-                                              int numberOfAngles);
+  //void              EstimateCorrXYFromSeismic(Surface *& CorrXY,
+  //                                            FFTGrid ** seisCube,
+  //                                            int numberOfAngles);
 
-  void              ValidateCorrelationMatrix(float              ** C,
-                                              const ModelSettings *  modelSettings,
-                                              std::string         &  errTxt);
-  void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
+  //void              ValidateCorrelationMatrix(float              ** C,
+  //                                            const ModelSettings *  modelSettings,
+  //                                            std::string         &  errTxt);
+  //void              MakeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
   const Simbox                                                * simbox_;                       ///< Information about simulation area.
@@ -148,8 +153,6 @@ private:
   bool                                                          do_4D_inversion_;
   bool                                                          do_4D_rock_physics_vnversion_;
   State4D                                                       state4d_;                     ///< State4D holds the 27 grdis needed for 4D inversion.
-
-  bool                                                          multi_interval_;              ///< True if there is multiple intervals
 
 };
 
