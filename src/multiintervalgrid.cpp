@@ -28,7 +28,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   dz_min_                                                         = 10000;
 
   if (model_settings->GetMultipleIntervalSetting() == false) {
-    LogKit::WriteHeader("Setting up grid");
+    LogKit::WriteHeader("Setting up inversion grid");
     multiple_interval_setting_ = false;
   }
   else {
@@ -614,8 +614,19 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   int nz_pad          = FindPaddingSize(nz, z_pad_fac);
   z_pad_fac           = static_cast<double>(nz_pad - nz)/static_cast<double>(nz);
 
+  std::string text2;
+  int logLevel = LogKit::Medium;
+  if (model_settings->getEstimateZPadding()) {
+    text2 = " estimated from an assumed wavelet length";
+    logLevel = LogKit::Low;
+  }
+
   simbox->SetNZpad(nz_pad);
   simbox->SetZPadFactor(z_pad_fac);
+
+  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+" for interval \'"+simbox->GetIntervalName()+"\':\n");
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
+                       z_pad, z_pad_fac, nz, nz_pad);
 }
 
 // --------------------------------------------------------------------------------
@@ -663,11 +674,11 @@ void  MultiIntervalGrid::LogIntervalInformation(const Simbox      * simbox,
                                                 const std::string & interval_name,
                                                 const std::string & header_text1,
                                                 const std::string & header_text2) const{
-  LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+"\n");
+  LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+ ", interval \'"+interval_name+"\'\n");
   double zmin, zmax;
   simbox->getMinMaxZ(zmin,zmax);
   if (interval_name != "")
-    LogKit::LogFormatted(LogKit::Low," Interval name: "+ interval_name +"\n");
+    //LogKit::LogFormatted(LogKit::Low," Interval name: "+ interval_name +"\n");
   LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,

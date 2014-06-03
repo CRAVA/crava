@@ -252,20 +252,21 @@ int main(int argc, char** argv)
       float low_cut   = modelSettings->getLowCut();
       int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
-      seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
-                                                                      common_data->GetPriorParamCov(i_interval),
-                                                                      common_data->GetPriorAutoCov(i_interval),
-                                                                      common_data->GetPriorCorrT(i_interval),
-                                                                      common_data->GetPriorCorrXY(i_interval),
-                                                                      low_int_cut,
-                                                                      corr_grad_I,
-                                                                      corr_grad_J,
-                                                                      simbox->getnx(),
-                                                                      simbox->getny(),
-                                                                      simbox->getnz(),
-                                                                      simbox->GetNXpad(),
-                                                                      simbox->GetNYpad(),
-                                                                      simbox->GetNZpad());
+      if (!modelSettings->getForwardModeling())
+        seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
+                                                                        common_data->GetPriorParamCov(i_interval),
+                                                                        common_data->GetPriorAutoCov(i_interval),
+                                                                        common_data->GetPriorCorrT(i_interval),
+                                                                        common_data->GetPriorCorrXY(i_interval),
+                                                                        low_int_cut,
+                                                                        corr_grad_I,
+                                                                        corr_grad_J,
+                                                                        simbox->getnx(),
+                                                                        simbox->getny(),
+                                                                        simbox->getnz(),
+                                                                        simbox->GetNXpad(),
+                                                                        simbox->GetNYpad(),
+                                                                        simbox->GetNZpad());
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       setupStaticModels(modelGeneral,

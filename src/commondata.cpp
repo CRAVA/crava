@@ -50,7 +50,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   SetDebugLevel(model_settings);
   PrintSettings(model_settings, input_files);
 
-  LogKit::WriteHeader("Common Data");
+  LogKit::WriteHeader("COMMON DATA");
   std::string err_text = "";
 
   forward_modeling_ = model_settings->getForwardModeling();
@@ -58,26 +58,26 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, err_text);
 
-  // 8. Setup of multiple interval grid
+  // 2. Setup of multiple interval grid
   bool multi_failed = false;
   multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
   setup_multigrid_ = !multi_failed;
 
-  //1 continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
+  // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
   if(multiple_interval_grid_->GetNIntervals() == 1) {
     const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
     full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
   }
 
-  // 2. read seismic data and create estimation simbox.
+  // 3. read seismic data and create estimation simbox.
   read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
-  // 3. read well data
+  // 4. read well data
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, log_names_, model_settings->getLogNames(),
                              model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
 
-  // 4. block wells for estimation
+  // 5. block wells for estimation
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
@@ -86,18 +86,18 @@ CommonData::CommonData(ModelSettings * model_settings,
                                            wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_,
                                            mapped_blocked_logs_intervals_, err_text);
 
-  // 5. Reflection matrix and wavelet
+  // 6. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
     temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, err_text);
 
-  // 6. Optimization of well location
+  // 7. Optimization of well location
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
     optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
   if (!model_settings->getOptimizeWellLocation())
     optimize_well_location_ = true;
 
-  // 7. Wavelet Handling
+  // 8. Wavelet Handling
   if (block_wells_ && optimize_well_location_)
     wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, wavelets_, local_noise_scales_, local_shifts_,
                                       local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, err_text);
@@ -133,7 +133,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                                facies_names_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
   }
 
-  // 12. Set up background model
+  // 12. Setup of background model
   if (setup_multigrid_) {
     if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
@@ -154,7 +154,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(read_wells_ && setup_multigrid_){
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(),  mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, prior_cov_estimated_, err_text);
+             facies_names_, trend_cubes_, background_parameters_, prior_cov_estimated_, err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
@@ -162,7 +162,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
     else{
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, multiple_interval_grid_->GetDzMin(), mapped_blocked_logs_for_correlation_, multiple_interval_grid_->GetIntervalSimboxes(),
-            prior_facies_, facies_names_, trend_cubes_, seismic_data_, background_parameters_, prior_cov_estimated_, err_text);
+            facies_names_, trend_cubes_, background_parameters_, prior_cov_estimated_, err_text);
     }
   }
   else{
@@ -294,6 +294,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                               geometry,
                               tmp_err_text);
     if (geometry!=NULL){
+      geometry->WriteGeometry();
       //tilfelle iv og v
       if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
         SegyGeometry * full_geometry = geometry;
@@ -7460,23 +7461,21 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        double                                                        dz_min,
                                        const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
                                        std::vector<Simbox *>                                       & interval_simboxes,
-                                       const std::vector<std::vector<float> >                      & prior_facies_prob,
                                        const std::vector<std::string>                              & facies_names,
                                        const std::vector<CravaTrend>                               & trend_cubes,
-                                       const std::map<int, std::vector<SeismicStorage> >           & seismic_data,
                                        const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
                                        bool                                                        & prior_cov_estimated,
-                                       std::string                                                 & err_text_common){
-
-  (void) seismic_data, facies_names, prior_facies_prob;
+                                       std::string                                                 & err_text_common)
+{
 
   if (model_settings->getForwardModeling())
     return true;
+  LogKit::WriteHeader("Setup of Prior Covariance");
 
-  bool failed                             = false;
-  std::string err_text                    = "";
-  Analyzelog * analyze_all                = NULL;
-  bool print_result                       = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
+  bool                failed                  = false;
+  std::string         err_text                = "";
+  Analyzelog        * analyze_all             = NULL;
+  bool                print_result            = ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                                               model_settings->getEstimationMode() == true);
   size_t n_intervals                      = interval_simboxes.size();
   size_t n_facies                         = facies_names.size();
@@ -7490,7 +7489,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
   if (model_settings->getDoInversion() || print_result)
   {
-    LogKit::WriteHeader("Setup of Prior Correlation");
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
@@ -8800,7 +8798,7 @@ void CommonData::ReadAngularCorrelations(ModelSettings                          
 void CommonData::PrintSettings(ModelSettings    * model_settings,
                                const InputFiles * input_files)
 {
-  LogKit::WriteHeader("Model settings");
+  LogKit::WriteHeader("MODEL SETTINGS");
 
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
   if (model_settings->getForwardModeling()==true)
