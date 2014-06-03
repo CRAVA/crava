@@ -708,10 +708,8 @@ private:
                              double                                                        dz_min,
                              const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
                              std::vector<Simbox *>                                       & interval_simboxes,
-                             const std::vector<std::vector<float> >                      & prior_facies_prob,
                              const std::vector<std::string>                              & facies_names,
                              const std::vector<CravaTrend>                               & trend_cubes,
-                             const std::map<int, std::vector<SeismicStorage> >           & seismic_data,
                              const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
                              bool                                                        & prior_cov_estimated,
                              std::string                                                 & err_text);
