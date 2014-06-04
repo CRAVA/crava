@@ -886,8 +886,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
       //Cut wells against full_inversion_volume
-      if (err_text == "")
-        CutWell(well_file_name, new_well, *full_inversion_simbox);
+//      if (err_text == "")
+//        CutWell(well_file_name, new_well, *full_inversion_simbox);
 
       //Store facies names.
       if (model_settings->getFaciesLogGiven()) {
@@ -7689,7 +7689,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     for (size_t i = 0; i<n_intervals; i++){
       if(!failed_temp_corr && !failed_param_cov){
         // Number of bins
-        int n_corr_T = interval_simboxes[i].getnz();
+        int n_corr_T = interval_simboxes[i].GetNZpad();
         if((n_corr_T % 2) == 0)
           n_corr_T = n_corr_T/2+1;
         else
@@ -8820,7 +8820,7 @@ void CommonData::ReadAngularCorrelations(ModelSettings                          
       angle_corr[i].resize(n_angles);
       for (int j = 0; j < n_angles; j++) {
         float d_angle    = angles[i] - angles[j];
-        angle_corr[i][i] = vario->corr(d_angle, 0);
+        angle_corr[i][j] = vario->corr(d_angle, 0);
       }
     }
     angular_correlations.push_back(angle_corr);

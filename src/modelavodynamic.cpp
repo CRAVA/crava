@@ -358,6 +358,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
+    wavelets_[i]->resample(simbox->getdz(), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
   }
 
   if (model_settings->getEstimateWaveletNoise())
