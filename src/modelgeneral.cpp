@@ -680,8 +680,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                               fileType,
                               tmpErrText);
 
-    modelSettings->setSeismicDataAreaParameters(geometry);
     if (geometry != NULL) {
+      modelSettings->setSeismicDataAreaParameters(geometry);
       geometry->WriteGeometry();
 
       if (fileType == IO::CRAVA) {
