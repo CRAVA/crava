@@ -886,8 +886,8 @@ bool CommonData::ReadWellData(ModelSettings                  * model_settings,
         ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
 
       //Cut wells against full_inversion_volume
-      if (err_text == "")
-        CutWell(well_file_name, new_well, *full_inversion_simbox);
+      //if (err_text == "")
+      //  CutWell(well_file_name, new_well, *full_inversion_simbox);
 
       //Store facies names.
       if (model_settings->getFaciesLogGiven()) {
