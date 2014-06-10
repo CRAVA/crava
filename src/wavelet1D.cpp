@@ -674,19 +674,26 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
       //
       std::vector<bool> hasData(nz);
       std::vector<double> seisData(nz);
+      std::vector<double> alpha(nz);
+      std::vector<double> beta(nz);
+      std::vector<double> rho(nz);
       blocked_log->GetVerticalTrend(seisLog, seisData);
+      blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), alpha);
+      blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), beta);
+      blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
+
       for (int k = 0 ; k < nz; k++)
-        hasData[k] = seisData[k] != RMISSING;
+        hasData[k] = seisData[k] != RMISSING && blocked_log->GetVpBlocked()[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
       int start,length;
       blocked_log->FindContinuousPartOfData(hasData, nz, start, length);
       blocked_log->FillInCpp(coeff_, start, length, cpp_r[w], nzp);
       blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp);
 
       for(int i=0;i<nzp;i++) {
-        if(cpp_r[w][i] > maxCpp)
-          maxCpp = cpp_r[w][i];
-        if(seis_r[w][i] > maxSeis)
-          maxSeis = seis_r[w][i];
+        if(std::abs(cpp_r[w][i]) > maxCpp)
+          maxCpp = std::abs(cpp_r[w][i]);
+        if(std::abs(seis_r[w][i]) > maxSeis)
+          maxSeis = std::abs(seis_r[w][i]);
       }
     }
     w++;
