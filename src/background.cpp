@@ -42,23 +42,21 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
   : DataTarget_(250) // For kriging: Increase surrounding until 250 data points is aquired
 {
 
-  int nx = 0;
-  int ny = 0;
-  int nz = 0;
+  int nx_pad, ny_pad, nz_pad;
 
   if (bg_simbox == NULL) {
-    nx = simbox->getnx();
-    ny = simbox->getny();
-    nz = simbox->getnz();
+    nx_pad = simbox->getnx();
+    ny_pad = simbox->getny();
+    nz_pad = simbox->getnz();
   }
   else {
-    nx = bg_simbox->getnx();
-    ny = bg_simbox->getny();
-    nz = bg_simbox->getnz();
+    nx_pad = bg_simbox->getnx();
+    ny_pad = bg_simbox->getny();
+    nz_pad = bg_simbox->getnz();
   }
 
   for (int i=0 ; i<3 ; i++)
-    parameters[i]->Resize(nx, ny, nz);
+    parameters[i]->Resize(nx_pad, ny_pad, nz_pad);
 
   if (bg_simbox == NULL) {
     GenerateBackgroundModel(parameters[0], parameters[1], parameters[2],

@@ -62,6 +62,23 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     BlockWell(estimation_simbox, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
+  if(err_text == ""){
+    LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the simbox: ");
+    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
+      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
+    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
+    LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the simbox: ");
+    for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
+      LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
+    if (disc_logs_to_be_blocked.size() > 1)
+      LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
+    else
+      LogKit::LogFormatted(LogKit::Low,"\n");
+  }
+  else{
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
+  }
+
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 
@@ -129,6 +146,26 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
       BlockWellForCorrelationEstimation(multiple_interval_grid, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
     }
+  }
+
+  if(err_text == ""){
+    if(interval_simboxes.size() == 1)
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the inversion simbox: ");
+    else
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the MultiIntervalGrid: ");
+    for (size_t i = 0; i < cont_logs_to_be_blocked.size(); i++)
+      LogKit::LogFormatted(LogKit::Low, cont_logs_to_be_blocked[i]);
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    if(interval_simboxes.size() == 1)
+      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the inversion simbox: ");
+    else
+      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the MultiIntervalGrid: ");
+    for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
+      LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
+    LogKit::LogFormatted(LogKit::Low,"\n");
+  }
+  else{
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
   }
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
@@ -355,7 +392,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       }
 
       CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
-                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
+                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_);
 
       // Discrete logs
       if (facies_log_defined)
@@ -957,8 +994,8 @@ void    BlockedLogsCommon::CountBlocksWithDataPerInterval(const MultiIntervalGri
                                                           const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
                                                           unsigned int                                         n_blocks,
                                                           std::map<std::string, int>                         & n_blocks_with_data,
-                                                          int                                                & n_blocks_with_data_tot,
-                                                          int                                                  n_intervals) const{
+                                                          int                                                & n_blocks_with_data_tot) const
+{
   // Use Vp to test that data is not missing
   const std::vector<double> vp_log_blocked = continuous_logs_blocked.find("Vp")->second;
   n_blocks_with_data_tot = 0;
@@ -3469,7 +3506,7 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 {
   std::vector<double> blocked_log(n_blocks_);
 
-  assert(n_blocks_ == n_data);
+  assert(static_cast<int>(n_blocks_) == n_data);
   for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 

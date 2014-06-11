@@ -184,8 +184,7 @@ int main(int argc, char** argv)
     ModelGeneral       * modelGeneral       = NULL;
     ModelAVOStatic     * modelAVOstatic     = NULL;
     ModelGravityStatic * modelGravityStatic = NULL;
-
-    CravaResult * cravaResult = new CravaResult();
+    CravaResult        * crava_result       = new CravaResult();
 
     if (modelFile.getParsingFailed()) {
       LogKit::SetFileLog(IO::FileLog()+IO::SuffixTextFiles(), modelSettings->getLogLevel());
@@ -222,13 +221,15 @@ int main(int argc, char** argv)
       std::string interval_text = "";
       if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
         interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
-      LogKit::WriteHeader("Setting up models" + interval_text);
+      LogKit::WriteHeader("Setting up model" + interval_text);
 
       //Priormodell i 3D
+
 
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
       //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
+      LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
       seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
                                                                              simbox->GetNXpad(),
                                                                              simbox->GetNYpad(),
@@ -236,12 +237,16 @@ int main(int argc, char** argv)
 
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-      cravaResult->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
-      cravaResult->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
-      cravaResult->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
+      crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
+      //Release background grids from common_data.
+      common_data->ReleaseBackgroundGrids(i_interval, 0);
+      crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
+      common_data->ReleaseBackgroundGrids(i_interval, 1);
+      crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
+      common_data->ReleaseBackgroundGrids(i_interval, 2);
 
-      //Realease background grids from common_data.
-      common_data->ReleaseBackgroundGrids(i_interval);
+
+      
 
       //korrelasjonsgrid (2m)
       float corr_grad_I = 0.0f;
@@ -250,9 +255,10 @@ int main(int argc, char** argv)
 
       float dt        = static_cast<float>(simbox->getdz());
       float low_cut   = modelSettings->getLowCut();
-      int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
+      int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
 
-      if (!modelSettings->getForwardModeling())
+      if (!modelSettings->getForwardModeling()){
+        LogKit::LogFormatted(LogKit::Low,"\nCorrelation parameters..\n");
         seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
                                                                         common_data->GetPriorParamCov(i_interval),
                                                                         common_data->GetPriorAutoCov(i_interval),
@@ -267,8 +273,10 @@ int main(int argc, char** argv)
                                                                         simbox->GetNXpad(),
                                                                         simbox->GetNYpad(),
                                                                         simbox->GetNZpad());
+      }
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
+      LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
       setupStaticModels(modelGeneral,
                         modelAVOstatic,
                         //modelGravityStatic,
@@ -303,6 +311,7 @@ int main(int argc, char** argv)
           bool failed;
           switch(eventType) {
           case TimeLine::AVO : {
+            LogKit::LogFormatted(LogKit::Low,"\nAVO inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseAVOInversion(modelSettings,
                                              modelGeneral,
                                              modelAVOstatic,
@@ -313,6 +322,7 @@ int main(int argc, char** argv)
             break;
           }
           case TimeLine::TRAVEL_TIME :
+            LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                     modelGeneral,
                                                     inputFiles,
@@ -320,6 +330,7 @@ int main(int argc, char** argv)
                                                     seismicParametersIntervals[i_interval]);
             break;
           case TimeLine::GRAVITY :
+            LogKit::LogFormatted(LogKit::Low,"\Gravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseGravimetricInversion(modelSettings,
                                                      modelGeneral,
                                                      modelGravityStatic,
@@ -343,20 +354,22 @@ int main(int argc, char** argv)
 
 
     //Combine interval grids to one grid per parameter
-    cravaResult->CombineResults(modelSettings,
+    LogKit::WriteHeader("Combine Results and Write to Files");
+    crava_result->CombineResults(modelSettings,
                                 common_data,
                                 seismicParametersIntervals);
 
     //Write results
-    cravaResult->WriteResults(modelSettings,
+    crava_result->WriteResults(modelSettings,
                               common_data);
 
     if(modelSettings->getDo4DInversion())
     {
+
       bool failed;
       if(modelSettings->getDo4DRockPhysicsInversion())
       {
-
+        LogKit::WriteHeader("4D Rock Physics Inversion");
         failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
 
         if(failed)
@@ -379,8 +392,12 @@ int main(int argc, char** argv)
     delete modelAVOstatic;
     delete modelGeneral;
     delete common_data;
+    delete crava_result;
+    crava_result            = NULL;
     delete modelSettings;
+    modelSettings           = NULL;
     delete inputFiles;
+    inputFiles              = NULL;
 
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");

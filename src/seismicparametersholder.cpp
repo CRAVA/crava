@@ -29,6 +29,8 @@ SeismicParametersHolder::SeismicParametersHolder(void)
   block_grid_        = NULL;
   facies_prob_undef_ = NULL;
   quality_grid_      = NULL;
+  corr_T_            = NULL;
+  corr_T_filtered_   = NULL;
 
   priorVar0_.resize(3,3);
 }

@@ -44,7 +44,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   multiple_interval_grid_(NULL),
   time_line_(NULL),
   time_depth_mapping_(NULL),
-  estimation_simbox_()
+  estimation_simbox_(),
+  n_angles_(0)
 {
 
   SetDebugLevel(model_settings);
@@ -81,10 +82,14 @@ CommonData::CommonData(ModelSettings * model_settings,
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
-  if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
-    block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
+  if (wells_.size() > 0){
+    if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
+      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
                                            wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_,
                                            mapped_blocked_logs_intervals_, err_text);
+  }
+  else
+    block_wells_ = true;
 
   // 6. Reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
@@ -197,17 +202,24 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 CommonData::~CommonData() {
 
+  if (multiple_interval_grid_ != NULL){
+    delete multiple_interval_grid_;
+  }
 
-  //for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
-  //  for (int j = 0; j < 3; j++) {
-  //    if (background_parameters_[i][j] != NULL)
-  //      delete background_parameters_[i][j];
-  //  }
-  //}
+  if (time_depth_mapping_ != NULL){
+    delete time_depth_mapping_;
+    time_depth_mapping_ = NULL;
+  }
+
+  if (time_line_ != NULL){
+    delete time_line_;
+    time_line_ = NULL;
+  }
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
-    if (mapped_blocked_logs_.find(it->first)->second != NULL)
+    if (mapped_blocked_logs_.find(it->first)->second != NULL){
       delete mapped_blocked_logs_.find(it->first)->second;
+    }
   }
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_for_correlation_.begin(); it != mapped_blocked_logs_for_correlation_.end(); it++) {
@@ -215,23 +227,100 @@ CommonData::~CommonData() {
       delete mapped_blocked_logs_for_correlation_.find(it->first)->second;
   }
 
-  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++) {
-    std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
-
-    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
-      if (blocked_logs_interval.find(it->first)->second != NULL)
-        delete blocked_logs_interval.find(it->first)->second;
+  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++){
+    if (mapped_blocked_logs_intervals_.size() > 0){
+      std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
+        if (blocked_logs_interval.find(it->first)->second != NULL){
+          delete blocked_logs_interval.find(it->first)->second;
+        }
+      }
     }
   }
 
-  if (multiple_interval_grid_ != NULL)
-    delete multiple_interval_grid_;
+  // facies_estim_interval_
+  for (size_t i = 0; i < facies_estim_interval_.size(); i++){
+    delete facies_estim_interval_[i];
+    facies_estim_interval_[i] = NULL;
+  }
 
-  //if (time_line_ != NULL)
-  //  delete time_line_;
+  // prior_facies_prob_cubes_
+  for (size_t i = 0; i < prior_facies_prob_cubes_.size(); i++){
+    for (size_t j = 0; j < prior_facies_prob_cubes_[i].size(); j++){
+      delete prior_facies_prob_cubes_[i][j];
+      prior_facies_prob_cubes_[i][j] = NULL;
+    }
+  }
 
-  //if (time_depth_mapping_ != NULL)
-  //  delete time_depth_mapping_;
+  // rock_distributions_
+  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++){
+    for (size_t j = 0; rock_distributions_.find(it->first)->second.size(); j++){
+      delete rock_distributions_.find(it->first)->second[j];
+      rock_distributions_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // reservoir_variables_
+  for (std::map<std::string, std::vector<DistributionWithTrend *> >::const_iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++){
+    for (size_t j = 0; reservoir_variables_.find(it->first)->second.size(); j++){
+      delete reservoir_variables_.find(it->first)->second[j];
+      reservoir_variables_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // reflection matrix
+  /*
+  for (std::map<int, float **>::const_iterator it = reflection_matrix_.begin(); it != reflection_matrix_.end(); it++){
+    for (int i = 0; i < n_angles_[it->first]; i++){
+        delete it->second[i];
+    }
+    delete it->second;
+  }
+  */
+
+
+  // temporary_wavelets_
+  for (size_t i = 0; i < temporary_wavelets_.size(); i++){
+    delete temporary_wavelets_[i];
+    temporary_wavelets_[i] = NULL;
+  }
+
+  // wavelets_
+  for (std::map<int, std::vector<Wavelet *> >::const_iterator it = wavelets_.begin(); it != wavelets_.end(); it++){
+    for (size_t j = 0; j < wavelets_.size(); j++){
+      delete wavelets_.find(it->first)->second[j];
+      wavelets_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // local_noise_scales_
+  for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_noise_scales_.begin(); it != local_noise_scales_.end(); it++){
+    for (size_t j = 0; j < local_noise_scales_.size(); j++){
+      delete local_noise_scales_.find(it->first)->second[j];
+      local_noise_scales_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // local_shifts_
+  for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_shifts_.begin(); it != local_shifts_.end(); it++){
+    for (size_t j = 0; j < local_shifts_.size(); j++){
+      delete local_shifts_.find(it->first)->second[j];
+      local_shifts_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // local_scales_
+  for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_scales_.begin(); it != local_scales_.end(); it++){
+    for (size_t j = 0; j < local_scales_.size(); j++){
+      delete local_scales_.find(it->first)->second[j];
+      local_scales_.find(it->first)->second[j] = NULL;
+    }
+  }
+
+  // prior lateral correlation
+  for (size_t i = 0 ; i < prior_corr_XY_.size(); i++){
+    delete prior_corr_XY_[i];
+  }
 
 }
 
@@ -2486,6 +2575,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   for (int i = 0; i < n_timelapses; i++) {
 
     int n_angles = model_settings->getNumberOfAngles(i);
+    n_angles_.push_back(n_angles);
 
     if (refl_matr_file != "") { //File should have one line for each seismic data file. Check: if (input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
       std::string tmp_err_text("");
@@ -4144,6 +4234,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 
   // Block logs to surrounding estimation simbox
   try{
+      LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in the outer estimation simbox.\n");
     for (unsigned int i=0; i<wells.size(); i++) {
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
@@ -4157,27 +4248,31 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 
   // Block logs to interval simboxes for estimation
   if(err_text == ""){
-    try{
-      for (unsigned int i = 0; i < wells.size(); i++){
-        mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
-          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
-                                model_settings->getRunFromPanel(), err_text)));
+    if (model_settings->getEstimateCorrelations()){
+      try{
+        LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for correlation estimation.\n");
+        for (unsigned int i = 0; i < wells.size(); i++){
+          mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
+            new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid,
+                                  model_settings->getRunFromPanel(), err_text)));
+        }
       }
-    }
-    catch(NRLib::Exception & e){
-    err_text += e.what();
+      catch(NRLib::Exception & e){
+      err_text += e.what();
+      }
     }
   }
 
   // Block logs to each interval simbox
   try {
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox.\n");
     for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
-      const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
+      //const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
 
       for (size_t j = 0; j < wells.size(); j++) {
         blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(),
-          new BlockedLogsCommon(&wells[j], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, simbox, model_settings->getRunFromPanel(), err_text)));
+          new BlockedLogsCommon(&wells[j], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text)));
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
@@ -5381,9 +5476,19 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 
   if (fileType == IO::CRAVA) {
 
-    int nx_pad = inversion_simbox->GetNXpad();
-    int ny_pad = inversion_simbox->GetNYpad();
-    int nz_pad = 0;
+    int nx_pad, ny_pad, nz_pad;
+    if(nopadding)
+      {
+      nx_pad = inversion_simbox->getnx();
+      ny_pad = inversion_simbox->getny();
+      nz_pad = 0;
+    }
+    else
+    {
+      nx_pad = inversion_simbox->GetNXpad();
+      ny_pad = inversion_simbox->GetNYpad();
+      nz_pad = 0;
+    }
 
     GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
 
@@ -5397,21 +5502,29 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 
     crava_grid->createRealGrid(false);
     crava_grid->setAccessMode(FFTGrid::RANDOMACCESS);
-    crava_grid->readCravaFile(file_name, err_text);
+    crava_grid->readCravaFile(file_name, err_text, nopadding);
 
     //Intervals not used, no need to resample
     // Alternative: create a readCravaFile for NRLibGrid. Padding?
     if (model_settings->GetMultipleIntervalSetting() == false) {
-      int nx = interval_simboxes[0]->getnx();
-      int ny = interval_simboxes[0]->getny();
-      int nz = interval_simboxes[0]->getnz();
+      int nx_pad, ny_pad, nz_pad;
+      if (nopadding){
+        nx_pad = interval_simboxes[0]->getnx();
+        ny_pad = interval_simboxes[0]->getny();
+        nz_pad = interval_simboxes[0]->getnz();
+      }
+      else{
+        nx_pad = interval_simboxes[0]->GetNXpad();
+        ny_pad = interval_simboxes[0]->GetNYpad();
+        nz_pad = interval_simboxes[0]->GetNZpad();
+      }
 
-      interval_grids[0] = new NRLib::Grid<float>(nx, ny, nz);
+      interval_grids[0] = new NRLib::Grid<float>(nx_pad, ny_pad, nz_pad);
 
       //Copy elements from fft_grid
-      for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-          for (int k = 0; k < nz; k++) {
+      for (int i = 0; i < nx_pad; i++) {
+        for (int j = 0; j < ny_pad; j++) {
+          for (int k = 0; k < nz_pad; k++) {
             interval_grids[0]->SetValue(i, j, k, crava_grid->getRealValue(i, j, k));
           }
         }
@@ -5421,11 +5534,19 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
       LogKit::LogFormatted(LogKit::Low,"\n CRAVA input not allowed in multiple intervals");
       assert(0); //Do not currently allow use of crava format files with multizone.
       for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
-        int nx = interval_simboxes[i_interval]->getnx();
-        int ny = interval_simboxes[i_interval]->getny();
-        int nz = interval_simboxes[i_interval]->getnz();
+        int nx_pad, ny_pad, nz_pad;
+        if (nopadding){
+          nx_pad = interval_simboxes[0]->getnx();
+          ny_pad = interval_simboxes[0]->getny();
+          nz_pad = interval_simboxes[0]->getnz();
+        }
+        else{
+          nx_pad = interval_simboxes[0]->GetNXpad();
+          ny_pad = interval_simboxes[0]->GetNYpad();
+          nz_pad = interval_simboxes[0]->GetNZpad();
+        }
 
-        interval_grids[i_interval]->Resize(nx, ny, nz);
+        interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad);
 
         FFTGrid       * fft_grid_tmp = NULL;
         SegY          * segy_tmp     = NULL;
@@ -5489,7 +5610,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   par_name,
                   offset,
                   format,
-                  err_text);
+                  err_text,
+                  nopadding);
   else if (fileType == IO::STORM)
     ReadStormFile(file_name,
                   interval_grids,
@@ -5638,7 +5760,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                          std::string                       & err_text,
                          bool                                nopadding) {
 
-  (void) nopadding;
+  //(void) nopadding;
   (void) par_name;
 
   SegY * segy = NULL;
@@ -5707,12 +5829,19 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       geo->WriteGeometry();
       if (grid_type == DATA)
         geometry = new SegyGeometry(geo);
+      int nx_pad, ny_pad, nz_pad;
+      if(nopadding){
+        nx_pad = interval_simboxes[i_interval]->getnx();
+        ny_pad = interval_simboxes[i_interval]->getny();
+        nz_pad = interval_simboxes[i_interval]->getnz();
+      }
+      else{
+        nx_pad = interval_simboxes[i_interval]->GetNXpad();
+        ny_pad = interval_simboxes[i_interval]->GetNYpad();
+        nz_pad = interval_simboxes[i_interval]->GetNZpad();
+      }
 
-      int xpad = interval_simboxes[i_interval]->getnx();
-      int ypad = interval_simboxes[i_interval]->getny();
-      int zpad = interval_simboxes[i_interval]->getnz();
-
-      interval_grids[i_interval]->Resize(xpad, ypad, zpad);
+      interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad);
 
       StormContGrid * stormgrid_tmp = NULL;
       FFTGrid * fft_grid_tmp        = NULL;
@@ -5806,13 +5935,13 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
   if (grid_new->GetN() == 0) //Send in an empty NRLib::Grid if we want fft-grid
     is_nrlib_grid = false;
 
-  int nx   = grid_new->GetNI();
-  int ny   = grid_new->GetNJ();
-  int nz   = grid_new->GetNK();
-  int nxp  = grid_new->GetNI();
-  int nyp  = grid_new->GetNJ();
-  int nzp  = grid_new->GetNK();
-  int rnxp = grid_new->GetNI(); //2*(nxp/2+1);
+  int nx   = simbox->getnx();//grid_new->GetNI();
+  int ny   = simbox->getny();//grid_new->GetNJ();
+  int nz   = simbox->getnz();//grid_new->GetNK();
+  int nxp  = simbox->GetNXpad();//grid_new->GetNI();
+  int nyp  = simbox->GetNYpad();//grid_new->GetNJ();
+  int nzp  = simbox->GetNZpad();//grid_new->GetNK();
+  int rnxp = simbox->GetNXpad();//grid_new->GetNI(); //2*(nxp/2+1);
 
   if (is_nrlib_grid == false) {
     nx   = fft_grid_new->getNx();
@@ -6426,7 +6555,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                           std::string                       & err_text,
                           bool                                scale,
                           bool                                nopadding) {
- (void) nopadding;
+ //(void) nopadding;
  (void) par_name;
   StormContGrid * stormgrid = NULL;
   bool failed = false;
@@ -6447,12 +6576,19 @@ CommonData::ReadStormFile(const std::string                 & file_name,
   if (failed == false) {
 
     for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+      int nx_pad, ny_pad, nz_pad;
+       if(nopadding==false){
+        nx_pad = interval_simboxes[i_interval]->GetNXpad();
+        ny_pad = interval_simboxes[i_interval]->GetNYpad();
+        nz_pad = interval_simboxes[i_interval]->GetNZpad();
+       }
+       else{
+         nx_pad = interval_simboxes[i_interval]->getnx();
+         ny_pad = interval_simboxes[i_interval]->getny();
+         nz_pad = interval_simboxes[i_interval]->getnz();
+       }
 
-      int nx = interval_simboxes[i_interval]->getnx();
-      int ny = interval_simboxes[i_interval]->getny();
-      int nz = interval_simboxes[i_interval]->getnz();
-
-      interval_grids[i_interval]->Resize(nx, ny, nz, 0.0);
+      interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad, 0.0);
 
       try {
 
@@ -6848,7 +6984,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                            multi_interval_grid->GetIntervalSimboxes(),
                            inversion_simbox,
                            model_settings,
-                           err_text_tmp);
+                           err_text_tmp,
+                           false);
 
           for (int i = 0; i < n_intervals; i++) {
             background_parameters[i][j] = new NRLib::Grid<float>(*parameter_tmp[i]);
@@ -6883,17 +7020,17 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         for (int i = 0; i < n_intervals; i++) {
 
           const Simbox * simbox = multi_interval_grid->GetIntervalSimbox(j);
-          int nx = simbox->getnx();
-          int ny = simbox->getny();
-          int nz = simbox->getnz();
+          int nx_pad = simbox->GetNXpad();
+          int ny_pad = simbox->GetNYpad();
+          int nz_pad = simbox->GetNZpad();
 
           float log_value = log(const_back_value);
 
           for (int k = 0; k < 3; k++) {
-            background_parameters[i][k] = new NRLib::Grid<float>();
+            background_parameters[i][k] = new NRLib::Grid<float>(nx_pad, ny_pad, nz_pad, log_value);
           }
 
-          background_parameters[i][j]->Resize(nx, ny, nz, log_value);
+          //background_parameters[i][j]->Resize(nx, ny, nz, log_value);
 
           //H Store constant value instead of log value
           grid_statistics[i][j].push_back(const_back_value); //avg
@@ -9690,9 +9827,8 @@ std::string CommonData::ConvertIntToString(int number){
     return return_value;
 }
 
-void CommonData::ReleaseBackgroundGrids(int i_interval)
+void CommonData::ReleaseBackgroundGrids(int i_interval, int elastic_param)
 {
-  for (int i = 0; i < 3; i++) {
-    delete background_parameters_[i_interval][i];
-  }
+  assert (elastic_param < static_cast<int>(3) && i_interval < background_parameters_.size());
+  delete background_parameters_[i_interval][elastic_param];
 }
