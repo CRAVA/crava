@@ -2606,9 +2606,9 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   std::vector<double> vs_vert(n_layers_);
   std::vector<double> rho_vert(n_layers_);
 
-  GetVerticalTrend(GetVpRawLogs(), vp_vert);
-  GetVerticalTrend(GetVsRawLogs(), vs_vert);
-  GetVerticalTrend(GetRhoRawLogs(), rho_vert);
+  GetVerticalTrend(GetVpBlocked(), vp_vert);
+  GetVerticalTrend(GetVsBlocked(), vs_vert);
+  GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
   for (i = start; i < start+length-1; i++) {
     double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
