@@ -171,7 +171,7 @@ public:
 
   static std::string ConvertFloatToString(float number);
 
-  void               ReleaseBackgroundGrids(int i_interval);
+  void               ReleaseBackgroundGrids(int i_interval, int elastic_param);
 
 private:
 
@@ -547,7 +547,7 @@ private:
                         const Simbox                       * inversion_simbox,
                         const ModelSettings                * model_settings,
                         std::string                        & err_text,
-                        bool                                 nopadding = true);
+                        bool                                 nopadding = false);
 
   //void ReadCravaFile(NRLib::Grid<double> & grid,
   //                   const std::string   & file_name,
@@ -568,7 +568,7 @@ private:
                     float                               offset,
                     const TraceHeaderFormat           * format,
                     std::string                       & err_text,
-                    bool                                nopadding = true);
+                    bool                                nopadding = false);
 
   int                GetFillNumber(int i, int n, int np);
 
@@ -855,16 +855,16 @@ private:
 
   // Trend cubes and rock physics
   std::vector<CravaTrend>                                      trend_cubes_;              //Trend cubes per interval.
-  std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model
-  std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model
+  std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model. Outer map: Inner vector: 
+  std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model. Outer map: Inner vector: 
 
   // prior facies
   std::vector<std::vector<NRLib::Grid<float> *> >              prior_facies_prob_cubes_;
-  std::vector<std::vector<float> >                             prior_facies_;                  ///< Prior facies probabilities. vector (intervals) vector(parameters)
+  std::vector<std::vector<float> >                             prior_facies_;                  ///< Prior facies probabilities. outer vector (intervals) inner vector(parameters)
   std::vector<Surface *>                                       facies_estim_interval_;
 
   // background model
-  std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;    // vector (intervals) vector (parameters)
+  std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;    // outer vector: intervals, inner vector: parameters
   std::vector<double>                                          background_vs_vp_ratios_;  // vs_vp_ratios from generation of backgroundmodel
 
   // Timeline
@@ -872,8 +872,9 @@ private:
 
   bool                                                         forward_modeling_;
 
-  std::map<int, float **>                                      reflection_matrix_;             //Map timelapse
-  bool                                                         refmat_from_file_global_vpvs_;  //True if reflection matrix is from file or set up from global vp/vs value.
+  std::map<int, float **>                                      reflection_matrix_;             // Map timelapse
+  std::vector<int>                                             n_angles_;                      // Number of angles
+  bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 
   // Wavelet
   std::vector<Wavelet*>                                        temporary_wavelets_;            ///< Wavelet per angle

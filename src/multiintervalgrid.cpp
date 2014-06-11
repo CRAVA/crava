@@ -674,11 +674,11 @@ void  MultiIntervalGrid::LogIntervalInformation(const Simbox      * simbox,
                                                 const std::string & interval_name,
                                                 const std::string & header_text1,
                                                 const std::string & header_text2) const{
-  LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+ ", interval \'"+interval_name+"\'\n");
+  LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+ ":\n");
   double zmin, zmax;
   simbox->getMinMaxZ(zmin,zmax);
   if (interval_name != "")
-    //LogKit::LogFormatted(LogKit::Low," Interval name: "+ interval_name +"\n");
+    LogKit::LogFormatted(LogKit::Low," Interval name: "+ interval_name +"\n");
   LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,

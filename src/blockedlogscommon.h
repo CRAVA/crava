@@ -18,18 +18,6 @@ class MultiIntervalGrid;
 class BlockedLogsCommon{
 public:
 
-  // Constructor for wavelet estimation blocking
-  //BlockedLogsCommon(const NRLib::Well * well_data,
-  //                  const Simbox      * const estimation_simbox,
-  //                  bool                interpolate,
-  //                  std::string       & err_text,
-  //                  float               max_hz_background = 0.0,
-  //                  float               max_hz_seismic = 0.0);
-
-
-  //Copy constructor
-  BlockedLogsCommon(const BlockedLogsCommon & logs);
-
   // Constructor for correlation estimation blocking
   BlockedLogsCommon(NRLib::Well                      * well_data,
                     const std::vector<std::string>   & cont_logs_to_be_blocked,
@@ -49,6 +37,9 @@ public:
   // Constructor for wavelet estimation blocking
   BlockedLogsCommon(const NRLib::Well   * well_data,
                     const StormContGrid & stormgrid);
+
+  //Copy constructor
+  BlockedLogsCommon(const BlockedLogsCommon & logs);
 
   ~BlockedLogsCommon();
 
@@ -458,8 +449,7 @@ private:
                                          const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
                                          unsigned int                                         n_blocks,
                                          std::map<std::string, int>                         & n_blocks_with_data,
-                                         int                                                & n_blocks_with_data_tot,
-                                         int                                                  n_intervals) const;
+                                         int                                                & n_blocks_with_data_tot) const;
 
   void    WriteRMSWell(const float                      max_hz_background,
                        const float                      max_hz_seismic,

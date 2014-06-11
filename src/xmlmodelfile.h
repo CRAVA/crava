@@ -14,10 +14,11 @@
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
 #include "src/blockedlogscommon.h"
+#include "src/inputfiles.h"
+#include "src/modelsettings.h"
 
-class InputFiles;
 class Vario;
-class ModelSettings;
+
 
 
 class XmlModelFile
@@ -26,9 +27,9 @@ public:
   XmlModelFile(const std::string & fileName);
     ~XmlModelFile(void);
 
-  ModelSettings * getModelSettings(void)  const { return modelSettings_ ;}
-  InputFiles    * getInputFiles(void)     const { return inputFiles_    ;}
-  bool            getParsingFailed(void)  const { return failed_        ;}
+  ModelSettings * getModelSettings(void)         { return modelSettings_ ;}
+  InputFiles    * getInputFiles(void)            { return inputFiles_    ;}
+  bool            getParsingFailed(void)   const { return failed_        ;}
 
 private:
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
@@ -184,8 +185,8 @@ private:
 
 private:
 
-  ModelSettings  * modelSettings_;
-  InputFiles     * inputFiles_;
+  ModelSettings    * modelSettings_;
+  InputFiles       * inputFiles_;
 
   bool             failed_;                // Indicates whether errors ocuured during construction.
   bool             surveyFailed_;

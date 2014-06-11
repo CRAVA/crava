@@ -99,7 +99,11 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
 XmlModelFile::~XmlModelFile()
 {
-  //Both modelSettings and inputFiles are taken out and deleted outside.
+  //if (modelSettings_ != NULL)
+  //  delete modelSettings_;
+
+  //if(inputFiles_ != NULL)
+  //  delete inputFiles_;
 }
 
 bool
@@ -181,8 +185,7 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
 }
 
 
-bool
-XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
+bool XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("inversion-settings");
   if(root == 0)
@@ -265,8 +268,7 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
 }
 
 
-bool
-XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
+bool XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("estimation-settings");
   if(root == 0)
