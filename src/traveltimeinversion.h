@@ -55,10 +55,15 @@ private:
                                                      NRLib::Grid2D<double>       & Sigma_post_log_vp,
                                                      bool                          logTransMean) const;  // true if the mean is logarithmic transformed fals if mu_prior is E(V_P)
 
+
   void                          doRMSInversion(ModelGeneral            * modelGeneral,
                                                ModelTravelTimeStatic   * modelTravelTimeStatic,
                                                ModelTravelTimeDynamic  * modelTravelTimeDynamic,
                                                SeismicParametersHolder & seismicParameters) const;
+  void                          doRMSInversionAlt(ModelGeneral            * modelGeneral,
+                                    ModelTravelTimeStatic   * modelTravelTimeStatic,
+                                    ModelTravelTimeDynamic  * modelTravelTimeDynamic,
+                                    SeismicParametersHolder & seismicParameters) const;
 
   void                          do1DRMSInversion(const double                & mu_vp_base,
                                                  const NRLib::Grid2D<double> & Sigma_m_below,
@@ -73,6 +78,20 @@ private:
                                                  const Simbox                * timeSimbox,
                                                  std::vector<double>         & mu_post_log_vp,
                                                  NRLib::Grid2D<double>       & Sigma_post_log_vp) const;
+
+  void                          do1DRMSInversionAlt(const double                & mu_vp_base,
+                                      const NRLib::Grid2D<double> & Sigma_m_below,
+                                      const double                & standard_deviation,
+                                      const RMSTrace              * rms_trace,
+                                      FFTGrid                     * mu_log_vp_above,
+                                      FFTGrid                     * mu_log_vp_model,
+                                      const std::vector<double>   & cov_grid_log_vp_above,
+                                      const std::vector<double>   & cov_grid_log_vp_model,
+                                      const Simbox                * simbox_above,
+                                      const Simbox                * simbox_below,
+                                      const Simbox                * timeSimbox,
+                                      std::vector<double>         & mu_post_vp,
+                                      NRLib::Grid2D<double>       & Sigma_post_vp) const;
 
   void                          calculatePosteriorModel(const std::vector<double>   & d,
                                                         const NRLib::Grid2D<double> & Sigma_d,
@@ -168,7 +187,7 @@ private:
 
   NRLib::Grid2D<double>         generateSigmaModel(const std::vector<double> & cov_grid) const;
 
-  std::vector<double>           getCovLogVp(FFTGrid * cov_log_vp) const;
+  std::vector<double>           getCov(FFTGrid * cov) const;
 
   void                          transformVpSquareToLogVp(const std::vector<double>   & mu_vp_square,
                                                          const NRLib::Grid2D<double> & Sigma_vp_square,
@@ -178,7 +197,7 @@ private:
   void                          getMuFromLogMu(std::vector<double>   & mu , const std::vector<double>   &mu_log, const NRLib::Grid2D<double> &Sigma_log) const;
   void                          getLogMuFromMu(std::vector<double>   & mu_log,  const std::vector<double>   &mu_, const NRLib::Grid2D<double> &Sigma_log) const;
   void                          getSigmaFromLogSigma(std::vector<double>   & mu,const NRLib::Grid2D<double> &Sigma_log, NRLib::Grid2D<double> & Sigma) const;
-  FFTGrid*                      getCovFunkFromLogCovFunk(FFTGrid*  cov_log,double meanVpRelative) const;
+  FFTGrid*                      getCovFunkFromLogCovFunk(FFTGrid*  cov_log,double meanRelative) const;
 
   void                          transformVpMinusToLogVp(const std::vector<double>   & mu_vp_minus,
                                                         const NRLib::Grid2D<double> & Sigma_vp_minus,
@@ -304,12 +323,12 @@ private:
                                                           FFTGrid                 * stationary_observation_covariance,
                                                           FFTGrid                *& post_mu) const;
 
-  void                          calculateLogVpCovariance(const std::vector<int>  & observation_filter,
-                                                      //   FFTGrid                 * mu_vp,
-                                                         FFTGrid                 * cov_vp,
+  void                          calculateCovariance(const std::vector<int>  & observation_filter,
+                                                      //   FFTGrid                 * mu_,
+                                                         FFTGrid                 * cov_prior,
                                                        //  FFTGrid                 * stationary_observations,
                                                          FFTGrid                 * stationary_observation_covariance,
-                                                         FFTGrid                *& post_cov_vp) const;
+                                                         FFTGrid                *& cov_post) const;
 
   void                          calculateDistanceGrid(const Simbox              * simbox,
                                                       const NRLib::Grid<double> & divided_grid,
@@ -326,6 +345,17 @@ private:
 
  NRLib::Grid<double>            calculateDividedGridHorizon(FFTGrid * post_mu_vp,
                                                             FFTGrid * post_cov_mu_vp) const;
+ void                           transformPowerToLog(FFTGrid *  mu_log_model,
+                                                    FFTGrid *  cov_log_model,
+                                                    FFTGrid *  mu_pow_model,
+                                                    FFTGrid * cov_pow_model,
+                                                    double power) const;
+
+ void                           transformLogToPower(FFTGrid *  mu_pow_model,
+                                                    FFTGrid *  cov_pow_model,
+                                                    FFTGrid *  mu_log_model,
+                                                    FFTGrid *  cov_log_model,
+                                                    double power) const;
 
   void                          generateNewSimbox(const NRLib::Grid<double>  & distance,
                                                   const double               & lz_limit,

@@ -8,6 +8,9 @@
 #include "src/modelgeneral.h"
 #include "src/tasklist.h"
 #include "src/modelsettings.h"
+#include "lib/lib_matr.h"
+
+
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
@@ -800,3 +803,165 @@ SeismicParametersHolder::createPostCov00(FFTGrid * postCov) const
   return postCov00;
 }
 //--------------------------------------------------------------------
+void
+SeismicParametersHolder::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
+{
+  // parameterNumber: 0 = VpCurrent, 1=VsCurrent 2 = RhoCurrent,
+  LogKit::LogFormatted(LogKit::Low, "\nUpdating SeismicParametersHolder with posterior of single parameter...");
+  // initializing
+
+
+  muAlpha_->setAccessMode(FFTGrid::READANDWRITE);
+  muBeta_->setAccessMode(FFTGrid::READANDWRITE);
+  muRho_->setAccessMode(FFTGrid::READANDWRITE);
+
+
+  assert(Epost->getIsTransformed());
+  Epost->setAccessMode(FFTGrid::READ);
+
+  covAlpha_->setAccessMode(FFTGrid::READANDWRITE);
+  covBeta_->setAccessMode(FFTGrid::READANDWRITE);
+  covRho_->setAccessMode(FFTGrid::READANDWRITE);
+  crCovAlphaBeta_->setAccessMode(FFTGrid::READANDWRITE);
+  crCovAlphaRho_->setAccessMode(FFTGrid::READANDWRITE);
+  crCovBetaRho_->setAccessMode(FFTGrid::READANDWRITE);
+
+  assert(CovPost->getIsTransformed());
+  CovPost->setAccessMode(FFTGrid::READ);
+
+  int nzp = Epost->getNzp();
+  int nyp = Epost->getNyp();
+  int cnxp = Epost->getCNxp();
+
+  fftw_complex*  muFullPrior=new fftw_complex[3];
+  fftw_complex*  muFullPosterior=new fftw_complex[3];
+  fftw_complex   muCurrentPrior;
+  fftw_complex   muCurrentPosterior;
+  double   sigmaCurrentPrior ;
+  double   sigmaCurrentPosterior ;
+
+  fftw_complex** sigmaFullPrior          = new fftw_complex*[3];
+  fftw_complex** sigmaFullPosterior      = new fftw_complex*[3];
+  fftw_complex*  sigmaFullVsCurrentPrior = new fftw_complex[3];
+
+  for(int i=0;i<3;i++)
+  {
+    sigmaFullPrior[i]          = new fftw_complex[3];
+    sigmaFullPosterior[i]      = new fftw_complex[3];
+  }
+
+  for (int k = 0; k < nzp; k++) {
+    for (int j = 0; j < nyp; j++) {
+      for (int i = 0; i < cnxp; i++) {
+         // reading from grids
+         muFullPrior[0] = muAlpha_->getNextComplex();
+         muFullPrior[1] = muBeta_->getNextComplex();
+         muFullPrior[2] = muRho_->getNextComplex();
+
+
+         sigmaFullPrior[0][0] = covAlpha_->getNextComplex();
+         sigmaFullPrior[0][1] = crCovAlphaBeta_->getNextComplex();
+         sigmaFullPrior[0][2] = crCovAlphaRho_->getNextComplex();
+         sigmaFullPrior[1][1] = covBeta_->getNextComplex();
+         sigmaFullPrior[1][2] = crCovBetaRho_->getNextComplex();
+         sigmaFullPrior[2][2] = covRho_->getNextComplex();
+
+
+         // compleating matrixes
+         for(int l=0;l<3;l++)
+           for(int m=l+1;m<3;m++)
+           {
+             sigmaFullPrior[m][l].re = sigmaFullPrior[l][m].re;
+             sigmaFullPrior[m][l].im = -sigmaFullPrior[l][m].im;
+           }
+
+         // getting Prior for Parameter
+          muCurrentPrior=muFullPrior[parameterNumber];
+          sigmaCurrentPrior = static_cast<double>(sigmaFullPrior[parameterNumber][parameterNumber].re);
+         // getting posterior for Parameter
+         muCurrentPosterior = Epost->getNextComplex();
+         sigmaCurrentPosterior=static_cast<double>(CovPost->getNextComplex().re);
+
+         // getting correlation between Parameter and others
+         for(int l=0;l<3;l++){
+             sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
+         }
+
+         if((sigmaCurrentPrior*0.9999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
+           // This is the computations
+           if(sigmaCurrentPosterior <= 0.0)
+             sigmaCurrentPosterior=0.0001*sigmaCurrentPrior; // Robustify computations against numerical errors
+
+           double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
+
+           fftw_complex d;
+           d.re =  muCurrentPrior.re + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.re -  muCurrentPrior.re)));
+           d.im =  muCurrentPrior.im + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.im -  muCurrentPrior.im)));
+
+           for(int l=0;l<3;l++)
+           {
+              muFullPosterior[l].re =  muFullPrior[l].re + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re))/sigmaD);
+              muFullPosterior[l].re+=                    - static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im))/sigmaD);
+
+              muFullPosterior[l].im = muFullPrior[l].im + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im))/sigmaD);
+              muFullPosterior[l].im +=                    static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re))/sigmaD);
+           }
+
+           for(int l=0;l<3;l++)
+             for(int m=0;m<3;m++)
+             {
+                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - static_cast<float>(static_cast<double>(( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im))/sigmaD);
+                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - static_cast<float>(static_cast<double>((-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re))/sigmaD);
+             }
+         }else
+         {
+           lib_matrCopyCpx(sigmaFullPrior, 3, 3, sigmaFullPosterior);
+
+           for(int l=0;l<3;l++)
+              muFullPosterior[l]= muFullPrior[l];
+         }
+
+        // writing to grids
+         covAlpha_      ->setNextComplex(  sigmaFullPosterior[0][0]);
+         crCovAlphaBeta_->setNextComplex(  sigmaFullPosterior[0][1]);
+         crCovAlphaRho_ ->setNextComplex(  sigmaFullPosterior[0][2]);
+         covBeta_       ->setNextComplex(  sigmaFullPosterior[1][1]);
+         crCovBetaRho_  ->setNextComplex(  sigmaFullPosterior[1][2]);
+         covRho_        ->setNextComplex(  sigmaFullPosterior[2][2]);
+
+         muAlpha_->setNextComplex( muFullPosterior[0]);
+         muBeta_->setNextComplex( muFullPosterior[1]);
+         muRho_->setNextComplex( muFullPosterior[2]);
+      }
+    }
+  }
+
+  Epost->endAccess();
+  CovPost->endAccess();
+
+  muAlpha_->endAccess();
+  muBeta_->endAccess();
+  muRho_->endAccess();
+
+  covAlpha_->endAccess();
+  covBeta_->endAccess();
+  covRho_->endAccess();
+  crCovAlphaBeta_->endAccess();
+  crCovAlphaRho_->endAccess();
+  crCovBetaRho_->endAccess();
+
+  for(int i=0;i<3;i++)
+  {
+    delete [] sigmaFullPrior[i];
+    delete [] sigmaFullPosterior[i];
+  }
+
+  delete [] muFullPrior;
+  delete [] muFullPosterior;
+
+  delete [] sigmaFullPrior;
+  delete [] sigmaFullPosterior;
+  delete [] sigmaFullVsCurrentPrior;
+  LogKit::LogFormatted(LogKit::Low, "done.\n");
+
+}

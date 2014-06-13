@@ -99,6 +99,7 @@ public:
   void                     writeFilePostCovGrids(Simbox const * simbox) const;
 
   std::vector<float>       createPostCov00(FFTGrid * postCov) const;
+   void                     updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber);
 
 private:
   void                     createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
