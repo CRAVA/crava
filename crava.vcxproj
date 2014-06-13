@@ -255,6 +255,7 @@
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp" />
+    <ClCompile Include="libs\nrlib\well\laswell.cpp" />
     <ClCompile Include="libs\nrlib\random\randomgenerator.cpp" />
     <ClCompile Include="main.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -364,6 +365,7 @@
     </ClCompile>
     <ClCompile Include="src\spatialwellfilter.cpp" />
     <ClCompile Include="src\state4d.cpp" />
+    <ClCompile Include="src\surfacefrompoints.cpp" />
     <ClCompile Include="src\tasklist.cpp" />
     <ClCompile Include="src\timeevolution.cpp" />
     <ClCompile Include="src\timeline.cpp" />
@@ -1371,6 +1373,7 @@
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
     <ClInclude Include="libs\nrlib\random\dSFMT.h" />
+    <ClInclude Include="libs\nrlib\well\laswell.hpp" />
     <ClInclude Include="libs\nrlib\random\randomgenerator.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />

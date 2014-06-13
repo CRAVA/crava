@@ -14,6 +14,10 @@
 
 class ModelSettings;
 
+namespace NRLib {
+  class Well;
+}
+
 class WellData
 {
 public:
@@ -97,6 +101,15 @@ private:
                                   const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
   void                readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
                                      const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
+  void                readLASWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
+                                  const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
+  void                processNRLibWell(const NRLib::Well              & well,
+                                       const std::string              & wellFileName,
+                                       const std::vector<std::string> & logNames,
+                                       const std::vector<bool>        & inverseVelocity,
+                                       bool                             porosityLogGiven,
+                                       bool                             faciesLogGiven,
+                                       bool                             norsarWell);
   void                mergeCells(const std::string & name, double * log_resampled, double * log,
                                  int ii, int istart, int iend, bool debug);
   void                mergeCells(const std::string & name, float * log_resampled, float * log,

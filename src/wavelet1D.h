@@ -57,15 +57,16 @@ Wavelet1D(const ModelSettings * modelSettings,
 
 // Methods that are virtual in Wavelet
 
-  Wavelet1D * createWavelet1DForErrorNorm(void);
-  Wavelet1D * createLocalWavelet1D(int i,
-                                   int j);
-  Wavelet1D * getGlobalWavelet(){ return this;}
+  Wavelet1D   * createWavelet1DForErrorNorm(void);
+  Wavelet1D   * createLocalWavelet1D(int i,
+                                     int j);
+  Wavelet1D   * getGlobalWavelet(){ return this;}
 
-  float         findGlobalScaleForGivenWavelet(const ModelSettings        * modelSettings,
-                                               const Simbox               * simbox,
-                                               const FFTGrid              * seisCube,
-                                               std::vector<WellData *> wells);
+  float         findGlobalScaleForGivenWavelet(const ModelSettings     * modelSettings,
+                                               const Simbox            * simbox,
+                                               const FFTGrid           * seisCube,
+                                               std::vector<WellData *> & wells,
+                                               std::string             & errTxt);
 
   float         calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
                                                 const FFTGrid         * seisCube,
@@ -116,22 +117,22 @@ private:
                                             std::vector<WellData *>    wells,
                                             const Simbox             * simbox)       const;
 
-  void          estimateLocalGain(const CovGrid2D             & cov,
-                                  Grid2D                     *& gain,
-                                  const std::vector<float>    & scaleOptWell,
-                                  float                         globalScale,
-                                  const std::vector<int>      & nActiveData,
-                                  const Simbox                * simbox,
-                                  std::vector<WellData *>       wells,
-                                  int                           nWells);
+  void          estimateLocalGain(const CovGrid2D           & cov,
+                                  Grid2D                   *& gain,
+                                  const std::vector<float>  & scaleOptWell,
+                                  float                       globalScale,
+                                  const std::vector<int>    & nActiveData,
+                                  const Simbox              * simbox,
+                                  std::vector<WellData *>     wells,
+                                  int                         nWells);
 
-  void          estimateLocalShift(const CovGrid2D            & cov,
-                                   Grid2D                    *& shift,
-                                   const std::vector<float>   & shiftWell,
-                                   const std::vector<int>     & nActiveData,
-                                   const Simbox               * simbox,
-                                   std::vector<WellData *>      wells,
-                                   int                          nWells);
+  void          estimateLocalShift(const CovGrid2D           & cov,
+                                   Grid2D                   *& shift,
+                                   const std::vector<float>  & shiftWell,
+                                   const std::vector<int>    & nActiveData,
+                                   const Simbox              * simbox,
+                                   std::vector<WellData *>     wells,
+                                   int                         nWells);
 
   void          estimateLocalNoise(const CovGrid2D           & cov,
                                    Grid2D                   *& noiseScaled,
@@ -142,38 +143,40 @@ private:
                                    std::vector<WellData *>     wells,
                                    int                         nWells);
 
-  float         shiftOptimal(fftw_real                      ** ccor_seis_cpp_r,
-                             const std::vector<float>        & wellWeight,
-                             const std::vector<float>        & dz,
-                             int                               nWells,
-                             int                               nzp,
-                             std::vector<float>              & shiftWell,
-                             float                             maxShift);
+  float         shiftOptimal(fftw_real                ** ccor_seis_cpp_r,
+                             const std::vector<float>  & wellWeight,
+                             const std::vector<float>  & dz,
+                             int                         nWells,
+                             int                         nzp,
+                             std::vector<float>        & shiftWell,
+                             float                       maxShift);
 
-  void          multiplyPapolouis(fftw_real                 ** vec,
-                                  const std::vector<float>   & dz,
-                                  int                          nWells,
-                                  int                          nzp,
-                                  float                        waveletLength,
-                                  const std::vector<float>   & wellWeight)    const;
+  void          multiplyPapolouis(fftw_real                ** vec,
+                                  const std::vector<float>  & dz,
+                                  int                         nWells,
+                                  int                         nzp,
+                                  float                       waveletLength,
+                                  const std::vector<float>  & wellWeight)    const;
 
-  void          adjustLowfrequency(fftw_real                * vec_r,
-                                   float                      dz,
-                                   int                        nzp,
-                                   float                      waveletLength) const;
+  void          adjustLowfrequency(fftw_real * vec_r,
+                                   float       dz,
+                                   int         nzp,
+                                   float       waveletLength) const;
 
-  void          findWavelet(fftw_real                        ** ccor_seis_cpp_r,
-                           fftw_real                        ** cor_cpp_r,
-                           fftw_real                        ** wavelet_r,
-                           const std::vector<float>          & wellWeight,
-                           int                                 nWells,
-                           int                                 nt);
+  void          findWavelet(fftw_real               ** ccor_seis_cpp_r,
+                           fftw_real                ** cor_cpp_r,
+                           fftw_real                ** wavelet_r,
+                           const std::vector<float>  & wellWeight,
+                           int                         nWells,
+                           int                         nt);
 
-  void           writeDebugInfo(fftw_real                   ** seis_r,
-                                fftw_real                   ** cor_cpp_r,
-                                fftw_real                   ** ccor_seis_cpp_r,
-                                fftw_real                   ** cpp_r,
-                                int                            nWells) const;
+  void          CenterWellWavelet(std::vector<fftw_real> & wavelet) const;
+
+  void          writeDebugInfo(fftw_real ** seis_r,
+                               fftw_real ** cor_cpp_r,
+                               fftw_real ** ccor_seis_cpp_r,
+                               fftw_real ** cpp_r,
+                               int          nWells) const;
 };
 
 #endif

@@ -237,9 +237,6 @@
     <ClCompile Include="src\waveletfilter.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="libs\nrlib\well\well.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\welldata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1020,6 +1017,9 @@
     <ClCompile Include="rplib\table_vp.cpp">
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
+    <ClCompile Include="libs\nrlib\well\laswell.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
     <ClCompile Include="rplib\solid.cpp">
       <Filter>Source Files\rplib\solid</Filter>
     </ClCompile>
@@ -1042,6 +1042,12 @@
       <Filter>Source Files\rplib\fluid</Filter>
     </ClCompile>
     <ClCompile Include="libs\nrlib\random\randomgenerator.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+    <ClCompile Include="src\surfacefrompoints.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\well\well.cpp">
       <Filter>Source Files\libs\nrlib</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1741,6 +1747,9 @@
     </ClInclude>
     <ClInclude Include="rplib\table_rho.h">
       <Filter>Header Files\rplib\fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\well\laswell.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
     <ClInclude Include="rplib\table_vp_3.h">
       <Filter>Header Files\rplib\fluid</Filter>

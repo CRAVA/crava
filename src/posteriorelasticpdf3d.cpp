@@ -353,8 +353,17 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
     }
   }
   bool scientific_format = true;
-  expDens.multiplyByScalar(static_cast<float>(1.0/sum));
-  expDens.writeFile(fileName, "", volume, "NO_LABEL", 0.0, NULL, NULL, TraceHeaderFormat(TraceHeaderFormat::SEISWORKS), false, scientific_format);
+  expDens.multiplyByScalar(static_cast<float>(1000000.0/sum));
+  double z_min, z_max;
+  volume->getMinMaxZ(z_min, z_max);
+  std::vector<std::string> header_lines(5);
+  header_lines[0] = "Probability density cube for elastic parameters.";
+  header_lines[1] = "Probability density is scaled by a factor of 1 000 000.";
+  header_lines[2] = "x-axis is Vp, and y-axis is Vs.";
+  header_lines[3] = "Vertical axis is physical density, starting from "+NRLib::ToString(z_min)+".";
+  header_lines[4] = "Physical density is scaled by a factor of 1000.";
+  expDens.writeFile(fileName, "", volume, "NO_LABEL", z_min, NULL, NULL,
+                    TraceHeaderFormat(TraceHeaderFormat::SEISWORKS), false, scientific_format, header_lines);
 }
 
 void PosteriorElasticPDF3D::SetupSmoothingGaussian3D(FFTGrid * smoother,

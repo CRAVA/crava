@@ -221,7 +221,7 @@ RegularSurfaceRotated<A>::GlobalToLocalCoord(double global_x,
                                 double& local_x,
                                 double& local_y) const
 {
-  double x_rel = global_x-x_ref_;
+  double x_rel = global_x - x_ref_;
   double y_rel = global_y - y_ref_;
 
   local_x =   std::cos(angle_)*x_rel + std::sin(angle_)*y_rel ;

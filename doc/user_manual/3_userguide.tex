@@ -952,6 +952,7 @@ Examples:
 \end{example}
 
 \subsubsection{Assigning trends to the rock physics variables}
+\label{sec:assigntrendsrockphy}
 The values of the variables may be given by a trend. The trends are named \kw{trend-1d} or \kw{trend-2d}, with the 1d and 2d endings telling if the property values should be related to one or two trend cubes. These trend cubes may for example be related to time and depth, and they need to be defined in the entire inversion volume. If the trend is to be used, trend cubes must be given on the same level as \kw{reservoir} using the command \kw{trend-cube} following the example below. 
 If the trend represent a mean or a variance (as in for example the background model), these can be estimated from data by specifying either \kw{mean} or \kw{variance} in  addition to using the command \kw{estimate}. Note that if the model is 1-dimensional, it is necessary to specify the reference parameter, see the examples below. The estimation methods are version of standard kernel smoothing (local linear regression for the mean and a weighted kernel smoothing for the variance). Note that the mean and variance does not need to have the same dimensionality, see the examples below.
 
@@ -1134,8 +1135,8 @@ observed in each of the wells.
 Rock physics distributions can be written by the command
 \kw{rock-physics-distributions}\kwindex{rock-physics-distributions}
 under \kw{io-settings} and \kw{other-output}. The distributions are
-written per facies, in a STORM grid with \vp, \vs and density as
-axes. 
+written per facies, with \vp, \vs and density as
+axes. The density axis is scaled by a factor of 1000, to make zooming easier in RMS, and in order to have sufficient resolution in SEGY. The density is scaled by a factor 1 000 000, again for SEGY convenience.
 
 
 \section{Forward modelling}

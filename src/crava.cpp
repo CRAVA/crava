@@ -52,8 +52,6 @@ Crava::Crava(ModelSettings           * modelSettings,
              ModelAVODynamic         * modelAVOdynamic,
              SeismicParametersHolder & seismicParameters)
 {
-
-
   if(modelSettings->getForwardModeling())
     LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
@@ -97,9 +95,9 @@ Crava::Crava(ModelSettings           * modelSettings,
   meanAlpha_         = seismicParameters.GetMuAlpha();
   meanBeta_          = seismicParameters.GetMuBeta();
   meanRho_           = seismicParameters.GetMuRho();
-  postAlpha_         = meanAlpha_;         // Write over the input to save memory
-  postBeta_          = meanBeta_;          // Write over the input to save memory
-  postRho_           = meanRho_;           // Write over the input to save memory
+  postAlpha_         = copyFFTGrid(meanAlpha_);
+  postBeta_          = copyFFTGrid(meanBeta_);
+  postRho_           = copyFFTGrid(meanRho_);
   fprob_             = NULL;
   thetaDeg_          = new float[ntheta_];
   empSNRatio_        = new float[ntheta_];
@@ -177,16 +175,9 @@ Crava::Crava(ModelSettings           * modelSettings,
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
     }
-    if ((modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative()) || modelAVOdynamic_->getUseLocalNoise())
-    {
-      meanAlpha2_ = copyFFTGrid(meanAlpha_);
-      meanBeta2_  = copyFFTGrid(meanBeta_);
-      meanRho2_   = copyFFTGrid(meanRho_);
-    }
-
-    meanAlpha_->fftInPlace();
-    meanBeta_ ->fftInPlace();
-    meanRho_  ->fftInPlace();
+    postAlpha_->fftInPlace();
+    postBeta_ ->fftInPlace();
+    postRho_  ->fftInPlace();
   }
   else{
      LogKit::WriteHeader("Mark 4");
@@ -289,6 +280,11 @@ Crava::~Crava()
   delete [] signalVariance_;
   delete [] errorVariance_;
   delete [] dataVariance_;
+
+  delete postAlpha_;
+  delete postBeta_;
+  delete postRho_;
+
   if(fprob_ != NULL)
     delete fprob_;
   if(errCorr_ != NULL)
@@ -977,9 +973,9 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
   delete[] errorSmooth2;
 
-  meanAlpha_->setAccessMode(FFTGrid::READANDWRITE);
-  meanBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
-  meanRho_  ->setAccessMode(FFTGrid::READANDWRITE);
+  postAlpha_->setAccessMode(FFTGrid::READANDWRITE);
+  postBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
+  postRho_  ->setAccessMode(FFTGrid::READANDWRITE);
 
   FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
   FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
@@ -1083,9 +1079,9 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
     for( j = 0; j < nyp_; j++) {
       for( i = 0; i < cnxp; i++) {
-        ijkMean[0] = meanAlpha_->getNextComplex();
-        ijkMean[1] = meanBeta_ ->getNextComplex();
-        ijkMean[2] = meanRho_  ->getNextComplex();
+        ijkMean[0] = postAlpha_->getNextComplex();
+        ijkMean[1] = postBeta_ ->getNextComplex();
+        ijkMean[2] = postRho_  ->getNextComplex();
 
         for(l = 0; l < ntheta_; l++ )
         {
@@ -1163,12 +1159,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     }
   }
   std::cout << "\n";
-
-  //  time(&timeend);
-  // LogKit::LogFormatted(LogKit::Low,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
-  meanAlpha_      = NULL; // the content is taken care of by  postAlpha_
-  meanBeta_       = NULL; // the content is taken care of by  postBeta_
-  meanRho_        = NULL; // the content is taken care of by  postRho_
 
   postAlpha_->endAccess();
   postBeta_->endAccess();
@@ -1954,12 +1944,12 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
     if(modelSettings->getFaciesProbRelative())
     {
-      meanAlpha2_->subtract(postAlpha_);
-      meanAlpha2_->changeSign();
-      meanBeta2_->subtract(postBeta_);
-      meanBeta2_->changeSign();
-      meanRho2_->subtract(postRho_);
-      meanRho2_->changeSign();
+      meanAlpha_->subtract(postAlpha_);
+      meanAlpha_->changeSign();
+      meanBeta_->subtract(postBeta_);
+      meanBeta_->changeSign();
+      meanRho_->subtract(postRho_);
+      meanRho_->changeSign();
       if(modelSettings->getFaciesProbFromRockPhysics())
         baseName += "Rock_Physics_";
 
@@ -1969,36 +1959,32 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
-      fprob_ = new FaciesProb(meanAlpha2_,
-                                meanBeta2_,
-                                meanRho2_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                modelGeneral_->getPriorFacies(),
-                                modelGeneral_->getPriorFaciesCubes(),
-                                likelihood,
-                                modelGeneral_->getRockDistributionTime0(),
-                                modelGeneral_->getFaciesNames(),
-                                modelAVOstatic_->getFaciesEstimInterval(),
-                                this,
-                                seismicParameters,
-                                modelAVOdynamic_->getLocalNoiseScales(),
-                                modelSettings_,
-                                filteredlogs,
-                                wells_,
-                                modelGeneral_->getTrendCubes(),
-                                nWells_,
-                                simbox_->getdz(),
-                                useFilter,
-                                true,
-                                trend_min[0],
-                                trend_max[0],
-                                trend_min[1],
-                                trend_max[1]);
-
-      delete meanAlpha2_;
-      delete meanBeta2_;
-      delete meanRho2_;
+      fprob_ = new FaciesProb(meanAlpha_,
+                              meanBeta_,
+                              meanRho_,
+                              nfac,
+                              modelSettings->getPundef(),
+                              modelGeneral_->getPriorFacies(),
+                              modelGeneral_->getPriorFaciesCubes(),
+                              likelihood,
+                              modelGeneral_->getRockDistributionTime0(),
+                              modelGeneral_->getFaciesNames(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
+                              this,
+                              seismicParameters,
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
+                              filteredlogs,
+                              wells_,
+                              modelGeneral_->getTrendCubes(),
+                              nWells_,
+                              simbox_->getdz(),
+                              useFilter,
+                              true,
+                              trend_min[0],
+                              trend_max[0],
+                              trend_min[1],
+                              trend_max[1]);
     }
     else if(modelSettings->getFaciesProbRelative() == false)
     {
@@ -2410,9 +2396,9 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
   postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
   postBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
-  meanAlpha2_->setAccessMode(FFTGrid::RANDOMACCESS);
-  meanBeta2_->setAccessMode(FFTGrid::RANDOMACCESS);
-  meanRho2_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanBeta_->setAccessMode(FFTGrid::RANDOMACCESS);
+  meanRho_->setAccessMode(FFTGrid::RANDOMACCESS);
 
   for(i=0;i<nx_;i++)
   {
@@ -2445,9 +2431,9 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
       postAlpha_->getRealTrace(alpha, i, j);
       postBeta_->getRealTrace(beta, i, j);
       postRho_->getRealTrace(rho, i, j);
-      meanAlpha2_->getRealTrace(meanalpha, i, j);
-      meanBeta2_->getRealTrace(meanbeta, i, j);
-      meanRho2_->getRealTrace(meanrho, i, j);
+      meanAlpha_->getRealTrace(meanalpha, i, j);
+      meanBeta_->getRealTrace(meanbeta, i, j);
+      meanRho_->getRealTrace(meanrho, i, j);
 
       for(k=0;k<nz_;k++)
       {
@@ -2467,16 +2453,9 @@ void Crava::correctAlphaBetaRho(ModelSettings * modelSettings)
   postAlpha_->endAccess();
   postBeta_->endAccess();
   postRho_->endAccess();
-  meanAlpha2_->endAccess();
-  meanBeta2_->endAccess();
-  meanRho2_->endAccess();
-
-  if(!(modelSettings_->getEstimateFaciesProb() && modelSettings_->getFaciesProbRelative())) {
-    //We do not need these, and they will not be deleted elsewhere in this case.
-    delete meanAlpha2_;
-    delete meanBeta2_;
-    delete meanRho2_;
-  }
+  meanAlpha_->endAccess();
+  meanBeta_->endAccess();
+  meanRho_->endAccess();
 
   delete [] alpha;
   delete [] beta;

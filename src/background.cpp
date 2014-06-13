@@ -334,8 +334,11 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
   float  dz_simbox = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick()) * 4; //NBNB Marit: Multiply by 4 to save memory
 
   std::vector<Surface> surface(nZones+1);
-  for(int i=0; i<nZones+1; i++)
-    surface[i] = Surface(surface_files[i]);
+  for(int i=0; i < nZones+1; i++) {
+    Surface * tmpSurf;
+    ModelGeneral::loadSurface(surface_files[i], tmpSurf);
+    surface[i] = Surface(*tmpSurf);
+  }
 
   std::vector<Surface> regular_surface(nZones+1);
   RegularizeZoneSurfaces(surface,

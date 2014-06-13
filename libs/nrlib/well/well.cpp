@@ -24,6 +24,7 @@
 #include <string>
 
 #include "well.hpp"
+#include "../iotools/stringtools.hpp"
 
 using namespace NRLib;
 
@@ -135,6 +136,25 @@ Well::RemoveDiscLog(const std::string& name)
   disc_log_.erase(name);
 }
 
+void
+Well::MakeLogsUppercase()
+{
+  std::map<std::string, std::vector<int> > d_log;
+  std::map<std::string, std::vector<int> >::iterator d_item = disc_log_.begin();
+  for(;d_item != disc_log_.end(); ++d_item) {
+    std::string u_name = NRLib::Uppercase(d_item->first);
+    d_log[u_name] = d_item->second;
+  }
+  disc_log_ = d_log;
+
+  std::map<std::string, std::vector<double> > c_log;
+  std::map<std::string, std::vector<double> >::iterator c_item = cont_log_.begin();
+  for(;c_item != cont_log_.end(); ++c_item) {
+    std::string u_name = NRLib::Uppercase(c_item->first);
+    c_log[u_name] = c_item->second;
+  }
+  cont_log_ = c_log;
+}
 
 void Well::SetWellName(const std::string& wellname)
 {

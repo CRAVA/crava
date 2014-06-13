@@ -41,6 +41,7 @@
 #include "src/cravatrend.h"
 #include "src/seismicparametersholder.h"
 #include "src/parameteroutput.h"
+#include "src/surfacefrompoints.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -634,8 +635,16 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
   if(modelSettings->getForwardModeling())
     gridFile = inputFiles->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
-    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL)
-      gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
+    if (modelSettings->getEstimationMode() == false || estimationModeNeedILXL) {
+      if (inputFiles->getNumberOfSurveys() > 0) {
+        gridFile = inputFiles->getSeismicFile(0,0); // Get area from first seismic data volume
+      }
+      else {
+        errText += "Seismic data are needed for the inversion area, but there are no surveys present.\n";
+        errText += "Are you running in estimation mode and asking for SegY output?\n";
+        failed = true;
+      }
+    }
   }
   SegyGeometry * ILXLGeometry = NULL; //Geometry with correct XL and IL settings.
 
@@ -673,8 +682,8 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                               fileType,
                               tmpErrText);
 
-    modelSettings->setSeismicDataAreaParameters(geometry);
     if (geometry != NULL) {
+      modelSettings->setSeismicDataAreaParameters(geometry);
       geometry->WriteGeometry();
 
       if (fileType == IO::CRAVA) {
@@ -778,6 +787,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
     {
       writeAreas(areaParams,timeSimbox,areaType);
       errText += "The specified AREA extends outside the surface(s).\n";
+      failed = true;
     }
     else
     {
@@ -851,9 +861,9 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
                         errText,
                         failed);
 
-      if(!failed)
+      if (!failed)
       {
-        if(modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
+        if (modelSettings->getUseLocalWavelet() && timeSimbox->getIsConstantThick())
         {
           LogKit::LogFormatted(LogKit::Warning,"\nWARNING: LOCALWAVELET is ignored when using constant thickness in DEPTH.\n");
           TaskList::addTask("If local wavelet is to be used, constant thickness in depth should be removed.");
@@ -871,19 +881,19 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
           errText += "<project-settings><advanced-settings><minimum-sampling-density>\n";
         }
 
-        if(status == Simbox::BOXOK)
+        if (status == Simbox::BOXOK)
         {
           logIntervalInformation(timeSimbox, "Time output interval:","Two-way-time");
           //
           // Make extended time simbox
           //
-          if(inputFiles->getCorrDirFile() != "") {
+          if (inputFiles->getCorrDirFile() != "") {
             //
             // Get correlation direction
             //
             try {
               Surface tmpSurf(inputFiles->getCorrDirFile());
-              if(timeSimbox->CheckSurface(tmpSurf) == true)
+              if (timeSimbox->CheckSurface(tmpSurf))
                 correlationDirection = new Surface(tmpSurf);
               else {
                 errText += "Error: Correlation surface does not cover volume.\n";
@@ -895,7 +905,7 @@ ModelGeneral::makeTimeSimboxes(Simbox   *& timeSimbox,
               failed = true;
             }
 
-            if(failed == false && modelSettings->getForwardModeling() == false) {
+            if (failed == false && modelSettings->getForwardModeling() == false) {
               //Extends timeSimbox for correlation coverage. Original stored in timeCutSimbox
               setupExtendedTimeSimbox(timeSimbox, correlationDirection,
                                       timeCutSimbox,
@@ -1051,8 +1061,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
       z0Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(topName.c_str()));
     }
     else {
-      Surface tmpSurf(topName);
-      z0Grid = new Surface(tmpSurf);
+      loadSurface(topName, z0Grid);
     }
   }
   catch (NRLib::Exception & e) {
@@ -1079,8 +1088,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
           z1Grid = new Surface(xMin-100, yMin-100, xMax-xMin+200, yMax-yMin+200, 2, 2, atof(baseName.c_str()));
         }
         else {
-          Surface tmpSurf(baseName);
-          z1Grid = new Surface(tmpSurf);
+          loadSurface(baseName, z1Grid);
         }
       }
       catch (NRLib::Exception & e) {
@@ -1117,7 +1125,7 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
                                      IO::PathToInversionResults(),
                                      outputFormat);
         }
-        if((outputFormat & IO::STORM) > 0) { // These copies are only needed with the STORM format
+        if((outputFormat & IO::STORM) + (outputFormat & IO::ASCII) > 0) { // These copies are only needed with the STORM format
           if ((outputGridsElastic & IO::BACKGROUND) > 0 ||
               (outputGridsElastic & IO::BACKGROUND_TREND) > 0 ||
               (estimationMode && generateBackground)) {
@@ -1151,6 +1159,37 @@ ModelGeneral::setSimboxSurfaces(Simbox                        *& simbox,
   delete z0Grid;
   delete z1Grid;
 }
+
+
+void
+ModelGeneral::loadSurface(const std::string  & surfFile,
+                          Surface           *& grid)
+{
+  std::string errTxt;
+
+  try {
+    Surface tmpSurf(surfFile);
+    grid = new Surface(tmpSurf);
+  }
+  catch (NRLib::Exception & e) {
+    errTxt = e.what();
+  }
+
+  if (errTxt != "") { // Surface format could not be identified. Try point based format.
+    try {
+      SurfaceFromPoints sfp(surfFile);
+      grid = sfp.GetGriddedSurface();
+    }
+    catch (NRLib::Exception & e) {
+      errTxt = e.what();
+    }
+  }
+
+  if (errTxt != "") {
+    throw NRLib::FileFormatError(errTxt);
+  }
+}
+
 
 void
 ModelGeneral::setupExtendedTimeSimbox(Simbox   * timeSimbox,
@@ -1946,20 +1985,21 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
      LogKit::LogFormatted(LogKit::Low,"  Velocity field                           : "+velocityField+"\n");
   }
 
-  const std::string & topWEI  = inputFiles->getWaveletEstIntFileTop(0);
-  const std::string & baseWEI = inputFiles->getWaveletEstIntFileBase(0);
+  const std::vector<std::string> & topWEI  = inputFiles->getWaveletEstIntFileTop();
+  const std::vector<std::string> & baseWEI = inputFiles->getWaveletEstIntFileBase();
 
-  if (topWEI != "" || baseWEI != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
-    if (NRLib::IsNumber(topWEI))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topWEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topWEI+"\n");
-
-    if (NRLib::IsNumber(baseWEI))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseWEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+baseWEI+"\n");
+  if (topWEI.size() > 0 && baseWEI.size() > 0) {
+    if (topWEI[0] != "" && baseWEI[0] != "") {
+      LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
+      if (NRLib::IsNumber(topWEI[0]))
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(topWEI[0].c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+topWEI[0]+"\n");
+      if (NRLib::IsNumber(baseWEI[0]))
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(baseWEI[0].c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+baseWEI[0]+"\n");
+    }
   }
 
   const std::string & topFEI  = inputFiles->getFaciesEstIntFile(0);

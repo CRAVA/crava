@@ -178,6 +178,9 @@ public:
                                  std::string        & errText,
                                  bool               & failed);
 
+  static void       loadSurface(const std::string  & surfFile,
+                                Surface           *& grid);
+
 
   void              processWellLocation(FFTGrid                     ** seisCube,
                                         float                       ** reflectionMatrix,
@@ -313,8 +316,6 @@ private:
                                        const std::vector<WellData *> & wells,
                                        const InputFiles              * inputFiles);
 
-
-
   void              printExpectationAndCovariance(const std::vector<double>   & expectation,
                                                   const NRLib::Grid2D<double> & covariance,
                                                   const bool                  & has_trend) const;
@@ -324,6 +325,7 @@ private:
                                       ModelSettings                  * modelSettings,
                                       std::string                    & errText,
                                       bool                           & failed);
+
   void              estimateXYPaddingSizes(Simbox         * timeSimbox,
                                            ModelSettings *& modelSettings);
   void              estimateZPaddingSize(Simbox         * timeSimbox,

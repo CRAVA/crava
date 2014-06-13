@@ -174,21 +174,23 @@ public:
   int                  getType() const {return(cubetype_);}
   virtual void         setAccessMode(int mode){assert(mode>=0);}
   virtual void         endAccess(){counterForGet_ = 0; counterForSet_ = 0;}
-  virtual void         writeFile(const std::string & fileName,
-                                 const std::string & subDir,
-                                 const Simbox      * simbox,
-                                 const std::string   sgriLabel = "NO_LABEL",
-                                 const float         z0        = 0.0,
-                                 const GridMapping * depthMap  = NULL,
-                                 const GridMapping * timeMap   = NULL,
-                                 const TraceHeaderFormat & thf  = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                                 bool                padding   = false,
-                                 bool                scientific_format = false);
+  virtual void         writeFile(const std::string              & fileName,
+                                 const std::string              & subDir,
+                                 const Simbox                   * simbox,
+                                 const std::string                sgriLabel = "NO_LABEL",
+                                 const float                      z0        = 0.0,
+                                 const GridMapping              * depthMap  = NULL,
+                                 const GridMapping              * timeMap   = NULL,
+                                 const TraceHeaderFormat        & thf       = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                                 bool                             padding   = false,
+                                 bool                             scientific_format = false,
+                                 const std::vector<std::string> & headerText = std::vector<std::string>());
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                                       bool padding = false, bool flat = false, bool scientific_format = false);//No mode/randomaccess
   virtual int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
-                                     const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));   //No mode/randomaccess
+                                     const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                                     const std::vector<std::string> & headerText = std::vector<std::string>());   //No mode/randomaccess
   virtual int          writeSgriFile(const std::string & fileName, const Simbox * simbox, const std::string label);
   virtual void         writeAsciiFile(const std::string & fileName);
   virtual void         writeAsciiRaw(const std::string & fileName);
