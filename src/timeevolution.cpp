@@ -104,8 +104,8 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
     }
   }
 
-  NRLib::WriteMatrixToFile("Cov_all_Not_adjust.dat",Cov_all);
-  NRLib::WriteVectorToFile("E_all.dat",E_all);
+ /* NRLib::WriteMatrixToFile("Cov_all_Not_adjust.dat",Cov_all);
+  NRLib::WriteVectorToFile("E_all.dat",E_all); */
   // makes the covariance robust.
   for(int k=1; k<K; k++)
     for(int d=0;d<dim;d++)
@@ -113,14 +113,11 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
   for(int d=0;d<dim;d++)
     Cov_all(d,d)*=1.01;    // makes static part robust by adding to  diagonal
 
-  NRLib::WriteMatrixToFile("Cov_all.dat",Cov_all);
+//  NRLib::WriteMatrixToFile("Cov_all.dat",Cov_all);
 
   Cov_robust = makeCovRobust( E_all ,Cov_all, vectorSample, dim, K*dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
-  //Cov_robust = makeCovRobust( E_all ,Cov_robust1, vectorSample, 0, dim-1 ,adjustment_factor ); // makes dynamic part robust by adjusting for sample
-  NRLib::WriteMatrixToFile("Cov_robust.dat",Cov_robust);
+//  NRLib::WriteMatrixToFile("Cov_robust.dat",Cov_robust);
 
-
-  //std::cout << "Warning: Adjustment under construction in TimeEvolution::SetUpEvolutionMatrices " << std::endl;
 
   // Data structures for evolution matrix and correction term
   NRLib::Matrix A_k(2*dim, 2*dim);
@@ -183,9 +180,9 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
     }
     NRLib::Matrix SigmaInv;
 
-    NRLib::WriteMatrixToFile("Cov_mk_mk.dat",Cov_mk_mk);
+ /*   NRLib::WriteMatrixToFile("Cov_mk_mk.dat",Cov_mk_mk);
     NRLib::WriteMatrixToFile("Cov_mk_mkm1.dat",Cov_mk_mkm1);
-    NRLib::WriteMatrixToFile("Cov_mkm1_mkm1.dat",Cov_mkm1_mkm1);
+    NRLib::WriteMatrixToFile("Cov_mkm1_mkm1.dat",Cov_mkm1_mkm1); */
     DoRobustInversion(SigmaInv, Cov_mkm1_mkm1, 2*dim,adjustment_factor);
     A_k = Cov_mk_mkm1*SigmaInv;               // A_k = Cov(m_{k}, m_{k-1})\Sigma_{k-1}^{-1}
     AdjustMatrixAForm(A_k, 2*dim);              // Should be done before the matrix is used further.
@@ -194,11 +191,11 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
     delta_k = Cov_mk_mk - Cov_mk_mkm1*A_kT;   // \Sigma_{k} - A_{k}Cov(m_{k}m m_{k-1})A_{k}^T
     delta_mu_k = E_mk - A_k*E_mkm1;           // \mu_k - A_k\mu_{k-1}
     AdjustMatrixDeltaForm(delta_k, 2*dim);
-    NRLib::WriteMatrixToFile("A_k.dat",A_k);
+  /*  NRLib::WriteMatrixToFile("A_k.dat",A_k);
     NRLib::WriteMatrixToFile("delta_k.dat",delta_k);
     NRLib::WriteVectorToFile("E_mk.dat",E_mk);
     NRLib::WriteVectorToFile("E_mkm1.dat",E_mkm1);
-    NRLib::WriteVectorToFile("delta_mu_k.dat",delta_mu_k);
+    NRLib::WriteVectorToFile("delta_mu_k.dat",delta_mu_k); */
 
     // Push back of computed matrices and vectors into return parame
     evolution_matrix.push_back(A_k);
@@ -207,6 +204,7 @@ void TimeEvolution::SetUpEvolutionMatrices(std::vector< NRLib::Matrix>          
   }
 }
 
+/*
 void TimeEvolution::SetUpEvolutionMatrices2(std::vector< NRLib::Matrix>           & evolution_matrix,
                                            std::vector< NRLib::Matrix>           & cov_correction_term,
                                            std::vector< NRLib::Vector>           & mean_correction_term,
@@ -350,6 +348,7 @@ void TimeEvolution::SetUpEvolutionMatrices2(std::vector< NRLib::Matrix>         
     mean_correction_term.push_back(delta_mu_k);
   }
 }
+*/
 
 void TimeEvolution::DoRobustInversion(NRLib::Matrix & SigmaInv,
                                    //   NRLib::Matrix & Cov_mk_mk,

@@ -1403,3 +1403,19 @@ void lib_matrDump(const char * fName, double ** mat, int n1, int n2)
 
  }
 
+  extern void lib_matrDumpVecCpx(const char * fName, fftw_complex *  vec, int n)
+  {
+   int i;
+   FILE * dump = fopen(fName,"w");
+   if(dump != NULL) {
+    for(i=0;i<n;i++) {
+        fprintf(dump, "%f ", vec[i].re);
+      fprintf(dump,"\n");
+    }
+    for(i=0;i<n;i++) {
+        fprintf(dump, "%f ", vec[i].im);
+      fprintf(dump,"\n");
+    }
+    fclose(dump);
+  }
+ }

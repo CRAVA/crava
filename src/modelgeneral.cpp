@@ -73,7 +73,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
 {
   timeSimbox_             = new Simbox();
   timeSimboxConstThick_   = NULL;
-
+//  timeSimboxInitial_       =NULL;
   correlationDirection_   = NULL;
   randomGen_              = NULL;
   failed_                 = false;
@@ -148,6 +148,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
                      correlationDirection_, modelSettings, inputFiles,
                      errText, failedSimbox);
 
+//    timeSimboxInitial_=new Simbox(timeSimbox_);
     if(!failedSimbox)
     {
       //
@@ -223,7 +224,7 @@ ModelGeneral::ModelGeneral(ModelSettings           *& modelSettings,
           NRLib::Matrix initialCov(6,6);
           process4DBackground(modelSettings, inputFiles, seismicParameters, errText, failedBackground,initialMean,initialCov);
 
-          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 10000->1000 for speed during testing
+          timeEvolution_ = TimeEvolution(10000, *timeLine_, rock_distributions_.begin()->second); //NBNB OK 100000->10000 for speed during testing
           timeEvolution_.SetInitialMean(initialMean);
           timeEvolution_.SetInitialCov(initialCov);
         }
@@ -278,6 +279,7 @@ ModelGeneral::~ModelGeneral(void)
 
   delete randomGen_;
   delete timeSimbox_;
+//  delete timeSimboxInitial_;
   delete timeSimboxConstThick_;
 
    if(!forwardModeling_)
@@ -2249,8 +2251,8 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     {
       LogKit::LogFormatted(LogKit::Low,"\nGeneral settings for seismic:\n");
       LogKit::LogFormatted(LogKit::Low,"  White noise component                    : %10.2f\n",modelSettings->getWNC());
-      LogKit::LogFormatted(LogKit::Low,"  Low cut for inversion                    : %10.1f\n",modelSettings->getLowCut());
-      LogKit::LogFormatted(LogKit::Low,"  High cut for inversion                   : %10.1f\n",modelSettings->getHighCut());
+      LogKit::LogFormatted(LogKit::Low,"  Low cut for amplitude inversion          : %10.1f\n",modelSettings->getLowCut());
+      LogKit::LogFormatted(LogKit::Low,"  High cut for amplitude inversion         : %10.1f\n",modelSettings->getHighCut());
       LogKit::LogFormatted(LogKit::Low,"  Guard zone outside interval of interest  : %10.1f ms\n",modelSettings->getGuardZone());
       LogKit::LogFormatted(LogKit::Low,"  Smoothing length in guard zone           : %10.1f ms\n",modelSettings->getSmoothLength());
       LogKit::LogFormatted(LogKit::Low,"  Interpolation threshold                  : %10.1f ms\n",modelSettings->getEnergyThreshold());
@@ -4053,13 +4055,15 @@ ModelGeneral::processPriorCorrelations(Background                     * backgrou
       const int nzPad     = modelSettings->getNZpad();
 
       float dt = static_cast<float>(timeSimbox->getdz());
-      float lowCut = modelSettings->getLowCut();
+      //float lowCut = -1.0f;// modelSettings->getLowCut();//NBNB OK quick fix
+      float lowCut =  modelSettings->getLowCut();//NBNB OK quick fix
       int lowIntCut = int(floor(lowCut*(nzPad*0.001*dt))); // computes the integer whis corresponds to the low cut frequency.
 
       float corrGradI;
       float corrGradJ;
       getCorrGradIJ(corrGradI, corrGradJ);
-      //makeCorr2DPositiveDefinite( priorCorrXY_);
+      if(getIs4DActive() )
+        makeCorr2DPositiveDefinite( priorCorrXY_);   //NBNB OK  should remove if(getIs4DActive() ), but this disturbes test suite
 
       seismicParameters.setCorrelationParameters(paramCov,
                                                  corrT,
@@ -4813,6 +4817,13 @@ ModelGeneral::complete4DBackground(const int nx, const int ny, const int nz, con
   initial_cov=state4d_.GetFullCov();
 
   state4d_.FFT();
+  state4d_.setRelativeGridBase(nx, ny, nz, nxPad, nyPad, nzPad);
+}
+
+void
+ModelGeneral::updateState4DAllignment(FFTGrid* new_vp_relative_to_base)
+{
+  state4d_.updateAllignment(new_vp_relative_to_base);
 }
 
 
@@ -4824,26 +4835,25 @@ ModelGeneral::advanceTime(const int               & previous_vintage,
 {
   if(time_change > 0) { // Only evolve and merge at positive time change
 
-    bool debug = true;
+    bool debug = ( modelSettings->getDebugLevel()>0 );
 
-    if (debug == true)
-      dump4Dparameters(modelSettings,
-                       "_BeforeEvolve_",
-                       previous_vintage);
+    dump4Dparameters(modelSettings,
+                       "_End",
+                       previous_vintage,debug);
 
     state4d_.evolve(previous_vintage, timeEvolution_); //NBNB grad I grad J
 
     if (debug == true)
       dump4Dparameters(modelSettings,
-                       "_AfterEvolve_",
-                       previous_vintage+1);
+                       "_Initial",
+                       previous_vintage+1,debug);
 
     state4d_.merge(seismicParameters);
 
 
     if (debug == true)
       dumpSeismicParameters(modelSettings,
-                            "_next_prior",
+                            "_Initial",
                             previous_vintage + 1,
                             seismicParameters);
   }
@@ -4858,6 +4868,23 @@ ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
     delete timeSimbox_;
 
   timeSimbox_ = new Simbox(new_timeSimbox);
+  double zmin,zmax;
+
+  timeSimbox_->getMinMaxZ(zmin,zmax);
+  LogKit::LogFormatted(LogKit::Low,"\n\nNew time interval:\n");
+  LogKit::LogFormatted(LogKit::Low,"  Absolute time limits avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       zmin+ timeSimbox_->getlz()* timeSimbox_->getAvgRelThick()*0.5,
+                       zmin, zmax);
+  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+                       timeSimbox_->getlz()*timeSimbox_->getAvgRelThick(),
+                        timeSimbox_->getlz()*timeSimbox_->getMinRelThick(),
+                        timeSimbox_->getlz());
+  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n\n",
+                        timeSimbox_->getdz()*timeSimbox_->getAvgRelThick(),
+                        timeSimbox_->getdz()*timeSimbox_->getMinRelThick(),
+                        timeSimbox_->getdz());
+
+
 }
 
 void
@@ -4908,7 +4935,7 @@ ModelGeneral::updateState4DMu(FFTGrid * mu_vp_static,
 bool
 ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 {
-
+  dump4Dparameters(modelSettings,"_End", modelSettings->getNumberOfTimeLapses()-1);
   std::vector<FFTGrid*> predictions = state4d_.doRockPhysicsInversion(*timeLine_, rock_distributions_.begin()->second,  timeEvolution_);
   int nParamOut =predictions.size();
 
@@ -4939,7 +4966,7 @@ ModelGeneral::do4DRockPhysicsInversion(ModelSettings* modelSettings)
 
 
 void
-ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
+ModelGeneral::dumpSeismicParameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state)
 {
 
   std::string  label;
@@ -4956,7 +4983,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write mu current
   tag.str(std::string());tag.clear();label = "mean_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuAlpha() , fileName,  tag.str(),true);
-  /*
+   ///*
   tag.str(std::string());tag.clear();label = "mean_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings,  current_state.GetMuBeta(), fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "mean_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -4965,7 +4992,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
   // write sigma current
   tag.str(std::string());tag.clear();label = "cov_vp_vp_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCovAlpha() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, current_state.GetCrCovAlphaBeta() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_current_step_"; tag << label << timestep << identifyer ; fileName=  tag.str();
@@ -4982,7 +5009,7 @@ ModelGeneral::dumpSeismicParameters(ModelSettings* modelSettings, std::string id
 }
 
 void
-ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep)
+ModelGeneral::dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding)
 {
   state4d_.iFFT();
 
@@ -4991,31 +5018,31 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
   std::string fileName;
   std::stringstream tag;
 
+  if(timestep<0)
+
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),true);
-
-  /*
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpStatic() , fileName,  tag.str(),printPadding);
+ // /*
   tag.str(std::string());tag.clear();label = "mean_vs_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsStatic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoStatic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoStatic() , fileName, tag.str(),printPadding);
   // */
   // write mu dynamic
   tag.str(std::string());tag.clear();label = "mean_vp_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),true);
-  /*
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVpDynamic() , fileName, tag.str(),printPadding);
+  // /*
   tag.str(std::string());tag.clear();label = "mean_vs_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuVsDynamic() , fileName, tag.str(),printPadding);
   tag.str(std::string());tag.clear();label = "mean_rho_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
-  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),true);
+  ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getMuRhoDynamic() , fileName,  tag.str(),printPadding);
   // */
-
 
   // write sigma static - static
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticStatic() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticStatic() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_static_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -5030,7 +5057,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
   // write sigma dynamic - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpDynamicDynamic() , fileName,  tag.str(),true);
-  /*
+  ///*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsDynamicDynamic() , fileName,  tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_dynamic_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -5045,7 +5072,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
   // write sigma static - dynamic
   tag.str(std::string());tag.clear();label = "cov_vp_vp_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVpStaticDynamic() , fileName,  tag.str(),true);
-  /*
+  // /*
   tag.str(std::string());tag.clear();label = "cov_vp_vs_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
   ParameterOutput::writeToFile(timeSimbox_,this, modelSettings, state4d_.getCovVpVsStaticDynamic() , fileName, tag.str(),true);
   tag.str(std::string());tag.clear();label = "cov_vp_rho_static_dynamic_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -5069,6 +5096,7 @@ ModelGeneral::dump4Dparameters(ModelSettings* modelSettings, std::string identif
 void
 ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
 {
+  float centerValue =  float((*corrXY)(0));
   int      nxp    = corrXY->GetNI();
   int      nyp    = corrXY->GetNJ();
   FFTGrid  helper = FFTGrid(nxp,nyp,1,nxp,nyp,1);
@@ -5095,9 +5123,9 @@ ModelGeneral::makeCorr2DPositiveDefinite(Surface         * corrXY)
     }
 
   helper.invFFTInPlace();
-  double scale=1.0/double(helper.getRealValue(0,0,0));
+  double scale=centerValue/double(helper.getRealValue(0,0,0));
 
-  printf("\nFix in latteral correlation in CRAVA results in a variance increase of %f %% (of 100%%) \n",(scale-1.0)*100);
+  printf("\nFix in latteral correlation in CRAVA results in a variance changeof %f %% (of 100%%) \n",std::abs(scale/centerValue-1.0)*100);
 
   for(int i =0;i<nxp;i++)
     for(int j =0;j<nyp;j++)

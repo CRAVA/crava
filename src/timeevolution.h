@@ -53,12 +53,12 @@ private:
                              int                                     i_max,
                              TimeLine                              & time_line,
                              const std::vector<DistributionsRock*> & dist_rock);
-  void SetUpEvolutionMatrices2(std::vector< NRLib::Matrix>          & evolution_matrix,
+/*  void SetUpEvolutionMatrices2(std::vector< NRLib::Matrix>          & evolution_matrix,
                              std::vector< NRLib::Matrix>           & cov_correction_term,
                              std::vector< NRLib::Vector>           & mean_correction_term,
                              int                                     i_max,
                              TimeLine                              & time_line,
-                             const std::vector<DistributionsRock*> & dist_rock);
+                             const std::vector<DistributionsRock*> & dist_rock);*/
 
   // Adjusting the covariance to span all samples for parameters from firstIndex, to lastindex; leave rest alone.
   NRLib::Matrix makeCovRobust(NRLib::Vector                                    mu,

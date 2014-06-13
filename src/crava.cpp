@@ -175,12 +175,12 @@ Crava::Crava(ModelSettings           * modelSettings,
       seisData_[i]->fftInPlace();
       seisData_[i]->endAccess();
     }
-
     postAlpha_->fftInPlace();
     postBeta_ ->fftInPlace();
     postRho_  ->fftInPlace();
   }
   else{
+     LogKit::WriteHeader("Mark 4");
     modelAVOdynamic_->releaseGrids();
   }
 
@@ -1089,7 +1089,12 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
           ijkRes[l]  = ijkData[l];
         }
 
-        seismicParameters.getNextParameterCovariance(parVar);
+        if(modelGeneral->getIs4DActive() ){
+          seismicParameters.getNextParameterCovariance2(parVar);// NBNB disturbes test suite usle line under to check
+        }else{
+          seismicParameters.getNextParameterCovariance(parVar);
+        }
+
         bool invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_;
 
         priorVarVp = parVar[0][0].re;

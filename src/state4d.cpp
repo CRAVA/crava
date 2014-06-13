@@ -33,6 +33,7 @@ State4D::State4D()
   for (int i = 0; i < 9; i++)
     sigma_static_dynamic_[i] = NULL;
 
+  velocity_relative_to_base_ = NULL;
 }
 
 State4D::~State4D()
@@ -51,6 +52,8 @@ State4D::~State4D()
 
   for (int i = 0; i < 9; i++)
     delete sigma_static_dynamic_[i];
+
+  delete velocity_relative_to_base_;
 }
 
 void State4D::setDynamicMu(FFTGrid *vp, FFTGrid *vs, FFTGrid *rho)
@@ -124,6 +127,13 @@ void State4D::setStaticDynamicSigma(FFTGrid *vpvp, FFTGrid *vpvs, FFTGrid *vprho
   sigma_static_dynamic_[6] = rhovp;
   sigma_static_dynamic_[7] = rhovs;
   sigma_static_dynamic_[8] = rhorho;
+}
+
+void State4D::setRelativeGridBase(int nx, int ny, int nz, int nxPad, int nyPad, int nzPad)
+{
+  velocity_relative_to_base_= new FFTGrid(nx, ny, nz, nxPad, nyPad, nzPad);
+  velocity_relative_to_base_->fillInConstant(1.0f,true);
+  velocity_relative_to_base_->setType(FFTGrid::PARAMETER);
 }
 
 
@@ -571,7 +581,7 @@ void State4D::split(SeismicParametersHolder & current_state )
 void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
 {
   // parameterNumber: 0 = VpStatic, 1=VsStatic 2 = RhoStatic, 3 = VpDynamic, 4=VsDynamic 5 = RhoDynamic
-  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...\n");
+  LogKit::LogFormatted(LogKit::Low, "\nUpdating full State 4D with inversion of single parameter...");
   // initializing
   assert(allGridsAreTransformed());
   for(int i = 0; i<3; i++){
@@ -669,8 +679,11 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
              sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
          }
 
-         if( (sigmaCurrentPosterior >0.0) & (sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
+         if((sigmaCurrentPrior*0.999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
            // This is the computations
+           if(sigmaCurrentPosterior <= 0.0)
+             sigmaCurrentPosterior=0.0001*sigmaCurrentPrior; // Robustify computations against numerical errors
+
            double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
 
            fftw_complex d;
@@ -763,10 +776,26 @@ void    State4D::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, in
   delete [] sigmaFullPrior;
   delete [] sigmaFullPosterior;
   delete [] sigmaFullVsCurrentPrior;
+  LogKit::LogFormatted(LogKit::Low, "done.\n");
 
 }
 
+ void
+ State4D::updateAllignment(FFTGrid* new_vp_relative_to_base)
+ {
+   // new_vp_relative_to_base is the new vp used for allignment
+   // At input it is in the new time frame Vp_Current(t_current)/Vp_Initial(t_current);
+   // We have:  dt_current =  (Vp_Current / Vp_prev) *dt_prev
+   //
+   int nx=new_vp_relative_to_base->getNx();
+   int ny=new_vp_relative_to_base->getNy();
+   int nz=new_vp_relative_to_base->getNz();
 
+   for(int i=0;i<nx;i++)
+     for(int j=0;j<ny;j++)
+       for(int k=0;k<nz;k++)
+         velocity_relative_to_base_->setRealValue(i,j,k,new_vp_relative_to_base->getRealValue(i,j,k));
+ }
 
 void State4D::evolve(int                   time_step,
                      const TimeEvolution & timeEvolution )
@@ -854,7 +883,7 @@ void State4D::evolve(int                   time_step,
    timeIncSpatialCorr.createGrid();
    // NBNB this isa quick fix
    if(time_step==0)
-     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // longer vertical range in first go
+     timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); // l
    else
      timeIncSpatialCorr.fillInGenExpCorr(float(nx)/3.0,float(ny)/3.0,20.0,0.0f,0.0f); //
    //NBNB OK  this correlation should come from interface and be more like:
@@ -1062,7 +1091,7 @@ State4D::doRockPhysicsInversion(TimeLine                               & time_li
   iFFT();
 
   // Note rockSample contains rock sample for all time steps.
-  int nSim=10000; // NBNB OK 10000->1000 for speed during debug
+  int nSim=10000; // NBNB OK 100000->10000 for speed during debug
 
   LogKit::LogFormatted(LogKit::Low,"\nSampling rock physics distribution...");
   std::vector<std::vector<std::vector<double> > > rockSample = timeEvolution.returnCorrelatedSample(nSim,time_line, rock_distributions);

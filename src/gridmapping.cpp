@@ -342,6 +342,6 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                        simbox_->getlz());
   LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
                        simbox_->getdz()*simbox_->getAvgRelThick(),
-                       simbox_->getdz(),
-                       simbox_->getdz()*simbox_->getMinRelThick());
+                       simbox_->getdz()*simbox_->getMinRelThick(),
+                       simbox_->getdz());
 }

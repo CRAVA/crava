@@ -1088,6 +1088,30 @@ FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
   endAccess();
 }
 
+
+
+void
+FFTGrid::fillInTimeCov(const fftw_real * circCorrT)
+{
+  assert(istransformed_== false);
+  float value;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+          if(i==0 && j==0)
+             value=circCorrT[k];
+          else
+            value=0.0;
+
+          setNextReal(value);
+      }
+    }
+  }
+  endAccess();
+}
+
 void
 FFTGrid::fillInGenExpCorr(double Rx,
                           double Ry,
@@ -1213,10 +1237,10 @@ void FFTGrid::createGrid()
   counterForGet_  = 0;
   counterForSet_  = 0;
 
- // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
-    text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated too many FFTGrids. The fix";
+    text += "\n\nERROR in FFTGrid createGrid. You have allocated too many FFTGrids. The fix";
     text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
     text += "\nDo you REALLY need to allocate more grids?\n";
     text += "\nAre there no grids that can be released?\n";
@@ -1386,7 +1410,7 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
   // k index in z direction
   float value;
 
-  // assert(istransformed_==false);
+  assert(istransformed_==false);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
     ((i < nx_) && (j < ny_) && (k < nz_)));

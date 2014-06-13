@@ -101,6 +101,8 @@ public:
                                        const fftw_real * circCorrT,
                                        float             gradI,
                                        float             gradJ);// No mode
+  void                fillInTimeCov(const fftw_real * circCorrT);
+
 
   void                 fillInGenExpCorr(double Rx,double Ry,double Rz,
                           float             gradI,

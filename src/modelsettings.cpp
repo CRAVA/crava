@@ -325,7 +325,7 @@ ModelSettings::setLateralCorr(Vario * vario)
 void
 ModelSettings::addDefaultLateralTravelTimeErrorCorr()
 {
-  Vario * lateralTravelTimeErrorCorr = new GenExpVario(1, 50.0, 50.0, 0.0);
+  Vario * lateralTravelTimeErrorCorr = new GenExpVario(1, 1.0, 1.0, 0.0); // NBNB OK shhould be input??
   timeLapseTravelTimeLateralCorrelation_.push_back(lateralTravelTimeErrorCorr);
 }
 
