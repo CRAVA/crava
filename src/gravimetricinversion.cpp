@@ -615,12 +615,14 @@ void
   cov->logTransf();
 }
 
+/*
 void
   GravimetricInversion::CrCovLogTransform(FFTGrid * cov,    float mean_a, float mean_b)
 {
   // Obviously not yet implemented. Do we need this one??
   (void) cov, mean_a, mean_b;
 }
+*/
 
 void
   GravimetricInversion::Subsample(FFTGrid *& upscaled_grid, FFTGrid * original_grid, int nx_up, int ny_up, int nz_up, int nxp_up, int nyp_up, int nzp_up)

@@ -98,7 +98,7 @@ public:
   const std::vector<double>                                          & GetPriorCorrT(int i_interval)                    const { return prior_corr_T_[i_interval]                      ;}
 
   const std::vector<NRLib::Grid<float> *>                            & GetBackgroundParametersInterval(int i)           const { return background_parameters_[i]                      ;}
-  double                                                             & GetBackgroundVsVpRatioInterval(int i)                  { return background_vs_vp_ratios_[i]                    ;}
+  double                                                               GetBackgroundVsVpRatioInterval(int i)            const { return background_vs_vp_ratios_[i]                    ;}
 
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
@@ -112,6 +112,12 @@ public:
                                                   const ModelSettings * model_settings,
                                                   int                   number_of_angles,
                                                   int                   this_time_lapse);
+
+  void               SetupCorrectReflectionMatrix(const ModelSettings * model_settings); //Only for those instances where this is possible.
+
+  double             FindVsVpForZone(int                   i_interval,
+                                     const ModelSettings * model_settings,
+                                     std::string         & origin) const;
 
   void FillInData(NRLib::Grid<float> * grid,
                   FFTGrid            * fft_grid_new,
@@ -337,10 +343,23 @@ private:
                                         const std::vector<bool>         & inverse_velocity,
                                         bool                              facies_log_given,
                                         std::string                     & error_text);
+  int                CheckWellAgainstSimbox(const Simbox      * simbox, 
+                                            const NRLib::Well & well) const;
 
   bool               SetupReflectionMatrix(ModelSettings  * model_settings,
                                            InputFiles     * input_files,
                                            std::string    & err_text);
+
+  void               VsVpFromWells(int          i_interval,
+                                   double     & vsvp,
+                                   int        & N) const;
+
+  void               FindMeanVsVp(const NRLib::Well            & well,
+                                  const NRLib::Surface<double> & top,
+                                  const NRLib::Surface<double> & bot,
+                                  double                       & mean_vs_vp,
+                                  int                          & n_vs_vp) const;
+
 
   bool               SetupTemporaryWavelet(ModelSettings                               * model_settings,
                                            std::map<int, std::vector<SeismicStorage> > & seismic_data,
@@ -693,14 +712,6 @@ private:
                                                    int            output_format,
                                                    int            output_domain,
                                                    int            other_output);
-
-  void               SetupExtendedBackgroundSimbox(const Simbox   * simbox,
-                                                   Surface        * top_corr_surf,
-                                                   Surface        * base_corr_surf,
-                                                   Simbox        *& bg_simbox,
-                                                   int              output_format,
-                                                   int              output_domain,
-                                                   int              other_output);
 
   bool SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                              const InputFiles                                            * input_files,

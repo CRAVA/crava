@@ -300,9 +300,9 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<std::vector<double > > vt_vs(n_wells);
     std::vector<std::vector<double > > vt_rho(n_wells);
 
-    std::vector<const std::vector<int> > ipos(n_wells);
-    std::vector<const std::vector<int> > jpos(n_wells);
-    std::vector<const std::vector<int> > kpos(n_wells);
+    std::vector<const std::vector<int> *> ipos(n_wells);
+    std::vector<const std::vector<int> *> jpos(n_wells);
+    std::vector<const std::vector<int> *> kpos(n_wells);
 
     for (int i=0; i < n_wells; i++) {
       vt_vp[i]  = std::vector<double>(nz);
@@ -1462,9 +1462,9 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
                                  std::vector<std::vector<double> >                & vt_vp,
                                  std::vector<std::vector<double> >                & vt_vs,
                                  std::vector<std::vector<double> >                & vt_rho,
-                                 std::vector<const std::vector<int> >             & ipos,
-                                 std::vector<const std::vector<int> >             & jpos,
-                                 std::vector<const std::vector<int> >             & kpos,
+                                 std::vector<const std::vector<int> *>            & ipos,
+                                 std::vector<const std::vector<int> *>            & jpos,
+                                 std::vector<const std::vector<int> *>            & kpos,
                                  std::vector<int>                                 & n_blocks,
                                  int                                              & tot_blocks,
                                  const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -1507,9 +1507,9 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
     blocked_log->GetVerticalTrend(bl_vs[w],  vt_vs[w]);
     blocked_log->GetVerticalTrend(bl_rho[w], vt_rho[w]);
 
-    ipos[w] = blocked_log->GetIposVector();
-    jpos[w] = blocked_log->GetJposVector();
-    kpos[w] = blocked_log->GetKposVector();
+    ipos[w] = &(blocked_log->GetIposVector());
+    jpos[w] = &(blocked_log->GetJposVector());
+    kpos[w] = &(blocked_log->GetKposVector());
 
     w++;
   }
@@ -1922,26 +1922,26 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::SetupKrigingData2D(std::vector<KrigingData2D>               & kriging_data_vp,
-                               std::vector<KrigingData2D>               & kriging_data_vs,
-                               std::vector<KrigingData2D>               & kriging_data_rho,
-                               std::vector<double>                      & trend_vp,
-                               std::vector<double>                      & trend_vs,
-                               std::vector<double>                      & trend_rho,
-                               const int                                  output_flag,
-                               const int                                & nz,
-                               const float                              & dz,
-                               const int                                & tot_blocks,
-                               const std::vector<int>                   & n_blocks,
-                               const std::vector<std::vector<double> >  & bl_vp,
-                               const std::vector<std::vector<double> >  & bl_vs,
-                               const std::vector<std::vector<double> >  & bl_rho,
-                               const std::vector<std::vector<double> >  & vt_vp,
-                               const std::vector<std::vector<double> >  & vt_vs,
-                               const std::vector<std::vector<double> >  & vt_rho,
-                               const std::vector<const std::vector<int> > ipos,
-                               const std::vector<const std::vector<int> > jpos,
-                               const std::vector<const std::vector<int> > kpos) const
+Background::SetupKrigingData2D(std::vector<KrigingData2D>                & kriging_data_vp,
+                               std::vector<KrigingData2D>                & kriging_data_vs,
+                               std::vector<KrigingData2D>                & kriging_data_rho,
+                               std::vector<double>                       & trend_vp,
+                               std::vector<double>                       & trend_vs,
+                               std::vector<double>                       & trend_rho,
+                               const int                                   output_flag,
+                               const int                                 & nz,
+                               const float                               & dz,
+                               const int                                 & tot_blocks,
+                               const std::vector<int>                    & n_blocks,
+                               const std::vector<std::vector<double> >   & bl_vp,
+                               const std::vector<std::vector<double> >   & bl_vs,
+                               const std::vector<std::vector<double> >   & bl_rho,
+                               const std::vector<std::vector<double> >   & vt_vp,
+                               const std::vector<std::vector<double> >   & vt_vs,
+                               const std::vector<std::vector<double> >   & vt_rho,
+                               const std::vector<const std::vector<int> *> ipos,
+                               const std::vector<const std::vector<int> *> jpos,
+                               const std::vector<const std::vector<int> *> kpos) const
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -1971,9 +1971,9 @@ Background::SetupKrigingData2D(std::vector<KrigingData2D>               & krigin
       //
       // Use kriged vertical trend where original log is not defined.
       //
-      const std::vector<int> ipos_well = ipos[w];
-      const std::vector<int> jpos_well = jpos[w];
-      const std::vector<int> kpos_well = kpos[w];
+      const std::vector<int> ipos_well = *(ipos[w]);
+      const std::vector<int> jpos_well = *(jpos[w]);
+      const std::vector<int> kpos_well = *(kpos[w]);
 
       for (int m = 0; m < n_blocks[w]; m++) {
         int i = ipos_well[m];

@@ -35,7 +35,9 @@ ModelTravelTimeDynamic::ModelTravelTimeDynamic(const ModelSettings           * m
 : rms_data_(NULL),
   thisTimeLapse_(vintage)
 {
-  (void) modelSettings, modelGeneral;
+  assert(modelSettings != NULL); //Just to use these parameters - should they be removed from param. list?
+  assert(modelGeneral != NULL);
+
   std::string errTxt = "";
 
   bool failed_surfaces = false;
