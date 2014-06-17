@@ -30,7 +30,7 @@ background_rho_(NULL),
 block_grid_(NULL),
 facies_prob_undef_(NULL),
 quality_grid_(NULL),
-reflection_matrix_(NULL),
+//reflection_matrix_(NULL),
 n_intervals_(0)
 {
 }
@@ -157,12 +157,13 @@ CravaResult::~CravaResult()
     delete quality_grid_;
     quality_grid_ = NULL;
   }
-  */
+  
   for (size_t i = 0; i < wavelets_.size(); i++){
     delete reflection_matrix_[i];
     //delete wavelets_[i];
   }
   delete reflection_matrix_;
+  */
 
 
 }
@@ -477,7 +478,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     quality_grid_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetQualityGrid());
 
   }
-
 
 
   //Compute Synt seismic
@@ -1312,8 +1312,8 @@ StormContGrid *
 CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
                                      StormContGrid * vs,
                                      StormContGrid * rho,
-                                     float        ** reflection_matrix,
-                                     int             angle)
+                                     const NRLib::Matrix & reflection_matrix,
+                                     int             angle) const
 {
   int nx = vp->GetNI();
   int ny = vp->GetNJ();
@@ -1325,9 +1325,9 @@ CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
         float imp = 0;
-        imp += vp->GetValue(i, j, k)*reflection_matrix[angle][0];
-        imp += vs->GetValue(i, j, k)*reflection_matrix[angle][1];
-        imp += rho->GetValue(i, j, k)*reflection_matrix[angle][2];
+        imp += vp->GetValue(i, j, k)*reflection_matrix(angle,0);
+        imp += vs->GetValue(i, j, k)*reflection_matrix(angle,1);
+        imp += rho->GetValue(i, j, k)*reflection_matrix(angle,2);
 
         impedance->SetValue(i, j, k, imp);
       }

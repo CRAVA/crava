@@ -86,11 +86,12 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
 //
 // Constructor that copies all simbox data from simbox
 //
-Simbox::Simbox(const Simbox * simbox) 
-  :  Volume(*simbox),
-  top_eroded_surface_(NULL),
-  base_eroded_surface_(NULL)
+Simbox::Simbox(const Simbox * simbox):  
+Volume(*simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
 {
+
   interval_name_  = "";
   status_         = simbox->status_;
   cosrot_         = cos(GetAngle());
@@ -114,10 +115,53 @@ Simbox::Simbox(const Simbox * simbox)
   minRelThick_    = simbox->minRelThick_;
   topName_        = simbox->topName_;
   botName_        = simbox->botName_;
-  //SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface());
+  grad_x_         = 0;
+  grad_y_         = 0;
+  
+  std::string   s = "";
+  this->setArea(simbox, static_cast<int>(simbox->getnx()),
+                  static_cast<int>(simbox->getny()), s);
+  CopyAllPadding(*simbox, simbox->getMaxLz(), s);
+  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
+
+}
+
+//
+// 
+//
+
+Simbox::Simbox(const Simbox   & simbox):
+Volume(simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
+{
+  std::string s   = "";
+  this->setArea(&simbox, static_cast<int>(simbox.getnx()),
+                  static_cast<int>(simbox.getny()), s);
+  this->CopyAllPadding(simbox, simbox.getMaxLz(), s);
+  this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
+  interval_name_  = "";
+  status_         = simbox.status_;
+  cosrot_         = cos(GetAngle());
+  sinrot_         = sin(GetAngle());
+  dx_             = simbox.dx_;
+  dy_             = simbox.dy_;
+  dz_             = simbox.dz_;
+  inLine0_        = simbox.inLine0_;
+  crossLine0_     = simbox.crossLine0_;
+  ilStepX_        = simbox.ilStepX_;
+  ilStepY_        = simbox.ilStepY_;
+  xlStepX_        = simbox.xlStepX_;
+  xlStepY_        = simbox.xlStepY_;
+  lz_eroded_      = 0;
+  constThick_     = simbox.constThick_;
+  minRelThick_    = simbox.minRelThick_;
+  topName_        = simbox.topName_;
+  botName_        = simbox.botName_;
   grad_x_         = 0;
   grad_y_         = 0;
 }
+
 
 //
 // Constructor that copies the area from estimation_simbox and where
@@ -206,9 +250,7 @@ Simbox::Simbox(const Simbox         * simbox,
                int                    output_format,
                std::string          & err_text,
                bool                 & failed)
-: Volume(*simbox),
-top_eroded_surface_(NULL),
-base_eroded_surface_(NULL)
+: Volume(*simbox)
 {
 
   interval_name_  = interval_name;
@@ -347,9 +389,7 @@ Simbox::Simbox(const Simbox         * simbox,
                int                    output_format,
                std::string          & err_text,
                bool                 & failed)
-: Volume(*simbox),
-top_eroded_surface_(NULL),
-base_eroded_surface_(NULL)
+: Volume(*simbox)
 {
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -526,6 +566,54 @@ Simbox::~Simbox()
   delete top_eroded_surface_;
   delete base_eroded_surface_;
 }
+
+//
+// Copy constructor
+//
+Simbox & Simbox::operator=(const Simbox   & rhs)
+{
+  if(this ==  &rhs) return *this;
+
+  // Erik N: Should use copy and swap for exception safety - but not possible
+  // for NRLib::Volume ?
+  Simbox tmp(rhs);
+
+  std::string   s = "";
+  // sets top and base surfaces, nz_, lz_ dz_, nx_pad_, ny_pad_, nz_pad_ and nx_pad_factor_,
+  // ny_pad_factor_, nz_pad_factor_
+  this->CopyAllPadding(rhs, rhs.getMaxLz(), s);
+  // sets   x_min_, y_min_,lx_ and ly_
+  this->setArea(&rhs, static_cast<int>(rhs.getnx()),
+                  static_cast<int>(rhs.getny()), s);
+  // sets lz_eroded_, top and base eroded surfaces
+  SetErodedSurfaces(rhs.GetTopErodedSurface(), rhs.GetBaseErodedSurface());
+
+  std::swap(interval_name_, tmp.interval_name_);
+  std::swap(status_, tmp.status_);
+  this->SetAngle(tmp.GetAngle());
+  this->SetTolerance(tmp.GetTolerance());
+  std::swap(cosrot_, tmp.cosrot_);
+  std::swap(sinrot_, tmp.sinrot_);
+  std::swap(dx_, tmp.dx_);
+  std::swap(dy_, tmp.dy_);
+  std::swap(dz_, tmp.dz_);
+  std::swap(inLine0_, tmp.inLine0_);
+  std::swap(crossLine0_, tmp.crossLine0_);
+  std::swap(ilStepX_, tmp.ilStepX_);
+  std::swap(ilStepY_, tmp.ilStepY_);
+  std::swap(xlStepX_, tmp.xlStepX_);
+  std::swap(xlStepY_, tmp.xlStepY_);
+  std::swap(constThick_, tmp.constThick_);
+  std::swap(minRelThick_, tmp.minRelThick_);
+  std::swap(topName_, tmp.topName_);
+  std::swap(botName_, tmp.botName_);
+  grad_x_         = 0;
+  grad_y_         = 0;
+
+  return *this;
+}
+
+
 
 //
 // --------------------------------------------------------------------------
@@ -1369,8 +1457,10 @@ void Simbox::SetErodedSurfaces(const NRLib::Surface<double> & top_surf,
                                const NRLib::Surface<double> & bot_surf,
                                bool  skip_check)
 {
-  delete top_eroded_surface_;
-  delete base_eroded_surface_;
+  if (top_eroded_surface_ != NULL)
+    delete top_eroded_surface_;
+  if (base_eroded_surface_ != NULL)
+    delete base_eroded_surface_;
   top_eroded_surface_  = top_surf.Clone();
   base_eroded_surface_ = bot_surf.Clone();
 

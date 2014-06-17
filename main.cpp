@@ -246,8 +246,6 @@ int main(int argc, char** argv)
       common_data->ReleaseBackgroundGrids(i_interval, 2);
 
 
-      
-
       //korrelasjonsgrid (2m)
       float corr_grad_I = 0.0f;
       float corr_grad_J = 0.0f;
@@ -292,7 +290,6 @@ int main(int argc, char** argv)
       //iii. Move model one time-step ahead
 
       if(modelGeneral->GetTimeLine() == NULL) {//Forward modelling.
-
 
       }
       else {

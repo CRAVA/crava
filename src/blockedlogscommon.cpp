@@ -68,12 +68,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
       LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
     LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
     LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the simbox: ");
-    for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
-      LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
-    if (disc_logs_to_be_blocked.size() > 1)
-      LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
-    else
-      LogKit::LogFormatted(LogKit::Low,"\n");
+    if (disc_logs_to_be_blocked.size() > 0){
+      for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
+        LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
+      if (disc_logs_to_be_blocked.size() > 1)
+        LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
+      else
+        LogKit::LogFormatted(LogKit::Low,"\n");
+    }
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
@@ -2188,7 +2190,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                                 const Simbox                  * estimation_simbox,
-                                                float                        ** refl_coef,
+                                                NRLib::Matrix                 & refl_matrix,
                                                 int                             n_angles,
                                                 const std::vector<float>      & angle_weight,
                                                 float                           max_shift,
@@ -2282,10 +2284,15 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     for (i=0; i<rnzp; i++){
       cpp_r[j][i] = 0;
     }
-    FillInCpp(refl_coef[j],start,length,cpp_r[j],nzp);
+    float * refl_coefficients = new float(3);
+    refl_coefficients[0] = refl_matrix(j,0);
+    refl_coefficients[1] = refl_matrix(j,1);
+    refl_coefficients[2] = refl_matrix(j,2);
+    FillInCpp(refl_coefficients,start,length,cpp_r[j],nzp);
     Utils::fft(cpp_r[j],cpp_c[j],nzp);
     EstimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
     Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
+    delete [] refl_coefficients;
   }
 
   std::vector<NRLib::Grid<float> > seis_cube_small(n_angles,NRLib::Grid<float> (i_tot_offset,j_tot_offset,n_blocks_));
@@ -3522,11 +3529,11 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
     rho_for_facies_ = blocked_log;
 }
 
-void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_coef,
-                                                 std::vector<Wavelet *> & wavelet,
-                                                 int                     nz,
-                                                 int                     nzp,
-                                                 const Simbox          * simbox) {
+void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & reflection_matrix,
+                                                 std::vector<Wavelet *>     & wavelet,
+                                                 int                          nz,
+                                                 int                          nzp,
+                                                 const Simbox               * simbox) {
   int          i, j;
   int          start, length;
 
@@ -3564,7 +3571,11 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
       cpp_r[j] = 0;
       synt_seis_r[j] = 0;
     }
-    FillInCpp(refl_coef[i], start, length, cpp_r, nzp);
+    float * refl_coef = new float(3);
+    refl_coef[0] = reflection_matrix(i,0);
+    refl_coef[1] = reflection_matrix(i,1);
+    refl_coef[2] = reflection_matrix(i,2);
+    FillInCpp(refl_coef, start, length, cpp_r, nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
 
     local_wavelet = wavelet[i]->createLocalWavelet1D(i_pos_[0], j_pos_[0]);

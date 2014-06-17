@@ -44,7 +44,7 @@ public:
   std::vector<FFTGrid *>        GetSeisCubes()             const { return seis_cubes_                     ;}
   std::vector<Wavelet *>        GetWavelets()              const { return wavelets_                       ;}
 
-  float                      ** GetAMatrix()               const { return reflection_matrix_              ;}
+  const NRLib::Matrix         & GetAMatrix()               const { return reflection_matrix_              ;}
   Grid2D                      * GetLocalNoiseScale(int i)  const { return local_noise_scale_[i]           ;}
   const std::vector<Grid2D *> & GetLocalNoiseScales()      const { return local_noise_scale_              ;}
 
@@ -119,7 +119,7 @@ private:
   std::vector<Wavelet *>            wavelets_;               ///< Wavelet for angle
   std::vector<FFTGrid *>            seis_cubes_;             ///< Seismic data cubes
 
-  float                          ** reflection_matrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
+  NRLib::Matrix                     reflection_matrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
                                                              ///< indicating that standard approximation will be used.
 
   GridMapping                     * time_depth_mapping_;     ///< Contains both simbox and mapping used for depth conversion

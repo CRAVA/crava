@@ -77,7 +77,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, log_names_, model_settings->getLogNames(),
                              model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
-
   // 5. block wells for estimation
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
@@ -92,9 +91,9 @@ CommonData::CommonData(ModelSettings * model_settings,
     block_wells_ = true;
 
   // 6. Reflection matrix and wavelet
-  setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, err_text);
+  setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
-    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, err_text);
+    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, reflection_matrix_, err_text);
 
   // 7. Optimization of well location
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
@@ -105,7 +104,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 8. Wavelet Handling
   if (block_wells_ && optimize_well_location_)
     wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, wavelets_, local_noise_scales_, local_shifts_,
-                                      local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, err_text);
+                                      local_scales_, global_noise_estimates_, sn_ratios_, reflection_matrix_, use_local_noises_, err_text);
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
@@ -202,8 +201,20 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 CommonData::~CommonData() {
 
+  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++){
+    if (mapped_blocked_logs_intervals_.size() > 0){
+      std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
+        if (blocked_logs_interval.find(it->first)->second != NULL){
+          delete blocked_logs_interval.find(it->first)->second;
+        }
+      }
+    }
+  }
+
   if (multiple_interval_grid_ != NULL){
     delete multiple_interval_grid_;
+    multiple_interval_grid_ = NULL;
   }
 
   if (time_depth_mapping_ != NULL){
@@ -225,17 +236,6 @@ CommonData::~CommonData() {
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_for_correlation_.begin(); it != mapped_blocked_logs_for_correlation_.end(); it++) {
     if (mapped_blocked_logs_for_correlation_.find(it->first)->second != NULL)
       delete mapped_blocked_logs_for_correlation_.find(it->first)->second;
-  }
-
-  for (int i = 0; i < multiple_interval_grid_->GetNIntervals(); i++){
-    if (mapped_blocked_logs_intervals_.size() > 0){
-      std::map<std::string, BlockedLogsCommon *> blocked_logs_interval = mapped_blocked_logs_intervals_.find(i)->second;
-      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_interval.begin(); it != blocked_logs_interval.end(); it++) {
-        if (blocked_logs_interval.find(it->first)->second != NULL){
-          delete blocked_logs_interval.find(it->first)->second;
-        }
-      }
-    }
   }
 
   // facies_estim_interval_
@@ -579,12 +579,16 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
     }
   }
 
+    //Skip if forward-modeling
+  if (forward_modeling_ == true){
+    estimation_simbox = full_inversion_simbox;
+    return(true);
+  }
+
   if (timelapse_seismic_files == 0)
     return(true);
 
-  //Skip if forward-modeling
-  if (forward_modeling_ == true)
-    return(true);
+
 
   //Skip if estimation mode and wavelet/noise is not set for estimation.
   if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
@@ -2554,10 +2558,13 @@ CommonData::GetMinMaxFnr(int            & min,
   }
 }
 
-bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
-                                       InputFiles    * input_files,
-                                       std::string   & err_text_common) {
-
+bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_settings,
+                                       InputFiles                     * input_files,
+                                       std::map<int, NRLib::Matrix>   & reflection_matrix,
+                                       std::vector<int>                 n_angles,
+                                       bool                             refmat_from_file_global_vpvs,
+                                       std::string                    & err_text_common) const
+{
   LogKit::WriteHeader("Setting up reflection matrix");
 
   //If Vp/Vs is given per interval: A default reflection matrix is set up here, and then altered later per interval.
@@ -2568,44 +2575,55 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
   // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
   //
   const std::string & refl_matr_file = input_files->getReflMatrFile();
-  const double vpvs                  = model_settings->getVpVsRatio("");
-  float                             ** reflection_matrix;
+  //const double vpvs                  = model_settings->getVpVsRatio("");
 
   int n_timelapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
   for (int i = 0; i < n_timelapses; i++) {
 
-    int n_angles = model_settings->getNumberOfAngles(i);
-    n_angles_.push_back(n_angles);
+    int n_angles_this_timelapse = model_settings->getNumberOfAngles(i);
+    //NRLib::Matrix  reflection_matrix(n_angles, 3);
+    n_angles.push_back(n_angles_this_timelapse);
 
     if (refl_matr_file != "") { //File should have one line for each seismic data file. Check: if (input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
       std::string tmp_err_text("");
-      reflection_matrix = ReadMatrix(refl_matr_file, n_angles, 3, "reflection matrix", tmp_err_text);
-      if (reflection_matrix == NULL) {
-        err_text += "Reading of file "+refl_matr_file+ " for reflection matrix failed\n";
+      float                   ** reflection_matrix_array = ReadMatrix(refl_matr_file, n_angles_this_timelapse, 3, "reflection matrix", tmp_err_text);
+      if (reflection_matrix_array == NULL) {
+        err_text += "Reading of file "+ refl_matr_file + " for reflection matrix failed\n";
         err_text += tmp_err_text;
       }
-      else
+      else{
         LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
+        for (int j = 0; j < n_angles_this_timelapse; j++){
+          for (int k = 0; k < 3; k++){
+            reflection_matrix[i](j,k) = reflection_matrix_array[j][k];
+          }
+        }
+        for (int j = 0; j < n_angles_this_timelapse; j++)
+          delete [] reflection_matrix_array[j];
+        delete reflection_matrix_array;
+      }
 
-      refmat_from_file_global_vpvs_ = true;
+      refmat_from_file_global_vpvs = true;
     }
     else if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end()) {
    // else if (vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
-      double vsvp = 1.0/vpvs;
-      SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
-      refmat_from_file_global_vpvs_ = true;
+      double vsvp = 1.0/model_settings->getVpVsRatio("");
+      SetupDefaultReflectionMatrix(reflection_matrix[i], vsvp, model_settings, n_angles_this_timelapse, i);
+      refmat_from_file_global_vpvs = true;
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
       double vsvp = 0.5;
-      SetupDefaultReflectionMatrix(reflection_matrix, vsvp, model_settings, n_angles, i);
-      refmat_from_file_global_vpvs_ = false;
+      SetupDefaultReflectionMatrix(reflection_matrix[i], vsvp, model_settings, n_angles_this_timelapse, i);
+      refmat_from_file_global_vpvs = false;
     }
 
-    reflection_matrix_[i] = reflection_matrix;
+    //reflection_matrix_[i] = reflection_matrix;
 
   } //nTimeLapses
+
+
 
   if (err_text != "") {
     err_text_common += err_text;
@@ -2618,6 +2636,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings * model_settings,
 bool CommonData::SetupTemporaryWavelet(ModelSettings                               * model_settings,
                                        std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                        std::vector<Wavelet*>                       & temporary_wavelets,
+                                       const std::map<int, NRLib::Matrix>                & reflection_matrix,
                                        std::string                                 & err_text_common) {
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
@@ -2696,8 +2715,12 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings                            
     mean_frequency   /= mean_grid_height;
 
     int tmp_error = 0;
-    Wavelet * wavelet_tmp = new Wavelet1D(model_settings, reflection_matrix_[this_timelapse][j], angles[j], mean_frequency, tmp_error);
-
+    float * refl_coef = new float[3];
+    refl_coef[0] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,0));
+    refl_coef[1] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,1));
+    refl_coef[2] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,2));
+    Wavelet * wavelet_tmp = new Wavelet1D(model_settings, refl_coef , angles[j], mean_frequency, tmp_error);
+    delete [] refl_coef;
     if (tmp_error == 0)
       temporary_wavelets.push_back(wavelet_tmp);
     else
@@ -2716,7 +2739,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
                                 int                 n1,
                                 int                 n2,
                                 const std::string & read_reason,
-                                std::string       & err_text)
+                                std::string       & err_text) const
 {
   float * tmp_res = new float[n1*n2+1];
   std::ifstream in_file;
@@ -2770,14 +2793,15 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
 
 
 void
-CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix,
+CommonData::SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix,
                                          double                vsvp,
                                          const ModelSettings * model_settings,
                                          int                   n_angles,
-                                         int                   this_timelapse)
+                                         int                   this_timelapse) const
 {
   int i;
-  float ** A = new float * [n_angles];
+  reflection_matrix.resize(n_angles, 3);
+  NRLib::InitializeMatrix(reflection_matrix, 0.0);
 
   double vsvp2 = vsvp*vsvp;
   std::vector<int> seismic_type = model_settings->getSeismicType(this_timelapse);
@@ -2786,27 +2810,27 @@ CommonData::SetupDefaultReflectionMatrix(float             **& reflection_matrix
   for (i = 0; i < n_angles; i++)
   {
     double angle = static_cast<double>(angles[i]);
-    A[i] = new float[3];
+    //A[i] = new float[3];
     double sint = sin(angle);
     double sint2 = sint*sint;
     if (seismic_type[i] == ModelSettings::STANDARDSEIS) { //PP
       double tan2t=tan(angle)*tan(angle);
 
-      A[i][0] = float( (1.0 +tan2t )/2.0 ) ;
-      A[i][1] = float( -4*vsvp2 * sint2 );
-      A[i][2] = float( (1.0-4.0*vsvp2*sint2)/2.0 );
+      reflection_matrix(i,0) = float( (1.0 +tan2t )/2.0 );
+      reflection_matrix(i,1) = float( -4*vsvp2 * sint2 );
+      reflection_matrix(i,2) = float( (1.0-4.0*vsvp2*sint2)/2.0 );
     }
     else if (seismic_type[i] == ModelSettings::PSSEIS) {
       double cost = cos(angle);
       double cosp = sqrt(1-vsvp2*sint2);
       double fac = 0.5*sint/cosp;
 
-      A[i][0] = 0;
-      A[i][1] = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
-      A[i][2] = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
+      reflection_matrix(i,0) = 0;
+      reflection_matrix(i,1) = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
+      reflection_matrix(i,2) = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
     }
   }
-  reflection_matrix = A;
+  //reflection_matrix = A;
   double vpvs = 1.0f/vsvp;
   LogKit::LogFormatted(LogKit::Low,"\nMaking reflection parameters using a Vp/Vs ratio of %4.2f\n",vpvs);
   std::string text;
@@ -2834,6 +2858,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                  std::map<int, std::vector<Grid2D *> >             & local_scales,
                                  std::map<int, std::vector<float> >                & global_noise_estimates,
                                  std::map<int, std::vector<float> >                & sn_ratios,
+                                 const std::map<int, NRLib::Matrix >               & reflection_matrix,
                                  bool                                              & use_local_noise,
                                  std::string                                       & err_text_common) {
 
@@ -2843,7 +2868,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   std::string err_text_tmp("");
   std::vector<Surface *> wavelet_estim_interval;
-  FindWaveletEstimationInterval(input_files, wavelet_estim_interval, estimation_simbox, err_text_tmp);
+  FindWaveletEstimationInterval(input_files, wavelet_estim_interval, full_inversion_simbox, err_text_tmp);
 
   if (err_text_tmp != "")
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
@@ -3004,7 +3029,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                   wavelet_estim_interval,
                                   estimation_simbox,
                                   full_inversion_simbox,
-                                  *reflection_matrix_[i],
+                                  reflection_matrix.find(i)->second,
                                   synt_seis_angles[j],
                                   err_text,
                                   wavelet[j],
@@ -3026,7 +3051,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                   wavelet_estim_interval,
                                   estimation_simbox,
                                   full_inversion_simbox,
-                                  *reflection_matrix_[i],
+                                  reflection_matrix.find(i)->second,
                                   err_text,
                                   wavelet[j],
                                   i, //Timelapse
@@ -3075,7 +3100,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   //Add in synthetic sesmic (moved from wavelet1D.cpp)
   std::vector<Wavelet *> first_wavelets = wavelets[0];
-  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix_[0], &estimation_simbox);
+  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix.find(0)->second, &estimation_simbox);
 
   return true;
 }
@@ -3137,7 +3162,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              const Simbox                             & estimation_simbox,
                              const Simbox                             & full_inversion_simbox,
-                             const float                              * reflection_matrix,
+                             const NRLib::Matrix                      & reflection_matrix,
                              std::vector<double>                      & synt_seis,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
@@ -3152,7 +3177,10 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              bool                                       use_ricker_wavelet,
                              bool                                       use_local_noise)
 {
-
+  float * reflection_coefs = new float[3];
+  reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
+  reflection_coefs[1] = static_cast<float>(reflection_matrix(j_angle, 1));
+  reflection_coefs[2] = static_cast<float>(reflection_matrix(j_angle, 2));
   int error = 0;
   //Grid2D * shiftGrid(NULL);
   //Grid2D * gainGrid(NULL);
@@ -3188,12 +3216,15 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             err_text);
   }
   else { //Not estimation modus
-    if (use_ricker_wavelet)
+    if (use_ricker_wavelet){
+
         wavelet = new Wavelet1D(model_settings,
-                                reflection_matrix,
+                                reflection_coefs,
                                 angle,
                                 model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
                                 error);
+
+    }
     else {
       const std::string & wavelet_file = input_files->getWaveletFile(i_timelapse,j_angle);
       int file_format = GetWaveletFileFormat(wavelet_file, err_text);
@@ -3201,14 +3232,16 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
         err_text += "Unknown file format of file '"+wavelet_file+"'.\n";
         error++;
       }
-      else
+      else{
+
         wavelet = new Wavelet1D(wavelet_file,
                                 file_format,
                                 model_settings,
-                                reflection_matrix,
+                                reflection_coefs,
                                 angle,
                                 error,
                                 err_text);
+      }
     }
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
@@ -3354,9 +3387,19 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
     }
   }
 
-  if (wavelet_pre_resampling != NULL) {
-    delete wavelet;
-    wavelet = wavelet_pre_resampling;
+  delete [] reflection_coefs;
+
+  if(model_settings->getForwardModeling()){
+    if (wavelet_pre_resampling != NULL){
+      delete wavelet_pre_resampling;
+      wavelet_pre_resampling = NULL;
+    }
+  }
+  else{
+    if (wavelet_pre_resampling != NULL) {
+      delete wavelet;
+      wavelet = wavelet_pre_resampling;
+    }
   }
 
   return error;
@@ -3370,7 +3413,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              const Simbox                             & estimation_simbox,
                              const Simbox                             & full_inversion_simbox,
-                             const float                              * reflection_matrix,
+                             const NRLib::Matrix                      & reflection_matrix,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
                              unsigned int                               i_timelapse,
@@ -3383,6 +3426,10 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                              const std::vector<std::vector<double> >  & t_grad_y,
                              bool                                       estimate_wavelet)
 {
+  float * reflection_coefs = new float[3];
+  reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
+  reflection_coefs[1] = static_cast<float>(reflection_matrix(j_angle, 1));
+  reflection_coefs[2] = static_cast<float>(reflection_matrix(j_angle, 2));
   int error = 0;
   if (estimate_wavelet) {
     wavelet = new Wavelet3D(input_files->getWaveletFilterFile(j_angle),
@@ -3395,7 +3442,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                             model_settings,
                             mapped_blocked_logs,
                             &estimation_simbox,
-                            reflection_matrix,
+                            reflection_coefs,
                             j_angle,
                             error,
                             err_text);
@@ -3411,7 +3458,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
       wavelet = new Wavelet3D(wavelet_file,
                               file_format,
                               model_settings,
-                              reflection_matrix,
+                              reflection_coefs,
                               angle,
                               error,
                               err_text,
@@ -3483,6 +3530,8 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
       }
     }
   }
+
+  delete [] reflection_coefs;
 
   return error;
 }
@@ -3704,7 +3753,7 @@ CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & er
 void
 CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                          std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                         const float *                      const * reflection_matrix,
+                                         const NRLib::Matrix                      & reflection_matrix,
                                          const Simbox                             * time_simbox)
 {
   int nzp     = time_simbox->GetNZpad();
@@ -4179,6 +4228,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
   if (!failed){
     try{ // initialize full_inversion_volume and set the top and base surfaces of the simbox
       full_inversion_simbox.setDepth(*top_surface, *base_surface, 1, model_settings->getRunFromPanel());
+      full_inversion_simbox.SetErodedSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
       full_inversion_simbox.calculateDz(model_settings->getLzLimit(), err_text);
       full_inversion_simbox.SetNXpad(full_inversion_simbox.getnx());
       full_inversion_simbox.SetNYpad(full_inversion_simbox.getny());
@@ -4298,7 +4348,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         std::vector<NRLib::Well>                      & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::map<int, std::vector<SeismicStorage> >   & seismic_data,
-                                        std::map<int, float **>                       & reflection_matrix,
+                                        std::map<int, NRLib::Matrix>                  & reflection_matrix,
                                         std::string                                   & err_text_common) {
 
   std::string err_text = "";
@@ -9829,6 +9879,7 @@ std::string CommonData::ConvertIntToString(int number){
 
 void CommonData::ReleaseBackgroundGrids(int i_interval, int elastic_param)
 {
-  assert (elastic_param < static_cast<int>(3) && i_interval < background_parameters_.size());
+  assert (elastic_param < static_cast<int>(3) && i_interval < static_cast<int>(background_parameters_.size()));
   delete background_parameters_[i_interval][elastic_param];
+  background_parameters_[i_interval][elastic_param] = NULL;
 }
