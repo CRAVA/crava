@@ -79,7 +79,7 @@ public:
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
 
   bool                                                                 GetRefMatFromFileGlobalVpVs()                          { return refmat_from_file_global_vpvs_                  ;}
-  float **                                                             GetReflectionMatrixTimeLapse(int time_lapse)           { return reflection_matrix_.find(time_lapse)->second    ;}
+  NRLib::Matrix                                                      & GetReflectionMatrixTimeLapse(int time_lapse)           { return (reflection_matrix_.find(time_lapse)->second) ;}
 
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
@@ -107,11 +107,11 @@ public:
   //const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
   //const NRLib::Matrix                     & GetPriorVar0(int i_interval);
 
-  void               SetupDefaultReflectionMatrix(float             **& reflection_matrix,
+  void               SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix,
                                                   double                vsvp,
                                                   const ModelSettings * model_settings,
                                                   int                   number_of_angles,
-                                                  int                   this_time_lapse);
+                                                  int                   this_time_lapse) const;
 
   void FillInData(NRLib::Grid<float> * grid,
                   FFTGrid            * fft_grid_new,
@@ -164,7 +164,7 @@ public:
   static std::string ConvertIntToString(int number);
   static void        GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
                                                   std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                                                  const float *                      const * reflection_matrix,
+                                                  const NRLib::Matrix                      & reflection_matrix,
                                                   const Simbox                             * time_simbox);
 
   static std::string ConvertInt(int number);
@@ -186,7 +186,7 @@ private:
                                            std::vector<NRLib::Well>                      & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                            std::map<int, std::vector<SeismicStorage> >   & seismic_data,
-                                           std::map<int, float **>                       & reflection_matrix,
+                                           std::map<int, NRLib::Matrix>                  & reflection_matrix,
                                            std::string                                   & err_text);
 
   void               MoveWell(NRLib::Well  & well,
@@ -338,13 +338,17 @@ private:
                                         bool                              facies_log_given,
                                         std::string                     & error_text);
 
-  bool               SetupReflectionMatrix(ModelSettings  * model_settings,
-                                           InputFiles     * input_files,
-                                           std::string    & err_text);
+  bool               SetupReflectionMatrix(ModelSettings                    * model_settings,
+                                           InputFiles                       * input_files,
+                                           std::map<int, NRLib::Matrix>     & reflection_matrix,
+                                           std::vector<int>                   n_angles,
+                                           bool                               refmat_from_file_global_vpvs,
+                                           std::string                      & err_text) const;
 
   bool               SetupTemporaryWavelet(ModelSettings                               * model_settings,
                                            std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                            std::vector<Wavelet*>                       & temporary_wavelets,
+                                           const std::map<int, NRLib::Matrix>          & refl_mat,
                                            std::string                                 & err_text);
 
   bool               WaveletHandling(ModelSettings                                     * model_settings,
@@ -357,6 +361,7 @@ private:
                                      std::map<int, std::vector<Grid2D *> >             & local_scale,
                                      std::map<int, std::vector<float> >                & global_noise_estimate,
                                      std::map<int, std::vector<float> >                & sn_ratio,
+                                     const std::map<int, NRLib::Matrix>                & refl_mat,
                                      bool                                              & use_local_noise,
                                      std::string                                       & err_text_common);
 
@@ -404,7 +409,7 @@ private:
                                 int                 n1,
                                 int                 n2,
                                 const std::string & read_reason,
-                                std::string       & err_text);
+                                std::string       & err_text) const;
 
   int                Process1DWavelet(const ModelSettings                      * modelSettings,
                                       const InputFiles                         * inputFiles,
@@ -413,7 +418,7 @@ private:
                                       const std::vector<Surface *>             & waveletEstimInterval,
                                       const Simbox                             & estimation_simbox,
                                       const Simbox                             & full_inversion_simbox,
-                                      const float                              * reflection_matrix,
+                                      const NRLib::Matrix                      & reflection_matrix,
                                       std::vector<double>                      & synt_seic,
                                       std::string                              & err_text,
                                       Wavelet                                 *& wavelet,
@@ -435,7 +440,7 @@ private:
                                       const std::vector<Surface *>             & wavelet_estim_interval,
                                       const Simbox                             & estimation_simbox,
                                       const Simbox                             & full_inversion_simbox,
-                                      const float                              * reflection_matrix,
+                                      const NRLib::Matrix                      & reflection_matrix,
                                       std::string                              & err_text,
                                       Wavelet                                 *& wavelet,
                                       unsigned int                               i_timelapse,
@@ -872,7 +877,7 @@ private:
 
   bool                                                         forward_modeling_;
 
-  std::map<int, float **>                                      reflection_matrix_;             // Map timelapse
+  std::map<int, NRLib::Matrix>                                 reflection_matrix_;             // Map timelapse
   std::vector<int>                                             n_angles_;                      // Number of angles
   bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 

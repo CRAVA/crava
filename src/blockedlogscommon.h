@@ -163,7 +163,7 @@ public:
 
   void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                 const Simbox                  * time_simbox,
-                                float                        ** refl_coef,
+                                NRLib::Matrix                     & refl_coef,
                                 int                             n_angles,
                                 const std::vector<float>      & angle_weight,
                                 float                           max_shift,
@@ -231,7 +231,7 @@ public:
                                                    const std::vector<std::string> & facies_name,
                                                    const std::vector<int>         & facies_label);
 
-  void                                   GenerateSyntheticSeismic(const float   * const * refl_coef,
+  void                                   GenerateSyntheticSeismic(const NRLib::Matrix    & reflection_matrix,
                                                                   std::vector<Wavelet *> & wavelet,
                                                                   int                     nz,
                                                                   int                     nzp,

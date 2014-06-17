@@ -103,8 +103,8 @@ public:
   StormContGrid * ComputeSeismicImpedance(StormContGrid * vp,
                                           StormContGrid * vs,
                                           StormContGrid * rho,
-                                          float        ** reflection_matrix,
-                                          int             angle);
+                                          const NRLib::Matrix & reflection_matrix,
+                                          int             angle) const;
 
   //GET FUNCTIONS
 
@@ -169,7 +169,7 @@ private:
 
 
   std::vector<Wavelet *>           wavelets_; //Vector angles
-  float                         ** reflection_matrix_;
+  NRLib::Matrix                    reflection_matrix_;
 
   int                              n_intervals_;
 

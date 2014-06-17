@@ -486,9 +486,9 @@ AVOInversion::~AVOInversion()
 //}
 
 void
-AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
-                                                    float     * corrT,
-                                                    float     * A ) const
+AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
+                                                    const float     * corrT,
+                                                    const float     * A ) const
 {
   double eiVar=0.0;
   for (int l=0; l<3 ; l++)
@@ -501,8 +501,8 @@ AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
 
 void
 AVOInversion::computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
-                                                         float     * corrT,
-                                                         float     * A ) const
+                                                         const float     * corrT,
+                                                         const float     * A) const
 {
   computeElasticImpedanceTimeCovariance(refCovT, corrT, A);
 
@@ -677,11 +677,16 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
+        float * A = new float(3);
+        A[0] = A_(l,0);
+        A[1] = A_(l,1);
+        A[2] = A_(l,2);
         if(dim==1)
-          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l], seismicParameters, A_[l],static_cast<float>(errThetaCov_[l][l]));
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l], seismicParameters, A,static_cast<float>(errThetaCov_[l][l]));
         else
-          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(), seismicParameters, A_[l],static_cast<float>(errThetaCov_[l][l]));
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(), seismicParameters, A,static_cast<float>(errThetaCov_[l][l]));
 
+        delete [] A;
         delete localWavelet;
 
         for (k=0;k < (nzp_/2 +1);k++) // all complex values
@@ -745,7 +750,7 @@ AVOInversion::computeAdjustmentFactor(fftw_complex                  * adjustment
                                       double                          sf,
                                       Wavelet                       * wGlobal,
                                       const SeismicParametersHolder & seismicParameters,
-                                      float                         * A,
+                                      const float                         * A,
                                       float                           errorVar)
 {
 // Computes the 1D inversion (of a single cube) with the local wavelet
@@ -1066,7 +1071,22 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       fillkW(k, kW, seisWavelet_);
 
       lib_matrProdScalVecCpx(kD, kW, ntheta_);
-      lib_matrProdDiagCpxR(kW, A_, ntheta_, 3, K); // defines content of (WDA) K
+
+      // Copy matrix A to float**
+      float ** A = new float * [3];
+      for (int i = 0; i < ntheta_; i++)
+        A[i] = new float(3);
+      for (int i = 0; i < ntheta_; i++){
+        for (int j = 0; j < 3; j++){
+          A[i][j] = A_(i,j);
+        }
+      }
+
+      lib_matrProdDiagCpxR(kW, A, ntheta_, 3, K); // defines content of (WDA) K
+
+      for (int i = 0; i < ntheta_; i++)
+        delete [] A[i];
+      delete [] A;
 
       // defines error-term multipliers
       fillkWNorm(k,errMult1,seisWaveletForNorm);         // defines input of  (kWNorm) errMult1
@@ -1077,9 +1097,23 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     {
       kD3 = diff3Operator->getCAmp(k);                   // defines  kD3
 
+      // Copy matrix A to float **
+      float ** A = new float * [3];
+      for (int i = 0; i < ntheta_; i++)
+        A[i] = new float(3);
+      for (int i = 0; i < ntheta_; i++){
+        for (int j = 0; j < 3; j++){
+          A[i][j] = A_(i,j);
+        }
+      }
+
       // defines content of K = DA
       lib_matrFillValueVecCpx(kD, errMult1, ntheta_);    // errMult1 used as dummy
-      lib_matrProdDiagCpxR(errMult1, A_, ntheta_, 3, K); // defines content of ( K = DA )
+      lib_matrProdDiagCpxR(errMult1, A, ntheta_, 3, K); // defines content of ( K = DA )
+
+      for (int i = 0; i < ntheta_; i++)
+        delete [] A[i];
+      delete [] A;
 
       // defines error-term multipliers
       lib_matrFillOnesVecCpx(errMult1,ntheta_);          // defines content of errMult1
@@ -1689,9 +1723,9 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
       for (int i = 0; i < rnxp; i++)
       {
         float imp = 0;
-        imp += vp->getNextReal()*A_[angle][0];
-        imp += vs->getNextReal()*A_[angle][1];
-        imp += rho->getNextReal()*A_[angle][2];
+        imp += vp->getNextReal()*A_(angle,0);
+        imp += vs->getNextReal()*A_(angle,1);
+        imp += rho->getNextReal()*A_(angle,2);
 
         impedance->setNextReal(imp);
       }

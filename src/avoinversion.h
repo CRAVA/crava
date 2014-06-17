@@ -93,13 +93,13 @@ private:
   void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
   //void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
   void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
-  void               computeElasticImpedanceTimeCovariance(fftw_real * eiCovT,
-                                                           float     * corrT,
-                                                           float     * A) const;
+  void               computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
+                                                           const float     * corrT,
+                                                           const float     * A) const;
 
   void               computeReflectionCoefficientTimeCovariance(fftw_real * refCovT,
-                                                                float     * corrT,
-                                                                float     * A ) const ;
+                                                                const float     * corrT,
+                                                                const float     * A ) const ;
 
   int                    checkScale(void);
 
@@ -116,7 +116,7 @@ private:
                                                  double                          scaleF,
                                                  Wavelet                       * wGlobal,
                                                  const SeismicParametersHolder & seismicParameters,
-                                                 float                         * A,
+                                                 const float                         * A,
                                                  float                           errorVar);
 
   FFTGrid              * createFFTGrid();
@@ -182,7 +182,7 @@ private:
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
-  float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
+  NRLib::Matrix      A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
   //float            * empSNRatio_;       // signal noise ratio empirical
   std::vector<float> empSNRatio_;
