@@ -49,9 +49,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
 
-  coeff_[0]   = reflection_matrix(iAngle,0);
-  coeff_[1]   = reflection_matrix(iAngle,1);
-  coeff_[2]   = reflection_matrix(iAngle,2);
+  coeff_[0]   = static_cast<float>(reflection_matrix(iAngle,0));
+  coeff_[1]   = static_cast<float>(reflection_matrix(iAngle,1));
+  coeff_[2]   = static_cast<float>(reflection_matrix(iAngle,2));
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
@@ -404,7 +404,7 @@ Wavelet1D::Wavelet1D(int difftype,
 {
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
-  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_       = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_       = RMISSING;
   int i;
@@ -455,7 +455,7 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet,
 {
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   int i;
 
