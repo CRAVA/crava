@@ -5583,66 +5583,66 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
     else {
       LogKit::LogFormatted(LogKit::Low,"\n CRAVA input not allowed in multiple intervals");
       assert(0); //Do not currently allow use of crava format files with multizone.
-      for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
-        int nx_pad, ny_pad, nz_pad;
-        if (nopadding){
-          nx_pad = interval_simboxes[0]->getnx();
-          ny_pad = interval_simboxes[0]->getny();
-          nz_pad = interval_simboxes[0]->getnz();
-        }
-        else{
-          nx_pad = interval_simboxes[0]->GetNXpad();
-          ny_pad = interval_simboxes[0]->GetNYpad();
-          nz_pad = interval_simboxes[0]->GetNZpad();
-        }
+      //for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
+      //  int nx_pad, ny_pad, nz_pad;
+      //  if (nopadding){
+      //    nx_pad = interval_simboxes[0]->getnx();
+      //    ny_pad = interval_simboxes[0]->getny();
+      //    nz_pad = interval_simboxes[0]->getnz();
+      //  }
+      //  else{
+      //    nx_pad = interval_simboxes[0]->GetNXpad();
+      //    ny_pad = interval_simboxes[0]->GetNYpad();
+      //    nz_pad = interval_simboxes[0]->GetNZpad();
+      //  }
 
-        interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad);
+      //  interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad);
 
-        FFTGrid       * fft_grid_tmp = NULL;
-        SegY          * segy_tmp     = NULL;
-        StormContGrid * storm_tmp    = NULL;
+      //  FFTGrid       * fft_grid_tmp = NULL;
+      //  SegY          * segy_tmp     = NULL;
+      //  StormContGrid * storm_tmp    = NULL;
 
-        int missing_traces_simbox  = 0;
-        int missing_traces_padding = 0;
-        int dead_traces_simbox     = 0;
+      //  int missing_traces_simbox  = 0;
+      //  int missing_traces_padding = 0;
+      //  int dead_traces_simbox     = 0;
 
-        int file_type = IO::findGridType(file_name);
-        bool is_segy  = false;
-        bool is_storm = false;
-        bool scale    = false;
+      //  int file_type = IO::findGridType(file_name);
+      //  bool is_segy  = false;
+      //  bool is_storm = false;
+      //  bool scale    = false;
 
-        if (file_type == IO::SEGY)
-          is_segy = true;
-        else if (file_type == IO::STORM)
-          is_storm = true;
-        else if (file_type == IO::SGRI) {
-          is_storm = true;
-          scale    = true;
-        }
+      //  if (file_type == IO::SEGY)
+      //    is_segy = true;
+      //  else if (file_type == IO::STORM)
+      //    is_storm = true;
+      //  else if (file_type == IO::SGRI) {
+      //    is_storm = true;
+      //    scale    = true;
+      //  }
 
-        FillInData(interval_grids[i_interval],
-                   fft_grid_tmp,
-                   interval_simboxes[i_interval],
-                   storm_tmp,
-                   segy_tmp,
-                   crava_grid,
-                   model_settings->getSmoothLength(),
-                   missing_traces_simbox,
-                   missing_traces_padding,
-                   dead_traces_simbox,
-                   grid_type,
-                   scale,
-                   is_segy,
-                   is_storm);
+      //  FillInData(interval_grids[i_interval],
+      //             fft_grid_tmp,
+      //             interval_simboxes[i_interval],
+      //             storm_tmp,
+      //             segy_tmp,
+      //             crava_grid,
+      //             model_settings->getSmoothLength(),
+      //             missing_traces_simbox,
+      //             missing_traces_padding,
+      //             dead_traces_simbox,
+      //             grid_type,
+      //             scale,
+      //             is_segy,
+      //             is_storm);
 
-        if (fft_grid_tmp != NULL)
-          delete fft_grid_tmp;
-        if (storm_tmp != NULL)
-          delete storm_tmp;
-        if (segy_tmp != NULL)
-          delete segy_tmp;
+      //  if (fft_grid_tmp != NULL)
+      //    delete fft_grid_tmp;
+      //  if (storm_tmp != NULL)
+      //    delete storm_tmp;
+      //  if (segy_tmp != NULL)
+      //    delete segy_tmp;
 
-      }
+      //}
     }
 
     if (crava_grid != NULL)
@@ -5985,13 +5985,13 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
   if (grid_new->GetN() == 0) //Send in an empty NRLib::Grid if we want fft-grid
     is_nrlib_grid = false;
 
-  int nx   = simbox->getnx();//grid_new->GetNI();
-  int ny   = simbox->getny();//grid_new->GetNJ();
-  int nz   = simbox->getnz();//grid_new->GetNK();
-  int nxp  = simbox->GetNXpad();//grid_new->GetNI();
-  int nyp  = simbox->GetNYpad();//grid_new->GetNJ();
-  int nzp  = simbox->GetNZpad();//grid_new->GetNK();
-  int rnxp = simbox->GetNXpad();//grid_new->GetNI(); //2*(nxp/2+1);
+  int nx   = grid_new->GetNI();
+  int ny   = grid_new->GetNJ();
+  int nz   = grid_new->GetNK();
+  int nxp  = grid_new->GetNI();
+  int nyp  = grid_new->GetNJ();
+  int nzp  = grid_new->GetNK();
+  int rnxp = grid_new->GetNI(); //2*(nxp/2+1);
 
   if (is_nrlib_grid == false) {
     nx   = fft_grid_new->getNx();
@@ -6666,7 +6666,6 @@ CommonData::ReadStormFile(const std::string                 & file_name,
           delete fft_grid_tmp;
         if (fft_grid_tmp_2 != NULL)
           delete fft_grid_tmp_2;
-
       }
       catch (NRLib::Exception & e) {
         err_text += std::string(e.what());
@@ -7035,7 +7034,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                            inversion_simbox,
                            model_settings,
                            err_text_tmp,
-                           false);
+                           true); //H
 
           for (int i = 0; i < n_intervals; i++) {
             background_parameters[i][j] = new NRLib::Grid<float>(*parameter_tmp[i]);

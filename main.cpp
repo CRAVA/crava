@@ -240,6 +240,10 @@ int main(int argc, char** argv)
       crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
       crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
       crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
+      //Release background grids from common_data.
+      common_data->ReleaseBackgroundGrids(i_interval, 0);
+      common_data->ReleaseBackgroundGrids(i_interval, 1);
+      common_data->ReleaseBackgroundGrids(i_interval, 2);
 
 
       //korrelasjonsgrid (2m)
@@ -342,11 +346,6 @@ int main(int argc, char** argv)
           first = false;
         }
       }
-
-      //Release background grids from common_data.
-      common_data->ReleaseBackgroundGrids(i_interval, 0);
-      common_data->ReleaseBackgroundGrids(i_interval, 1);
-      common_data->ReleaseBackgroundGrids(i_interval, 2);
 
     } //interval_loop
 
