@@ -62,6 +62,25 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     BlockWell(estimation_simbox, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
+  if(err_text == ""){
+    LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the simbox: ");
+    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
+      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
+    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
+    LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the simbox: ");
+    if (disc_logs_to_be_blocked.size() > 0){
+      for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
+        LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
+      if (disc_logs_to_be_blocked.size() > 1)
+        LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
+      else
+        LogKit::LogFormatted(LogKit::Low,"\n");
+    }
+  }
+  else{
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
+  }
+
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 
@@ -129,6 +148,26 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
       BlockWellForCorrelationEstimation(multiple_interval_grid, well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, interpolate,facies_map_, facies_log_defined_, n_layers_, failed, err_text);
     }
+  }
+
+  if(err_text == ""){
+    if(interval_simboxes.size() == 1)
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the inversion simbox: ");
+    else
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the MultiIntervalGrid: ");
+    for (size_t i = 0; i < cont_logs_to_be_blocked.size(); i++)
+      LogKit::LogFormatted(LogKit::Low, cont_logs_to_be_blocked[i]);
+    LogKit::LogFormatted(LogKit::Low,"\n");
+    if(interval_simboxes.size() == 1)
+      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the inversion simbox: ");
+    else
+      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the MultiIntervalGrid: ");
+    for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
+      LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
+    LogKit::LogFormatted(LogKit::Low,"\n");
+  }
+  else{
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
   }
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
@@ -355,7 +394,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       }
 
       CountBlocksWithDataPerInterval(multiple_interval_grid, x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, continuous_logs_blocked,
-                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_, multiple_interval_grid->GetNIntervals());
+                                      n_blocks_, n_blocks_with_data_, n_blocks_with_data_tot_);
 
       // Discrete logs
       if (facies_log_defined)
@@ -957,8 +996,8 @@ void    BlockedLogsCommon::CountBlocksWithDataPerInterval(const MultiIntervalGri
                                                           const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
                                                           unsigned int                                         n_blocks,
                                                           std::map<std::string, int>                         & n_blocks_with_data,
-                                                          int                                                & n_blocks_with_data_tot,
-                                                          int                                                  n_intervals) const{
+                                                          int                                                & n_blocks_with_data_tot) const
+{
   // Use Vp to test that data is not missing
   const std::vector<double> vp_log_blocked = continuous_logs_blocked.find("Vp")->second;
   n_blocks_with_data_tot = 0;
@@ -2151,7 +2190,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                                 const Simbox                  * estimation_simbox,
-                                                float                        ** refl_coef,
+                                                NRLib::Matrix                 & refl_matrix,
                                                 int                             n_angles,
                                                 const std::vector<float>      & angle_weight,
                                                 float                           max_shift,
@@ -2245,10 +2284,15 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     for (i=0; i<rnzp; i++){
       cpp_r[j][i] = 0;
     }
-    FillInCpp(refl_coef[j],start,length,cpp_r[j],nzp);
+    float * refl_coefficients = new float(3);
+    refl_coefficients[0] = refl_matrix(j,0);
+    refl_coefficients[1] = refl_matrix(j,1);
+    refl_coefficients[2] = refl_matrix(j,2);
+    FillInCpp(refl_coefficients,start,length,cpp_r[j],nzp);
     Utils::fft(cpp_r[j],cpp_c[j],nzp);
     EstimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
     Utils::fftInv(cor_cpp_c[j],cor_cpp_r[j],nzp);
+    delete [] refl_coefficients;
   }
 
   std::vector<NRLib::Grid<float> > seis_cube_small(n_angles,NRLib::Grid<float> (i_tot_offset,j_tot_offset,n_blocks_));
@@ -3485,11 +3529,11 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
     rho_for_facies_ = blocked_log;
 }
 
-void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_coef,
-                                                 std::vector<Wavelet *> & wavelet,
-                                                 int                     nz,
-                                                 int                     nzp,
-                                                 const Simbox          * simbox) {
+void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & reflection_matrix,
+                                                 std::vector<Wavelet *>     & wavelet,
+                                                 int                          nz,
+                                                 int                          nzp,
+                                                 const Simbox               * simbox) {
   int          i, j;
   int          start, length;
 
@@ -3527,7 +3571,11 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const float   * const * refl_co
       cpp_r[j] = 0;
       synt_seis_r[j] = 0;
     }
-    FillInCpp(refl_coef[i], start, length, cpp_r, nzp);
+    float * refl_coef = new float(3);
+    refl_coef[0] = reflection_matrix(i,0);
+    refl_coef[1] = reflection_matrix(i,1);
+    refl_coef[2] = reflection_matrix(i,2);
+    FillInCpp(refl_coef, start, length, cpp_r, nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
 
     local_wavelet = wavelet[i]->createLocalWavelet1D(i_pos_[0], j_pos_[0]);

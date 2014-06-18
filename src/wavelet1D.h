@@ -23,7 +23,7 @@ public:
             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
             const std::vector<Surface *>                     & estimInterval,
             const ModelSettings                              * modelSettings,
-            const float                                      * reflCoef,
+            const NRLib::Matrix                              & reflCoef,
             std::vector<double>                              & synt_seis,
             int                                                iAngle,
             int                                              & errCode,

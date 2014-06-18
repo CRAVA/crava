@@ -40,7 +40,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
-                     const float                                      * reflCoef,
+                     const NRLib::Matrix                              & reflection_matrix,
                      std::vector<double>                              & synt_seis,
                      int                                                iAngle,
                      int                                              & errCode,
@@ -49,9 +49,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 {
   LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
 
-  coeff_[0]   = reflCoef[0];
-  coeff_[1]   = reflCoef[1];
-  coeff_[2]   = reflCoef[2];
+  coeff_[0]   = reflection_matrix(iAngle,0);
+  coeff_[1]   = reflection_matrix(iAngle,1);
+  coeff_[2]   = reflection_matrix(iAngle,2);
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();

@@ -1373,9 +1373,9 @@ Wavelet::Ricker(double t, float peakF)
 }
 
 void
-Wavelet::SetReflectionCoeffs(const float * reflCoef)
+Wavelet::SetReflectionCoeffs(const NRLib::Matrix & reflCoef, int i)
 {
-  coeff_[0] = reflCoef[0];
-  coeff_[1] = reflCoef[1];
-  coeff_[2] = reflCoef[2];
+  coeff_[0] = reflCoef(0,0);
+  coeff_[1] = reflCoef(0,1);
+  coeff_[2] = reflCoef(0,2);
 }

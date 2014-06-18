@@ -99,7 +99,11 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
 
 XmlModelFile::~XmlModelFile()
 {
-  //Both modelSettings and inputFiles are taken out and deleted outside.
+  //if (modelSettings_ != NULL)
+  //  delete modelSettings_;
+
+  //if(inputFiles_ != NULL)
+  //  delete inputFiles_;
 }
 
 bool
@@ -181,8 +185,7 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
 }
 
 
-bool
-XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
+bool XmlModelFile::parseInversionSettings(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("inversion-settings");
   if(root == 0)
@@ -265,8 +268,7 @@ XmlModelFile::parseSimulation(TiXmlNode * node, std::string & errTxt)
 }
 
 
-bool
-XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
+bool XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("estimation-settings");
   if(root == 0)
@@ -1741,52 +1743,64 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("base-conform");
   legalCommands.push_back("interval");
 
+  // Default
+  modelSettings_->setCorrDirTopConform("", false);
+  modelSettings_->setCorrDirBaseConform("", false);
 
   std::string corr_file = "";
-  bool corr_file_used = false;
+  bool single_corr_file_used = false;
   while(parseCurrentValue(root, corr_file, errTxt) == true) {
     if(corr_file != "") {
       inputFiles_->setCorrDirFile("", corr_file);
-      corr_file_used = true;
-      modelSettings_->setCorrDirBaseConform("", false);
-      modelSettings_->setCorrDirTopConform("", false);
+      single_corr_file_used = true;
+      //modelSettings_->setCorrDirBaseConform("", false);
+      //modelSettings_->setCorrDirTopConform("", false);
     }
   }
 
-  bool top_surface = false;
-  bool base_surface = false;
+  bool top_corr_surface   = false;
+  bool base_corr_surface  = false;
+  bool top_conform        = false;
+  bool base_conform       = false;
 
   std::string filename;
   if(parseFileName(root, "top-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirTopSurfaceFile("", filename);
-    modelSettings_->setCorrDirTopConform("", false);
-    top_surface = true;
+    top_corr_surface = true;
+  } else if (single_corr_file_used == false){
+    modelSettings_->setCorrDirTopConform("", true);
+    top_conform = true;
   }
+
 
   if(parseFileName(root, "base-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirBaseSurfaceFile("", filename);
-    modelSettings_->setCorrDirBaseConform("", false);
-    base_surface = true;
+    base_corr_surface = true;
+  } else if (single_corr_file_used == false){
+    modelSettings_->setCorrDirBaseConform("", true);
+    base_conform = true;
   }
 
-  bool top_conform = false;
-  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
+  if(parseBool(root, "top-conform", top_conform, errTxt) == true){
     modelSettings_->setCorrDirTopConform("", true);
+    top_conform = true;
+  }
 
-  bool base_conform = false;
-  if(parseBool(root, "base-conform", base_conform, errTxt) == true)
+  if(parseBool(root, "base-conform", base_conform, errTxt) == true){
     modelSettings_->setCorrDirBaseConform("", true);
+    base_conform = true;
+  }
 
-  if(top_surface == true && top_conform == true)
+  if(top_corr_surface == true && top_conform == true)
     errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  if(base_surface == true && base_conform == true)
+  if(base_corr_surface == true && base_conform == true)
     errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  if((top_surface == true || top_conform == true) && (base_surface == false && base_conform == false))
+  if((top_corr_surface == true || top_conform == true) && (base_corr_surface == false && base_conform == false))
     errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
 
-  if((base_surface == true || base_conform == true) && (top_surface == false && top_conform == false))
+  if((base_corr_surface == true || base_conform == true) && (top_corr_surface == false && top_conform == false))
     errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
   //if(top_conform == true && base_conform == true)
@@ -1800,12 +1814,12 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
       interval_used = true;
   }
 
-  if (interval_used == false && top_surface == false && base_surface == false && top_conform == false && base_conform == false && corr_file_used == false)
+  if (interval_used == false && top_corr_surface == false && base_corr_surface == false && top_conform == false && base_conform == false && single_corr_file_used == false)
     errTxt += "-No correlation surfaces have been defined under <correlation-direction>.\n";
 
-  if(corr_file_used == true && interval_used == true)
+  if(single_corr_file_used == true && interval_used == true)
     errTxt += "You cannot use both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
-  if(corr_file_used == true && (top_conform == true || base_conform == true || top_surface == true || base_surface == true))
+  if(single_corr_file_used == true && (top_conform == true || base_conform == true || top_corr_surface == true || base_corr_surface == true))
     errTxt += "You cannot use both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
                 + node->ValueStr() + ".\n";
 
@@ -1845,16 +1859,19 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
   }
 
   modelSettings_->setCorrDirUsed(true);
+  // Default
+  modelSettings_->setCorrDirBaseConform(interval_name,false);
+  modelSettings_->setCorrDirTopConform(interval_name, false);
 
-  bool single_surface = false;
-  bool top_surface = false;
-  bool base_surface = false;
+  bool single_surface   = false;
+  bool top_surface      = false;
+  bool base_surface     = false;
+  bool top_conform      = false;
+  bool base_conform     = false;
 
   std::string filename;
   if(parseFileName(root, "single-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirFile(interval_name, filename);
-    modelSettings_->setCorrDirBaseConform(interval_name,false);
-    modelSettings_->setCorrDirTopConform(interval_name, false);
     single_surface = true;
   }
 
@@ -1862,19 +1879,24 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     inputFiles_->setCorrDirTopSurfaceFile(interval_name, filename);
     modelSettings_->setCorrDirTopConform(interval_name, false);
     top_surface = true;
+  } else if (single_surface == false){
+    modelSettings_->setCorrDirTopConform(interval_name, true);
+    top_conform = true;
   }
 
   if(parseFileName(root, "base-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirBaseSurfaceFile(interval_name, filename);
     modelSettings_->setCorrDirBaseConform(interval_name,false);
     base_surface = true;
+  } else if (single_surface == false){
+    modelSettings_->setCorrDirBaseConform(interval_name, true);
+    base_conform = true;
   }
 
-  bool top_conform = false;
+
   if(parseBool(root, "top-conform", top_conform, errTxt) == true)
     modelSettings_->setCorrDirTopConform(interval_name, true);
 
-  bool base_conform = false;
   if(parseBool(root, "base-conform", base_conform, errTxt) == true)
     modelSettings_->setCorrDirBaseConform(interval_name, true);
 
@@ -4287,35 +4309,37 @@ XmlModelFile::parseOutputVolume(TiXmlNode * node, std::string & errTxt)
 
   // one of the interval options must be used
   if(interval_2 == false && interval_1 == false && interval_m == false) {
-    errTxt += "No time intervals specified in command <"+root->ValueStr()+"> "
+    errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
 
-    // one of the interval options must be used
-    if(interval_2 == false && interval_1 == false && interval_m == false) {
-      errTxt += "No time interval specified in command <"+root->ValueStr()+"> "
+  // only one interval option must be used
+  } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
+    && !(interval_1 == false && interval_2 == true && interval_m == false)
+    && !(interval_1 == false && interval_2 == false && interval_m == true)){
+      errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
         +lineColumnText(root)+".\n";
-
-    // only one interval option must be used
-    } else if(!(interval_1 == true && interval_2 == false && interval_m == false)
-      && !(interval_1 == false && interval_2 == true && interval_m == false)
-      && !(interval_1 == false && interval_2 == false && interval_m == true)){
-        errTxt += "Time interval specified in more than one way in command <"+root->ValueStr()+"> "
-          +lineColumnText(root)+".\n";
-    }
   }
 
-    bool area1 = parseAreaFromSurface(root, errTxt);
-    bool area2 = parseILXLArea(root, errTxt);
-    if(area1 && area2)
-      errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
-    bool area3 = parseUTMArea(root, errTxt);
-    if(area1 && area3)
-      errTxt+= "Area can no be given both by a surface and by coordinates\n";
-    if(area2 && area3)
-      errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+  //
+  // Erik N: After consulting with Ragnar H, we omit the possibility of using forward modeling
+  // in combination with multiple intervals.
+  //
+  if (modelSettings_->getForwardModeling() && interval_m){
+    errTxt += "Multiple intervals cannot be used in combination with forward modeling.\n";
+  }
 
-    checkForJunk(root, errTxt, legalCommands);
-    return(true);
+  bool area1 = parseAreaFromSurface(root, errTxt);
+  bool area2 = parseILXLArea(root, errTxt);
+  if(area1 && area2)
+    errTxt+= "Area can not be given both by a surface and by inline and crossline numbers\n";
+  bool area3 = parseUTMArea(root, errTxt);
+  if(area1 && area3)
+    errTxt+= "Area can no be given both by a surface and by coordinates\n";
+  if(area2 && area3)
+    errTxt+= "Area can not be given both by inline crossline numbers and UTM coordinates\n";
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
 }
 
 bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_txt)

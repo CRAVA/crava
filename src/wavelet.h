@@ -162,7 +162,7 @@ public:
   float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
   void           nullOutsideFrequencyBand(float loCut ,float hiCut );
   float          findNorm() const;
-  void           SetReflectionCoeffs(const float * reflCoef);
+  void           SetReflectionCoeffs(const NRLib::Matrix & reflCoef, int i);
   bool           getInFFTOrder()     const {return inFFTorder_;}
 
 protected:

@@ -11,12 +11,161 @@
 
 #include "src/cravaresult.h"
 
-CravaResult::CravaResult()
+CravaResult::CravaResult():
+cov_vp_(NULL),
+cov_vs_(NULL),
+cov_rho_(NULL),
+cr_cov_vp_vs_(NULL),
+cr_cov_vp_rho_(NULL),
+cr_cov_vs_rho_(NULL),
+post_vp_(NULL),
+post_vs_(NULL),
+post_rho_(NULL),
+post_vp_kriged_(NULL),
+post_vs_kriged_(NULL),
+post_rho_kriged_(NULL),
+background_vp_(NULL),
+background_vs_(NULL),
+background_rho_(NULL),
+block_grid_(NULL),
+facies_prob_undef_(NULL),
+quality_grid_(NULL),
+//reflection_matrix_(NULL),
+n_intervals_(0)
 {
 }
 
 CravaResult::~CravaResult()
 {
+  //
+  for (size_t i = 0; i < corr_T_.size(); i++){
+    if (corr_T_[i] != NULL){
+      delete [] corr_T_[i];
+    }
+  }
+  for (size_t i = 0; i < corr_T_filtered_.size(); i++){
+    if (corr_T_filtered_[i] != NULL)
+      delete [] corr_T_filtered_[i];
+  }
+    /*
+  for (size_t i = 0; i < background_vp_intervals_.size(); i++){
+    if (background_vp_intervals_[i] != NULL)
+      delete background_vp_intervals_[i];
+  }
+  for (size_t i = 0; i < background_vs_intervals_.size(); i++){
+    if (background_vs_intervals_[i] != NULL)
+      delete background_vs_intervals_[i];
+  }
+  for (size_t i = 0; i < background_rho_intervals_.size(); i++){
+    if (background_rho_intervals_[i] != NULL)
+      delete background_rho_intervals_[i];
+  }
+
+  if (cov_vp_ != NULL){
+    delete cov_vp_;
+    cov_vp_ = NULL;
+  }
+  if (cov_vs_ != NULL){
+    delete cov_vs_;
+    cov_vs_ = NULL;
+  }
+  if (cov_rho_ != NULL){
+    delete cov_rho_;
+    cov_rho_ = NULL;
+  }
+  if (cr_cov_vp_vs_ != NULL){
+    delete cr_cov_vp_vs_;
+    cr_cov_vp_vs_ = NULL;
+  }
+  if (cr_cov_vp_rho_ != NULL){
+    delete cr_cov_vp_rho_;
+    cr_cov_vp_rho_ = NULL;
+  }
+  if (cr_cov_vs_rho_ != NULL){
+    delete cr_cov_vs_rho_;
+    cr_cov_vs_rho_ = NULL;
+  }
+  if (post_vp_ != NULL){
+    delete post_vp_;
+    post_vp_ = NULL;
+  }
+  if (post_vs_ != NULL){
+    delete post_vs_;
+    post_vs_ = NULL;
+  }
+  if (post_rho_ != NULL){
+    delete post_rho_;
+    post_rho_ = NULL;
+  }
+  if (post_vp_kriged_ != NULL){
+    delete post_vp_kriged_;
+    post_vp_kriged_ = NULL;
+  }
+  if (post_vs_kriged_ != NULL){
+    delete post_vs_kriged_;
+    post_vs_kriged_ = NULL;
+  }
+  if (post_rho_kriged_ != NULL){
+    delete post_rho_kriged_;
+    post_rho_kriged_ = NULL;
+  }
+  if (background_vp_ != NULL){
+    delete background_vp_;
+    background_vp_ = NULL;
+  }
+  if (background_vs_ != NULL){
+    delete background_vs_;
+    background_vs_ = NULL;
+  }
+  if (background_rho_ != NULL){
+    delete background_rho_;
+    background_rho_ = NULL;
+  }
+  for (size_t i = 0; i < simulations_seed0_.size(); i++){
+    delete simulations_seed0_[i];
+  }
+  for (size_t i = 0; i < simulations_seed1_.size(); i++){
+    delete simulations_seed1_[i];
+  }
+  for (size_t i = 0; i < simulations_seed2_.size(); i++){
+    delete simulations_seed2_[i];
+  }
+  for (size_t i = 0; i < synt_seismic_data_.size(); i++){
+    delete synt_seismic_data_[i];
+  }
+  for (size_t i = 0; i < synt_residuals_.size(); i++){
+    delete synt_residuals_[i];
+  }
+  if (block_grid_ != NULL){
+    delete block_grid_;
+    block_grid_ = NULL;
+  }
+  for (size_t i = 0; i < facies_prob_.size(); i++){
+    delete facies_prob_[i];
+  }
+  if (facies_prob_undef_!= NULL){
+    delete facies_prob_undef_;
+    facies_prob_undef_ = NULL;
+  }
+  for (size_t i = 0; i < facies_prob_geo_.size(); i++){
+    delete facies_prob_geo_[i];
+  }
+  for (size_t i = 0; i < lh_cubes_.size(); i++){
+    delete lh_cubes_[i];
+  }
+  if (quality_grid_!= NULL){
+    delete quality_grid_;
+    quality_grid_ = NULL;
+  }
+  
+  for (size_t i = 0; i < wavelets_.size(); i++){
+    delete reflection_matrix_[i];
+    //delete wavelets_[i];
+  }
+  delete reflection_matrix_;
+  */
+
+
 }
 
 void CravaResult::CombineResults(ModelSettings                        * model_settings,
@@ -331,7 +480,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
 
 
-
   //Compute Synt seismic
 
   //H ComputeSeismicImpedance needs reflection matrix, but in avoinversion the reflection matrix is per interval
@@ -622,11 +770,12 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
         WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
 
-      fftw_free(corr_T_[i]);
+      //delete corr_T_[i];
+      //fftw_free(corr_T_[i]);
 
       if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
         WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-        delete [] corr_T_filtered_[i];
+        //delete [] corr_T_filtered_[i];
       }
 
       if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
@@ -707,10 +856,12 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
 
       int n_angles = model_settings->getNumberOfAngles(0); //Only write synthetic seismic for the first vintage
+      std::vector<float> angles = model_settings->getAngle(0);
 
       for (int i = 0; i < n_angles; i++) {
 
-        float theta       = common_data->GetSeismicDataTimeLapse(0)[i].GetAngle();
+        //float theta       = common_data->GetSeismicDataTimeLapse(0)[i].GetAngle();
+        float theta       = angles[i];
         float theta_deg   = static_cast<float>((theta*180.0/NRLib::Pi));
         std::string angle = NRLib::ToString(theta_deg, 1);
 
@@ -1166,8 +1317,8 @@ StormContGrid *
 CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
                                      StormContGrid * vs,
                                      StormContGrid * rho,
-                                     float        ** reflection_matrix,
-                                     int             angle)
+                                     const NRLib::Matrix & reflection_matrix,
+                                     int             angle) const
 {
   int nx = vp->GetNI();
   int ny = vp->GetNJ();
@@ -1179,9 +1330,9 @@ CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
         float imp = 0;
-        imp += vp->GetValue(i, j, k)*reflection_matrix[angle][0];
-        imp += vs->GetValue(i, j, k)*reflection_matrix[angle][1];
-        imp += rho->GetValue(i, j, k)*reflection_matrix[angle][2];
+        imp += vp->GetValue(i, j, k)*reflection_matrix(angle,0);
+        imp += vs->GetValue(i, j, k)*reflection_matrix(angle,1);
+        imp += rho->GetValue(i, j, k)*reflection_matrix(angle,2);
 
         impedance->SetValue(i, j, k, imp);
       }

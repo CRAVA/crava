@@ -43,8 +43,6 @@ Volume::Volume()
   angle_       = 0.0;
   z_top_       = new ConstantSurface<double>(0.0);
   z_bot_       = new ConstantSurface<double>(0.0);
-  //erosion_top_ = 0;
-  //erosion_bot_ = 0;
   tolerance_   = 1e-6;
 }
 
@@ -58,8 +56,6 @@ Volume::Volume(double x_min, double y_min, double z_min, double lx, double ly, d
 {
   z_top_       = new ConstantSurface<double>(z_min);
   z_bot_       = new ConstantSurface<double>(z_min+lz);
-  //erosion_top_ = 0;
-  //erosion_bot_ = 0;
   tolerance_   = 1e-6;
 }
 
@@ -79,8 +75,6 @@ Volume::Volume(double                  x_min,
 {
   z_top_ = top.Clone(),
   z_bot_ = bot.Clone(),
-  //erosion_top_ = 0;
-  //erosion_bot_ = 0;
   lz_ = RecalculateLZ();
   tolerance_   = 1e-6;
 }
@@ -106,20 +100,7 @@ Volume::Volume(const Volume & volume)
   else {
     z_bot_ = 0;
   }
-  /*
-  if (volume.erosion_top_ != 0) {
-    erosion_top_ = volume.erosion_top_->Clone();
-  }
-  else {
-    erosion_top_ = 0;
-  }
-  if (volume.erosion_bot_ != 0) {
-    erosion_bot_ = volume.erosion_bot_->Clone();
-  }
-  else {
-    erosion_bot_ = 0;
-  }
-  */
+
   tolerance_   = 1e-6;
 }
 
@@ -128,8 +109,6 @@ Volume::~Volume()
 {
   delete z_top_;
   delete z_bot_;
-  //delete erosion_top_;
-  //delete erosion_bot_;
 }
 
 

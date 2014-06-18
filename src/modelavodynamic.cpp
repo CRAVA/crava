@@ -50,7 +50,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                  int                       t,
                                  int                       i_interval)
 { //Time lapse constructor
-  reflection_matrix_        = NULL;
+  //reflection_matrix_        = NULL;
   failed_                   = false;
   this_timelapse_           = t;
   bool failed_loading_model = false;
@@ -265,7 +265,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       float sn_ratio_new = 0.0f;
 
       //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
-      wavelets_[i]->SetReflectionCoeffs(reflection_matrix_[i]);
+      wavelets_[i]->SetReflectionCoeffs(reflection_matrix_, i);
 
       LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
 
@@ -323,7 +323,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
-    wavelets_[i]->resample(simbox->getdz(), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
+    wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
   }
 
   if (model_settings->getEstimateWaveletNoise())
@@ -366,7 +366,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     param_var[i]=0.0;
     for (int l=0; l<3 ; l++) {
       for (int m=0 ; m<3 ; m++) {
-        param_var[i] += static_cast<float>(prior_var_0(l,m))*reflection_matrix_[i][l]*reflection_matrix_[i][m];
+        param_var[i] += static_cast<float>(prior_var_0(l,m)*reflection_matrix_(i,l)*reflection_matrix_(i,m));
       }
     }
   }
@@ -420,11 +420,13 @@ ModelAVODynamic::~ModelAVODynamic(void)
       delete wavelets_[i];
   }
 
+  /*
   if (reflection_matrix_ != NULL) {
     for (int i = 0; i < number_of_angles_; i++)
       delete [] reflection_matrix_[i] ;
     delete [] reflection_matrix_ ;
   }
+  */
 
   for (int i = 0 ; i < static_cast<int>(local_noise_scale_.size()) ; i++) {
     if (local_noise_scale_[i] != NULL)

@@ -197,38 +197,56 @@ ModelSettings::ModelSettings(void)
 
 ModelSettings::~ModelSettings(void)
 {
-  for(size_t i = 0; i<angularCorr_.size(); i++)
+  for(size_t i = 0; i<angularCorr_.size(); i++){
     delete angularCorr_[i];
-
-  if (lateralCorr_ != NULL)
-    delete lateralCorr_;
-
-  if (backgroundVario_ != NULL)
-    delete backgroundVario_;
-
-  if (localWaveletVario_ != NULL)
-    delete localWaveletVario_;
-
-  if(geometry_ != NULL)
-    delete geometry_;
-
-  if(geometry_ != NULL)
-    delete geometry_full_;
-
-  if(traceHeaderFormat_ != NULL)
-    delete traceHeaderFormat_;
-
-  if(traceHeaderFormatOutput_ != NULL)
-    delete traceHeaderFormatOutput_;
-
-  for(size_t i=0; i<timeLapseLocalTHF_.size(); i++) {
-    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++)
-      delete timeLapseLocalTHF_[i][j];
+    angularCorr_[i] = NULL;
   }
 
-  for(size_t i=0; i<travelTimeTHF_.size(); i++)
-    delete travelTimeTHF_[i];
+  if (lateralCorr_ != NULL){
+    delete lateralCorr_;
+    lateralCorr_ = NULL;
+  }
 
+  if (backgroundVario_ != NULL){
+    delete backgroundVario_;
+    backgroundVario_ = NULL;
+  }
+
+  if (localWaveletVario_ != NULL){
+    delete localWaveletVario_;
+    localWaveletVario_ = NULL;
+  }
+
+  if(geometry_ != NULL){
+    delete geometry_;
+    geometry_ = NULL;
+  }
+
+  if(geometry_ != NULL){
+    delete geometry_full_;
+    geometry_full_ = NULL;
+  }
+
+
+  delete traceHeaderFormat_;
+  traceHeaderFormat_ = NULL;
+
+  if(traceHeaderFormatOutput_ != NULL){
+    delete traceHeaderFormatOutput_;
+    traceHeaderFormatOutput_ = NULL;
+  }
+
+  for(size_t i=0; i<timeLapseLocalTHF_.size(); i++) {
+    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++){
+      delete timeLapseLocalTHF_[i][j];
+      timeLapseLocalTHF_[i][j] = NULL;
+    }
+  }
+
+  for(size_t i=0; i<travelTimeTHF_.size(); i++){
+    delete travelTimeTHF_[i];
+    travelTimeTHF_[i] = NULL;
+  }
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
     delete storage;
@@ -249,6 +267,7 @@ ModelSettings::~ModelSettings(void)
     std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
     for(size_t i=0; i<vintageStorage.size(); i++) {
       delete vintageStorage[i];
+      vintageStorage[i] = NULL;
     }
   }
 

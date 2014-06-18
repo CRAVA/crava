@@ -58,6 +58,8 @@ public:
          std::string          & err_text,
          bool                 & failed);
 
+  Simbox(const Simbox         & simbox);
+
   Simbox(const Simbox         * simbox);
 
   Simbox(const Simbox         * estimation_simbox,
@@ -70,6 +72,10 @@ public:
          bool                 & failed);
 
   ~Simbox();
+
+  
+  // EN Copy constructor
+  Simbox& operator=(const Simbox         & rhs);
 
   // GET functions ------------------------------------------------------
 

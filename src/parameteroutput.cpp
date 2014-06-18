@@ -480,11 +480,19 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
   if (format_flag > 0) {//Output format specified.
     if ((domain_flag & IO::TIMEDOMAIN) > 0) {
       //if(timeMap == NULL) { //No resampling of storm
-        if ((format_flag & IO::STORM) > 0)
-          storm_grid->WriteToFile(file_name, "", false);
+        if ((format_flag & IO::STORM) > 0){
+          const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, false);
+          storm_grid->SetFormat(NRLib::StormContGrid::STORM_BINARY);
+          file_name = file_name + IO::SuffixStormBinary();
+          storm_grid->WriteToFile(file_name, header, false);
+        }
           //FFTGrid::writeStormFile(file_name, simbox, false, padding); //H Must writeStormFile be changed to take in timeMap effects?
-        if ((format_flag & IO::ASCII) > 0)
-          storm_grid->WriteToFile(file_name, "", true);
+        if ((format_flag & IO::ASCII) > 0){
+          storm_grid->SetFormat(NRLib::StormContGrid::STORM_ASCII);
+          const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, true);
+          file_name = file_name + IO::SuffixGeneralData();
+          storm_grid->WriteToFile(file_name, header, true);
+        }
           //FFTGrid::writeStormFile(file_name, simbox, true, padding);
       //}
       //else {
