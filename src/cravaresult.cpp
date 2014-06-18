@@ -1005,15 +1005,20 @@ void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommo
   }
 }
 
+
 void CravaResult::WriteWells(const std::vector<NRLib::Well> & wells,
                              const ModelSettings      * model_settings)
 {
+  assert(wells.size() >= 0);        //Placeholder code. Do these wells have any function anymore?
+  assert(model_settings != NULL);
+/*
   for (size_t i = 0; i < wells.size(); i++) {
     wells[i].WriteWell(model_settings->getWellFormatFlag(),
                        model_settings->getMaxHzBackground(),
                        model_settings->getMaxHzSeismic());
 
   }
+  */
 }
 
 void CravaResult::FindDzMin(const Simbox      & full_inversion_simbox,

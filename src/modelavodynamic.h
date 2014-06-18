@@ -72,17 +72,6 @@ public:
 
 private:
 
-  void             VsVpFromWells(CommonData * common_data,
-                                 int          i_interval,
-                                 double     & vsvp,
-                                 int        & N);
-
-  void             FindMeanVsVp(const NRLib::Well            & well,
-                                const NRLib::Surface<double> & top,
-                                const NRLib::Surface<double> & bot,
-                                double                       & mean_vs_vp,
-                                int                          & n_vs_vp);
-
   bool             FindTimeGradientSurface(const std::string     & refTimeFile,
                                            const Simbox          * simbox,
                                            NRLib::Grid2D<float>  & refTimeGradX,

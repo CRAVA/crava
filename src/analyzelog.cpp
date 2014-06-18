@@ -990,7 +990,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
     }
     time(&timeend);
-    int time = static_cast<int>(timeend - timestart);
+    long int time = static_cast<long int>(timeend - timestart);
     printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);
   }
 

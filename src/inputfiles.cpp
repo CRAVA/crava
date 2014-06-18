@@ -13,26 +13,16 @@ InputFiles::InputFiles(void)
     wellFiles_(0),
     wellMoveIntFile_(2),
     faciesEstIntFile_(2),
-    timeSurfTopFile_(""),
-    depthSurfTopFile_(""),
-    //timeSurfFiles_(0),
-    //depthSurfFiles_(2),
     velocityField_(""),
     backFile_(3),
     backVelFile_(""),
     reflMatrFile_(""),
-    //corrDirFile_(""),
-    //corrDirTopFile_(""),
-    //corrDirBaseFile_(""),
     paramCovFile_(""),
     tempCorrFile_(""),
+    timeSurfTopFile_(""),
+    depthSurfTopFile_(""),
     areaSurfaceFile_("")
 {
-  //interval_corrDirFiles_[""]     = "";
-  //interval_corrDirTopFiles_[""]  = "";
-  //interval_corrDirBaseFiles_[""] = "";
-  //timeSurfBaseFiles_[""]         = "";
-  //depthSurfBaseFiles_[""]        = "";
 }
 
 InputFiles::~InputFiles(void)

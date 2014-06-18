@@ -49,7 +49,7 @@ private:
   // Functions for transforming mean and covariance to log doamin
   void                   MeanLogTransform (FFTGrid * mean,   float sigma);                // Updates FFTGrid
   void                   CovLogTransform  (FFTGrid * cov,    float mean);                 // Updates FFTGrid
-  void                   CrCovLogTransform(FFTGrid * cov,    float mean_a, float mean_b); // Updates FFTGrid
+  //void                   CrCovLogTransform(FFTGrid * cov,    float mean_a, float mean_b); // Updates FFTGrid
 
   // Functions related to upsampling, backsampling and vectorizing of the system
   void                   Backsample(FFTGrid * upscaled_grid, FFTGrid * new_full_grid);

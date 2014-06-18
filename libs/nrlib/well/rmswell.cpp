@@ -30,7 +30,6 @@
 #include "rmswell.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../iotools/fileio.hpp"
-#include "src/definitions.h"
 
 using namespace NRLib;
 
@@ -122,10 +121,10 @@ RMSWell::RMSWell(const std::string& filename)
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
         double dummy = ReadNext<double>(ist, line); //H Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
-        if(dummy != WELLMISSING)
+        if(IsMissing(dummy) == false)
           disclogs[j].push_back(static_cast<int>(dummy));
         else
-          disclogs[j].push_back(IMISSING);
+          disclogs[j].push_back(GetIntMissing());
 
          j++;
       }

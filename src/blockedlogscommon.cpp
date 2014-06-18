@@ -176,10 +176,10 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
                                      const StormContGrid & stormgrid)
-: first_M_(IMISSING),
-  last_M_(IMISSING),
-  first_S_(IMISSING),
+: first_S_(IMISSING),
   last_S_ (IMISSING),
+  first_M_(IMISSING),
+  last_M_(IMISSING),
   first_B_ (IMISSING),
   last_B_ (IMISSING)
 {
@@ -3513,7 +3513,7 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 {
   std::vector<double> blocked_log(n_blocks_);
 
-  assert(static_cast<int>(n_blocks_) == n_data);
+  assert(n_blocks_ == static_cast<unsigned int>(n_data));
   for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 
