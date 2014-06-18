@@ -263,7 +263,16 @@ private:
 
   void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode,
-                                  std::string                 & errText);
+                                  fftw_real                  *& rAmp,
+                                  fftw_complex               *& cAmp,
+                                  float                       & dz,
+                                  int                         & nz,
+                                  int                         & cz,
+                                  int                         & nzp,
+                                  int                         & cnzp,
+                                  int                         & rnzp,
+                                  float                       & norm,
+                                  std::string                 & errText) const;
 
   void           WaveletReadNorsar(const std::string          & fileName,
                                    int                        & errCode,

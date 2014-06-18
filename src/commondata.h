@@ -421,7 +421,7 @@ private:
                                       const NRLib::Matrix                      & reflection_matrix,
                                       std::vector<double>                      & synt_seic,
                                       std::string                              & err_text,
-                                      Wavelet                                 *& wavelet,
+                                      Wavelet                                  *& wavelet,
                                       Grid2D                                  *& local_noise_scale,
                                       Grid2D                                  *& local_noise_shift,
                                       Grid2D                                  *& local_noise_estimate,
