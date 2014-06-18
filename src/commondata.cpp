@@ -7207,7 +7207,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               float avg = 0.0f;
               float min = 0.0f;
               float max = 0.0f;
-              background_parameters[i][j]->GetAvgMinMax(avg, min, max);
+              background_parameters[i][j]->GetAvgMinMaxWithMissing(avg, min, max, RMISSING);
               SetUndefinedCellsToGlobalAverageGrid(background_parameters[i][j], avg);
               background_parameters[i][j]->LogTransform(RMISSING);
 

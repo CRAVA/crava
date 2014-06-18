@@ -61,9 +61,9 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 
     //Set up errCorr here
-    int nx  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
-    int ny  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
-    int nz  = common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
+    int nx  = simbox->getnx(); // common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
+    int ny  = simbox->getny(); //common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
+    int nz  = simbox->getnz(); //common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
     int nxp = simbox->GetNXpad();
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
