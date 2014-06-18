@@ -238,12 +238,8 @@ int main(int argc, char** argv)
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
       crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
-      //Release background grids from common_data.
-      common_data->ReleaseBackgroundGrids(i_interval, 0);
       crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
-      common_data->ReleaseBackgroundGrids(i_interval, 1);
       crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
-      common_data->ReleaseBackgroundGrids(i_interval, 2);
 
 
       //korrelasjonsgrid (2m)
@@ -347,6 +343,11 @@ int main(int argc, char** argv)
         }
       }
 
+      //Release background grids from common_data.
+      common_data->ReleaseBackgroundGrids(i_interval, 0);
+      common_data->ReleaseBackgroundGrids(i_interval, 1);
+      common_data->ReleaseBackgroundGrids(i_interval, 2);
+
     } //interval_loop
 
 
@@ -358,7 +359,7 @@ int main(int argc, char** argv)
 
     //Write results
     crava_result->WriteResults(modelSettings,
-                              common_data);
+                               common_data);
 
     if(modelSettings->getDo4DInversion())
     {
