@@ -32,7 +32,7 @@
 #include "../segy/segygeometry.hpp"
 #include "../segy/segytrace.hpp"
 
-#include "stormgrid/stormcontgrid.hpp"
+#include "../stormgrid/stormcontgrid.hpp"
 
 namespace NRLib {
 
