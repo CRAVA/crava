@@ -47,19 +47,6 @@ CravaResult::~CravaResult()
     if (corr_T_filtered_[i] != NULL)
       delete [] corr_T_filtered_[i];
   }
-    /*
-  for (size_t i = 0; i < background_vp_intervals_.size(); i++){
-    if (background_vp_intervals_[i] != NULL)
-      delete background_vp_intervals_[i];
-  }
-  for (size_t i = 0; i < background_vs_intervals_.size(); i++){
-    if (background_vs_intervals_[i] != NULL)
-      delete background_vs_intervals_[i];
-  }
-  for (size_t i = 0; i < background_rho_intervals_.size(); i++){
-    if (background_rho_intervals_[i] != NULL)
-      delete background_rho_intervals_[i];
-  }
 
   if (cov_vp_ != NULL){
     delete cov_vp_;
@@ -73,18 +60,6 @@ CravaResult::~CravaResult()
     delete cov_rho_;
     cov_rho_ = NULL;
   }
-  if (cr_cov_vp_vs_ != NULL){
-    delete cr_cov_vp_vs_;
-    cr_cov_vp_vs_ = NULL;
-  }
-  if (cr_cov_vp_rho_ != NULL){
-    delete cr_cov_vp_rho_;
-    cr_cov_vp_rho_ = NULL;
-  }
-  if (cr_cov_vs_rho_ != NULL){
-    delete cr_cov_vs_rho_;
-    cr_cov_vs_rho_ = NULL;
-  }
   if (post_vp_ != NULL){
     delete post_vp_;
     post_vp_ = NULL;
@@ -97,6 +72,20 @@ CravaResult::~CravaResult()
     delete post_rho_;
     post_rho_ = NULL;
   }
+
+  if (cr_cov_vp_vs_ != NULL){
+    delete cr_cov_vp_vs_;
+    cr_cov_vp_vs_ = NULL;
+  }
+  if (cr_cov_vp_rho_ != NULL){
+    delete cr_cov_vp_rho_;
+    cr_cov_vp_rho_ = NULL;
+  }
+  if (cr_cov_vs_rho_ != NULL){
+    delete cr_cov_vs_rho_;
+    cr_cov_vs_rho_ = NULL;
+  }
+
   if (post_vp_kriged_ != NULL){
     delete post_vp_kriged_;
     post_vp_kriged_ = NULL;
@@ -109,6 +98,14 @@ CravaResult::~CravaResult()
     delete post_rho_kriged_;
     post_rho_kriged_ = NULL;
   }
+
+  for (size_t i = 0; i < synt_seismic_data_.size(); i++){
+    delete synt_seismic_data_[i];
+  }
+  for (size_t i = 0; i < synt_residuals_.size(); i++){
+    delete synt_residuals_[i];
+  }
+
   if (background_vp_ != NULL){
     delete background_vp_;
     background_vp_ = NULL;
@@ -121,6 +118,28 @@ CravaResult::~CravaResult()
     delete background_rho_;
     background_rho_ = NULL;
   }
+
+  if (block_grid_ != NULL){
+    delete block_grid_;
+    block_grid_ = NULL;
+  }
+
+  /*
+  for (size_t i = 0; i < background_vp_intervals_.size(); i++){
+    if (background_vp_intervals_[i] != NULL)
+      delete background_vp_intervals_[i];
+  }
+  for (size_t i = 0; i < background_vs_intervals_.size(); i++){
+    if (background_vs_intervals_[i] != NULL)
+      delete background_vs_intervals_[i];
+  }
+  for (size_t i = 0; i < background_rho_intervals_.size(); i++){
+    if (background_rho_intervals_[i] != NULL)
+      delete background_rho_intervals_[i];
+  }
+  */
+
+
   for (size_t i = 0; i < simulations_seed0_.size(); i++){
     delete simulations_seed0_[i];
   }
@@ -130,19 +149,12 @@ CravaResult::~CravaResult()
   for (size_t i = 0; i < simulations_seed2_.size(); i++){
     delete simulations_seed2_[i];
   }
-  for (size_t i = 0; i < synt_seismic_data_.size(); i++){
-    delete synt_seismic_data_[i];
-  }
-  for (size_t i = 0; i < synt_residuals_.size(); i++){
-    delete synt_residuals_[i];
-  }
-  if (block_grid_ != NULL){
-    delete block_grid_;
-    block_grid_ = NULL;
-  }
+
   for (size_t i = 0; i < facies_prob_.size(); i++){
     delete facies_prob_[i];
   }
+
+
   if (facies_prob_undef_!= NULL){
     delete facies_prob_undef_;
     facies_prob_undef_ = NULL;
@@ -157,13 +169,16 @@ CravaResult::~CravaResult()
     delete quality_grid_;
     quality_grid_ = NULL;
   }
-  
+
+  /*
   for (size_t i = 0; i < wavelets_.size(); i++){
-    delete reflection_matrix_[i];
-    //delete wavelets_[i];
+    if (wavelets_[i] != NULL){
+      delete wavelets_[i];
+      wavelets_[i] = NULL;
+    }
   }
-  delete reflection_matrix_;
   */
+
 
 
 }
@@ -196,10 +211,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     int nz_max = static_cast<int>((simbox.getBotZMax() - simbox.getTopZMin()) / dz_min);
 
-    //H-TEST
-    //nz_max = nz_max + 50;
-
-
 
     if (model_settings->getWritePrediction()) {
 
@@ -219,6 +230,15 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_min);
       CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_min);
       CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_min);
+
+      for (int i = 0; i < n_intervals; i++){
+        delete post_vp_intervals[i];
+        post_vp_intervals[i] = NULL;
+        delete post_vs_intervals[i];
+        post_vs_intervals[i] = NULL;
+        delete post_rho_intervals[i];
+        post_rho_intervals[i] = NULL;
+      }
 
       //Post vp, vs and rho from avoinversion doPredictionKriging()
       if (model_settings->getKrigingParameter() > 0) {
@@ -1005,15 +1025,20 @@ void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommo
   }
 }
 
+
 void CravaResult::WriteWells(const std::vector<NRLib::Well> & wells,
                              const ModelSettings      * model_settings)
 {
+  assert(wells.size() >= 0);        //Placeholder code. Do these wells have any function anymore?
+  assert(model_settings != NULL);
+/*
   for (size_t i = 0; i < wells.size(); i++) {
     wells[i].WriteWell(model_settings->getWellFormatFlag(),
                        model_settings->getMaxHzBackground(),
                        model_settings->getMaxHzSeismic());
 
   }
+  */
 }
 
 void CravaResult::FindDzMin(const Simbox      & full_inversion_simbox,
@@ -1304,7 +1329,11 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
         err_text += "\nFailed to read temporary stored seismic data.\n";
         LogKit::LogMessage(LogKit::Error, err_text);
       }
+      //delete imp_residual;
+      //imp_residual = NULL;
     }
+    //delete imp;
+    //imp = NULL;
   }
 }
 

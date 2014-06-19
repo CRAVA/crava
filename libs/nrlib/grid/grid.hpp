@@ -25,6 +25,7 @@
 #include <cassert>
 #include <sstream>
 #include <vector>
+#include <limits>
 
 //#include "../../../src/definitions.h"
 

@@ -28,7 +28,7 @@
 #include "norsarwell.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../iotools/fileio.hpp"
-#include "src/definitions.h"
+//#include "src/definitions.h"
 
 using namespace NRLib;
 

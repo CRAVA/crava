@@ -112,77 +112,75 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
-    int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    bool is_segy           = false;
-    bool is_storm          = false;
-    SegY          * segy   = NULL;
-    StormContGrid * storm  = NULL;
-    FFTGrid * fft_grid_old = NULL;
+    int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+    bool is_segy          = false;
+    bool is_storm         = false;
+    bool scale            = false;
+    SegY          * segy  = NULL;
+    StormContGrid * storm = NULL;
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
       is_segy = true;
     }
-    else if (seismic_type == 3) { //FFTGrid
-      fft_grid_old = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
-    }
-    else { //STORM / SGRI
+    else if (seismic_type == 1 || seismic_type == 2) { //STORM / SGRI
       storm    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
       is_storm = true;
+
+      if (seismic_type == 2) //SGRI
+        scale = true;
     }
 
-    bool scale = false;
-    if (seismic_type == 2) //SGRI
-      scale = true;
-
-    int missing_traces_simbox  = 0;
-    int missing_traces_padding = 0;
-    int dead_traces_simbox     = 0;
-
-    NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
-
-    seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    common_data->FillInData(grid_tmp,
-                            seis_cubes_[i],
-                            simbox,
-                            storm,
-                            segy,
-                            fft_grid_old,
-                            model_settings->getSmoothLength(),
-                            missing_traces_simbox,
-                            missing_traces_padding,
-                            dead_traces_simbox,
-                            FFTGrid::DATA,
-                            scale,
-                            is_segy,
-                            is_storm);
-
-    seis_cubes_[i]->endAccess();
-
-    //if (segy != NULL)
-    //  delete segy;
-    if (storm != NULL)
-      delete storm;
-    if(grid_tmp != NULL)
-      delete grid_tmp;
-
-    //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
-    //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
-    //if (missingTracesSimbox > 0) {}
-    if (missing_traces_padding > 0) {
-      int nx     = simbox->getnx();
-      int ny     = simbox->getny();
-      int nxpad  = nxp - nx;
-      int nypad  = nyp - ny;
-      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
-        LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
-                           +NRLib::ToString(missing_traces_padding)+" of "+NRLib::ToString(nxypad)+"\n");
+    if (seismic_type == 3) { //FFTGrid: Seismic data on CRAVA format, which isn't allowed with multiple intervals, so no need for resampling
+      seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
     }
-    if (dead_traces_simbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                         +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
-    }
+    else { //Resample storm or segy to seis_cube
 
+      int missing_traces_simbox  = 0;
+      int missing_traces_padding = 0;
+      int dead_traces_simbox     = 0;
+
+      NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
+
+      seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+      common_data->FillInData(grid_tmp,
+                              seis_cubes_[i],
+                              simbox,
+                              storm,
+                              segy,
+                              model_settings->getSmoothLength(),
+                              missing_traces_simbox,
+                              missing_traces_padding,
+                              dead_traces_simbox,
+                              FFTGrid::DATA,
+                              scale,
+                              is_segy,
+                              is_storm);
+
+      seis_cubes_[i]->endAccess();
+
+      if (storm != NULL)
+        delete storm;
+      if(grid_tmp != NULL)
+        delete grid_tmp;
+
+      //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
+      //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
+      //if (missingTracesSimbox > 0) {}
+      if (missing_traces_padding > 0) {
+        int nx     = simbox->getnx();
+        int ny     = simbox->getny();
+        int nxpad  = nxp - nx;
+        int nypad  = nyp - ny;
+        int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+          LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
+                             +NRLib::ToString(missing_traces_padding)+" of "+NRLib::ToString(nxypad)+"\n");
+      }
+      if (dead_traces_simbox > 0) {
+        LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
+      }
+    }
   }
 
   //Logging from processSeismic
@@ -218,59 +216,22 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //seisCube[i]->writeFile
   //seisCube[i]->writeCravaFile
 
-  //Get Vp/Vs
-  double vpvs = 0.0;
-  double vsvp = 0.0;
-  int    n_well_points = 0;
-  if (model_settings->getVpVsRatios().size() > 0) { //model file
-    vpvs = static_cast<double>(model_settings->getVpVsRatios().find(model_settings->getIntervalName(i_interval))->second);
-    vsvp = 1 / vpvs;
-  }
-  else if (model_settings->getVpVsRatioFromWells()) { //wells
-    VsVpFromWells(common_data,
-                  i_interval,
-                  vsvp,
-                  n_well_points);
-    vpvs = 1 / vsvp;
-  }
-  else {  //background
-    vsvp = common_data->GetBackgroundVsVpRatioInterval(i_interval);
-    vpvs = 1 / vsvp;
-  }
-
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
     interval_text = "for interval " + model_settings->getIntervalName(i_interval) + " ";
 
-  //Reflection matrix: From file or global vp/vs: do not change per interval
-  if (common_data->GetRefMatFromFileGlobalVpVs() == true) {
+  //Consider creating new reflection matrixes
+  //Reflection matrix: From file or global vp/vs: do not change per interval. Alos, if only one interval, correct values are already set.
+  if (common_data->GetRefMatFromFileGlobalVpVs() == true || common_data->GetMultipleIntervalGrid()->GetNIntervals() == 1) {
     reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(this_timelapse_);
   }
   else {  //Vp/Vs set temporary to 2 in CommonData: update reflection matrix per interval.
+    //Get Vp/Vs
+    std::string origin;
+    double vsvp = common_data->FindVsVpForZone(i_interval, model_settings, origin);
 
-    if (model_settings->getVpVsRatios().size() > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp/Vs ratio specified in model file.\n");
-
-      common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
-    }
-    else if (model_settings->getVpVsRatioFromWells()) {
-      LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from wells\n");
-      if (n_well_points < 10)
-        LogKit::LogFormatted(LogKit::Warning," Less than 10 total well-points was inside the interval. Vp-vs ratio will be taken from the background model.");
-
-      common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
-    }
-    else { //Rock-physics or background model (In manual: vp/vs from background model is default)
-
-      //Vp/Vs from rock-physics: Get it from background model generated by rock-physics
-      if (model_settings->getGenerateBackgroundFromRockPhysics()) {
-        LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from the Rock Physics model.\n");
-      }
-      else {
-       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix " + interval_text + "with Vp and Vs from the background model.\n");
-      }
-      common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
-    }
+    LogKit::LogFormatted(LogKit::Low, "\nMaking reflection matrix "+ interval_text +"with Vp/Vs ratio from "+ origin+".\n");
+    common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
   }
 
   //Wavelet: estimated -> reestimate scale and noise (with updated vp/vs for this interval, waveletshape is from estimation in commondata.).
@@ -479,67 +440,6 @@ void
 ModelAVODynamic::ReleaseGrids(void)
 {
   //seisCube_ = NULL;
-}
-
-void ModelAVODynamic::VsVpFromWells(CommonData * common_data,
-                                    int          i_interval,
-                                    double     & vs_vp,
-                                    int        & N)
-{
-  const std::vector<NRLib::Well> & wells = common_data->GetWells();
-  size_t n_wells = wells.size();
-
-  for (size_t i = 0; i < n_wells; i++) {
-    const NRLib::Surface<double> & top  = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetTopSurface();
-    const NRLib::Surface<double> & base = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval)->GetBotSurface();
-
-    double mean_vs_vp = 0.0; // Average Vs/Vp for this well
-    int    n_vs_vp    = 0; // Number of samples behind Vs/Vp estimate
-
-    FindMeanVsVp(wells[i], top, base, mean_vs_vp, n_vs_vp);
-
-    N     += n_vs_vp;
-    vs_vp += mean_vs_vp*n_vs_vp;
-  }
-
-  vs_vp /= N;
-}
-
-void ModelAVODynamic::FindMeanVsVp(const NRLib::Well            & well,
-                                   const NRLib::Surface<double> & top,
-                                   const NRLib::Surface<double> & bot,
-                                   double                       & mean_vs_vp,
-                                   int                          & n_vs_vp)
-{
-  size_t n_data = well.GetNData();
-  std::vector<bool> active_cell(n_data, true);
-
-  const std::vector<double> & x_pos = well.GetContLog("X_pos");
-  const std::vector<double> & y_pos = well.GetContLog("Y_pos");
-  const std::vector<double> & z_pos = well.GetContLog("Z_pos");
-
-  for (size_t i = 0; i < n_data; i++) {
-    double z_top  = top.GetZ(x_pos[i], y_pos[i]);
-    double z_base = bot.GetZ(x_pos[i], y_pos[i]);
-
-    if ((z_pos[i] < z_top) || (z_pos[i] > z_base))
-      active_cell[i] = false;
-  }
-
-  mean_vs_vp = 0.0;
-  n_vs_vp    = 0;
-
-  const std::vector<double> & vp_background_resolution = well.GetContLogBackgroundResolution("Vp");
-  const std::vector<double> & vs_background_resolution = well.GetContLogBackgroundResolution("Vs");
-
-  for (size_t i = 0; i < n_data; i++) {
-    if (vp_background_resolution[i] != RMISSING && vs_background_resolution[i] != RMISSING && active_cell[i] == true) {
-      mean_vs_vp += vs_background_resolution[i] / vp_background_resolution[i];
-      n_vs_vp    += 1;
-    }
-  }
-
-  mean_vs_vp /= n_vs_vp;
 }
 
 bool

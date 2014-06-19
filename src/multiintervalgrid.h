@@ -21,7 +21,7 @@ public:
                     std::string    & err_text,
                     bool           & failed);
 
-  MultiIntervalGrid::MultiIntervalGrid(const MultiIntervalGrid * multi_interval_grid);
+  MultiIntervalGrid(const MultiIntervalGrid * multi_interval_grid);
 
   ~MultiIntervalGrid();
 

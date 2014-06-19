@@ -130,9 +130,9 @@ private:
                                     std::vector<std::vector<double> >                & vt_vp,
                                     std::vector<std::vector<double> >                & vt_vs,
                                     std::vector<std::vector<double> >                & vt_rho,
-                                    std::vector<const std::vector<int> >             & ipos,
-                                    std::vector<const std::vector<int> >             & jpos,
-                                    std::vector<const std::vector<int> >             & kpos,
+                                    std::vector<const std::vector<int> *>            & ipos,
+                                    std::vector<const std::vector<int> *>            & jpos,
+                                    std::vector<const std::vector<int> *>            & kpos,
                                     std::vector<int>                                 & n_blocks,
                                     int                                              & tot_blocks,
                                     const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -227,9 +227,9 @@ private:
                                   const std::vector<std::vector<double> >    & vt_vp,
                                   const std::vector<std::vector<double> >    & vt_vs,
                                   const std::vector<std::vector<double> >    & vt_rho,
-                                  const std::vector<const std::vector<int> >   ipos,
-                                  const std::vector<const std::vector<int> >   jpos,
-                                  const std::vector<const std::vector<int> >   kpos) const;
+                                  const std::vector<const std::vector<int> *>  ipos,
+                                  const std::vector<const std::vector<int> *>  jpos,
+                                  const std::vector<const std::vector<int> *>  kpos) const;
 
   void         MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
                                     NRLib::Grid<float>               * bg_grid,

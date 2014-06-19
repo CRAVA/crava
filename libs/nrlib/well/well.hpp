@@ -26,9 +26,6 @@
 #include <sstream>
 #include <map>
 
-#include "nrlib/stormgrid/stormcontgrid.hpp"
-#include "src/simbox.h"
-
 namespace NRLib {
   class Well{
   public:
@@ -156,19 +153,6 @@ namespace NRLib {
     /// Set number of data
     void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
 
-    /// Write wells
-    void WriteWell(int         well_format,
-                   const float max_hz_background,
-                   const float max_hz_seismic) const;
-
-    /// Write RMS Well
-    void WriteRMSWell(const float max_hz_background,
-                      const float max_hz_seismic) const;
-
-    /// Write Norsar Well
-    void WriteNorsarWell(const float max_hz_background,
-                         const float max_hz_seismic) const;
-
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
     void SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
@@ -186,10 +170,6 @@ namespace NRLib {
     bool HasSyntheticVsLog(void)           const { return(real_vs_log_)==0              ;}
 
     //bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
-
-    int CheckStormgrid(StormContGrid & stormgrid) const;
-
-    int CheckSimbox(Simbox * simbox) const;
 
   protected:
     // Number of time data including WELLMISSING values

@@ -63,12 +63,12 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
 
   if(err_text == ""){
-    LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the simbox: ");
+    LogKit::LogFormatted(LogKit::Low,"-The following continuous logs were blocked into the simbox: ");
     for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
       LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
     LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
-    LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the simbox: ");
     if (disc_logs_to_be_blocked.size() > 0){
+    LogKit::LogFormatted(LogKit::Low,"-The following discrete logs were blocked into the simbox: ");
       for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
         LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
       if (disc_logs_to_be_blocked.size() > 1)
@@ -137,7 +137,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
       // If there is only one interval
       //
       n_layers_ = interval_simboxes[0]->getnz();
-      BlockWell(interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_, 
+      BlockWell(interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
     }
     else {
@@ -150,21 +150,24 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
     }
   }
 
+
   if(err_text == ""){
     if(interval_simboxes.size() == 1)
       LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the inversion simbox: ");
     else
       LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the MultiIntervalGrid: ");
-    for (size_t i = 0; i < cont_logs_to_be_blocked.size(); i++)
-      LogKit::LogFormatted(LogKit::Low, cont_logs_to_be_blocked[i]);
-    LogKit::LogFormatted(LogKit::Low,"\n");
-    if(interval_simboxes.size() == 1)
-      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the inversion simbox: ");
-    else
-      LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the MultiIntervalGrid: ");
-    for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
-      LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
-    LogKit::LogFormatted(LogKit::Low,"\n");
+    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
+      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
+    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
+    if (disc_logs_to_be_blocked.size() > 0){
+      if(interval_simboxes.size() == 1)
+        LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the inversion simbox: ");
+      else
+        LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the MultiIntervalGrid: ");
+      for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
+        LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
+      LogKit::LogFormatted(LogKit::Low,"\n");
+    }
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
@@ -176,10 +179,10 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
                                      const StormContGrid & stormgrid)
-: first_M_(IMISSING),
-  last_M_(IMISSING),
-  first_S_(IMISSING),
+: first_S_(IMISSING),
   last_S_ (IMISSING),
+  first_M_(IMISSING),
+  last_M_(IMISSING),
   first_B_ (IMISSING),
   last_B_ (IMISSING)
 {
@@ -2285,9 +2288,9 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
       cpp_r[j][i] = 0;
     }
     float * refl_coefficients = new float(3);
-    refl_coefficients[0] = refl_matrix(j,0);
-    refl_coefficients[1] = refl_matrix(j,1);
-    refl_coefficients[2] = refl_matrix(j,2);
+    refl_coefficients[0] = static_cast<float>(refl_matrix(j,0));
+    refl_coefficients[1] = static_cast<float>(refl_matrix(j,1));
+    refl_coefficients[2] = static_cast<float>(refl_matrix(j,2));
     FillInCpp(refl_coefficients,start,length,cpp_r[j],nzp);
     Utils::fft(cpp_r[j],cpp_c[j],nzp);
     EstimateCor(cpp_c[j],cpp_c[j],cor_cpp_c[j],cnzp);
@@ -3513,7 +3516,7 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
 {
   std::vector<double> blocked_log(n_blocks_);
 
-  assert(static_cast<int>(n_blocks_) == n_data);
+  assert(n_blocks_ == static_cast<unsigned int>(n_data));
   for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 
@@ -3572,9 +3575,9 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
       synt_seis_r[j] = 0;
     }
     float * refl_coef = new float(3);
-    refl_coef[0] = reflection_matrix(i,0);
-    refl_coef[1] = reflection_matrix(i,1);
-    refl_coef[2] = reflection_matrix(i,2);
+    refl_coef[0] = static_cast<float>(reflection_matrix(i,0));
+    refl_coef[1] = static_cast<float>(reflection_matrix(i,1));
+    refl_coef[2] = static_cast<float>(reflection_matrix(i,2));
     FillInCpp(refl_coef, start, length, cpp_r, nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
 
