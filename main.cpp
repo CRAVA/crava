@@ -318,7 +318,7 @@ int main(int argc, char** argv)
                                              i_interval);
             break;
           }
-          case TimeLine::TRAVEL_TIME :
+          case TimeLine::TRAVEL_TIME : {
             LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                     modelGeneral,
@@ -326,8 +326,9 @@ int main(int argc, char** argv)
                                                     eventIndex,
                                                     seismicParametersIntervals[i_interval]);
             break;
-          case TimeLine::GRAVITY :
-            LogKit::LogFormatted(LogKit::Low,"\Gravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+          }
+          case TimeLine::GRAVITY : {
+            LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseGravimetricInversion(modelSettings,
                                                      modelGeneral,
                                                      modelGravityStatic,
@@ -336,6 +337,7 @@ int main(int argc, char** argv)
                                                      eventIndex,
                                                      seismicParametersIntervals[i_interval]);
             break;
+          }
           default :
             failed = true;
             break;
@@ -353,8 +355,8 @@ int main(int argc, char** argv)
     //Combine interval grids to one grid per parameter
     LogKit::WriteHeader("Combine Results and Write to Files");
     crava_result->CombineResults(modelSettings,
-                                common_data,
-                                seismicParametersIntervals);
+                                 common_data,
+                                 seismicParametersIntervals);
 
     //Write results
     crava_result->WriteResults(modelSettings,

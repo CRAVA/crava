@@ -38,141 +38,141 @@ n_intervals_(0)
 CravaResult::~CravaResult()
 {
   //
-  for (size_t i = 0; i < corr_T_.size(); i++){
-    if (corr_T_[i] != NULL){
+  for (size_t i = 0; i < corr_T_.size(); i++) {
+    if (corr_T_[i] != NULL) {
       delete [] corr_T_[i];
     }
   }
-  for (size_t i = 0; i < corr_T_filtered_.size(); i++){
+  for (size_t i = 0; i < corr_T_filtered_.size(); i++) {
     if (corr_T_filtered_[i] != NULL)
       delete [] corr_T_filtered_[i];
   }
 
-  if (cov_vp_ != NULL){
+  if (cov_vp_ != NULL) {
     delete cov_vp_;
     cov_vp_ = NULL;
   }
-  if (cov_vs_ != NULL){
+  if (cov_vs_ != NULL) {
     delete cov_vs_;
     cov_vs_ = NULL;
   }
-  if (cov_rho_ != NULL){
+  if (cov_rho_ != NULL) {
     delete cov_rho_;
     cov_rho_ = NULL;
   }
-  if (post_vp_ != NULL){
+  if (post_vp_ != NULL) {
     delete post_vp_;
     post_vp_ = NULL;
   }
-  if (post_vs_ != NULL){
+  if (post_vs_ != NULL) {
     delete post_vs_;
     post_vs_ = NULL;
   }
-  if (post_rho_ != NULL){
+  if (post_rho_ != NULL) {
     delete post_rho_;
     post_rho_ = NULL;
   }
 
-  if (cr_cov_vp_vs_ != NULL){
+  if (cr_cov_vp_vs_ != NULL) {
     delete cr_cov_vp_vs_;
     cr_cov_vp_vs_ = NULL;
   }
-  if (cr_cov_vp_rho_ != NULL){
+  if (cr_cov_vp_rho_ != NULL) {
     delete cr_cov_vp_rho_;
     cr_cov_vp_rho_ = NULL;
   }
-  if (cr_cov_vs_rho_ != NULL){
+  if (cr_cov_vs_rho_ != NULL) {
     delete cr_cov_vs_rho_;
     cr_cov_vs_rho_ = NULL;
   }
 
-  if (post_vp_kriged_ != NULL){
+  if (post_vp_kriged_ != NULL) {
     delete post_vp_kriged_;
     post_vp_kriged_ = NULL;
   }
-  if (post_vs_kriged_ != NULL){
+  if (post_vs_kriged_ != NULL) {
     delete post_vs_kriged_;
     post_vs_kriged_ = NULL;
   }
-  if (post_rho_kriged_ != NULL){
+  if (post_rho_kriged_ != NULL) {
     delete post_rho_kriged_;
     post_rho_kriged_ = NULL;
   }
 
-  for (size_t i = 0; i < synt_seismic_data_.size(); i++){
+  for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
     delete synt_seismic_data_[i];
   }
-  for (size_t i = 0; i < synt_residuals_.size(); i++){
+  for (size_t i = 0; i < synt_residuals_.size(); i++) {
     delete synt_residuals_[i];
   }
 
-  if (background_vp_ != NULL){
+  if (background_vp_ != NULL) {
     delete background_vp_;
     background_vp_ = NULL;
   }
-  if (background_vs_ != NULL){
+  if (background_vs_ != NULL) {
     delete background_vs_;
     background_vs_ = NULL;
   }
-  if (background_rho_ != NULL){
+  if (background_rho_ != NULL) {
     delete background_rho_;
     background_rho_ = NULL;
   }
 
-  if (block_grid_ != NULL){
+  if (block_grid_ != NULL) {
     delete block_grid_;
     block_grid_ = NULL;
   }
 
   /*
-  for (size_t i = 0; i < background_vp_intervals_.size(); i++){
+  for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
     if (background_vp_intervals_[i] != NULL)
       delete background_vp_intervals_[i];
   }
-  for (size_t i = 0; i < background_vs_intervals_.size(); i++){
+  for (size_t i = 0; i < background_vs_intervals_.size(); i++) {
     if (background_vs_intervals_[i] != NULL)
       delete background_vs_intervals_[i];
   }
-  for (size_t i = 0; i < background_rho_intervals_.size(); i++){
+  for (size_t i = 0; i < background_rho_intervals_.size(); i++) {
     if (background_rho_intervals_[i] != NULL)
       delete background_rho_intervals_[i];
   }
   */
 
 
-  for (size_t i = 0; i < simulations_seed0_.size(); i++){
+  for (size_t i = 0; i < simulations_seed0_.size(); i++) {
     delete simulations_seed0_[i];
   }
-  for (size_t i = 0; i < simulations_seed1_.size(); i++){
+  for (size_t i = 0; i < simulations_seed1_.size(); i++) {
     delete simulations_seed1_[i];
   }
-  for (size_t i = 0; i < simulations_seed2_.size(); i++){
+  for (size_t i = 0; i < simulations_seed2_.size(); i++) {
     delete simulations_seed2_[i];
   }
 
-  for (size_t i = 0; i < facies_prob_.size(); i++){
+  for (size_t i = 0; i < facies_prob_.size(); i++) {
     delete facies_prob_[i];
   }
 
 
-  if (facies_prob_undef_!= NULL){
+  if (facies_prob_undef_!= NULL) {
     delete facies_prob_undef_;
     facies_prob_undef_ = NULL;
   }
-  for (size_t i = 0; i < facies_prob_geo_.size(); i++){
+  for (size_t i = 0; i < facies_prob_geo_.size(); i++) {
     delete facies_prob_geo_[i];
   }
-  for (size_t i = 0; i < lh_cubes_.size(); i++){
+  for (size_t i = 0; i < lh_cubes_.size(); i++) {
     delete lh_cubes_[i];
   }
-  if (quality_grid_!= NULL){
+  if (quality_grid_!= NULL) {
     delete quality_grid_;
     quality_grid_ = NULL;
   }
 
   /*
-  for (size_t i = 0; i < wavelets_.size(); i++){
-    if (wavelets_[i] != NULL){
+  for (size_t i = 0; i < wavelets_.size(); i++) {
+    if (wavelets_[i] != NULL) {
       delete wavelets_[i];
       wavelets_[i] = NULL;
     }
@@ -192,7 +192,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //H-TODO: CombineResult is not done
   //  There is no smoothing between intervals
-
 
   MultiIntervalGrid * multi_interval_grid = common_data->GetMultipleIntervalGrid();
   int n_intervals = multi_interval_grid->GetNIntervals();
@@ -231,7 +230,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_min);
       CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_min);
 
-      for (int i = 0; i < n_intervals; i++){
+      for (int i = 0; i < n_intervals; i++) {
         delete post_vp_intervals[i];
         post_vp_intervals[i] = NULL;
         delete post_vs_intervals[i];
@@ -739,7 +738,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
 
-     WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     WriteWells(common_data->GetWells(), model_settings);
 
@@ -758,8 +757,10 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     if (model_settings->getWritePrediction()) {
 
       //From computePostMeanResidAndFFTCov()
-      ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
-                                       output_grids_elastic, -1, false);
+      if (!model_settings->getForwardModeling()) {
+        ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
+                                         output_grids_elastic, -1, false);
+      }
 
       if (model_settings->getKrigingParameter() > 0) {
 
@@ -812,8 +813,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       WriteWells(common_data->GetWells(), model_settings);
     }
 
-
-    if (model_settings->getWritePrediction() || model_settings->getKrigingParameter() > 0) {
+    if (model_settings->getKrigingParameter() > 0 && model_settings->getWritePrediction()) {
       KrigingData3D kd(common_data->GetBlockedLogs(), 1); // 1 = full resolution logs
       std::string base_name = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
       std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), base_name);
@@ -1338,11 +1338,11 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
 }
 
 StormContGrid *
-CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
-                                     StormContGrid * vs,
-                                     StormContGrid * rho,
+CravaResult::ComputeSeismicImpedance(StormContGrid       * vp,
+                                     StormContGrid       * vs,
+                                     StormContGrid       * rho,
                                      const NRLib::Matrix & reflection_matrix,
-                                     int             angle) const
+                                     int                   angle) const
 {
   int nx = vp->GetNI();
   int ny = vp->GetNJ();
@@ -1354,9 +1354,9 @@ CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
         float imp = 0;
-        imp += vp->GetValue(i, j, k)*reflection_matrix(angle,0);
-        imp += vs->GetValue(i, j, k)*reflection_matrix(angle,1);
-        imp += rho->GetValue(i, j, k)*reflection_matrix(angle,2);
+        imp += static_cast<float>(vp->GetValue(i, j, k)*reflection_matrix(angle,0));
+        imp += static_cast<float>(vs->GetValue(i, j, k)*reflection_matrix(angle,1));
+        imp += static_cast<float>(rho->GetValue(i, j, k)*reflection_matrix(angle,2));
 
         impedance->SetValue(i, j, k, imp);
       }

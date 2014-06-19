@@ -146,7 +146,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   long long int grid_size_base = 4*dummy_grid->getrsize();
   delete dummy_grid;
   int n_grid_parameters   = 3;                                      // Vp + Vs + Rho, padded
-  int n_grid_background   = 3;                                    // Vp + Vs + Rho, padded (copied because of 
+  int n_grid_background   = 3;                                    // Vp + Vs + Rho, padded (copied because of
   int n_grid_covariances  = 6;                                      // Covariances, padded
   int n_grid_seismic_data = model_settings->getNumberOfAngles(0);     // One for each angle stack, padded
 
