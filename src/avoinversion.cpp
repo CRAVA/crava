@@ -678,9 +678,6 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
         std::vector<float> A(3);
-        A[0] = A_(l,0);
-        A[1] = A_(l,1);
-        A[2] = A_(l,2);
         A[0] = static_cast<float>(A_(l,0));
         A[1] = static_cast<float>(A_(l,1));
         A[2] = static_cast<float>(A_(l,2));
