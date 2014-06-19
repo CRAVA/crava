@@ -49,6 +49,7 @@ public:
     /// \param val Initial cell value.
   void Resize(size_t ni, size_t nj, size_t nk, const A& val = A());
   void GetAvgMinMax(A& avg, A& min, A& max);
+  void GetAvgMinMaxWithMissing(A& avg, A& min, A& max, A missing);
   void LogTransform(A missing);
 
   inline reference operator()(size_t i, size_t j, size_t k);
@@ -140,6 +141,34 @@ void Grid<A>::GetAvgMinMax(A& avg, A& min, A& max)
     }
   }
   avg = sum /= GetN();
+}
+
+template<class A>
+void Grid<A>::GetAvgMinMaxWithMissing(A& avg, A& min, A& max, A missing)
+{
+  A sum   = 0.0;
+  A value = 0.0;
+  max = -std::numeric_limits<A>::infinity();
+  min = +std::numeric_limits<A>::infinity();
+
+  unsigned int n = 0;
+  for(unsigned int i = 0; i < ni_; i++) {
+    for(unsigned int j = 0; j < nj_; j++) {
+      for(unsigned int k = 0; k < nk_; k++) {
+        value = data_[GetIndex(i, j, k)];
+        if(value != missing) {
+          sum += value;
+          n++;
+          if(value > max)
+            max = value;
+
+          if(value < min)
+            min = value;
+        }
+      }
+    }
+  }
+  avg = sum/static_cast<A>(n);
 }
 
 template<class A>
