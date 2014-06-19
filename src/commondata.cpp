@@ -7391,9 +7391,11 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
     const float               offset = model_settings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string err_text_tmp         = "";
 
-    //ReadGrifFromFile is based on vector of simboxes and grids
+    //ReadGridFromFile is based on vector of simboxes and grids
     std::vector<NRLib::Grid<float> *> grids(1);
+    velocity = new NRLib::Grid<float>();
     grids[0] = velocity;
+
     std::vector<Simbox *> simboxes;
     simboxes.push_back(simbox);
 
