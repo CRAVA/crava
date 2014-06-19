@@ -79,7 +79,7 @@ public:
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
 
   bool                                                                 GetRefMatFromFileGlobalVpVs()                          { return refmat_from_file_global_vpvs_                  ;}
-  NRLib::Matrix                                                      & GetReflectionMatrixTimeLapse(int time_lapse)           { return (reflection_matrix_.find(time_lapse)->second) ;}
+  NRLib::Matrix                                                      & GetReflectionMatrixTimeLapse(int time_lapse)           { return reflection_matrix_[time_lapse]                 ;}
 
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
@@ -107,14 +107,13 @@ public:
   //const std::vector<NRLib::Grid<double> > & GetCorrParametersInterval(int i_interval);
   //const NRLib::Matrix                     & GetPriorVar0(int i_interval);
 
-  void               SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix,
-                                                  double                vsvp,
+  NRLib::Matrix     & SetupDefaultReflectionMatrix(double                vsvp,
                                                   const ModelSettings * model_settings,
                                                   int                   number_of_angles,
                                                   int                   this_time_lapse) const;
 
   void               SetupCorrectReflectionMatrix(const ModelSettings * model_settings,
-                                                  std::map<int, NRLib::Matrix > & reflection_matrix); //Only for those instances where this is possible.
+                                                  std::vector<NRLib::Matrix > & reflection_matrix) const; //Only for those instances where this is possible.
 
   double             FindVsVpForZone(int                   i_interval,
                                      const ModelSettings * model_settings,
@@ -193,7 +192,7 @@ private:
                                            std::vector<NRLib::Well>                      & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                            std::map<int, std::vector<SeismicStorage> >   & seismic_data,
-                                           std::map<int, NRLib::Matrix>                  & reflection_matrix,
+                                           const std::vector<NRLib::Matrix>                  & reflection_matrix,
                                            std::string                                   & err_text);
 
   void               MoveWell(NRLib::Well  & well,
@@ -349,7 +348,7 @@ private:
 
   bool               SetupReflectionMatrix(ModelSettings                    * model_settings,
                                            InputFiles                       * input_files,
-                                           std::map<int, NRLib::Matrix>     & reflection_matrix,
+                                           std::vector<NRLib::Matrix>       & reflection_matrix,
                                            std::vector<int>                   n_angles,
                                            bool                               refmat_from_file_global_vpvs,
                                            std::string                      & err_text) const;
@@ -368,13 +367,14 @@ private:
   bool               SetupTemporaryWavelet(ModelSettings                               * model_settings,
                                            std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                            std::vector<Wavelet*>                       & temporary_wavelets,
-                                           const std::map<int, NRLib::Matrix>          & refl_mat,
+                                           const std::vector<NRLib::Matrix>            & refl_mat,
                                            std::string                                 & err_text);
 
   bool               WaveletHandling(ModelSettings                                     * model_settings,
                                      InputFiles                                        * input_files,
                                      const Simbox                                      & estimation_simbox,
                                      const Simbox                                      & full_inversion_simbox,
+                                     const std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                      std::map<int, std::vector<Wavelet *> >            & wavelets,
                                      std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
                                      std::map<int, std::vector<Grid2D *> >             & local_shift,
@@ -383,7 +383,11 @@ private:
                                      std::map<int, std::vector<float> >                & sn_ratio,
                                      bool                                              & use_local_noise,
                                      std::string                                       & err_text_common,
-                                     std::map<int, NRLib::Matrix>                      & refl_mat);
+                                     std::vector<std::vector<double> >                 & t_grad_x,
+                                     std::vector<std::vector<double> >                 & t_grad_y,
+                                     NRLib::Grid2D<float>                              & ref_time_grad_x,
+                                     NRLib::Grid2D<float>                              & ref_time_grad_y,
+                                     std::vector<NRLib::Matrix>                      & refl_mat) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
                                             std::map<int, std::vector<SeismicStorage> > & seismic_data,
@@ -451,7 +455,7 @@ private:
                                       float                                    & sn_ratio,
                                       bool                                       estimate_wavlet,
                                       bool                                       use_ricker_wavelet,
-                                      bool                                       use_local_noise);
+                                      bool                                       use_local_noise) const;
 
   int                Process3DWavelet(const ModelSettings                      * model_settings,
                                       const InputFiles                         * input_files,
@@ -471,12 +475,12 @@ private:
                                       const NRLib::Grid2D<float>               & ref_time_grad_y,
                                       const std::vector<std::vector<double> >  & t_grad_x,
                                       const std::vector<std::vector<double> >  & t_grad_y,
-                                      bool                                       estimate_wavelet);
+                                      bool                                       estimate_wavelet) const;
 
   void               FindWaveletEstimationInterval(InputFiles             * input_files,
                                                    std::vector<Surface *> & wavelet_estim_interval,
                                                    const Simbox           & estimation_simbox,
-                                                   std::string            & err_text);
+                                                   std::string            & err_text) const;
 
   void               ComputeStructureDepthGradient(double                 v0,
                                                    double                 radius,
@@ -484,21 +488,21 @@ private:
                                                    const Surface        * correlation_direction,
                                                    const Simbox         & estimation_simbox,
                                                    NRLib::Grid2D<float> & structure_depth_grad_x,
-                                                   NRLib::Grid2D<float> & structure_depth_grad_y);
+                                                   NRLib::Grid2D<float> & structure_depth_grad_y) const;
 
   void               ComputeReferenceTimeGradient(const Surface        * t0_surf,
                                                   const Simbox         & estimation_simbox,
                                                   NRLib::Grid2D<float> & ref_time_grad_x,
-                                                  NRLib::Grid2D<float> & ref_time_grad_y);
+                                                  NRLib::Grid2D<float> & ref_time_grad_y) const;
 
-  void               CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy);
+  void               CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds,  double& gx, double& gy) const;
 
 
   void               ResampleSurfaceToGrid2D(const Surface * surface,
                                              Grid2D        * outgrid,
-                                             const Simbox  & simbox);
+                                             const Simbox  & simbox) const;
 
-  int                GetWaveletFileFormat(const std::string & fileName, std::string & errText);
+  int                GetWaveletFileFormat(const std::string & fileName, std::string & errText) const;
 
   void               ReadAndWriteLocalGridsToFile(const std::string   & fileName,
                                                   const std::string   & type,
@@ -506,11 +510,11 @@ private:
                                                   const ModelSettings * modelSettings,
                                                   const Simbox        & simbox,
                                                   const Grid2D        * grid,
-                                                  const float           angle);
+                                                  const float           angle) const;
 
   void               ResampleGrid2DToSurface(const Simbox   * simbox,
                                              const Grid2D   * grid,
-                                             Surface       *& surface);
+                                             Surface       *& surface) const;
 
   bool SetupTrendCubes(ModelSettings                     * model_settings,
                        InputFiles                        * input_files,
@@ -889,7 +893,7 @@ private:
 
   bool                                                         forward_modeling_;
 
-  std::map<int, NRLib::Matrix>                                 reflection_matrix_;             // Map timelapse
+  std::vector<NRLib::Matrix>                                   reflection_matrix_;             // reflection matrix per timelapse
   std::vector<int>                                             n_angles_;                      // Number of angles
   bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 

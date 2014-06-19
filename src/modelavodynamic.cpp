@@ -233,7 +233,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     double vsvp = common_data->FindVsVpForZone(i_interval, model_settings, origin);
 
     LogKit::LogFormatted(LogKit::Low, "\nMaking reflection matrix "+ interval_text +"with Vp/Vs ratio from "+ origin+".\n");
-    common_data->SetupDefaultReflectionMatrix(reflection_matrix_, vsvp, model_settings, number_of_angles_, this_timelapse_);
+    reflection_matrix_ = common_data->SetupDefaultReflectionMatrix(vsvp, model_settings, number_of_angles_, this_timelapse_);
   }
 
   //Wavelet: estimated -> reestimate scale and noise (with updated vp/vs for this interval, waveletshape is from estimation in commondata.).
