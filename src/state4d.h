@@ -45,7 +45,7 @@ public:
   void   mergeCov(std::vector<FFTGrid * > & sigma);
   void   split(SeismicParametersHolder & current_state );
   void   evolve(int time_step, const TimeEvolution timeEvolution );
-  std::vector<FFTGrid*> doRockPhysicsInversion(TimeLine&  time_line, std::vector<DistributionsRock *> rock_distributions, const TimeEvolution timeEvolution);
+  std::vector<FFTGrid*> doRockPhysicsInversion(TimeLine & time_line, std::vector<DistributionsRock *> rock_distributions, const TimeEvolution timeEvolution);
 
 
   bool   isActive() const {return(mu_static_.size() > 0);}

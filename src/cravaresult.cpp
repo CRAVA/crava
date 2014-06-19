@@ -429,14 +429,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     std::string interval_name = multi_interval_grid->GetIntervalName(0);
 
-    post_vp_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostVp());
-    post_vs_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostVs());
-    post_rho_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostRho());
-
+    // Erik N: Should these two cases be treated differently? I leave 
+    // the conditional statement
     if (model_settings->getForwardModeling()) {
       post_vp_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetMeanVp());
       post_vs_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetMeanVs());
       post_rho_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetMeanRho());
+    } else{
+      post_vp_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostVp());
+      post_vs_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostVs());
+      post_rho_ = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostRho());
     }
 
     post_vp_kriged_  = CreateStormGrid(simbox, seismic_parameters_intervals[0].GetPostVpKriged());
@@ -1354,9 +1356,9 @@ CravaResult::ComputeSeismicImpedance(StormContGrid * vp,
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
         float imp = 0;
-        imp += vp->GetValue(i, j, k)*reflection_matrix(angle,0);
-        imp += vs->GetValue(i, j, k)*reflection_matrix(angle,1);
-        imp += rho->GetValue(i, j, k)*reflection_matrix(angle,2);
+        imp += vp->GetValue(i, j, k)*static_cast<float>(reflection_matrix(angle,0));
+        imp += vs->GetValue(i, j, k)*static_cast<float>(reflection_matrix(angle,1));
+        imp += rho->GetValue(i, j, k)*static_cast<float>(reflection_matrix(angle,2));
 
         impedance->SetValue(i, j, k, imp);
       }

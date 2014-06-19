@@ -148,8 +148,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
   if (block_wells_ && optimize_well_location_)
-    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, wavelets_, local_noise_scales_, local_shifts_,
-                                      local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, err_text, reflection_matrix_);
+    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, seismic_data_, wavelets_, local_noise_scales_, local_shifts_,
+    local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, err_text, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_, reflection_matrix_);
 
 
   // 13. Setup of prior correlation
@@ -2550,7 +2550,7 @@ CommonData::GetMinMaxFnr(int            & min,
 
 bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_settings,
                                        InputFiles                     * input_files,
-                                       std::map<int, NRLib::Matrix>   & reflection_matrix,
+                                       std::vector<NRLib::Matrix>     & reflection_matrix,
                                        std::vector<int>                 n_angles,
                                        bool                             refmat_from_file_global_vpvs,
                                        std::string                    & err_text_common) const
@@ -2558,6 +2558,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
 
 {
   LogKit::WriteHeader("Setting up reflection matrix");
+  reflection_matrix.empty();
 
   //If Vp/Vs is given per interval: A default reflection matrix is set up here, and then altered later per interval.
 
@@ -2584,6 +2585,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
         err_text += tmp_err_text;
       }
       else{
+        NRLib::Matrix * new_refl_mat = new NRLib::Matrix(n_angles_this_timelapse,3);
         LogKit::LogFormatted(LogKit::Low,"\nReflection parameters read from file.\n\n");
         for (int j = 0; j < n_angles_this_timelapse; j++){
           for (int k = 0; k < 3; k++){
@@ -2593,6 +2595,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
         for (int j = 0; j < n_angles_this_timelapse; j++)
           delete [] reflection_matrix_array[j];
         delete reflection_matrix_array;
+        reflection_matrix.push_back(*new_refl_mat);
       }
 
       refmat_from_file_global_vpvs = true;
@@ -2601,20 +2604,19 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
    // else if (vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
       double vsvp = 1.0/model_settings->getVpVsRatio("");
-      SetupDefaultReflectionMatrix(reflection_matrix[i], vsvp, model_settings, n_angles_this_timelapse, i);
+      reflection_matrix.push_back(SetupDefaultReflectionMatrix(vsvp, model_settings, n_angles_this_timelapse, i));
       refmat_from_file_global_vpvs = true;
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
       double vsvp = 0.5;
-      SetupDefaultReflectionMatrix(reflection_matrix[i], vsvp, model_settings, n_angles_this_timelapse, i);
+      reflection_matrix.push_back(SetupDefaultReflectionMatrix(vsvp, model_settings, n_angles_this_timelapse, i));
       refmat_from_file_global_vpvs = false;
     }
 
     //reflection_matrix_[i] = reflection_matrix;
 
   } //nTimeLapses
-
 
 
   if (err_text != "") {
@@ -2665,7 +2667,7 @@ int CommonData::CheckWellAgainstSimbox(const Simbox      * simbox,
 bool CommonData::SetupTemporaryWavelet(ModelSettings                               * model_settings,
                                        std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                        std::vector<Wavelet*>                       & temporary_wavelets,
-                                       const std::map<int, NRLib::Matrix>                & reflection_matrix,
+                                       const std::vector<NRLib::Matrix>            & reflection_matrix,
                                        std::string                                 & err_text_common) {
   //Set up temporary wavelet
   LogKit::WriteHeader("Setting up temporary wavelet");
@@ -2745,9 +2747,9 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings                            
 
     int tmp_error = 0;
     float * refl_coef = new float[3];
-    refl_coef[0] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,0));
-    refl_coef[1] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,1));
-    refl_coef[2] = static_cast<float>(reflection_matrix.find(this_timelapse)->second(j,2));
+    refl_coef[0] = static_cast<float>(reflection_matrix[this_timelapse](j,0));
+    refl_coef[1] = static_cast<float>(reflection_matrix[this_timelapse](j,1));
+    refl_coef[2] = static_cast<float>(reflection_matrix[this_timelapse](j,2));
     Wavelet * wavelet_tmp = new Wavelet1D(model_settings, refl_coef , angles[j], mean_frequency, tmp_error);
     delete [] refl_coef;
     if (tmp_error == 0)
@@ -2821,16 +2823,16 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
 }
 
 
-void
-CommonData::SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix,
-                                         double                vsvp,
+NRLib::Matrix &
+CommonData::SetupDefaultReflectionMatrix(double                vsvp,
                                          const ModelSettings * model_settings,
                                          int                   n_angles,
                                          int                   this_timelapse) const
 {
   int i;
-  reflection_matrix.resize(n_angles, 3);
-  NRLib::InitializeMatrix(reflection_matrix, 0.0);
+  //if (reflection_matrix.numCols() != 3 || reflection_matrix.numRows() != n_angles)
+  NRLib::Matrix * reflection_matrix = new NRLib::Matrix (n_angles, 3);
+  //NRLib::InitializeMatrix(reflection_matrix, 0.0);
 
   double vsvp2 = vsvp*vsvp;
   std::vector<int> seismic_type = model_settings->getSeismicType(this_timelapse);
@@ -2845,18 +2847,18 @@ CommonData::SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix
     if (seismic_type[i] == ModelSettings::STANDARDSEIS) { //PP
       double tan2t=tan(angle)*tan(angle);
 
-      reflection_matrix(i,0) = float( (1.0 +tan2t )/2.0 );
-      reflection_matrix(i,1) = float( -4*vsvp2 * sint2 );
-      reflection_matrix(i,2) = float( (1.0-4.0*vsvp2*sint2)/2.0 );
+      (*reflection_matrix)(i,0) = float( (1.0 +tan2t )/2.0 );
+      (*reflection_matrix)(i,1) = float( -4*vsvp2 * sint2 );
+      (*reflection_matrix)(i,2) = float( (1.0-4.0*vsvp2*sint2)/2.0 );
     }
     else if (seismic_type[i] == ModelSettings::PSSEIS) {
       double cost = cos(angle);
       double cosp = sqrt(1-vsvp2*sint2);
       double fac = 0.5*sint/cosp;
 
-      reflection_matrix(i,0) = 0;
-      reflection_matrix(i,1) = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
-      reflection_matrix(i,2) = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
+      (*reflection_matrix)(i,0) = 0;
+      (*reflection_matrix)(i,1) = float(4.0*fac*(vsvp2*sint2-vsvp*cost*cosp));
+      (*reflection_matrix)(i,2) = float(fac*(-1.0+2*vsvp2*sint2+2*vsvp*cost*cosp));
     }
   }
   //reflection_matrix = A;
@@ -2875,17 +2877,20 @@ CommonData::SetupDefaultReflectionMatrix(NRLib::Matrix       & reflection_matrix
     text += " you can remove this task using the <maximum-vp-vs-ratio> keyword.\n";
     TaskList::addTask(text);
   }
+  return *reflection_matrix;
 }
 
 void
-CommonData::SetupCorrectReflectionMatrix(const ModelSettings           * model_settings,
-                                         std::map<int, NRLib::Matrix > & reflection_matrix)
+CommonData::SetupCorrectReflectionMatrix(const ModelSettings            * model_settings,
+                                         std::vector<NRLib::Matrix >    & reflection_matrix) const
 {
   std::string origin;
   double vsvp = FindVsVpForZone(0, model_settings, origin);
   LogKit::LogFormatted(LogKit::Low, "\nMaking reflection matrix with Vp/Vs ratio from "+ origin+".\n");
-  for(int i=0;i<model_settings->getNumberOfTimeLapses();i++)
-    SetupDefaultReflectionMatrix(reflection_matrix[0], vsvp, model_settings, model_settings->getNumberOfAngles(i), i);
+  reflection_matrix.clear();
+  for(int i=0;i<model_settings->getNumberOfTimeLapses();i++){
+    reflection_matrix.push_back(SetupDefaultReflectionMatrix(vsvp, model_settings, model_settings->getNumberOfAngles(i), i));
+  }
 }
 
 
@@ -2993,6 +2998,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                  InputFiles                                        * input_files,
                                  const Simbox                                      & estimation_simbox,
                                  const Simbox                                      & full_inversion_simbox,
+                                 const std::map<int, std::vector<SeismicStorage> > & seismic_data,
                                  std::map<int, std::vector<Wavelet *> >            & wavelets,
                                  std::map<int, std::vector<Grid2D *> >             & local_noise_scales,
                                  std::map<int, std::vector<Grid2D *> >             & local_shifts,
@@ -3001,7 +3007,11 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                  std::map<int, std::vector<float> >                & sn_ratios,
                                  bool                                              & use_local_noise,
                                  std::string                                       & err_text_common,
-                                 std::map<int, NRLib::Matrix >                     & reflection_matrix) {
+                                 std::vector<std::vector<double> >                 & t_grad_x,
+                                 std::vector<std::vector<double> >                 & t_grad_y,
+                                 NRLib::Grid2D<float>                              & ref_time_grad_x,
+                                 NRLib::Grid2D<float>                              & ref_time_grad_y,
+                                 std::vector<NRLib::Matrix >                       & reflection_matrix) const {
 
   int n_timeLapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
@@ -3019,6 +3029,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   if(refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
     SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
+
 
   for (int i = 0; i < n_timeLapses; i++) {
 
@@ -3044,15 +3055,13 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
     std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    wavelets[i].resize(n_angles);
+    wavelets[i].resize(n_angles, NULL);
     //std::vector<Wavelet *> wavelet(n_angles);
 
-    std::vector<Grid2D *> local_noise_scale; ///< Scale factors for local noise
-    std::vector<Grid2D *> local_shift;
-    std::vector<Grid2D *> local_scale;
-    local_noise_scale.resize(n_angles);
-    local_shift.resize(n_angles);
-    local_scale.resize(n_angles);
+    std::vector<Grid2D *> local_noise_scale(n_angles, NULL); ///< Scale factors for local noise
+    std::vector<Grid2D *> local_shift(n_angles, NULL);
+    std::vector<Grid2D *> local_scale(n_angles, NULL);
+
     bool has_3D_wavelet = false;
 
     for (int j = 0; j < n_angles; j++) {
@@ -3070,8 +3079,8 @@ bool CommonData::WaveletHandling(ModelSettings                                  
     unsigned int n_wells = model_settings->getNumberOfWells();
 
     //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
-    t_grad_x_.resize(n_wells);
-    t_grad_y_.resize(n_wells);
+    t_grad_x.resize(n_wells);
+    t_grad_y.resize(n_wells);
     NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
     NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
@@ -3117,8 +3126,8 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                      structure_depth_grad_y);
           ComputeReferenceTimeGradient(&t0_surf,
                                        estimation_simbox,
-                                       ref_time_grad_x_,
-                                       ref_time_grad_y_);
+                                       ref_time_grad_x,
+                                       ref_time_grad_y);
         }
         else {
           err_text += "Problems reading reference time surface in (x,y).\n";
@@ -3132,11 +3141,11 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       for (size_t w = 0; w < n_wells; w++) {
         if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
           double v0=model_settings->getAverageVelocity();
-          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x_[w], t_grad_y_[w]);
+          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
         }
         else {
           mapped_blocked_logs_.find(wells_[w].GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data_[i], &estimation_simbox, n_angles, t_grad_x_[w], t_grad_y_[w], SigmaXY);
+          mapped_blocked_logs_.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data.find(i)->second, &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
         }
       }
     }
@@ -3162,9 +3171,9 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
 
-      SeismicStorage * seismic_data = NULL;
+      const SeismicStorage * seismic_data = NULL;
       if (forward_modeling_ == false)
-        seismic_data = &seismic_data_[i][j];
+        seismic_data = &seismic_data_.find(i)->second[j];
 
       if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
         error += Process1DWavelet(model_settings,
@@ -3174,7 +3183,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                   wavelet_estim_interval,
                                   estimation_simbox,
                                   full_inversion_simbox,
-                                  reflection_matrix_[i],
+                                  reflection_matrix[i],
                                   synt_seis_angles[j],
                                   err_text,
                                   wavelets[i][j],
@@ -3196,7 +3205,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                   wavelet_estim_interval,
                                   estimation_simbox,
                                   full_inversion_simbox,
-                                  reflection_matrix.find(i)->second,
+                                  reflection_matrix[i],
                                   err_text,
                                   wavelets[i][j],
                                   i, //Timelapse
@@ -3245,7 +3254,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   //Add in synthetic sesmic (moved from wavelet1D.cpp)
   std::vector<Wavelet *> first_wavelets = wavelets[0];
-  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix.find(0)->second, &estimation_simbox);
+  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs_, reflection_matrix[0], &estimation_simbox);
 
   return true;
 }
@@ -3254,7 +3263,7 @@ void
 CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
                                           std::vector<Surface *> & wavelet_estim_interval,
                                           const Simbox           & estimation_simbox,
-                                          std::string            & err_text)
+                                          std::string            & err_text) const
 
 {
   const double x0 = estimation_simbox.getx0();
@@ -3320,8 +3329,9 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              float                                    & sn_ratio,
                              bool                                       estimate_wavelet,
                              bool                                       use_ricker_wavelet,
-                             bool                                       use_local_noise)
+                             bool                                       use_local_noise) const
 {
+  assert (wavelet == NULL && local_noise_scale == NULL && local_shift == NULL && local_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
   reflection_coefs[1] = static_cast<float>(reflection_matrix(j_angle, 1));
@@ -3570,7 +3580,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                              const NRLib::Grid2D<float>               & ref_time_grad_y,
                              const std::vector<std::vector<double> >  & t_grad_x,
                              const std::vector<std::vector<double> >  & t_grad_y,
-                             bool                                       estimate_wavelet)
+                             bool                                       estimate_wavelet) const
 {
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
@@ -3689,7 +3699,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
                                           const Surface        * correlation_direction,
                                           const Simbox         & estimation_simbox,
                                           NRLib::Grid2D<float> & structure_depth_grad_x,
-                                          NRLib::Grid2D<float> & structure_depth_grad_y)
+                                          NRLib::Grid2D<float> & structure_depth_grad_y) const
  {
    double ds = 12.5;
 
@@ -3733,7 +3743,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
 
 
 void
-CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds, double& gx, double& gy)
+CommonData::CalculateSmoothGrad(const Surface * surf, double x, double y, double radius, double ds, double& gx, double& gy) const
 {
   /// Return smoothed Gradient. Computes the gradient as a regression
   /// among points within a given distance from the central point.
@@ -3813,7 +3823,7 @@ void
 CommonData::ComputeReferenceTimeGradient(const Surface        * t0_surf,
                                          const Simbox         & estimation_simbox,
                                          NRLib::Grid2D<float> & ref_time_grad_x,
-                                         NRLib::Grid2D<float> & ref_time_grad_y)
+                                         NRLib::Grid2D<float> & ref_time_grad_y) const
  {
    double radius = 50.0;
    double ds     = 12.5;
@@ -3836,7 +3846,7 @@ CommonData::ComputeReferenceTimeGradient(const Surface        * t0_surf,
 void
 CommonData::ResampleSurfaceToGrid2D(const Surface * surface,
                                     Grid2D        * outgrid,
-                                    const Simbox  & simbox)
+                                    const Simbox  & simbox) const
 {
   for (int i=0; i < simbox.getnx(); i++) {
     for (int j=0; j < simbox.getny(); j++) {
@@ -3848,7 +3858,7 @@ CommonData::ResampleSurfaceToGrid2D(const Surface * surface,
 }
 
 int
-CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & err_text)
+CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & err_text) const
 {
   int fileformat = -1;
   int line       = 0;
@@ -3923,7 +3933,7 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
                                          const ModelSettings * model_settings,
                                          const Simbox        & simbox,
                                          const Grid2D        * grid,
-                                         const float           angle)
+                                         const float           angle) const
 {
   bool   estimationMode   = model_settings->getEstimationMode();
   int    outputFormat     = model_settings->getOutputGridFormat();
@@ -3966,7 +3976,7 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
 void
 CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
                                     const Grid2D   * grid,
-                                    Surface       *& surface)
+                                    Surface       *& surface) const
 {
   double xmin,xmax,ymin,ymax;
   simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
@@ -4494,7 +4504,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         std::vector<NRLib::Well>                      & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::map<int, std::vector<SeismicStorage> >   & seismic_data,
-                                        std::map<int, NRLib::Matrix>                  & reflection_matrix,
+                                        const std::vector<NRLib::Matrix>              & reflection_matrix,
                                         std::string                                   & err_text_common) {
 
   std::string err_text = "";
@@ -6103,8 +6113,8 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
   //
   // Create FFT plans
   //
-  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  //rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  //rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
   //
   // Do resampling
@@ -6115,6 +6125,9 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
 
   for (int j = 0; j < nyp; j++) {
     for (int i = 0; i < rnxp; i++) {
+
+      rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+      rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
       int refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
       int refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
@@ -6213,7 +6226,8 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
           n_samples = data_trace.size();
           nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
           mt = 4*nt;
-
+          fftwnd_destroy_plan(fftplan1);
+          fftwnd_destroy_plan(fftplan2);
           fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
           fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
@@ -6331,13 +6345,13 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
         printf("^");
         fflush(stdout);
       }
-
+      fftwnd_destroy_plan(fftplan1);
+      fftwnd_destroy_plan(fftplan2);
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
 
-  fftwnd_destroy_plan(fftplan1);
-  fftwnd_destroy_plan(fftplan2);
+
 
   Timings::setTimeResamplingSeismic(wall,cpu);
 }

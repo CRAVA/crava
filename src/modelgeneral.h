@@ -55,7 +55,7 @@ public:
   CravaTrend                                   GetTrendCubes()            const { return trend_cubes_             ;}
   bool                                         GetVelocityFromInversion() const { return velocity_from_inversion_ ;}
   State4D                                      GetState4D()               const { return state4d_                 ;}
-  TimeLine                                   * GetTimeLine()              const { return time_line_               ;}
+  TimeLine                                   * GetTimeLine()                    { return time_line_               ;}
   std::map<std::string, BlockedLogsCommon *> & GetBlockedWells()                { return blocked_logs_            ;}
   const std::vector<float>                   & GetPriorFacies()       /*const*/ { return prior_facies_            ;}
   const std::vector<FFTGrid *>               & GetPriorFaciesCubes()  /*const*/ { return prior_facies_prob_cubes_ ;}
