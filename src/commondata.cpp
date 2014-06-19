@@ -5673,133 +5673,46 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
   LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
 
   if (fileType == IO::CRAVA) {
-
-    int nx_pad, ny_pad, nz_pad;
-    if(nopadding)
-      {
-      nx_pad = inversion_simbox->getnx();
-      ny_pad = inversion_simbox->getny();
-      nz_pad = 0;
-    }
-    else
-    {
-      nx_pad = inversion_simbox->GetNXpad();
-      ny_pad = inversion_simbox->GetNYpad();
-      nz_pad = 0;
-    }
-
-    GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
-
-    FFTGrid *  crava_grid = CreateFFTGrid(inversion_simbox->getnx(),
-                                          inversion_simbox->getny(),
-                                          inversion_simbox->getnz(),
-                                          nx_pad,
-                                          ny_pad,
-                                          nz_pad,
-                                          model_settings->getFileGrid());
-
-    crava_grid->createRealGrid(false);
-    crava_grid->setAccessMode(FFTGrid::RANDOMACCESS);
-    crava_grid->readCravaFile(file_name, err_text, nopadding);
-
-    //Intervals not used, no need to resample
-    // Alternative: create a readCravaFile for NRLibGrid. Padding?
     if (model_settings->GetMultipleIntervalSetting() == false) {
-      int nx_pad = interval_simboxes[0]->getnx();
-      int ny_pad = interval_simboxes[0]->getny();
-      int nz_pad = interval_simboxes[0]->getnz();
-      /*
-      if (nopadding){
-        nx_pad = interval_simboxes[0]->getnx();
-        ny_pad = interval_simboxes[0]->getny();
-        nz_pad = interval_simboxes[0]->getnz();
-      }
-      else{
-        nx_pad = interval_simboxes[0]->GetNXpad();
-        ny_pad = interval_simboxes[0]->GetNYpad();
-        nz_pad = interval_simboxes[0]->GetNZpad();
-      }
-      */
+      int nx_pad = inversion_simbox->GetNXpad();
+      int ny_pad = inversion_simbox->GetNYpad();
+      int nz_pad = inversion_simbox->GetNZpad();
 
-      interval_grids[0] = new NRLib::Grid<float>(nx_pad, ny_pad, nz_pad);
+      GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
+
+      FFTGrid *  crava_grid = CreateFFTGrid(inversion_simbox->getnx(),
+                                            inversion_simbox->getny(),
+                                            inversion_simbox->getnz(),
+                                            nx_pad,
+                                            ny_pad,
+                                            nz_pad,
+                                            model_settings->getFileGrid());
+
+      crava_grid->createRealGrid(false);
+      crava_grid->setAccessMode(FFTGrid::RANDOMACCESS);
+      crava_grid->readCravaFile(file_name, err_text, nopadding);
+
+      //Intervals not used, no need to resample
+      // Alternative: create a readCravaFile for NRLibGrid. Padding?
+      int nx = interval_simboxes[0]->getnx();
+      int ny = interval_simboxes[0]->getny();
+      int nz = interval_simboxes[0]->getnz();
+
+      interval_grids[0] = new NRLib::Grid<float>(nx, ny, nz);
 
       //Copy elements from fft_grid
-      for (int i = 0; i < nx_pad; i++) {
-        for (int j = 0; j < ny_pad; j++) {
-          for (int k = 0; k < nz_pad; k++) {
+      for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+          for (int k = 0; k < nz; k++) {
             interval_grids[0]->SetValue(i, j, k, crava_grid->getRealValue(i, j, k));
           }
         }
       }
+      delete crava_grid;
     }
     else {
-      LogKit::LogFormatted(LogKit::Low,"\n CRAVA input not allowed in multiple intervals");
-      assert(0); //Do not currently allow use of crava format files with multizone.
-      for (size_t i_interval = 0; i_interval < interval_simboxes.size(); i_interval++) {
-        int nx_pad, ny_pad, nz_pad;
-        if (nopadding){
-          nx_pad = interval_simboxes[0]->getnx();
-          ny_pad = interval_simboxes[0]->getny();
-          nz_pad = interval_simboxes[0]->getnz();
-        }
-        else{
-          nx_pad = interval_simboxes[0]->GetNXpad();
-          ny_pad = interval_simboxes[0]->GetNYpad();
-          nz_pad = interval_simboxes[0]->GetNZpad();
-        }
-
-        interval_grids[i_interval]->Resize(nx_pad, ny_pad, nz_pad);
-
-        FFTGrid       * fft_grid_tmp = NULL;
-        SegY          * segy_tmp     = NULL;
-        StormContGrid * storm_tmp    = NULL;
-
-        int missing_traces_simbox  = 0;
-        int missing_traces_padding = 0;
-        int dead_traces_simbox     = 0;
-
-        int file_type = IO::findGridType(file_name);
-        bool is_segy  = false;
-        bool is_storm = false;
-        bool scale    = false;
-
-        if (file_type == IO::SEGY)
-          is_segy = true;
-        else if (file_type == IO::STORM)
-          is_storm = true;
-        else if (file_type == IO::SGRI) {
-          is_storm = true;
-          scale    = true;
-        }
-
-        FillInData(interval_grids[i_interval],
-                   fft_grid_tmp,
-                   interval_simboxes[i_interval],
-                   storm_tmp,
-                   segy_tmp,
-                   crava_grid,
-                   model_settings->getSmoothLength(),
-                   missing_traces_simbox,
-                   missing_traces_padding,
-                   dead_traces_simbox,
-                   grid_type,
-                   scale,
-                   is_segy,
-                   is_storm);
-
-        if (fft_grid_tmp != NULL)
-          delete fft_grid_tmp;
-        if (storm_tmp != NULL)
-          delete storm_tmp;
-        if (segy_tmp != NULL)
-          delete segy_tmp;
-
-      }
+      err_text +="Error: Background file "+file_name+"is a CRAVA file. CRAVA input not allowed when using multiple zones.\n";
     }
-
-    if (crava_grid != NULL)
-      delete crava_grid;
-
   }
   else if (fileType == IO::SEGY)
     ReadSegyFile(file_name,
@@ -7212,7 +7125,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               float avg = 0.0f;
               float min = 0.0f;
               float max = 0.0f;
-              background_parameters[i][j]->GetAvgMinMax(avg, min, max);
+              background_parameters[i][j]->GetAvgMinMaxWithMissing(avg, min, max, RMISSING);
               SetUndefinedCellsToGlobalAverageGrid(background_parameters[i][j], avg);
               background_parameters[i][j]->LogTransform(RMISSING);
 
