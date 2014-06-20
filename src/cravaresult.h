@@ -100,11 +100,11 @@ public:
                           StormContGrid * vs,
                           StormContGrid * rho);
 
-  StormContGrid * ComputeSeismicImpedance(StormContGrid * vp,
-                                          StormContGrid * vs,
-                                          StormContGrid * rho,
+  StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
+                                          StormContGrid       * vs,
+                                          StormContGrid       * rho,
                                           const NRLib::Matrix & reflection_matrix,
-                                          int             angle) const;
+                                          int                   angle) const;
 
   //GET FUNCTIONS
 

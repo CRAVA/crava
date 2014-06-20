@@ -98,7 +98,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
       }
-      else { //H added if only one surface-file is used, similar to setup of estimation_simbox.
+      else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces[0] = *top_surface;
@@ -109,7 +109,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
-        //if (model_settings->getTimeNz("") == IMISSING) { //Taken from simbox->SetDepth without nz
         if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
           nz = static_cast<int>(0.5+lz/dz);
           model_settings->setTimeNz("", nz);
@@ -350,7 +349,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
 
     // Calculate Z padding ----------------------------------------------------------------
-    
+
     if (!failed){
       // calculated dz should be the same as the desired grid resolution?
       interval_simboxes[i]->calculateDz(model_settings->getLzLimit(),err_text);
@@ -595,7 +594,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   std::string name = surface.GetName();
   surface = Surface(x0, y0, lx, ly, eroded_surface);
   surface.SetName(name);
-  
+
 }
 
 // --------------------------------------------------------------------------------

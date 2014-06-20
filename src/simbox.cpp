@@ -86,7 +86,7 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
 //
 // Constructor that copies all simbox data from simbox
 //
-Simbox::Simbox(const Simbox * simbox):  
+Simbox::Simbox(const Simbox * simbox):
 Volume(*simbox),
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
@@ -117,7 +117,7 @@ base_eroded_surface_(NULL)
   botName_        = simbox->botName_;
   grad_x_         = 0;
   grad_y_         = 0;
-  
+
   std::string   s = "";
   this->setArea(simbox, static_cast<int>(simbox->getnx()),
                   static_cast<int>(simbox->getny()), s);
@@ -127,7 +127,7 @@ base_eroded_surface_(NULL)
 }
 
 //
-// 
+//
 //
 
 Simbox::Simbox(const Simbox   & simbox):

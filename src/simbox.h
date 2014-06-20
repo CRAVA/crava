@@ -73,7 +73,7 @@ public:
 
   ~Simbox();
 
-  
+
   // EN Copy constructor
   Simbox& operator=(const Simbox         & rhs);
 
