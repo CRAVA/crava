@@ -149,8 +149,9 @@ ModelGeneral::~ModelGeneral(void)
       delete variable[i];
   }
 
-  if (time_line_ != NULL)
-    delete time_line_;
+  // Erik N: Time line is deleted in common data
+  //if (time_line_ != NULL)
+  //  delete time_line_;
 
   delete random_gen_;
 }

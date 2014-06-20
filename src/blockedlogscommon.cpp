@@ -2193,7 +2193,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                                 const Simbox                  * estimation_simbox,
-                                                NRLib::Matrix                 & refl_matrix,
+                                                const NRLib::Matrix                 & refl_matrix,
                                                 int                             n_angles,
                                                 const std::vector<float>      & angle_weight,
                                                 float                           max_shift,

@@ -678,9 +678,9 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
         std::vector<float> A(3);
-        A[0] = A_(l,0);
-        A[1] = A_(l,1);
-        A[2] = A_(l,2);
+        A[0] = static_cast<float>(A_(l,0));
+        A[1] = static_cast<float>(A_(l,1));
+        A[2] = static_cast<float>(A_(l,2));
         if(dim==1)
           computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l], seismicParameters, &A[0],static_cast<float>(errThetaCov_[l][l]));
         else
@@ -1077,7 +1077,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
         A[i] = new float(3);
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
-          A[i][j] = A_(i,j);
+          A[i][j] = static_cast<float>(A_(i,j));
         }
       }
 
@@ -1102,7 +1102,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
         A[i] = new float[3];
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
-          A[i][j] = A_(i,j);
+          A[i][j] = static_cast<float>(A_(i,j));
         }
       }
 
@@ -1722,9 +1722,9 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
       for (int i = 0; i < rnxp; i++)
       {
         float imp = 0;
-        imp += vp->getNextReal()*A_(angle,0);
-        imp += vs->getNextReal()*A_(angle,1);
-        imp += rho->getNextReal()*A_(angle,2);
+        imp += vp->getNextReal()*static_cast<float>(A_(angle,0));
+        imp += vs->getNextReal()*static_cast<float>(A_(angle,1));
+        imp += rho->getNextReal()*static_cast<float>(A_(angle,2));
 
         impedance->setNextReal(imp);
       }

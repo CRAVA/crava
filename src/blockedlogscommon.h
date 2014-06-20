@@ -163,7 +163,7 @@ public:
 
   void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                 const Simbox                  * time_simbox,
-                                NRLib::Matrix                     & refl_coef,
+                                const NRLib::Matrix                     & refl_coef,
                                 int                             n_angles,
                                 const std::vector<float>      & angle_weight,
                                 float                           max_shift,
