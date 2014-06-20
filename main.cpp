@@ -327,7 +327,7 @@ int main(int argc, char** argv)
                                                     seismicParametersIntervals[i_interval]);
             break;
           case TimeLine::GRAVITY :
-            LogKit::LogFormatted(LogKit::Low,"\Gravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+            LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseGravimetricInversion(modelSettings,
                                                      modelGeneral,
                                                      modelGravityStatic,
