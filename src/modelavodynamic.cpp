@@ -112,77 +112,76 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
-    int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    bool is_segy           = false;
-    bool is_storm          = false;
-    SegY          * segy   = NULL;
-    StormContGrid * storm  = NULL;
-    FFTGrid * fft_grid_old = NULL;
+    int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+    bool is_segy          = false;
+    bool is_storm         = false;
+    bool scale            = false;
+    SegY          * segy  = NULL;
+    StormContGrid * storm = NULL;
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
       is_segy = true;
     }
-    else if (seismic_type == 3) { //FFTGrid
-      fft_grid_old = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
-    }
-    else { //STORM / SGRI
+    else if (seismic_type == 1 || seismic_type == 2) { //STORM / SGRI
       storm    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
       is_storm = true;
+
+      if (seismic_type == 2) //SGRI
+        scale = true;
     }
 
-    bool scale = false;
-    if (seismic_type == 2) //SGRI
-      scale = true;
-
-    int missing_traces_simbox  = 0;
-    int missing_traces_padding = 0;
-    int dead_traces_simbox     = 0;
-
-    NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
-
-    seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-    common_data->FillInData(grid_tmp,
-                            seis_cubes_[i],
-                            simbox,
-                            storm,
-                            segy,
-                            fft_grid_old,
-                            model_settings->getSmoothLength(),
-                            missing_traces_simbox,
-                            missing_traces_padding,
-                            dead_traces_simbox,
-                            FFTGrid::DATA,
-                            scale,
-                            is_segy,
-                            is_storm);
-
-    seis_cubes_[i]->endAccess();
-
-    //if (segy != NULL)
-    //  delete segy;
-    if (storm != NULL)
-      delete storm;
-    if(grid_tmp != NULL)
-      delete grid_tmp;
-
-    //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
-    //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
-    //if (missingTracesSimbox > 0) {}
-    if (missing_traces_padding > 0) {
-      int nx     = simbox->getnx();
-      int ny     = simbox->getny();
-      int nxpad  = nxp - nx;
-      int nypad  = nyp - ny;
-      int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
-        LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
-                           +NRLib::ToString(missing_traces_padding)+" of "+NRLib::ToString(nxypad)+"\n");
+    if (seismic_type == 3) { //FFTGrid: Seismic data on CRAVA format, which isn't allowed with multiple intervals, so no need for resampling
+      seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
+      seis_cubes_[i]->setType(FFTGrid::DATA);
     }
-    if (dead_traces_simbox > 0) {
-      LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                         +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
-    }
+    else { //Resample storm or segy to seis_cube
 
+      int missing_traces_simbox  = 0;
+      int missing_traces_padding = 0;
+      int dead_traces_simbox     = 0;
+
+      NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
+
+      seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
+      common_data->FillInData(grid_tmp,
+                              seis_cubes_[i],
+                              simbox,
+                              storm,
+                              segy,
+                              model_settings->getSmoothLength(),
+                              missing_traces_simbox,
+                              missing_traces_padding,
+                              dead_traces_simbox,
+                              FFTGrid::DATA,
+                              scale,
+                              is_segy,
+                              is_storm);
+
+      seis_cubes_[i]->endAccess();
+
+      if (storm != NULL)
+        delete storm;
+      if(grid_tmp != NULL)
+        delete grid_tmp;
+
+      //Report on missing_traces_simbox, missing_traces_padding, dead_traces_simbox here?
+      //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
+      //if (missingTracesSimbox > 0) {}
+      if (missing_traces_padding > 0) {
+        int nx     = simbox->getnx();
+        int ny     = simbox->getny();
+        int nxpad  = nxp - nx;
+        int nypad  = nyp - ny;
+        int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
+          LogKit::LogMessage(LogKit::High, "Number of grid columns in padding that are outside area defined by seismic data : "
+                             +NRLib::ToString(missing_traces_padding)+" of "+NRLib::ToString(nxypad)+"\n");
+      }
+      if (dead_traces_simbox > 0) {
+        LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
+      }
+    }
   }
 
   //Logging from processSeismic

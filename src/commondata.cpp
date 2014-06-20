@@ -2627,7 +2627,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
   return true;
 }
 
-int CommonData::CheckWellAgainstSimbox(const Simbox      * simbox, 
+int CommonData::CheckWellAgainstSimbox(const Simbox      * simbox,
                                        const NRLib::Well & well) const
 {
   bool inside_area = false;
@@ -5974,13 +5974,11 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
       StormContGrid * stormgrid_tmp = NULL;
       FFTGrid * fft_grid_tmp        = NULL;
-      FFTGrid * fft_grid_tmp_2      = NULL;
       FillInData(interval_grids[i_interval],
                  fft_grid_tmp,
                  interval_simboxes[i_interval],
                  stormgrid_tmp,
                  segy,
-                 fft_grid_tmp_2,
                  model_settings->getSmoothLength(),
                  missing_traces_simbox,
                  missing_traces_padding,
@@ -5990,8 +5988,6 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
        delete stormgrid_tmp;
       if (fft_grid_tmp != NULL)
         delete fft_grid_tmp;
-      if (fft_grid_tmp_2 != NULL)
-        delete fft_grid_tmp_2;
 
       if (missing_traces_simbox > 0) {
         if (missing_traces_simbox == interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny()) {
@@ -6031,21 +6027,23 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     delete segy;
 }
 
-void CommonData::FillInData(NRLib::Grid<float> * grid_new,
-                            FFTGrid            * fft_grid_new,
-                            const Simbox       * simbox,
-                            StormContGrid      * storm_grid,
-                            const SegY         * segy,
-                            FFTGrid            * fft_grid_old,
-                            float                smooth_length,
-                            int                & missing_traces_simbox,
-                            int                & missing_traces_padding,
-                            int                & dead_traces_simbox,
-                            int                  grid_type,
-                            bool                 scale,
-                            bool                 is_segy,
-                            bool                 is_storm)
+void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
+                            FFTGrid             * fft_grid_new,
+                            const Simbox        * simbox,
+                            const StormContGrid * storm_grid,
+                            const SegY          * segy,
+                            float                 smooth_length,
+                            int                 & missing_traces_simbox,
+                            int                 & missing_traces_padding,
+                            int                 & dead_traces_simbox,
+                            int                   grid_type,
+                            bool                  scale,
+                            bool                  is_segy,
+                            bool                  is_storm)
 {
+  //Resample to either a NRLib::Grid or a FFTGrid.
+  //The one resampled to needs to be defined outside this function, and the other needs to be sent in as an empty grid.
+
   assert(grid_type != CTMISSING);
 
   double wall=0.0, cpu=0.0;
@@ -6060,19 +6058,13 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
     scalehor  = 0.001f; //1000.0;
   }
 
+  int nx, ny, nz, nxp, nyp, nzp, rnxp;
+
+  //We do not fill in values in padding if we resample to a NRLib::Grid
+
   bool is_nrlib_grid = true;
-  if (grid_new->GetN() == 0) //Send in an empty NRLib::Grid if we want fft-grid
+  if (grid_new->GetN() == 0) { //Send in an empty NRLib::Grid if we want fft-grid
     is_nrlib_grid = false;
-
-  int nx   = grid_new->GetNI();
-  int ny   = grid_new->GetNJ();
-  int nz   = grid_new->GetNK();
-  int nxp  = grid_new->GetNI();
-  int nyp  = grid_new->GetNJ();
-  int nzp  = grid_new->GetNK();
-  int rnxp = grid_new->GetNI(); //2*(nxp/2+1);
-
-  if (is_nrlib_grid == false) {
     nx   = fft_grid_new->getNx();
     ny   = fft_grid_new->getNy();
     nz   = fft_grid_new->getNz();
@@ -6080,6 +6072,15 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
     nyp  = fft_grid_new->getNyp();
     nzp  = fft_grid_new->getNzp();
     rnxp = fft_grid_new->getRNxp();
+  }
+  else {
+    nx   = grid_new->GetNI();
+    ny   = grid_new->GetNJ();
+    nz   = grid_new->GetNK();
+    nxp  = grid_new->GetNI();
+    nyp  = grid_new->GetNJ();
+    nzp  = grid_new->GetNK();
+    rnxp = grid_new->GetNI(); //2*(nxp/2+1);
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling data into %dx%dx%d grid:", nxp, nyp, nzp);
@@ -6104,8 +6105,6 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
   else if (is_storm) {
     n_samples = storm_grid->GetNK();
   }
-  else
-    n_samples = fft_grid_old->getNzp();
 
   int nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
   int mt = 4*nt;           // Use four times the sampling density for the fine-meshed data
@@ -6152,10 +6151,6 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
         if (storm_grid->IsInside(xf, yf) == 1)
           is_inside = true;
       }
-      else {
-        if (fft_grid_old->getRealValue(refi, refj, 0) != RMISSING) //H Returns missing if outside grid or rvalue_[index] is missing. How to check against xf and yf?
-          is_inside = true;
-      }
 
       if (is_inside == true) {
         bool  missing = true;
@@ -6192,19 +6187,6 @@ void CommonData::FillInData(NRLib::Grid<float> * grid_new,
           dz_data = (z_max- z_min) / storm_grid->GetNK();
           dz_min = dz_data/4.0f;
           z0_data = z_min;
-        }
-        else {
-          data_trace = fft_grid_old->getRealTrace2(refi, refj);
-
-          double z_min = 0.0;
-          double z_max = 0.0;
-
-          simbox->getZCoord(0, xf, yf, z_min); //H FFTGrid doesnt have top/bot surfaces. Correct to use simbox?
-          simbox->getZCoord(fft_grid_old->getNz(), xf, yf, z_max);
-
-          dz_data = static_cast<float>((z_max- z_min) / fft_grid_old->getNz());
-          dz_min = dz_data/4.0f;
-          z0_data = static_cast<float>(z_min);
         }
 
         size_t n_trace = data_trace.size();
@@ -6732,13 +6714,11 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
         SegY * segy_tmp          = NULL;
         FFTGrid * fft_grid_tmp   = NULL;
-        FFTGrid * fft_grid_tmp_2 = NULL;
         FillInData(interval_grids[i_interval],
                    fft_grid_tmp,
                    interval_simboxes[i_interval],
                    stormgrid,
                    segy_tmp,
-                   fft_grid_tmp_2,
                    model_settings->getSmoothLength(),
                    missing_traces_simbox,
                    missing_traces_padding,
@@ -6752,9 +6732,6 @@ CommonData::ReadStormFile(const std::string                 & file_name,
          delete segy_tmp;
         if (fft_grid_tmp != NULL)
           delete fft_grid_tmp;
-        if (fft_grid_tmp_2 != NULL)
-          delete fft_grid_tmp_2;
-
       }
       catch (NRLib::Exception & e) {
         err_text += std::string(e.what());
@@ -7341,9 +7318,11 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
     const float               offset = model_settings->getSegyOffset(0); //Segy offset needs to be the same for all time lapse data
     std::string err_text_tmp         = "";
 
-    //ReadGrifFromFile is based on vector of simboxes and grids
+    //ReadGridFromFile is based on vector of simboxes and grids
     std::vector<NRLib::Grid<float> *> grids(1);
+    velocity = new NRLib::Grid<float>();
     grids[0] = velocity;
+
     std::vector<Simbox *> simboxes;
     simboxes.push_back(simbox);
 

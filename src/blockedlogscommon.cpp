@@ -137,7 +137,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
       // If there is only one interval
       //
       n_layers_ = interval_simboxes[0]->getnz();
-      BlockWell(interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_, 
+      BlockWell(interval_simboxes[0], well_data, continuous_raw_logs_, discrete_raw_logs_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
                                         cont_logs_highcut_background_, discrete_logs_blocked_, n_data_, n_blocks_, facies_log_defined_, facies_map_, interpolate, failed, err_text);
     }
     else {

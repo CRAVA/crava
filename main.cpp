@@ -238,11 +238,11 @@ int main(int argc, char** argv)
       //Background grids are overwritten in avoinversion
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
       crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
+      crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
+      crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
       //Release background grids from common_data.
       common_data->ReleaseBackgroundGrids(i_interval, 0);
-      crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
       common_data->ReleaseBackgroundGrids(i_interval, 1);
-      crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
       common_data->ReleaseBackgroundGrids(i_interval, 2);
 
 
@@ -318,7 +318,7 @@ int main(int argc, char** argv)
                                              i_interval);
             break;
           }
-          case TimeLine::TRAVEL_TIME :
+          case TimeLine::TRAVEL_TIME : {
             LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                     modelGeneral,
@@ -326,8 +326,9 @@ int main(int argc, char** argv)
                                                     eventIndex,
                                                     seismicParametersIntervals[i_interval]);
             break;
-          case TimeLine::GRAVITY :
-            LogKit::LogFormatted(LogKit::Low,"\Gravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+          }
+          case TimeLine::GRAVITY : {
+            LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
             failed = doTimeLapseGravimetricInversion(modelSettings,
                                                      modelGeneral,
                                                      modelGravityStatic,
@@ -336,6 +337,7 @@ int main(int argc, char** argv)
                                                      eventIndex,
                                                      seismicParametersIntervals[i_interval]);
             break;
+          }
           default :
             failed = true;
             break;
@@ -353,12 +355,12 @@ int main(int argc, char** argv)
     //Combine interval grids to one grid per parameter
     LogKit::WriteHeader("Combine Results and Write to Files");
     crava_result->CombineResults(modelSettings,
-                                common_data,
-                                seismicParametersIntervals);
+                                 common_data,
+                                 seismicParametersIntervals);
 
     //Write results
     crava_result->WriteResults(modelSettings,
-                              common_data);
+                               common_data);
 
     if(modelSettings->getDo4DInversion())
     {
