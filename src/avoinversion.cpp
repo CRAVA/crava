@@ -677,16 +677,15 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
 
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
-        float * A = new float(3);
+        std::vector<float> A(3);
         A[0] = A_(l,0);
         A[1] = A_(l,1);
         A[2] = A_(l,2);
         if(dim==1)
-          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l], seismicParameters, A,static_cast<float>(errThetaCov_[l][l]));
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l], seismicParameters, &A[0],static_cast<float>(errThetaCov_[l][l]));
         else
-          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(), seismicParameters, A,static_cast<float>(errThetaCov_[l][l]));
+          computeAdjustmentFactor( adjustmentFactor, localWavelet , sfLoc, seisWavelet_[l]->getGlobalWavelet(), seismicParameters, &A[0],static_cast<float>(errThetaCov_[l][l]));
 
-        delete [] A;
         delete localWavelet;
 
         for (k=0;k < (nzp_/2 +1);k++) // all complex values
@@ -1098,9 +1097,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       kD3 = diff3Operator->getCAmp(k);                   // defines  kD3
 
       // Copy matrix A to float **
-      float ** A = new float * [3];
+      float ** A = new float * [ntheta_];
       for (int i = 0; i < ntheta_; i++)
-        A[i] = new float(3);
+        A[i] = new float[3];
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
           A[i][j] = A_(i,j);

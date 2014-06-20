@@ -133,6 +133,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     if (seismic_type == 3) { //FFTGrid: Seismic data on CRAVA format, which isn't allowed with multiple intervals, so no need for resampling
       seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
+      seis_cubes_[i]->setType(FFTGrid::DATA);
     }
     else { //Resample storm or segy to seis_cube
 
