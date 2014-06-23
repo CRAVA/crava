@@ -336,6 +336,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
       NRLib::RegularSurface<double> top(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_top);
       NRLib::RegularSurface<double> base(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_base);
       seismic_simbox.setDepth(top, base, segy_->GetNz(), true);
+      seismic_simbox.SetErodedSurfaces(top, base, true);
       seismic_simbox.calculateDz(lz_limit, err_txt);
       seismic_simbox.SetNoPadding();
       break;
@@ -363,7 +364,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
 
         NRLib::RegularSurface<double> top_surface(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, top_z);
         NRLib::RegularSurface<double> base_surface(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, bot_z);
-
+        seismic_simbox.SetErodedSurfaces(top_surface, base_surface, true);
         seismic_simbox.setDepth(top_surface, base_surface, storm_grid_->GetNK(), true);
       }
       else {
@@ -373,6 +374,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
         top_grid->Multiply(scale_value);
         bot_grid->Multiply(scale_value);
 
+        seismic_simbox.SetErodedSurfaces(*top_grid, *bot_grid, true);
         seismic_simbox.setDepth(*top_grid, *bot_grid, storm_grid_->GetNK(), true);
 
         delete top_grid;
