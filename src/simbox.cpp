@@ -180,6 +180,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   top_eroded_surface_(NULL),
   base_eroded_surface_(NULL)
 {
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox for interval \'%s\'.\n",interval_name);
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());
@@ -252,7 +253,7 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed)
 : Volume(*simbox)
 {
-
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface for interval \'%s\'.\n",interval_name);
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());
@@ -363,12 +364,16 @@ Simbox::Simbox(const Simbox         * simbox,
   setDepth(new_top_surface, new_base_surface, nz);
 
   if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
-    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
-    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
-    writeTopBotGrids(top_surf_name,
-                     base_surf_name,
-                     IO::PathToInversionResults(),
-                     output_format);
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Eroded_Extended";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Eroded_Extended";
+    if (interval_name == ""){
+      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Eroded_Extended";
+      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Eroded_Extended";
+    }
+    WriteTopBaseSurfaceGrids(top_surf_name,
+                             base_surf_name,
+                             IO::PathToInversionResults(),
+                             output_format);
   }
 
   delete mean_surface;
@@ -391,6 +396,7 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed)
 : Volume(*simbox)
 {
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces for interval \'%s\'.\n",interval_name);
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());
@@ -542,14 +548,18 @@ Simbox::Simbox(const Simbox         * simbox,
 
     setDepth(new_top, new_base, nz);
 
-    if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
-      std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
-      std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
-      writeTopBotGrids(top_surf_name,
-                       base_surf_name,
-                       IO::PathToInversionResults(),
-                       output_format);
+  if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Extended";
+    if (interval_name == ""){
+      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
+      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
     }
+    WriteTopBaseSurfaceGrids(top_surf_name,
+                             base_surf_name,
+                             IO::PathToInversionResults(),
+                             output_format);
+  }
 
     delete  ref_plane;
     //delete  ref_plane_base;
@@ -994,42 +1004,28 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   header += NRLib::ToString(nx) +" "+ NRLib::ToString(ny) +" "+ NRLib::ToString(nz)+"\n";
   std::string strHeader(header);
 
-  /*
-    ==>
-    ==> Code to be used with g++ 4.3.2
-    ==>
-  std::string strHeader;
-  if(ascii == false)
-    strHeader += "storm_petro_binary\n";
-  else
-    strHeader += "storm_petro_ascii\n";
-
-  strHeader += "0 " + NRLib::ToString(cubetype,6) + " " + NRLib::ToString(RMISSING,6) + "\n";
-  strHeader += "FFTGrid\n";
-
-  if(flat == false)
-    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
-      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + topName_ + " "
-      + botName_ + " 0.0 0.0\n";
-  else
-    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
-      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + "0.0 "
-      + NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
-
-  strHeader += NRLib::ToString(GetLZ(),6) + " " + NRLib::ToString(GetAngle()*180/PI,6) + "\n\n";
-  strHeader += NRLib::ToString(nx) + " " + NRLib::ToString(ny) + " " + NRLib::ToString(nz) + "\n";
-  */
-
   return(strHeader);
 }
 
-void
-Simbox::writeTopBotGrids(const std::string & topname,
-                         const std::string & botname,
-                         const std::string & subdir,
-                         int                 outputFormat)
+void Simbox::WriteTopBaseErodedSurfaceGrids(const std::string   & top_name,
+                                            const std::string   & base_name,
+                                            const std::string   & subdir,
+                                            int                   output_format) const
+{
+  assert(typeid(this->GetTopErodedSurface()) == typeid(Surface));
+  assert(typeid(this->GetBaseErodedSurface()) == typeid(Surface));
+
+  const Surface & t_surf = dynamic_cast<const Surface &>(this->GetTopErodedSurface());
+  const Surface & b_surf = dynamic_cast<const Surface &>(this->GetBaseErodedSurface());
+
+  IO::writeSurfaceToFile(t_surf, top_name, subdir, output_format);
+  IO::writeSurfaceToFile(b_surf, base_name, subdir, output_format);
+}
+
+void Simbox::WriteTopBaseSurfaceGrids(const std::string   & top_name,
+                                      const std::string   & base_name,
+                                      const std::string   & subdir,
+                                      int                   output_format) const
 {
   assert(typeid(GetTopSurface()) == typeid(Surface));
   assert(typeid(GetBotSurface()) == typeid(Surface));
@@ -1037,8 +1033,22 @@ Simbox::writeTopBotGrids(const std::string & topname,
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
 
-  IO::writeSurfaceToFile(wtsurf, topname, subdir, outputFormat);
-  IO::writeSurfaceToFile(wbsurf, botname, subdir, outputFormat);
+  IO::writeSurfaceToFile(wtsurf, top_name, subdir, output_format);
+  IO::writeSurfaceToFile(wbsurf, base_name, subdir, output_format);
+}
+
+void  Simbox::SetTopBaseErodedNames(const std::string       & top_name, 
+                                    const std::string       & bot_name, 
+                                    int                       output_format)
+{
+  std::string suffix;
+  if ((output_format & IO::ASCII) > 0 && (output_format & IO::STORM) == 0)
+    suffix = IO::SuffixAsciiIrapClassic();
+  else
+    suffix = IO::SuffixStormBinary();
+
+  topName_ = IO::getFilePrefix()+top_name+suffix;
+  botName_ = IO::getFilePrefix()+bot_name+suffix;
 }
 
 void
@@ -1262,6 +1272,7 @@ void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
 {
   SetSurfaces(top_surf, bot_surf, skipCheck);
   nz_ = nz;
+  nz_pad_ = nz;
   dz_ = -1;
   if(status_ == EMPTY)
     status_ = NOAREA;
@@ -1277,7 +1288,7 @@ Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
   SetSurfaces(z0, z1, skipCheck);
   nz_ = nz;
   nz_pad_ = nz;
-  //dz_ = -1;
+  dz_ = -1;
   if(status_ == EMPTY)
     status_ = NOAREA;
   else if(status_ == NODEPTH)

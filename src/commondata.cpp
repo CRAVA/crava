@@ -7613,10 +7613,10 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
     std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
-    bg_simbox->writeTopBotGrids(top_surf_name,
-                                base_surf_name,
-                                IO::PathToBackground(),
-                                output_format);
+    bg_simbox->WriteTopBaseSurfaceGrids(top_surf_name,
+                                        base_surf_name,
+                                        IO::PathToBackground(),
+                                        output_format);
   }
 }
 

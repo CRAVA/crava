@@ -315,7 +315,7 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
     int format = IO::STORM;
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDensity() + NRLib::ToString(gridNo);
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDensity() + NRLib::ToString(gridNo);
-    volume->writeTopBotGrids(topSurf, baseSurf, IO::PathToInversionResults(), format);
+    volume->WriteTopBaseSurfaceGrids(topSurf, baseSurf, IO::PathToInversionResults(), format);
     volume->setTopBotName(topSurf, baseSurf, format);
   }
 
