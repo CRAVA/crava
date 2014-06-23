@@ -383,12 +383,12 @@ private:
                                      std::map<int, std::vector<float> >                & global_noise_estimate,
                                      std::map<int, std::vector<float> >                & sn_ratio,
                                      bool                                              & use_local_noise,
-                                     std::string                                       & err_text_common,
                                      std::vector<std::vector<double> >                 & t_grad_x,
                                      std::vector<std::vector<double> >                 & t_grad_y,
                                      NRLib::Grid2D<float>                              & ref_time_grad_x,
                                      NRLib::Grid2D<float>                              & ref_time_grad_y,
-                                     std::vector<NRLib::Matrix>                      & refl_mat) const;
+                                     std::vector<NRLib::Matrix>                        & refl_mat,
+                                     std::string                                       & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
                                             std::map<int, std::vector<SeismicStorage> > & seismic_data,

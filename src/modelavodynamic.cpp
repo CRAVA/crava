@@ -207,8 +207,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                              segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
                              segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
 
-        if (segy != NULL)
-          delete segy;
+        //if (segy != NULL)
+        //  delete segy;
       }
     }
   }
@@ -279,7 +279,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
         std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs;
-        Simbox estimation_box = common_data->GetEstimationSimbox();
+        const Simbox & estimation_box = common_data->GetEstimationSimbox();
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = orig_blocked_logs.find(it->first);
           BlockedLogsCommon * blocked_log = new BlockedLogsCommon(*(iter->second));

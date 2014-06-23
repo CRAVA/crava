@@ -1275,9 +1275,9 @@ void
 Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
 {
   SetSurfaces(z0, z1, skipCheck);
-  nz_ = nz;
+  nz_     = nz;
   nz_pad_ = nz;
-  //dz_ = -1;
+  dz_     = -1;
   if(status_ == EMPTY)
     status_ = NOAREA;
   else if(status_ == NODEPTH)
