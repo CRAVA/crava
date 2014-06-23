@@ -155,6 +155,80 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     }
   }
 
+  // 3  WRITE SURFACES ----------------------------------------------------------------------
+  if (!failed){
+    for (size_t i = 0 ; i <interval_simboxes_.size(); i++){
+      bool   generate_seismic     = model_settings->getForwardModeling();
+      bool   estimation_mode      = model_settings->getEstimationMode();
+      bool   generate_background  = model_settings->getGenerateBackground();
+      //bool   parallel_surfaces    = model_settings->getParallelTimeSurfaces();
+      //int    nz                   = model_settings->getTimeNz(interval_names_[i]);
+      int    output_format        = model_settings->getOutputGridFormat();
+      int    output_domain        = model_settings->getOutputGridDomain();
+      int    output_grids_elastic = model_settings->getOutputGridsElastic();
+      int    output_grids_other   = model_settings->getOutputGridsOther();
+      int    output_grids_seismic = model_settings->getOutputGridsSeismic();
+
+      if((output_domain & IO::TIMEDOMAIN) > 0) {
+        std::string top_surf          = IO::PrefixSurface() + IO::PrefixTop() + interval_names_[i] + "_"  + IO::PrefixTime();
+        std::string base_surf         = IO::PrefixSurface() + IO::PrefixBase() + interval_names_[i] + "_" + IO::PrefixTime();
+        if (interval_simboxes_.size() == 1){
+          top_surf          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+          base_surf         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+        }
+        interval_simboxes_[i]->setTopBotName(top_surf,base_surf, output_format);
+        std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
+        std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
+        if (interval_simboxes_.size() == 1){
+          top_surf_eroded          = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
+          base_surf_eroded         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
+        }
+        interval_simboxes_[i]->SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
+        if (generate_seismic) {
+          interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                                  IO::PathToSeismicData(), output_format);
+          interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                                   IO::PathToSeismicData(), output_format);
+        }
+        else if (!estimation_mode){
+          if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
+            interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                      IO::PathToInversionResults(), output_format);
+            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                      IO::PathToInversionResults(), output_format);
+        }
+        if((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
+          if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
+              (output_grids_elastic & IO::BACKGROUND_TREND) > 0 ||
+              (estimation_mode && generate_background)) {
+            interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                      IO::PathToBackground(), output_format);
+            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                      IO::PathToBackground(), output_format);
+          }
+          if ((output_grids_other & IO::CORRELATION) > 0) {
+            interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                                    IO::PathToCorrelations(), output_format);
+            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                                    IO::PathToCorrelations(), output_format);
+          }
+          if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+            interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                                    IO::PathToSeismicData(), output_format);
+            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                                    IO::PathToSeismicData(), output_format);
+          }
+          if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+            interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                                    IO::PathToVelocity(), output_format);
+            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                                    IO::PathToVelocity(), output_format);
+          }
+        }
+      }
+    }
+  }
+
   // Add surface files.
   surface_files_.push_back(input_files->getTimeSurfTopFile());
 
@@ -200,61 +274,6 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const
   return simbox_num;
 }
 
-// ---------------------------------------------------------------------------------------------------------------
-/*
-void  MultiIntervalGrid::SetupIntervalSimbox(ModelSettings                               * model_settings,
-                                             const Simbox                                * estimation_simbox,
-                                             Simbox                                      & interval_simbox,
-                                             const std::vector<Surface>                  & eroded_surfaces,
-                                             const std::string                           & corr_dir_single_surf,
-                                             const std::string                           & corr_dir_top_surf,
-                                             const std::string                           & corr_dir_base_surf,
-                                             bool                                          corr_dir_top_conform,
-                                             bool                                          corr_dir_base_conform,
-                                             double                                      & desired_grid_resolution,
-                                             double                                      & relative_grid_resolution,
-                                             std::string                                 & err_text,
-                                             bool                                        & failed) const{
-
-
-  bool                   corr_dir                               = false;
-  Surface                top_surface                            = eroded_surfaces[0];
-  Surface                base_surface                           = eroded_surfaces[1];
-  int                    n_layers                               = model_settings->getTimeNz();
-
-  if (n_layers == RMISSING)
-    n_layers = static_cast<int>(0.5+model_settings->getTimeLz()/model_settings->getTimeDz());
-
-  // Case 1: Single correlation surface
-  if (corr_dir_single_surf != "") {
-    Surface * corr_surf = MakeSurfaceFromFileName(corr_dir_single_surf,  estimation_simbox);
-    interval_simbox = Simbox(estimation_simbox, "", n_layers, top_surface, base_surface, corr_surf, err_text, failed);
-    const SegyGeometry * area_params = model_settings->getAreaParameters();
-    failed = interval_simbox.setArea(area_params, err_text);
-
-    //interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
-    interval_simbox.SetErodedSurfaces(top_surface, base_surface);
-  }
-  else {
-    interval_simbox = Simbox(estimation_simbox, "", n_layers, top_surface, base_surface, err_text, failed);
-    const SegyGeometry * area_params = model_settings->getAreaParameters();
-    failed = interval_simbox.setArea(area_params, err_text);
-
-    //interval_simbox.SetTopBotErodedSurfaces(top_surface, base_surface);
-    interval_simbox.SetErodedSurfaces(top_surface, base_surface);
-  }
-
-  interval_simbox.SetNXpad(estimation_simbox->GetNXpad());
-  interval_simbox.SetNYpad(estimation_simbox->GetNYpad());
-  interval_simbox.SetXPadFactor(estimation_simbox->GetXPadFactor());
-  interval_simbox.SetYPadFactor(estimation_simbox->GetYPadFactor());
-
-
-  // Calculate Z padding ----------------------------------------------------------------
-  interval_simbox.calculateDz(model_settings->getLzLimit(),err_text);
-  EstimateZPaddingSize(&interval_simbox, model_settings);
-}
-*/
 
 // ---------------------------------------------------------------------------------------------------------------
 void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                             * model_settings,
@@ -416,18 +435,16 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       failed = true;
     }
   } // end for loop over intervals
-  dz_rel.resize(interval_names.size());
 
   // Pick the simbox with the finest vertical resolution and set dz_rel relative to this dz
+  dz_rel.resize(interval_names.size());
   dz_min = 10000;
   for (size_t m = 0; m < interval_simboxes.size(); m++){
     if (interval_simboxes[m]->getdz() < dz_min)
       dz_min = interval_simboxes[m]->getdz();
   }
-
   for(size_t m = 0; m < interval_simboxes.size(); m++){
     dz_rel[m] = interval_simboxes[m]->getdz()/dz_min;
-
   }
 
 }

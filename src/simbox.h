@@ -140,7 +140,9 @@ public:
   double         GetZPadFactor()                 const { return z_pad_fac_                    ;}
   double         GetGradX()                      const { return grad_x_                       ;}
   double         GetGradY()                      const { return grad_y_                       ;}
+  int            status()                        const { return(status_)                      ;}
 
+  bool           isAligned (const SegyGeometry  * geometry) const; //Checks if IL/XL form geometry maps nicely.
   int            isInside(double x, double y) const;
   int            insideRectangle(const SegyGeometry *  geometry) const;
   double         getTop(int i, int j) const;
@@ -155,6 +157,7 @@ public:
 
   // SET functions ------------------------------------------------------
 
+  void           SetTopBaseErodedNames(const std::string & topname, const std::string & botname, int outputFormat);
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
   void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf, bool  skip_check = true);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);
@@ -173,10 +176,19 @@ public:
   void           SetNoPadding();
   // other public functions
 
-  void           writeTopBotGrids(const std::string & topname, const std::string & botname, const std::string & subdir, int outputFormat);
-  int            calculateDz(double lzLimit, std::string & errText);
-  bool           isAligned(const SegyGeometry * geometry) const; //Checks if IL/XL form geometry maps nicely.
-  int            status() const {return(status_);}
+  void           WriteTopBaseErodedSurfaceGrids(const std::string   & top_name,
+                                                const std::string   & base_name,
+                                                const std::string   & subdir,
+                                                int                   output_format) const;
+
+  void           WriteTopBaseSurfaceGrids(const std::string         & topname,
+                                          const std::string         & botname,
+                                          const std::string         & subdir,
+                                          int                         outputFormat) const;
+
+  int            calculateDz(double                                   lzLimit,
+                             std::string                            & errText);
+
   void           externalFailure() {status_ = EXTERNALERROR;}
   void           getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ymax) const;
   enum           simboxstatus{BOXOK, INTERNALERROR, EXTERNALERROR, EMPTY, NOAREA, NODEPTH};
@@ -187,7 +199,6 @@ public:
   void           CopyAllPadding(const Simbox & original,
                                 double         lz_limit,
                                 std::string  & err_txt);
-
 
 private:
 
@@ -207,7 +218,9 @@ private:
   int            nx_, ny_, nz_;            // Number of cells in each direction.
   int            status_;                  // Since Simbox may be incomplete or with error
   double         cosrot_, sinrot_;         // Saving time in transformations.
-  std::string    topName_;
+  std::string    top_eroded_name_;         // File names for eroded surfaces
+  std::string    base_eroded_name_;       
+  std::string    topName_;                 // File name for original surfaces
   std::string    botName_;
   std::string    interval_name_;
 
