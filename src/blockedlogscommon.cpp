@@ -1485,7 +1485,7 @@ void BlockedLogsCommon::SetTimeGradientSettings(float distance, float sigma_m)
   sigma_m_ = sigma_m;
 }
 
-void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
+void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,
                                             const Simbox                * const estimation_simbox,
                                             int                                 n_angles,
                                             std::vector<double>               & x_gradient,
@@ -1557,6 +1557,7 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
 
   double dz, ztop, dzW, ztopW;
   for (l = 0; l < n_angles; l++){
+    seismic_data[l].SetRandomAccess();
     for (j = -yEx; j <= yEx; j++){
       for (i = -xEx; i <= xEx; i++){
 
@@ -1615,7 +1616,7 @@ void BlockedLogsCommon::FindSeismicGradient(const std::vector<SeismicStorage> & 
         }
       }
     }
-
+    seismic_data[l].EndAccess();
     double dx = estimation_simbox->getdx();
     double dy = estimation_simbox->getdy();
 
@@ -2793,16 +2794,18 @@ void BlockedLogsCommon::InterpolateTrend(const int        * blocked_log,
 }
 
 
-void BlockedLogsCommon::GetBlockedGrid(const SeismicStorage   * grid,
+void BlockedLogsCommon::GetBlockedGrid(SeismicStorage         * grid,
                                        const Simbox           * estimation_simbox,
                                        std::vector<double>    & blocked_log,
                                        int                      i_offset,
-                                       int                      j_offset) {
+                                       int                      j_offset) 
+{
+  grid->SetRandomAccess(); //Needed if grid is FFTGrid.
   for (int m = 0 ; m < static_cast<float>(n_blocks_) ; m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blocked_log[m] = grid->GetRealTraceValue(estimation_simbox, i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
-
   }
+  grid->EndAccess();      //Needed if grid is FFTGrid.
 }
 
 //------------------------------------------------------------------------------

@@ -687,6 +687,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
           grid->setAccessMode(FFTGrid::RANDOMACCESS);
           grid->readCravaFile(file_name, err_text);
+          grid->endAccess();
 
           SeismicStorage seismicdata(file_name, SeismicStorage::FFTGRID, angles[i], grid);
           seismic_data_angle.push_back(seismicdata);
@@ -2998,7 +2999,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                  InputFiles                                        * input_files,
                                  const Simbox                                      & estimation_simbox,
                                  const Simbox                                      & full_inversion_simbox,
-                                 const std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                 std::map<int, std::vector<SeismicStorage> >       & seismic_data,
                                  std::map<int, std::vector<Wavelet *> >            & wavelets,
                                  std::map<int, std::vector<Grid2D *> >             & local_noise_scales,
                                  std::map<int, std::vector<Grid2D *> >             & local_shifts,
@@ -3171,14 +3172,14 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
 
-      const SeismicStorage * seismic_data = NULL;
+      SeismicStorage * seismic_data_tmp = NULL;
       if (forward_modeling_ == false)
-        seismic_data = &seismic_data_.find(i)->second[j];
+        seismic_data_tmp = &seismic_data.find(i)->second[j];
 
       if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
         error += Process1DWavelet(model_settings,
                                   input_files,
-                                  seismic_data,
+                                  seismic_data_tmp,
                                   mapped_blocked_logs_,
                                   wavelet_estim_interval,
                                   estimation_simbox,
@@ -3200,7 +3201,7 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       else
         error += Process3DWavelet(model_settings,
                                   input_files,
-                                  seismic_data,
+                                  seismic_data_tmp,
                                   mapped_blocked_logs_,
                                   wavelet_estim_interval,
                                   estimation_simbox,
@@ -3311,7 +3312,7 @@ CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
 int
 CommonData::Process1DWavelet(const ModelSettings                      * model_settings,
                              const InputFiles                         * input_files,
-                             const SeismicStorage                     * seismic_data,
+                             SeismicStorage                           * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              const Simbox                             & estimation_simbox,
@@ -3564,7 +3565,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 int
 CommonData::Process3DWavelet(const ModelSettings                      * model_settings,
                              const InputFiles                         * input_files,
-                             const SeismicStorage                     * seismic_data,
+                             SeismicStorage                           * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                              const std::vector<Surface *>             & wavelet_estim_interval,
                              const Simbox                             & estimation_simbox,
