@@ -870,7 +870,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       bool kriging = model_settings->getKrigingParameter() > 0;
       for (int i = 0; i < n_simulations; i++) {
         ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, simulations_seed0_[i], simulations_seed1_[i], simulations_seed2_[i],
-                                          model_settings->getOutputGridsElastic(), n_simulations, kriging);
+                                          model_settings->getOutputGridsElastic(), i, kriging);
       }
     }
 
