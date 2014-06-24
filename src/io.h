@@ -76,6 +76,7 @@ public:
   inline static  std::string    PrefixSurface(void)                { return std::string("Surface_")                 ;}
   inline static  std::string    PrefixTop(void)                    { return std::string("Top_")                     ;}
   inline static  std::string    PrefixBase(void)                   { return std::string("Base_")                    ;}
+  inline static  std::string    PrefixEroded(void)                 { return std::string("Eroded_")                  ;}
   inline static  std::string    PrefixTime(void)                   { return std::string("Time")                     ;}
   inline static  std::string    PrefixDepth(void)                  { return std::string("Depth")                    ;}
   inline static  std::string    PrefixTmpGrids(void)               { return std::string("tmpGrid_")                 ;}

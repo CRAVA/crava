@@ -254,8 +254,8 @@ FFTFileGrid::SetNextComplex(std::complex<double> & value)
   assert(istransformed_==true);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
   fftw_complex tmp;
-  tmp.re = value.real();
-  tmp.im = value.imag();
+  tmp.re = static_cast<fftw_real>(value.real());
+  tmp.im = static_cast<fftw_real>(value.imag());
   char * buffer = reinterpret_cast<char *>(&tmp);
   outFile_.write(buffer,sizeof(fftw_complex));
   return(0);

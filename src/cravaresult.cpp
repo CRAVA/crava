@@ -777,7 +777,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     }
 
-    //Write seismic data //H-TODO from ModelAVODynamic::processSeismic
+    //Write seismic data
     if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
         || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 ) {
 
@@ -871,79 +871,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         }
       }
     }
-    //if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-    //
-    //  int n_timelapses = model_settings->getNumberOfTimeLapses();
-
-    //  for (int i = 0; i < n_timelapses; i++) {
-
-    //    int n_angles              = model_settings->getNumberOfAngles(i);
-    //    std::vector<float> angles = model_settings->getAngle(i);
-
-    //    for (int j = 0; i < n_angles; i++) {
-    //      std::string angle     = NRLib::ToString(i);
-    //      std::string file_name = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle);
-
-    //      int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j].GetSeismicType();
-
-    //      if (seismic_type == 0) { //SEGY
-
-    //        //Transforms segy to storm to use in ParamterOutput::WriteFile
-    //        SegY * segy = common_data->GetSeismicDataTimeLapse(i)[j].GetSegY();
-
-    //        NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>(simbox.getnx(), simbox.getny(), simbox.getnz());
-    //
-    //        FFTGrid * fft_grid_tmp    = NULL;
-    //        StormContGrid * storm_tmp = NULL;
-    //        int missing_traces_simbox  = 0;
-    //        int missing_traces_padding = 0;
-    //        int dead_traces_simbox     = 0;
-
-    //        common_data->FillInData(nrlib_grid,
-    //                                fft_grid_tmp,
-    //                                &simbox,
-    //                                storm_tmp,
-    //                                segy,
-    //                                model_settings->getSmoothLength(),
-    //                                missing_traces_simbox,
-    //                                missing_traces_padding,
-    //                                dead_traces_simbox,
-    //                                FFTGrid::DATA);
-
-    //        //From NRLib::Grid to StormGrid
-    //        StormContGrid * seismic_storm = CreateStormGrid(simbox, nrlib_grid);
-
-    //        seismic_storm->WriteCravaFile(file_name, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
-
-    //        if (fft_grid_tmp != NULL)
-    //          delete fft_grid_tmp;
-    //        if (storm_tmp != NULL)
-    //          delete storm_tmp;
-    //        if (segy != NULL)
-    //          delete segy;
-    //        if (seismic_storm != NULL)
-    //          delete seismic_storm;
-
-    //      }
-    //      else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
-    //        StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j].GetStorm();
-    //        storm->WriteCravaFile(file_name, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
-
-    //        if (storm != NULL)
-    //          delete storm;
-    //      }
-    //      else { //FFTGrid
-    //        FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(i)[j].GetFFTGrid();
-    //        fft_grid->writeCravaFile(file_name, &simbox);
-
-    //        if (fft_grid != NULL)
-    //          delete fft_grid;
-    //      }
-
-    //    }
-    //  }
-    //}
-
 
     //Write Background models
     if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
