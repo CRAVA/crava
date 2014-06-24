@@ -19,7 +19,7 @@ public:
 //Constructors and destructor
   Wavelet1D();
   Wavelet1D(const Simbox                                     * simbox,
-            const SeismicStorage                             * seismic_data,
+            SeismicStorage                                   * seismic_data,
             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
             const std::vector<Surface *>                     & estimInterval,
             const ModelSettings                              * modelSettings,
@@ -68,7 +68,7 @@ Wavelet1D(const ModelSettings * modelSettings,
 
   float         findGlobalScaleForGivenWavelet(const ModelSettings                              * modelSettings,
                                                const Simbox                                     * simbox,
-                                               const SeismicStorage                             * seismic_data,
+                                               SeismicStorage                                   * seismic_data,
                                                const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs);
 
   float         calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,

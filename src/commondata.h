@@ -375,7 +375,7 @@ private:
                                      InputFiles                                        * input_files,
                                      const Simbox                                      & estimation_simbox,
                                      const Simbox                                      & full_inversion_simbox,
-                                     const std::map<int, std::vector<SeismicStorage> > & seismic_data,
+                                     std::map<int, std::vector<SeismicStorage> >       & seismic_data,
                                      std::map<int, std::vector<Wavelet *> >            & wavelets,
                                      std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
                                      std::map<int, std::vector<Grid2D *> >             & local_shift,
@@ -438,7 +438,7 @@ private:
 
   int                Process1DWavelet(const ModelSettings                      * modelSettings,
                                       const InputFiles                         * inputFiles,
-                                      const SeismicStorage                     * seismic_data,
+                                      SeismicStorage                           * seismic_data,
                                       std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                                       const std::vector<Surface *>             & waveletEstimInterval,
                                       const Simbox                             & estimation_simbox,
@@ -460,7 +460,7 @@ private:
 
   int                Process3DWavelet(const ModelSettings                      * model_settings,
                                       const InputFiles                         * input_files,
-                                      const SeismicStorage                     * seismic_data,
+                                      SeismicStorage                           * seismic_data,
                                       std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs,
                                       const std::vector<Surface *>             & wavelet_estim_interval,
                                       const Simbox                             & estimation_simbox,

@@ -658,6 +658,7 @@ FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error, bo
   if(accMode_ != RANDOMACCESS)
     load();
   FFTGrid::readCravaFile(fileName, error, nopadding);
+  modified_ = 1;
   if(accMode_ != RANDOMACCESS)
     save();
 }

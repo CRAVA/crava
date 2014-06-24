@@ -180,7 +180,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   top_eroded_surface_(NULL),
   base_eroded_surface_(NULL)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox for interval \'%s\'.\n",interval_name);
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox for interval \'%s\'.\n",interval_name.c_str());
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());
@@ -253,7 +253,7 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed)
 : Volume(*simbox)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface for interval \'%s\'.\n",interval_name);
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface for interval \'%s\'.\n",interval_name.c_str());
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());
@@ -396,7 +396,7 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed)
 : Volume(*simbox)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces for interval \'%s\'.\n",interval_name);
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces for interval \'%s\'.\n",interval_name.c_str());
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());

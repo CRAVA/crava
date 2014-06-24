@@ -25,7 +25,7 @@ public:
             const NRLib::Grid2D<float>                 & refTimeGradY,
             const std::vector<std::vector<double> >    & tGradX,
             const std::vector<std::vector<double> >    & tGradY,
-            const SeismicStorage                       * seismic_data,
+            SeismicStorage                             * seismic_data,
             //const FFTGrid                              * seisCube,
             const ModelSettings                        * modelSettings,
             std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
@@ -65,7 +65,7 @@ public:
   float                  GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
   float                  calculateSNRatio(const Simbox                             * simbox,
-                                          const SeismicStorage                     * seismic_data,
+                                          SeismicStorage                           * seismic_data,
                                           const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                                           //const std::vector<BlockedLogsCommon *>     blocked_logs,
                                           //const FFTGrid                            * seisCube,
@@ -86,7 +86,7 @@ private:
   void                   findLayersWithData(const std::vector<Surface *> & estimInterval,
                                             BlockedLogsCommon            * blocked_log,
                                             //BlockedLogs                  * bl,
-                                            const SeismicStorage         * seismic_data,
+                                            SeismicStorage               * seismic_data,
                                             //const FFTGrid                * seisCube,
                                             const Simbox                 * simBox,
                                             const std::vector<double>    & az,
