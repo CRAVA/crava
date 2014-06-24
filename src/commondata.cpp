@@ -8015,20 +8015,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         if (!failed) {
 
           CheckCovarianceParameters(prior_param_cov_[i]);
+          PrintPriorVariances(interval_names);
 
-
-          if(estimate_param_cov || estimate_temp_corr){
-            WriteFilePriorVariances(model_settings, prior_auto_cov_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
-            if(print_result)
-              PrintPriorVariances(interval_names);
+          if(print_result == true) {
+            if(estimate_param_cov || estimate_temp_corr)
+              WriteFilePriorVariances(model_settings, prior_auto_cov_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
+            else
+              WriteFilePriorVariances(model_settings, prior_param_cov_[i], prior_corr_T_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
           }
-          else{
-            WriteFilePriorVariances(model_settings, prior_param_cov_[i], prior_corr_T_[i], prior_corr_XY_[i], interval_names[i], interval_simboxes[i]->getdz());
-            if(print_result)
-              PrintPriorVariances(interval_names);
-          }
-
-
         }
       }
     }
