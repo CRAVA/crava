@@ -479,6 +479,42 @@ Wavelet::resample(float dz,
 }
 
 void
+Wavelet::shiftFromFFTOrder()
+{
+  assert(isReal_);
+  assert(inFFTorder_);
+
+  //H-TEST
+  std::string fileName = "test_pre_shift_wavelet_";
+  float dzOut = 1.0; // sample at least as dense as this
+  writeWaveletToFile(fileName, dzOut,false);
+
+  fftw_real * wlet  = new fftw_real[nzp_];
+
+  float z;
+  for(int k=0; k < nzp_; k++) {
+
+    if(k < nzp_/2+1)
+      z = static_cast<float> (dz_*(k + nzp_/2+1));
+    else
+      z = static_cast<float> (dz_*(k - nzp_/2));
+    wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+
+  }
+
+  rAmp_ = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  //H-TEST
+  fileName = "test_post_shift_wavelet_";
+  writeWaveletToFile(fileName, dzOut,false);
+
+  inFFTorder_ = false;
+
+}
+
+
+void
 Wavelet::multiplyRAmpByConstant(float c)
 {
   for(int i=0; i < rnzp_ ;i++) {

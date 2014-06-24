@@ -87,6 +87,9 @@ public:
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid);
 
+  StormContGrid * CreateStormGrid(const Simbox       & simbox,
+                                  NRLib::Grid<float> * grid);
+
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
                         GridMapping             * depth_mapping,

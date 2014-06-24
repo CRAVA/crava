@@ -186,6 +186,8 @@ public:
 
   SegYTrace *              getTrace(int i) {return traces_[i];};
 
+  void                     SetFileName(std::string file_name) { file_name_ = file_name ;}
+
 private:
   //void                      ebcdicHeader(std::string& outstring);               ///<
   bool                      ReadHeader(TraceHeader & header);                   ///< Trace header

@@ -213,10 +213,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
   }
 
-  //H Missing from processSeismic:
-  //seisCube[i]->writeFile
-  //seisCube[i]->writeCravaFile
-
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
     interval_text = "for interval " + model_settings->getIntervalName(i_interval) + " ";
@@ -322,6 +318,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
+
+    if (wavelets_[i]->getInFFTOrder())
+      wavelets_[i]->shiftFromFFTOrder();
+
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
   }
 
@@ -352,7 +352,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
-    //H Adjust name to intervals
+    //H-TODO Adjust name to intervals
     std::string angle     = NRLib::ToString(theta_deg_[i], 1);
     std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
     error_smooth[i]->printToFile(file_name);
@@ -393,7 +393,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       {
         std::string angle     = NRLib::ToString(theta_deg_[l], 1);
 
-        //H Adjust name to intervals
+        //H-TODO Adjust name to intervals
         std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
         wavelets_[l]->writeWaveletToFile(file_name, 1.0,false); // dt_max = 1.0;
       }

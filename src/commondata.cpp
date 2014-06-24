@@ -5158,8 +5158,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 {
   std::string err_text = "";
 
-  //if (model_settings->getEstimateFaciesProb() || model_settings->getDo4DInversion()) {
-
   if (model_settings->getPriorFaciesProbs().size() == 0) {
     std::map<std::string, float> map_tmp;
     model_settings->addPriorFaciesProbs("", map_tmp);
@@ -7015,6 +7013,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           //Create background
           Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
 
+          //H Need to write bg_blocked_logs to file (here or in CravaResult) CRA-544.
+
         }
       }
     }
@@ -7814,26 +7814,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         }
       }
 
-      // if multiple interval settings //H Have combined getPriorFaciesProbInterval and getPriorFaciesProb (like getTimeNzInterval).
-      //if (interval_names.size()>0){
-        for(size_t i = 0; i<n_intervals; i++){
-          CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(interval_names[i]),
-                                             facies_names_,
-                                             trend_cubes[i],
-                                             prior_param_cov_[i],
-                                             err_text);
-        }
-      //}
-      // if multiple interval settings is not being used
-      //else{
-      //  CalculateCovarianceFromRockPhysics(rock_distribution,
-      //                                     model_settings->getPriorFaciesProb(),
-      //                                     facies_names_,
-      //                                     trend_cubes[0],
-      //                                     prior_param_cov_[0],
-      //                                     err_text);
-      //}
+      for(size_t i = 0; i<n_intervals; i++){
+        CalculateCovarianceFromRockPhysics(rock_distribution,
+                                            model_settings->getPriorFaciesProb(interval_names[i]),
+                                            facies_names_,
+                                            trend_cubes[i],
+                                            prior_param_cov_[i],
+                                            err_text);
+      }
 
       if (tmp_err_text != "")
       {
