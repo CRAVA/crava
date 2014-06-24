@@ -232,7 +232,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     }
   }
   else { //FFTGrid
-
+    fft_grid_->setAccessMode(FFTGrid::RANDOMACCESS);
     int index_i     = 0;
     int index_j     = 0;
     int trace_index = 0;
@@ -259,6 +259,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
 
       }
     }
+    fft_grid_->endAccess();
   }
 }
 
@@ -391,4 +392,19 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                              err_txt);
       seismic_simbox.CopyAllPadding(full_inversion_simbox, lz_limit, err_txt);
   }
+}
+
+void
+SeismicStorage::SetRandomAccess()
+{
+  if(seismic_type_ == FFTGRID)
+    fft_grid_->setAccessMode(FFTGrid::RANDOMACCESS);
+}
+
+
+void
+SeismicStorage::EndAccess()
+{
+  if(seismic_type_ == FFTGRID)
+    fft_grid_->endAccess();
 }

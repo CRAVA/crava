@@ -34,6 +34,8 @@
 Wavelet::Wavelet(int dim)
   : cnzp_(0),
     rnzp_(0),
+    rAmp_(NULL),
+    cAmp_(NULL),
     theta_(0),
     dz_(1.0),
     nz_(0),
@@ -44,15 +46,15 @@ Wavelet::Wavelet(int dim)
     dim_(dim),
     scale_(1),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
 }
 
 Wavelet::Wavelet(int       dim,
                  Wavelet * wavelet)
-  : theta_(wavelet->getTheta()),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
     nzp_(wavelet->getNzp()),
@@ -62,9 +64,7 @@ Wavelet::Wavelet(int       dim,
     waveletLength_(wavelet->getWaveletLength()),
     dim_(dim),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
   if(! wavelet->getIsReal()) wavelet->invFFT1DInPlace();
   isReal_ = wavelet->getIsReal(); //NBNB-Frode: Always true?
@@ -97,15 +97,15 @@ Wavelet::Wavelet(const std::string   & fileName,
                  int                   dim,
                  int                 & errCode,
                  std::string         & errText)
-  : theta_(theta),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(theta),
     inFFTorder_(false),
     isReal_(true),
     dim_(dim),
     scale_(1),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
   coeff_[0]       = reflCoef[0];
   coeff_[1]       = reflCoef[1];
@@ -138,15 +138,15 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
                  int                   dim,
                  float                 peakFrequency,
                  int                 & errCode)
-  : theta_(theta),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(theta),
     inFFTorder_(false),
     isReal_(true),
     dim_(dim),
     scale_(1),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
   coeff_[0]       = reflCoef[0];
   coeff_[1]       = reflCoef[1];
@@ -195,7 +195,9 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
 Wavelet::Wavelet(int /*difftype */,
                  int nz,
                  int nzp)
-  : theta_(RMISSING),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(RMISSING),
     dz_(RMISSING),
     nz_(nz),
     nzp_(nzp),
@@ -203,15 +205,15 @@ Wavelet::Wavelet(int /*difftype */,
     inFFTorder_(true),
     dim_(1),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
 }
 
 Wavelet::Wavelet(Wavelet * wavelet,
                  int     /*  difftype */)
-  : theta_(wavelet->getTheta()),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
     nzp_(wavelet->getNzp()),
@@ -220,9 +222,7 @@ Wavelet::Wavelet(Wavelet * wavelet,
     norm_(wavelet->getNorm()),
     dim_(wavelet->getDim()),
     shiftGrid_(NULL),
-    gainGrid_(NULL),
-    rAmp_(NULL),
-    cAmp_(NULL)
+    gainGrid_(NULL)
 {
   if(! wavelet->getIsReal() )
     wavelet->invFFT1DInPlace();

@@ -36,7 +36,7 @@ Wavelet1D::Wavelet1D()
 
 
 Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
-                     const SeismicStorage                             * seismic_data,
+                     SeismicStorage                                   * seismic_data,
                      const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
@@ -632,7 +632,7 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 float
 Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                              * modelSettings,
                                           const Simbox                                     * simbox,
-                                          const SeismicStorage                             * seismic_data,
+                                          SeismicStorage                                   * seismic_data,
                                           const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs)
 {
   int nWells          = modelSettings->getNumberOfWells();

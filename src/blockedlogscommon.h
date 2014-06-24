@@ -130,7 +130,7 @@ public:
                                                                  std::vector<double>             & trend,
                                                                  const std::vector<Surface *>    & limits);
 
-  void                                   GetBlockedGrid(const SeismicStorage   * grid,
+  void                                   GetBlockedGrid(SeismicStorage         * grid,
                                                         const Simbox           * estimation_simbox,
                                                         std::vector<double>    & blocked_log,
                                                         int                      i_offset = 0,
@@ -209,7 +209,7 @@ public:
 
   void                                   SetTimeGradientSettings(float distance, float sigma_m);
 
-  void                                   FindSeismicGradient(const std::vector<SeismicStorage> & seismic_data,
+  void                                   FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,
                                                              const Simbox                      * const estimation_simbox,
                                                              int                                 n_angles,
                                                              std::vector<double>               & x_gradient,

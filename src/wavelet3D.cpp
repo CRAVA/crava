@@ -38,7 +38,7 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
                      const NRLib::Grid2D<float>                 & refTimeGradY,
                      const std::vector<std::vector<double> >    & tGradX,
                      const std::vector<std::vector<double> >    & tGradY,
-                     const SeismicStorage                       * seismic_data,
+                     SeismicStorage                             * seismic_data,
                      const ModelSettings                        * modelSettings,
                      std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                      const Simbox                               * simBox,
@@ -476,7 +476,7 @@ Wavelet3D::createWavelet1DForErrorNorm(void)
 
 float
 Wavelet3D::calculateSNRatio(const Simbox                                     * simbox,
-                            const SeismicStorage                             * seismic_data,
+                            SeismicStorage                                   * seismic_data,
                             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
                             const ModelSettings                              * modelSettings,
                             std::string                                      & errText,
@@ -779,7 +779,7 @@ Wavelet3D::calculateSNRatio(const Simbox                                     * s
 void
 Wavelet3D::findLayersWithData(const std::vector<Surface *> & estimInterval,
                               BlockedLogsCommon            * blocked_log,
-                              const SeismicStorage         * seismic_data,
+                              SeismicStorage               * seismic_data,
                               const Simbox                 * simBox,
                               const std::vector<double>    & az,
                               const std::vector<double>    & bz,

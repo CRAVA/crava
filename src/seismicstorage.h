@@ -61,7 +61,8 @@ public:
                                   int i,
                                   int j) const;
 
-  float GetRealTraceValue(const Simbox * estimation_simbox,
+  //Note: Set access mode before using this function, and end access afterwards.
+  float GetRealTraceValue(const Simbox * estimation_simbox, 
                           int i,
                           int j,
                           int k) const;
@@ -82,6 +83,8 @@ public:
   void            SetSegY(NRLib::SegY * segy)             { segy_         = segy ;}
   void            SetStorm(StormContGrid * stormgrid)     { storm_grid_   = stormgrid ;}
 
+  void            SetRandomAccess(); //Must be used before and after GetRealTraceValue.
+  void            EndAccess();
 
 
 private:
