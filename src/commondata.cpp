@@ -3173,9 +3173,9 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
 
       SeismicStorage * seismic_data_tmp = NULL;
-      if (forward_modeling_ == false)
+      if (forward_modeling_ == false) {
         seismic_data_tmp = &seismic_data.find(i)->second[j];
-
+      }
       if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
         error += Process1DWavelet(model_settings,
                                   input_files,
@@ -3446,7 +3446,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
       std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
       int w = 0;
-        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
 

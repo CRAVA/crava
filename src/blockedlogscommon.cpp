@@ -2993,10 +2993,11 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
 {
   std::vector<double> blocked_log(n_blocks_);
   //int n_facies = facies_blocked_.size();
-
+  grid->setAccessMode(FFTGrid::RANDOMACCESS);
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
     blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);
   }
+  grid->endAccess();
 
   if (n_angles_ == 0)
     n_angles_ = n_angles;
