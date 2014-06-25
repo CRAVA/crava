@@ -3456,8 +3456,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
         w++;
       }
 
-      float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox,
-                                                                   &full_inversion_simbox,
+      float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&full_inversion_simbox,
+                                                                   &estimation_simbox,
                                                                    seis_logs,
                                                                    mapped_blocked_logs,
                                                                    model_settings,
