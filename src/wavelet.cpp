@@ -528,11 +528,11 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   //Make consistent by truncating wavelet to writing range before interpolation.
   int     activeCells = int(floor(waveletLength_/2/dz_));
   float * remember    = new float[nzp_ + 1]; //H Added +1. Error delete [] remember if nz = nzp.
-  for(int i=activeCells+1;i<=nz_;i++) {
+  int     first_kill  = activeCells+1;      //First cell to be set to 0.
+  int     last_kill   = nzp_-activeCells-1; //Last cell to be set to 0.
+  for(int i=first_kill;i<=last_kill;i++) {
     remember[i]        = rAmp_[i];
     rAmp_[i]           = 0;
-    remember[nzp_-i] = rAmp_[nzp_-i];
-    rAmp_[nzp_-i]    = 0;
   }
   float          T            = nzp_*dz_;
   int            nzpNew       = int(ceil(T/approxDz - 0.5));
@@ -558,7 +558,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     }
   }
   invFFT1DInPlace();
-  for(int i=activeCells+1;i<=nz_;i++) {
+  for(int i=first_kill;i<=last_kill;i++) {
     rAmp_[i] = remember[i];
     rAmp_[nzp_-i] = remember[nzp_-i];
   }

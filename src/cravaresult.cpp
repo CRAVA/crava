@@ -40,7 +40,7 @@ CravaResult::~CravaResult()
   //
   for (size_t i = 0; i < corr_T_.size(); i++) {
     if (corr_T_[i] != NULL) {
-      delete [] corr_T_[i];
+      fftw_free(corr_T_[i]);
     }
   }
   for (size_t i = 0; i < corr_T_filtered_.size(); i++) {
