@@ -200,6 +200,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   if (n_intervals > 1) {
 
+    //H-TODO Wavelets
+
    const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
    int nx = simbox.getnx();
    int ny = simbox.getny();
@@ -416,6 +418,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       post_cov_rho00_.push_back(seismic_parameters_intervals[i].GetPostCovRho00());
     }
 
+    //Wavelets
+    for (int i = 0; i < n_intervals; i++) {
+      wavelets_intervals_.push_back(seismic_parameters_intervals[i].GetWavelets());
+    }
 
   }
   else {
@@ -424,6 +430,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     // Results in seismic_parameters are stored as fftgrid
 
     //CreateStormGrid() creates a storm grid from fft grid, and deletes the fft_grid
+
+
+    //Wavelets
+    wavelets_intervals_.push_back(seismic_parameters_intervals[0].GetWavelets());
 
 
     std::string interval_name = multi_interval_grid->GetIntervalName(0);
@@ -776,6 +786,32 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         ParameterOutput::WriteFile(model_settings, block_grid_, "BlockGrid", IO::PathToInversionResults(), &simbox);
 
     }
+
+    //Write well wavelets (from wavelet1D.cpp)
+    int w = 0;
+    const std::map<std::string, BlockedLogsCommon *> & blocked_logs = common_data->GetBlockedLogs();
+
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
+      const BlockedLogsCommon * blocked_log = iter->second;
+
+      if(blocked_log->GetUseForWaveletEstimation() &&
+        ((model_settings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || model_settings->getEstimationMode())) {
+
+        std::string well_name(blocked_log->GetWellName());
+        NRLib::Substitute(well_name,"/","_");
+        NRLib::Substitute(well_name," ","_");
+        std::string file_name = IO::PrefixWellWavelet() + well_name + "_";
+
+        int n_angles = wavelets_intervals_[0].size();
+        for (int i = 0; i < n_angles; i++) {
+          wavelets_intervals_[0][i]->writeWaveletToFile(file_name, 1.0f, true);
+        }
+      }
+      w++;
+    }
+
+    //H Wavelet_estimated?
 
     //Write seismic data
     if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0

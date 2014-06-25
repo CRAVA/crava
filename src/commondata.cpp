@@ -3371,6 +3371,10 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             j_angle,
                             error,
                             err_text);
+
+    //if (wavelet->getInFFTOrder())
+    //  wavelet->shiftFromFFTOrder();
+
   }
   else { //Not estimation modus
     if (use_ricker_wavelet){
@@ -3547,16 +3551,19 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
 
   delete [] reflection_coefs;
 
-  if(model_settings->getForwardModeling()){
-    if (wavelet_pre_resampling != NULL){
+  if (model_settings->getForwardModeling()) {
+    if (wavelet_pre_resampling != NULL) {
       delete wavelet_pre_resampling;
       wavelet_pre_resampling = NULL;
     }
   }
-  else{
+  else {
     if (wavelet_pre_resampling != NULL) {
       delete wavelet;
       wavelet = wavelet_pre_resampling;
+    }
+    else if (wavelet->getInFFTOrder()) { //Wavlet estimated
+      wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
     }
   }
 

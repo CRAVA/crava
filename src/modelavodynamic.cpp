@@ -267,8 +267,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         //Find the scaling of this wavelet, and apply it to the non-resampled wavelet.
         Wavelet * est_wavelet = new Wavelet1D(wavelets_[i]);
         const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
-        if(est_wavelet->getInFFTOrder() == false) //Indicates wavelet read from file; true would mean estimated wavelet, which has correct resolution.
-          est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad());
+
+        est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad()); //Puts wavelet on fftorder.
         est_wavelet->scale(1.0);
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
@@ -317,10 +317,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
-    if (wavelets_[i]->getInFFTOrder())
-      wavelets_[i]->shiftFromFFTOrder();
+    wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
 
-    wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
+    seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
   if (model_settings->getEstimateWaveletNoise())

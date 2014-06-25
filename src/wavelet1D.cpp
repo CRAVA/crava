@@ -328,6 +328,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
+    //H-Writing: Moved to CravaResult
     int w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
