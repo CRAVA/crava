@@ -2288,7 +2288,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     for (i=0; i<rnzp; i++){
       cpp_r[j][i] = 0;
     }
-    float * refl_coefficients = new float(3);
+    float * refl_coefficients = new float[3];
     refl_coefficients[0] = static_cast<float>(refl_matrix(j,0));
     refl_coefficients[1] = static_cast<float>(refl_matrix(j,1));
     refl_coefficients[2] = static_cast<float>(refl_matrix(j,2));
@@ -3578,13 +3578,13 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
       cpp_r[j] = 0;
       synt_seis_r[j] = 0;
     }
-    float * refl_coef = new float(3);
+    float * refl_coef = new float[3];
     refl_coef[0] = static_cast<float>(reflection_matrix(i,0));
     refl_coef[1] = static_cast<float>(reflection_matrix(i,1));
     refl_coef[2] = static_cast<float>(reflection_matrix(i,2));
     FillInCpp(refl_coef, start, length, cpp_r, nzp);
     Utils::fft(cpp_r,cpp_c,nzp);
-
+    delete [] refl_coef;
     local_wavelet = wavelet[i]->createLocalWavelet1D(i_pos_[0], j_pos_[0]);
     local_wavelet->fft1DInPlace();
    // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
