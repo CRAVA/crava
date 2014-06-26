@@ -484,42 +484,39 @@ Wavelet::shiftFromFFTOrder()
   assert(isReal_);
   assert(inFFTorder_);
 
-  //H-TEST
-  std::string fileName = "wavelets/test_pre_shift_wavelet";
-  NRLib::Vector pre_shift(nzp_);
-  for (int i = 0; i < nzp_; i++) {
-    pre_shift(i) = rAmp_[i];
-  }
-  NRLib::WriteVectorToFile(fileName, pre_shift);
-
+  //H-REMOVE
+  //std::string fileName = "wavelets/test_pre_shift_wavelet";
+  //NRLib::Vector pre_shift(nzp_);
+  //for (int i = 0; i < nzp_; i++) {
+  //  pre_shift(i) = rAmp_[i];
+  //}
+  //NRLib::WriteVectorToFile(fileName, pre_shift);
 
   fftw_real * wlet  = new fftw_real[nzp_];
 
+  int index = 0;
   float z;
-  for(int k=0; k < nzp_; k++) {
-
-    int test = nzp_/2;
-
-    if (k = nzp_-1)
-      z = static_cast<float> (dz_*(k + nzp_/2));
-    else if (k < nzp_/2)
-      z = static_cast<float> (dz_*(k + nzp_/2));
-    else
-      z = static_cast<float> (dz_*(k - nzp_/2));
-
-    wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+  for (int i = nzp_/2; i < nzp_; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+    index++;
+  }
+  for (int i = 0; i < nzp_/2; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+    index++;
   }
 
   rAmp_ = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-  //H-TEST
-  fileName = "wavelets/test_post_shift_wavelet";
-  NRLib::Vector post_shift(nzp_);
-  for (int i = 0; i < nzp_; i++) {
-    post_shift(i) = rAmp_[i];
-  }
-  NRLib::WriteVectorToFile(fileName, post_shift);
+  //H-REMOVE
+  //fileName = "wavelets/test_post_shift_wavelet";
+  //NRLib::Vector post_shift(nzp_);
+  //for (int i = 0; i < nzp_; i++) {
+  //  post_shift(i) = rAmp_[i];
+  //}
+  //NRLib::WriteVectorToFile(fileName, post_shift);
 
   inFFTorder_ = false;
 
@@ -576,11 +573,11 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   //Make consistent by truncating wavelet to writing range before interpolation.
   int     activeCells = int(floor(waveletLength_/2/dz_));
   float * remember    = new float[nzp_ + 1]; //H Added +1. Error delete [] remember if nz = nzp.
-  for(int i=activeCells+1;i<=nz_;i++) {
+  int     first_kill  = activeCells+1;      //First cell to be set to 0.
+  int     last_kill   = nzp_-activeCells-1; //Last cell to be set to 0.
+  for(int i=first_kill;i<=last_kill;i++) {
     remember[i]        = rAmp_[i];
-    //rAmp_[i]           = 0; //H-TEST
-    remember[nzp_-i] = rAmp_[nzp_-i];
-    //rAmp_[nzp_-i]    = 0; //H-TEST
+    rAmp_[i]           = 0;
   }
   float          T            = nzp_*dz_;
   int            nzpNew       = int(ceil(T/approxDz - 0.5));
@@ -606,7 +603,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     }
   }
   invFFT1DInPlace();
-  for(int i=activeCells+1;i<=nz_;i++) {
+  for(int i=first_kill;i<=last_kill;i++) {
     rAmp_[i] = remember[i];
     rAmp_[nzp_-i] = remember[nzp_-i];
   }

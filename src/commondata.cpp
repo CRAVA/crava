@@ -218,10 +218,10 @@ CommonData::~CommonData() {
     multiple_interval_grid_ = NULL;
   }
 
-  if (time_depth_mapping_ != NULL){
-    delete time_depth_mapping_;
-    time_depth_mapping_ = NULL;
-  }
+  //if (time_depth_mapping_ != NULL){
+  //  delete time_depth_mapping_;
+  //  time_depth_mapping_ = NULL;
+  //}
 
   if (time_line_ != NULL){
     delete time_line_;
@@ -3372,9 +3372,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             error,
                             err_text);
 
-    //if (wavelet->getInFFTOrder())
-    //  wavelet->shiftFromFFTOrder();
-
   }
   else { //Not estimation modus
     if (use_ricker_wavelet){
@@ -3461,8 +3458,8 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
         w++;
       }
 
-      float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&estimation_simbox,
-                                                                   &full_inversion_simbox,
+      float SNRatio_tmp = wavelet->calculateSNRatioAndLocalWavelet(&full_inversion_simbox,
+                                                                   &estimation_simbox,
                                                                    seis_logs,
                                                                    mapped_blocked_logs,
                                                                    model_settings,

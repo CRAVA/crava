@@ -248,7 +248,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     bool adjust_scale = (wavelet_estimated[i] == true || model_settings->getEstimateGlobalWaveletScale(this_timelapse_, i) == true);
     bool adjust_noise = model_settings->getEstimateSNRatio(this_timelapse_, i);
-    if (adjust_scale == true || adjust_noise == true) {
+    if ((adjust_scale == true || adjust_noise == true) && common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1) {
       std::string err_text;
       int error = 0;
       Grid2D * noise_scaled_tmp;

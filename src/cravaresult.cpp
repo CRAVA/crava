@@ -40,7 +40,7 @@ CravaResult::~CravaResult()
   //
   for (size_t i = 0; i < corr_T_.size(); i++) {
     if (corr_T_[i] != NULL) {
-      delete [] corr_T_[i];
+      fftw_free(corr_T_[i]);
     }
   }
   for (size_t i = 0; i < corr_T_filtered_.size(); i++) {
@@ -788,28 +788,28 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     }
 
     //Write well wavelets (from wavelet1D.cpp)
-    int w = 0;
-    const std::map<std::string, BlockedLogsCommon *> & blocked_logs = common_data->GetBlockedLogs();
+    //int w = 0;
+    //const std::map<std::string, BlockedLogsCommon *> & blocked_logs = common_data->GetBlockedLogs();
 
-    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
-      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-      const BlockedLogsCommon * blocked_log = iter->second;
+    //for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+    //  std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
+    //  const BlockedLogsCommon * blocked_log = iter->second;
 
-      if(blocked_log->GetUseForWaveletEstimation() &&
-        ((model_settings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || model_settings->getEstimationMode())) {
+    //  if(blocked_log->GetUseForWaveletEstimation() &&
+    //    ((model_settings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || model_settings->getEstimationMode())) {
 
-        std::string well_name(blocked_log->GetWellName());
-        NRLib::Substitute(well_name,"/","_");
-        NRLib::Substitute(well_name," ","_");
-        std::string file_name = IO::PrefixWellWavelet() + well_name + "_";
+    //    std::string well_name(blocked_log->GetWellName());
+    //    NRLib::Substitute(well_name,"/","_");
+    //    NRLib::Substitute(well_name," ","_");
+    //    std::string file_name = IO::PrefixWellWavelet() + well_name + "_";
 
-        int n_angles = wavelets_intervals_[0].size();
-        for (int i = 0; i < n_angles; i++) {
-          wavelets_intervals_[0][i]->writeWaveletToFile(file_name, 1.0f, true);
-        }
-      }
-      w++;
-    }
+    //    int n_angles = wavelets_intervals_[0].size();
+    //    for (int i = 0; i < n_angles; i++) {
+    //      wavelets_intervals_[0][i]->writeWaveletToFile(file_name, 1.0f, true);
+    //    }
+    //  }
+    //  w++;
+    //}
 
     //H Wavelet_estimated?
 
@@ -1001,7 +1001,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       bool kriging = model_settings->getKrigingParameter() > 0;
       for (int i = 0; i < n_simulations; i++) {
         ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, simulations_seed0_[i], simulations_seed1_[i], simulations_seed2_[i],
-                                          model_settings->getOutputGridsElastic(), n_simulations, kriging);
+                                          model_settings->getOutputGridsElastic(), i, kriging);
       }
     }
 
