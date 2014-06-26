@@ -87,6 +87,9 @@ public:
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid);
 
+  StormContGrid * CreateStormGrid(const Simbox       & simbox,
+                                  NRLib::Grid<float> * grid);
+
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
                         GridMapping             * depth_mapping,
@@ -128,6 +131,8 @@ private:
   std::vector<std::vector<float> > post_cov_vs00_;
   std::vector<std::vector<float> > post_cov_rho00_;
 
+  std::vector<std::vector<Wavelet *> > wavelets_intervals_; //Wavelets resampled to simbox
+
   //Results combined
   StormContGrid                  * cov_vp_;
   StormContGrid                  * cov_vs_;
@@ -166,9 +171,7 @@ private:
 
   StormContGrid                  * quality_grid_;
 
-
-
-  std::vector<Wavelet *>           wavelets_; //Vector angles
+  std::vector<Wavelet *>           wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
   NRLib::Matrix                    reflection_matrix_;
 
   int                              n_intervals_;

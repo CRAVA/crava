@@ -207,15 +207,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                              segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
                              segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
 
-        if (segy != NULL)
-          delete segy;
       }
     }
   }
-
-  //H Missing from processSeismic:
-  //seisCube[i]->writeFile
-  //seisCube[i]->writeCravaFile
 
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
@@ -273,13 +267,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         //Find the scaling of this wavelet, and apply it to the non-resampled wavelet.
         Wavelet * est_wavelet = new Wavelet1D(wavelets_[i]);
         const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
-        if(est_wavelet->getInFFTOrder() == false) //Indicates wavelet read from file; true would mean estimated wavelet, which has correct resolution.
-          est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad());
+
+        est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad()); //Puts wavelet on fftorder.
         est_wavelet->scale(1.0);
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
         std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs;
-        Simbox estimation_box = common_data->GetEstimationSimbox();
+        const Simbox & estimation_box = common_data->GetEstimationSimbox();
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = orig_blocked_logs.find(it->first);
           BlockedLogsCommon * blocked_log = new BlockedLogsCommon(*(iter->second));
@@ -322,7 +316,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
-    wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox.
+
+    wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
+
+    seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
   if (model_settings->getEstimateWaveletNoise())
@@ -352,7 +349,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
-    //H Adjust name to intervals
+    //H-TODO Adjust name to intervals
     std::string angle     = NRLib::ToString(theta_deg_[i], 1);
     std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
     error_smooth[i]->printToFile(file_name);
@@ -393,7 +390,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       {
         std::string angle     = NRLib::ToString(theta_deg_[l], 1);
 
-        //H Adjust name to intervals
+        //H-TODO Adjust name to intervals
         std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
         wavelets_[l]->writeWaveletToFile(file_name, 1.0,false); // dt_max = 1.0;
       }

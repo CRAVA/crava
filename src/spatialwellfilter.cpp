@@ -18,7 +18,6 @@
 
 #include "src/spatialwellfilter.h"
 #include "src/definitions.h"
-//#include "src/welldata.h"
 #include "src/timings.h"
 #include "src/modelsettings.h"
 #include "src/avoinversion.h"

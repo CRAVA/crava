@@ -2798,7 +2798,7 @@ void BlockedLogsCommon::GetBlockedGrid(SeismicStorage         * grid,
                                        const Simbox           * estimation_simbox,
                                        std::vector<double>    & blocked_log,
                                        int                      i_offset,
-                                       int                      j_offset) 
+                                       int                      j_offset)
 {
   grid->SetRandomAccess(); //Needed if grid is FFTGrid.
   for (int m = 0 ; m < static_cast<float>(n_blocks_) ; m++) {

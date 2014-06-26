@@ -479,6 +479,51 @@ Wavelet::resample(float dz,
 }
 
 void
+Wavelet::shiftFromFFTOrder()
+{
+  assert(isReal_);
+  assert(inFFTorder_);
+
+  //H-REMOVE
+  //std::string fileName = "wavelets/test_pre_shift_wavelet";
+  //NRLib::Vector pre_shift(nzp_);
+  //for (int i = 0; i < nzp_; i++) {
+  //  pre_shift(i) = rAmp_[i];
+  //}
+  //NRLib::WriteVectorToFile(fileName, pre_shift);
+
+  fftw_real * wlet  = new fftw_real[nzp_];
+
+  int index = 0;
+  float z;
+  for (int i = nzp_/2; i < nzp_; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+    index++;
+  }
+  for (int i = 0; i < nzp_/2; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+    index++;
+  }
+
+  rAmp_ = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  //H-REMOVE
+  //fileName = "wavelets/test_post_shift_wavelet";
+  //NRLib::Vector post_shift(nzp_);
+  //for (int i = 0; i < nzp_; i++) {
+  //  post_shift(i) = rAmp_[i];
+  //}
+  //NRLib::WriteVectorToFile(fileName, post_shift);
+
+  inFFTorder_ = false;
+
+}
+
+
+void
 Wavelet::multiplyRAmpByConstant(float c)
 {
   for(int i=0; i < rnzp_ ;i++) {

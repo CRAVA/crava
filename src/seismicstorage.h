@@ -62,7 +62,7 @@ public:
                                   int j) const;
 
   //Note: Set access mode before using this function, and end access afterwards.
-  float GetRealTraceValue(const Simbox * estimation_simbox, 
+  float GetRealTraceValue(const Simbox * estimation_simbox,
                           int i,
                           int j,
                           int k) const;

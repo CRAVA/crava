@@ -479,47 +479,36 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
 
   if (format_flag > 0) {//Output format specified.
     if ((domain_flag & IO::TIMEDOMAIN) > 0) {
-      //if(timeMap == NULL) { //No resampling of storm
-        if ((format_flag & IO::STORM) > 0){
-          const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, false);
-          storm_grid->SetFormat(NRLib::StormContGrid::STORM_BINARY);
-          file_name = file_name + IO::SuffixStormBinary();
-          storm_grid->WriteToFile(file_name, header, false);
-        }
-          //FFTGrid::writeStormFile(file_name, simbox, false, padding); //H Must writeStormFile be changed to take in timeMap effects?
-        if ((format_flag & IO::ASCII) > 0){
-          storm_grid->SetFormat(NRLib::StormContGrid::STORM_ASCII);
-          const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, true);
-          file_name = file_name + IO::SuffixGeneralData();
-          storm_grid->WriteToFile(file_name, header, true);
-        }
-          //FFTGrid::writeStormFile(file_name, simbox, true, padding);
-      //}
-      //else {
-      //  FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
-      //}
+      if ((format_flag & IO::STORM) > 0) {
+        const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, false);
+        storm_grid->SetFormat(NRLib::StormContGrid::STORM_BINARY);
+        std::string file_name_storm = file_name + IO::SuffixStormBinary();
+        storm_grid->WriteToFile(file_name_storm, header, false);
+      }
+
+      if ((format_flag & IO::ASCII) > 0) {
+        storm_grid->SetFormat(NRLib::StormContGrid::STORM_ASCII);
+        const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, true);
+        std::string file_name_ascii = file_name + IO::SuffixGeneralData();
+        storm_grid->WriteToFile(file_name_ascii, header, true);
+      }
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((format_flag & IO::SEGY) > 0) {
-        //FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
-
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+file_name_segy+"...");
 
         SegY * segy = new SegY(storm_grid,
                                z0,
                                file_name_segy,
-                               true,
-                               thf); //Write to file
+                               true, //Write to file
+                               thf);
 
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
         delete segy;
-
       }
       if ((format_flag & IO::SGRI) >0) {
-        //FFTGrid::writeSgriFile(file_name, simbox, label);
-
         std::string file_name_sgri   = file_name + IO::SuffixSgri();
         std::string file_name_header = file_name + IO::SuffixSgriHeader();
 
@@ -545,12 +534,10 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         if ((format_flag & IO::STORM) > 0) {
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, false);
           storm_grid->WriteToFile(file_name, header, false);
-          //FFTGrid::writeStormFile(depth_name, depth_map->getSimbox(), false);
         }
         if ((format_flag & IO::ASCII) > 0) {
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, true);
           storm_grid->WriteToFile(file_name, header, true);
-          //FFTGrid::writeStormFile(depth_name, depth_map->getSimbox(), true);
         }
         if ((format_flag & IO::SEGY) >0) {
           //makeDepthCubeForSegy(depth_map->getSimbox(),depth_name);

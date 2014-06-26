@@ -219,7 +219,7 @@ private:
   int            status_;                  // Since Simbox may be incomplete or with error
   double         cosrot_, sinrot_;         // Saving time in transformations.
   std::string    top_eroded_name_;         // File names for eroded surfaces
-  std::string    base_eroded_name_;       
+  std::string    base_eroded_name_;
   std::string    topName_;                 // File name for original surfaces
   std::string    botName_;
   std::string    interval_name_;

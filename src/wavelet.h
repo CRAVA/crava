@@ -81,6 +81,8 @@ public:
                          int   nz,
                          int   nzp);
 
+  void          shiftFromFFTOrder();
+
   void          multiplyRAmpByConstant(float c);
   void          setupAsVector(int nz, int nzp);
 
