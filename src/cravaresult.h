@@ -112,12 +112,13 @@ public:
   void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
                                     std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                     const NRLib::Matrix                        & reflection_matrix,
-                                    const Simbox                               * simbox);
+                                    const Simbox                               & simbox);
 
-  void SetWellSyntheticSeismic(std::vector<Wavelet *>                     & wavelet,
+  void SetWellSyntheticSeismic(const std::vector<Wavelet *>               & wavelet,
                                std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                const std::vector<std::vector<double> >    & synt_seis,
-                               const Simbox                               & simbox);
+                               const Simbox                               & simbox,
+                               const std::vector<bool>                    & wavelet_estimated);
 
   //GET FUNCTIONS
 

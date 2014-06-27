@@ -533,7 +533,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox_final);
 
   //From wavelet1D.cpp
-  SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final);
+  SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final, model_settings->getEstimateWavelet(0));
 
 }
 
@@ -1574,10 +1574,11 @@ void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>           
   }
 }
 
-void CravaResult::SetWellSyntheticSeismic(std::vector<Wavelet *>                     & wavelet,
+void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>               & wavelet,
                                           std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                           const std::vector<std::vector<double> >    & synt_seis,
-                                          const Simbox                               & simbox)
+                                          const Simbox                               & simbox,
+                                          const std::vector<bool>                    & wavelet_estimated)
 {
   int nz  = simbox.getnz();
 
@@ -1592,9 +1593,10 @@ void CravaResult::SetWellSyntheticSeismic(std::vector<Wavelet *>                
 
     for (int i = 0; i < n_angles; i++) {
       //int nz = wavelet[i]->getNz();
-      float dz_well = static_cast<float>(simbox.getRelThick(ipos[0],jpos[0])) * wavelet[i]->getDz();
+      float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();
 
-      blocked_log->SetLogFromVerticalTrend(synt_seis[i], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
+      if (wavelet_estimated[i] == true)
+        blocked_log->SetLogFromVerticalTrend(synt_seis[i], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
     }
 
   }
