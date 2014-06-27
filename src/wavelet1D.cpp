@@ -265,10 +265,6 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
           wellWavelets[w][i] = 0;
       }
     }
-    //int w = 0;
-    //for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-    //  std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
-    //  BlockedLogsCommon * blocked_log = iter->second;
 
     for(int w = 0; w < nWells; w++) { // gets syntetic seismic with estimated wavelet
 
@@ -292,7 +288,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
           synt_seis[i] = synt_seis_r[w][i];
 
-        //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic
+        //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic/CravaResult
         //blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
 
       }
@@ -328,7 +324,6 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
-    //H-Writing: Moved to CravaResult
     int w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);

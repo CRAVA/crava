@@ -109,6 +109,16 @@ public:
                                           const NRLib::Matrix & reflection_matrix,
                                           int                   angle) const;
 
+  void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
+                                    std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                    const NRLib::Matrix                        & reflection_matrix,
+                                    const Simbox                               * simbox);
+
+  void SetWellSyntheticSeismic(std::vector<Wavelet *>                     & wavelet,
+                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                               const std::vector<std::vector<double> >    & synt_seis,
+                               const Simbox                               & simbox);
+
   //GET FUNCTIONS
 
   //SET FUNCTIONS
@@ -116,12 +126,16 @@ public:
   void AddBackgroundVs(FFTGrid * vs)   { background_vs_intervals_.push_back(new FFTGrid(vs))   ;}
   void AddBackgroundRho(FFTGrid * rho) { background_rho_intervals_.push_back(new FFTGrid(rho)) ;}
 
+  void AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs);
+
 private:
 
   //Resuls per interval
   std::vector<FFTGrid *> background_vp_intervals_;
   std::vector<FFTGrid *> background_vs_intervals_;
   std::vector<FFTGrid *> background_rho_intervals_;
+
+  std::vector<std::map<std::string, BlockedLogsCommon *> > blocked_logs_intervals_;
 
   std::vector<fftw_real *>         corr_T_;
   std::vector<float *>             corr_T_filtered_;
@@ -131,7 +145,7 @@ private:
   std::vector<std::vector<float> > post_cov_vs00_;
   std::vector<std::vector<float> > post_cov_rho00_;
 
-  std::vector<std::vector<Wavelet *> > wavelets_intervals_; //Wavelets resampled to simbox
+  //std::vector<std::vector<Wavelet *> > wavelets_intervals_; //Wavelets resampled to simbox
 
   //Results combined
   StormContGrid                  * cov_vp_;
@@ -152,6 +166,8 @@ private:
   StormContGrid                  * background_vp_;
   StormContGrid                  * background_vs_;
   StormContGrid                  * background_rho_;
+
+  std::map<std::string, BlockedLogsCommon *> blocked_logs_;
 
   std::vector<StormContGrid *>     simulations_seed0_; //Vector over number of simulations
   std::vector<StormContGrid *>     simulations_seed1_;

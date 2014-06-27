@@ -349,6 +349,8 @@ int main(int argc, char** argv)
         }
       }
 
+      crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+
     } //interval_loop
 
 

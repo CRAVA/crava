@@ -197,10 +197,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int n_intervals = multi_interval_grid->GetNIntervals();
 
   const Simbox & simbox = common_data->GetFullInversionSimbox();
+  Simbox simbox_final = Simbox(common_data->GetFullInversionSimbox());
 
   if (n_intervals > 1) {
 
-    //H-TODO Wavelets
+    //H-TODO Written wells for multiple intervals.
 
    const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
    int nx = simbox.getnx();
@@ -212,6 +213,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     int nz_max = static_cast<int>((simbox.getBotZMax() - simbox.getTopZMin()) / dz_min);
 
+    simbox_final.setDepth(simbox.GetTopSurface(), simbox.GetBotSurface(), nz_max, false);
+    std::string err_text_tmp = "";
+    simbox_final.calculateDz(model_settings->getLzLimit(), err_text_tmp);
 
     if (model_settings->getWritePrediction()) {
 
@@ -419,9 +423,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     }
 
     //Wavelets
-    for (int i = 0; i < n_intervals; i++) {
-      wavelets_intervals_.push_back(seismic_parameters_intervals[i].GetWavelets());
-    }
+    //for (int i = 0; i < n_intervals; i++) {
+    //  wavelets_intervals_.push_back(seismic_parameters_intervals[i].GetWavelets());
+    //}
 
   }
   else {
@@ -433,7 +437,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
 
     //Wavelets
-    wavelets_intervals_.push_back(seismic_parameters_intervals[0].GetWavelets());
+    //wavelets_intervals_.push_back(seismic_parameters_intervals[0].GetWavelets());
 
 
     std::string interval_name = multi_interval_grid->GetIntervalName(0);
@@ -457,6 +461,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_vp_  = CreateStormGrid(simbox, background_vp_intervals_[0]);
     background_vs_  = CreateStormGrid(simbox, background_vs_intervals_[0]);
     background_rho_ = CreateStormGrid(simbox, background_rho_intervals_[0]);
+
+    blocked_logs_ = blocked_logs_intervals_[0];
 
     corr_T_.push_back(seismic_parameters_intervals[0].GetCorrT());
     if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
@@ -511,9 +517,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
 
 
-  //Compute Synt seismic
-
-  //H ComputeSeismicImpedance needs reflection matrix, but in avoinversion the reflection matrix is per interval
+  //ComputeSeismicImpedance from avoinversion.cpp
   reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
   wavelets_          = common_data->GetWavelet(0);
 
@@ -525,7 +529,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
 
 
-  //seismic_parameters_intervals[0].releaseGrids();
+  //From CommonData::WaveletHandling
+  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox_final);
+
+  //From wavelet1D.cpp
+  SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final);
 
 }
 
@@ -742,7 +750,10 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   //CRA-544: Include blocked background logs when writing blocked logs to file //H-TODO
 
-  //Wavelets are written out both in commonData and modelavodynamic
+  //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
+
+  //H-TODO Resample well logs to the final resolution
+  // Run GenerateSyntheticSeismicLogs on the new blocked logs
 
 
   int output_grids_elastic = model_settings->getOutputGridsElastic();
@@ -750,7 +761,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
 
-    WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     WriteWells(common_data->GetWells(), model_settings);
 
@@ -787,7 +798,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     }
 
-    //Write well wavelets (from wavelet1D.cpp)
+    //Write well wavelets
     //int w = 0;
     //const std::map<std::string, BlockedLogsCommon *> & blocked_logs = common_data->GetBlockedLogs();
 
@@ -801,7 +812,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     //    std::string well_name(blocked_log->GetWellName());
     //    NRLib::Substitute(well_name,"/","_");
     //    NRLib::Substitute(well_name," ","_");
-    //    std::string file_name = IO::PrefixWellWavelet() + well_name + "_";
+    //    std::string file_name = IO::PrefixWellWavelet() + well_name + "_RESAMPLED";
 
     //    int n_angles = wavelets_intervals_[0].size();
     //    for (int i = 0; i < n_angles; i++) {
@@ -810,8 +821,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     //  }
     //  w++;
     //}
-
-    //H Wavelet_estimated?
 
     //Write seismic data
     if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
@@ -940,7 +949,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     //Write blocked wells
     if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-      WriteBlockedWells(common_data->GetBlockedLogs(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+      WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
     if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
       WriteWells(common_data->GetWells(), model_settings);
@@ -1528,4 +1537,65 @@ CravaResult::ComputeSeismicImpedance(StormContGrid       * vp,
   }
 
   return(impedance);
+}
+
+void CravaResult::AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs)
+{
+  std::map<std::string, BlockedLogsCommon *> new_blocked_logs;
+
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    BlockedLogsCommon * new_blocked_log = new BlockedLogsCommon(*blocked_log); //copy
+
+    std::string name = blocked_log->GetWellName();
+
+    new_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(name, new_blocked_log));
+  }
+
+  blocked_logs_intervals_.push_back(new_blocked_logs);
+}
+
+void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
+                                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                               const NRLib::Matrix                        & reflection_matrix,
+                                               const Simbox                               & simbox)
+{
+  int nzp = simbox.GetNZpad();
+  int nz  = simbox.getnz();
+
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if (blocked_log->GetIsDeviated() == false)
+      blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, &simbox);
+  }
+}
+
+void CravaResult::SetWellSyntheticSeismic(std::vector<Wavelet *>                     & wavelet,
+                                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                          const std::vector<std::vector<double> >    & synt_seis,
+                                          const Simbox                               & simbox)
+{
+  int nz  = simbox.getnz();
+
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    int n_angles = wavelet.size();
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
+    float z0 = static_cast<float> (blocked_log->GetZposBlocked()[0]);
+
+    for (int i = 0; i < n_angles; i++) {
+      //int nz = wavelet[i]->getNz();
+      float dz_well = static_cast<float>(simbox.getRelThick(ipos[0],jpos[0])) * wavelet[i]->getDz();
+
+      blocked_log->SetLogFromVerticalTrend(synt_seis[i], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
+    }
+
+  }
 }
