@@ -1574,14 +1574,15 @@ void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>           
   }
 }
 
-void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>               & wavelet,
-                                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                          const std::vector<std::vector<double> >    & synt_seis,
-                                          const Simbox                               & simbox,
-                                          const std::vector<bool>                    & wavelet_estimated)
+void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
+                                          std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
+                                          const std::vector<std::vector<std::vector<double> > > & synt_seis, //vector(angle) vector(wells)
+                                          const Simbox                                          & simbox,
+                                          const std::vector<bool>                               & wavelet_estimated)
 {
   int nz  = simbox.getnz();
 
+  int w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
@@ -1595,9 +1596,10 @@ void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>          
       //int nz = wavelet[i]->getNz();
       float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();
 
-      if (wavelet_estimated[i] == true)
-        blocked_log->SetLogFromVerticalTrend(synt_seis[i], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
+      if (wavelet_estimated[i] == true && synt_seis[i][w].size() > 0)
+        blocked_log->SetLogFromVerticalTrend(synt_seis[i][w], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
     }
 
+    w++;
   }
 }

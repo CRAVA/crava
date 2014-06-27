@@ -41,7 +41,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
                      const NRLib::Matrix                              & reflection_matrix,
-                     std::vector<double>                              & synt_seis,
+                     std::vector<std::vector<double> >                & synt_seis,
                      int                                                iAngle,
                      int                                              & errCode,
                      std::string                                      & errTxt)
@@ -283,10 +283,10 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
 
-      synt_seis.resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
       if (wellWeight[w] > 0) {
+        synt_seis[w].resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
         for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
-          synt_seis[i] = synt_seis_r[w][i];
+          synt_seis[w][i] = synt_seis_r[w][i];
 
         //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic/CravaResult
         //blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);

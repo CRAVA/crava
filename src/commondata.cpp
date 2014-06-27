@@ -3000,25 +3000,25 @@ CommonData::FindMeanVsVp(const NRLib::Well            & well,
 }
 
 
-bool CommonData::WaveletHandling(ModelSettings                                     * model_settings,
-                                 InputFiles                                        * input_files,
-                                 const Simbox                                      & estimation_simbox,
-                                 const Simbox                                      & full_inversion_simbox,
-                                 std::map<int, std::vector<SeismicStorage> >       & seismic_data,
-                                 std::map<int, std::vector<Wavelet *> >            & wavelets,
-                                 std::map<int, std::vector<Grid2D *> >             & local_noise_scales,
-                                 std::map<int, std::vector<Grid2D *> >             & local_shifts,
-                                 std::map<int, std::vector<Grid2D *> >             & local_scales,
-                                 std::map<int, std::vector<float> >                & global_noise_estimates,
-                                 std::map<int, std::vector<float> >                & sn_ratios,
-                                 std::map<int, std::vector<std::vector<double> > > & synt_seis,
-                                 bool                                              & use_local_noise,
-                                 std::vector<std::vector<double> >                 & t_grad_x,
-                                 std::vector<std::vector<double> >                 & t_grad_y,
-                                 NRLib::Grid2D<float>                              & ref_time_grad_x,
-                                 NRLib::Grid2D<float>                              & ref_time_grad_y,
-                                 std::vector<NRLib::Matrix >                       & reflection_matrix,
-                                 std::string                                       & err_text_common) const {
+bool CommonData::WaveletHandling(ModelSettings                                                   * model_settings,
+                                 InputFiles                                                      * input_files,
+                                 const Simbox                                                    & estimation_simbox,
+                                 const Simbox                                                    & full_inversion_simbox,
+                                 std::map<int, std::vector<SeismicStorage> >                     & seismic_data,
+                                 std::map<int, std::vector<Wavelet *> >                          & wavelets,
+                                 std::map<int, std::vector<Grid2D *> >                           & local_noise_scales,
+                                 std::map<int, std::vector<Grid2D *> >                           & local_shifts,
+                                 std::map<int, std::vector<Grid2D *> >                           & local_scales,
+                                 std::map<int, std::vector<float> >                              & global_noise_estimates,
+                                 std::map<int, std::vector<float> >                              & sn_ratios,
+                                 std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis,
+                                 bool                                                            & use_local_noise,
+                                 std::vector<std::vector<double> >                               & t_grad_x,
+                                 std::vector<std::vector<double> >                               & t_grad_y,
+                                 NRLib::Grid2D<float>                                            & ref_time_grad_x,
+                                 NRLib::Grid2D<float>                                            & ref_time_grad_y,
+                                 std::vector<NRLib::Matrix >                                     & reflection_matrix,
+                                 std::string                                                     & err_text_common) const {
 
   int n_timeLapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
@@ -3171,9 +3171,11 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
     // check if local noise is set for some angles.
     bool local_noise_set = false;
-    std::vector<std::vector<double> > synt_seis_angles(n_angles);
+    std::vector<std::vector<std::vector<double> > > synt_seis_angles(n_angles);
 
     for (int j = 0; j < n_angles; j++) {
+
+      synt_seis_angles[j].resize(n_wells);
 
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
@@ -3327,7 +3329,7 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                              const Simbox                             & estimation_simbox,
                              const Simbox                             & full_inversion_simbox,
                              const NRLib::Matrix                      & reflection_matrix,
-                             std::vector<double>                      & synt_seis,
+                             std::vector<std::vector<double> >        & synt_seis,
                              std::string                              & err_text,
                              Wavelet                                 *& wavelet,
                              Grid2D                                  *& local_noise_scale, //local noise estimates?
