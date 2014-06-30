@@ -102,6 +102,9 @@ private:
                                    const Simbox                               & simbox,
                                    int                                          n_angles);
 
+  void              AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                   std::vector<FFTGrid *>                     & seismic_grids,
+                                   int                                          n_angles);
 
   int                               number_of_angles_;
 

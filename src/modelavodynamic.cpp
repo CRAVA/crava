@@ -87,12 +87,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //AngulurCorr between angle i and j
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
 
-  //Add seismic data to blocked logs (before resampling to intervals).
-  AddSeismicLogs(model_general->GetBlockedWells(), //H moved to commondata
-                 seismic_data,
-                 simbox,
-                 number_of_angles_);
-
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
 
@@ -181,10 +175,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                            +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
       }
     }
+
   }
 
-  //Logging from processSeismic
+  //Add seismic data to blocked logs
+  AddSeismicLogs(model_general->GetBlockedWells(),
+                 seis_cubes_,
+                 number_of_angles_);
 
+  //Logging from processSeismic
   bool segy_volumes_read = false;
   for (int i = 0; i < number_of_angles_ ; i++) {
     int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
@@ -623,6 +622,22 @@ void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> 
         blocked_log->SetLogFromGrid(seismic_data[i].GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
       else //STORM / SGRI
         blocked_log->SetLogFromGrid(seismic_data[i].GetStorm(), i, n_angles, "SEISMIC_DATA");
+
+    }
+  }
+}
+
+void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                     std::vector<FFTGrid *>                     & seismic_grids,
+                                     int                                          n_angles)
+{
+  for (int i = 0; i < n_angles; i++) {
+
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
+
+      blocked_log->SetLogFromGrid(seismic_grids[i], i, n_angles, "SEISMIC_DATA");
 
     }
   }

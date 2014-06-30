@@ -85,10 +85,6 @@ CommonData::CommonData(ModelSettings * model_settings,
       block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_,
                                              wells_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_,
                                              mapped_blocked_logs_intervals_, err_text);
-
-
-     //AddSeismicLogs(mapped_blocked_logs_, seismic_data_.find(0)->second, estimation_simbox_, seismic_data_.find(0)->second.size());
-
   }
   else
     block_wells_ = true;
@@ -9941,28 +9937,4 @@ void CommonData::ReleaseBackgroundGrids(int i_interval, int elastic_param)
   assert (elastic_param < static_cast<int>(3) && i_interval < static_cast<int>(background_parameters_.size()));
   delete background_parameters_[i_interval][elastic_param];
   background_parameters_[i_interval][elastic_param] = NULL;
-}
-
-void CommonData::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                const std::vector<SeismicStorage>          & seismic_data,
-                                const Simbox                               & simbox,
-                                int                                          n_angles)
-{
-  for (int i = 0; i < n_angles; i++) {
-
-    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-      BlockedLogsCommon * blocked_log = iter->second;
-
-      int seismic_type = seismic_data[i].GetSeismicType();
-
-      if (seismic_type == 0) //SEGY
-        blocked_log->SetLogFromGrid(seismic_data[i].GetSegY(), simbox, i, n_angles, "SEISMIC_DATA");
-      else if (seismic_type == 3) //FFTGrid
-        blocked_log->SetLogFromGrid(seismic_data[i].GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
-      else //STORM / SGRI
-        blocked_log->SetLogFromGrid(seismic_data[i].GetStorm(), i, n_angles, "SEISMIC_DATA");
-
-    }
-  }
 }

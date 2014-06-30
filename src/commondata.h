@@ -835,11 +835,6 @@ private:
   void               PrintSettings(ModelSettings    * model_settings,
                                    const InputFiles * input_files);
 
-  void               AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const std::vector<SeismicStorage>          & seismic_data,
-                                    const Simbox                               & simbox,
-                                    int                                          n_angles);
-
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
