@@ -84,7 +84,7 @@ public:
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
 
-  //const std::vector<std::vector<double> >                            & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
+  const std::vector<std::vector<std::vector<double> > >              & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
 
   bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
@@ -371,24 +371,25 @@ private:
                                            const std::vector<NRLib::Matrix>            & refl_mat,
                                            std::string                                 & err_text);
 
-  bool               WaveletHandling(ModelSettings                                     * model_settings,
-                                     InputFiles                                        * input_files,
-                                     const Simbox                                      & estimation_simbox,
-                                     const Simbox                                      & full_inversion_simbox,
-                                     std::map<int, std::vector<SeismicStorage> >       & seismic_data,
-                                     std::map<int, std::vector<Wavelet *> >            & wavelets,
-                                     std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
-                                     std::map<int, std::vector<Grid2D *> >             & local_shift,
-                                     std::map<int, std::vector<Grid2D *> >             & local_scale,
-                                     std::map<int, std::vector<float> >                & global_noise_estimate,
-                                     std::map<int, std::vector<float> >                & sn_ratio,
-                                     bool                                              & use_local_noise,
-                                     std::vector<std::vector<double> >                 & t_grad_x,
-                                     std::vector<std::vector<double> >                 & t_grad_y,
-                                     NRLib::Grid2D<float>                              & ref_time_grad_x,
-                                     NRLib::Grid2D<float>                              & ref_time_grad_y,
-                                     std::vector<NRLib::Matrix>                        & refl_mat,
-                                     std::string                                       & err_text_common) const;
+  bool               WaveletHandling(ModelSettings                                                   * model_settings,
+                                     InputFiles                                                      * input_files,
+                                     const Simbox                                                    & estimation_simbox,
+                                     const Simbox                                                    & full_inversion_simbox,
+                                     std::map<int, std::vector<SeismicStorage> >                     & seismic_data,
+                                     std::map<int, std::vector<Wavelet *> >                          & wavelets,
+                                     std::map<int, std::vector<Grid2D *> >                           & local_noise_scale,
+                                     std::map<int, std::vector<Grid2D *> >                           & local_shift,
+                                     std::map<int, std::vector<Grid2D *> >                           & local_scale,
+                                     std::map<int, std::vector<float> >                              & global_noise_estimate,
+                                     std::map<int, std::vector<float> >                              & sn_ratio,
+                                     std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis, //map timelapse, vector angles, vector wells
+                                     bool                                                            & use_local_noise,
+                                     std::vector<std::vector<double> >                               & t_grad_x,
+                                     std::vector<std::vector<double> >                               & t_grad_y,
+                                     NRLib::Grid2D<float>                                            & ref_time_grad_x,
+                                     NRLib::Grid2D<float>                                            & ref_time_grad_y,
+                                     std::vector<NRLib::Matrix>                                      & refl_mat,
+                                     std::string                                                     & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
                                             std::map<int, std::vector<SeismicStorage> > & seismic_data,
@@ -444,9 +445,9 @@ private:
                                       const Simbox                             & estimation_simbox,
                                       const Simbox                             & full_inversion_simbox,
                                       const NRLib::Matrix                      & reflection_matrix,
-                                      std::vector<double>                      & synt_seic,
+                                      std::vector<std::vector<double> >        & synt_seis,
                                       std::string                              & err_text,
-                                      Wavelet                                  *& wavelet,
+                                      Wavelet                                 *& wavelet,
                                       Grid2D                                  *& local_noise_scale,
                                       Grid2D                                  *& local_noise_shift,
                                       Grid2D                                  *& local_noise_estimate,
@@ -834,6 +835,11 @@ private:
   void               PrintSettings(ModelSettings    * model_settings,
                                    const InputFiles * input_files);
 
+  void               AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                    const std::vector<SeismicStorage>          & seismic_data,
+                                    const Simbox                               & simbox,
+                                    int                                          n_angles);
+
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
@@ -899,14 +905,15 @@ private:
   bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 
   // Wavelet
-  std::vector<Wavelet*>                                        temporary_wavelets_;            ///< Wavelet per angle
-  std::map<int, std::vector<Wavelet *> >                       wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
-  std::map<int, std::vector<Grid2D *> >                        local_shifts_;
-  std::map<int, std::vector<Grid2D *> >                        local_scales_;
-  std::map<int, std::vector<float> >                           global_noise_estimates_;
-  std::map<int, std::vector<float> >                           sn_ratios_;
-  bool                                                         use_local_noises_;
+  std::vector<Wavelet*>                                           temporary_wavelets_;            ///< Wavelet per angle
+  std::map<int, std::vector<Wavelet *> >                          wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Grid2D *> >                           local_noise_scales_;
+  std::map<int, std::vector<Grid2D *> >                           local_shifts_;
+  std::map<int, std::vector<Grid2D *> >                           local_scales_;
+  std::map<int, std::vector<float> >                              global_noise_estimates_;
+  std::map<int, std::vector<float> >                              sn_ratios_;
+  bool                                                            use_local_noises_;
+  std::map<int, std::vector<std::vector<std::vector<double> > > > synt_seis_;
 
   std::vector<std::vector<double> >                            t_grad_x_;
   std::vector<std::vector<double> >                            t_grad_y_;

@@ -14,7 +14,6 @@
 
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
-//#include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
 #include "src/xmlmodelfile.h"
 #include "src/modelsettings.h"
@@ -89,7 +88,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
 
   //Add seismic data to blocked logs (before resampling to intervals).
-  AddSeismicLogs(model_general->GetBlockedWells(),
+  AddSeismicLogs(model_general->GetBlockedWells(), //H moved to commondata
                  seismic_data,
                  simbox,
                  number_of_angles_);
@@ -322,6 +321,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
+  //H This is used in writing of wells and in faciesprob.
   if (model_settings->getEstimateWaveletNoise())
     CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox);
 

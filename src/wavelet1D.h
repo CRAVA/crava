@@ -24,7 +24,7 @@ public:
             const std::vector<Surface *>                     & estimInterval,
             const ModelSettings                              * modelSettings,
             const NRLib::Matrix                              & reflCoef,
-            std::vector<double>                              & synt_seis,
+            std::vector<std::vector<double> >                & synt_seis,
             int                                                iAngle,
             int                                              & errCode,
             std::string                                      & errTxt);

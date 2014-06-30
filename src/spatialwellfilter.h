@@ -10,8 +10,6 @@
 
 class FFTGrid;
 class AVOInversion;
-//class WellData;
-//class BlockedLogs;
 class BlockedLogsCommon;
 class SeismicParametersHolder;
 
@@ -26,24 +24,11 @@ public:
                                                        SyntWellData        * well,
                                                        int                   wellnr);
 
-  //void                     setPriorSpatialCorr(FFTGrid    * parSpatialCorr,
-  //                                             WellData   * well,
-  //                                             int          wellnr);
-
   void                     setPriorSpatialCorr(FFTGrid           * parSpatialCorr,
                                                BlockedLogsCommon * blocked_log,
                                                int                 wellnr);
 
-  //void                     doFiltering(std::vector<WellData *>         wells,
-  //                                     int                             nWells,
-  //                                     bool                            useVpRhoFilter,
-  //                                     int                             nAngles,
-  //                                     const Crava                   * cravaResult,
-  //                                     const std::vector<Grid2D *>   & noiseScale,
-  //                                     SeismicParametersHolder       & seismicParameters);
-
   void                    doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
-                                      //int                                        nWells,
                                       bool                                       useVpRhoFilter,
                                       int                                        nAngles,
                                       const AVOInversion                       * avoInversionResult,
@@ -56,24 +41,11 @@ public:
                                                 int                                        nWells,
                                                 const NRLib::Matrix                      & priorVar0);
 
-  //void                         doFiltering(WellData                   ** wells,
-  //                                         int                           nWells,
-  //                                         bool                          useVpRhoFilter,
-  //                                         int                           nAngles,
-  //                                         const AVOInversion          * avoInversionResult,
-  //                                         const std::vector<Grid2D *> & noiseScale);
-
   std::vector<NRLib::Matrix> & getSigmae(void)     { return sigmae_ ;}
   std::vector<double **>     & getSigmaeSynt()     {return sigmaeSynt_;}
 
 
 private:
-
-  //void doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
-  //                      double                     ** sigmapri,
-  //                      double                     ** sigmapost,
-  //                      const int                     n,
-  //                      BlockedLogs                 * blockedLogs);
 
   void doVpRhoFiltering(std::vector<NRLib::Matrix> &  sigmaeVpRho,
                         double                     ** sigmapri,
@@ -120,21 +92,10 @@ private:
 
   void adjustDiagSigma(NRLib::Matrix & sigmae);
 
-  //void calculateFilteredLogs(const NRLib::Matrix & Aw,
-  //                           BlockedLogs         * blockedlogs,
-  //                           int                   n,
-  //                           bool                  useVs);
-
   void calculateFilteredLogs(const NRLib::Matrix & Aw,
                              BlockedLogsCommon   * blockedlogs,
                              int                   n,
                              bool                  useVs);
-
-  //void MakeInterpolatedResiduals(const float   * bwLog,
-  //                               const float   * bwLogBG,
-  //                               const int       n,
-  //                               const int       offset,
-  //                               NRLib::Vector & residuals);
 
   void MakeInterpolatedResiduals(const std::vector<double> & bwLog,
                                  const std::vector<double> & bwLogBG,
