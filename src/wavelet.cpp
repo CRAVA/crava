@@ -439,6 +439,9 @@ Wavelet::resample(float dz,
 
   fftw_real * wlet  = new fftw_real[rnzp];//static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
 
+  //H-TEST
+  std::vector<float> wavelet_values(nzp);
+
   float z;
   for(int k=0; k < rnzp; k++) {
     if(k < nzp) {
@@ -446,6 +449,9 @@ Wavelet::resample(float dz,
         z = static_cast<float>( dz*k );
       else
         z = static_cast<float>( dz*(k-nzp) );
+
+      wavelet_values[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
+
       wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
     }
     else
@@ -485,12 +491,12 @@ Wavelet::shiftFromFFTOrder()
   assert(inFFTorder_);
 
   //H-REMOVE
-  //std::string fileName = "wavelets/test_pre_shift_wavelet";
-  //NRLib::Vector pre_shift(nzp_);
-  //for (int i = 0; i < nzp_; i++) {
-  //  pre_shift(i) = rAmp_[i];
-  //}
-  //NRLib::WriteVectorToFile(fileName, pre_shift);
+  std::string fileName = "wavelets/test_pre_shift_wavelet";
+  NRLib::Vector pre_shift(nzp_);
+  for (int i = 0; i < nzp_; i++) {
+    pre_shift(i) = rAmp_[i];
+  }
+  NRLib::WriteVectorToFile(fileName, pre_shift);
 
   fftw_real * wlet  = new fftw_real[nzp_];
 
@@ -511,14 +517,15 @@ Wavelet::shiftFromFFTOrder()
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   //H-REMOVE
-  //fileName = "wavelets/test_post_shift_wavelet";
-  //NRLib::Vector post_shift(nzp_);
-  //for (int i = 0; i < nzp_; i++) {
-  //  post_shift(i) = rAmp_[i];
-  //}
-  //NRLib::WriteVectorToFile(fileName, post_shift);
+  fileName = "wavelets/test_post_shift_wavelet";
+  NRLib::Vector post_shift(nzp_);
+  for (int i = 0; i < nzp_; i++) {
+    post_shift(i) = rAmp_[i];
+  }
+  NRLib::WriteVectorToFile(fileName, post_shift);
 
   inFFTorder_ = false;
+  cz_         = nzp_/2;
 
 }
 

@@ -3440,9 +3440,26 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       wavelet_pre_resampling = new Wavelet1D(wavelet);
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
 
+      //H-REMOVE
+      std::string fileName = "wavelets/test_pre_resample_wavelet";
+      NRLib::Vector pre_resample(wavelet->getNz());
+      for (int ii = 0; ii < wavelet->getNz(); ii++) {
+        pre_resample(ii) = wavelet->getRAmp()[ii];
+      }
+      NRLib::WriteVectorToFile(fileName, pre_resample);
+
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
+
+      //H-REMOVE
+      fileName = "wavelets/test_post_resample_wavelet";
+      NRLib::Vector post_resample(wavelet->getNz());
+      for (int ii = 0; ii < wavelet->getNz(); ii++) {
+        post_resample(ii) = wavelet->getRAmp()[ii];
+      }
+      NRLib::WriteVectorToFile(fileName, post_resample);
+
     }
 
   }
