@@ -598,7 +598,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
       std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
       int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
 
-      std::vector<SeismicStorage> seismic_data_angle;
+      std::vector<SeismicStorage> seismic_data_angles;
 
       for (int i = 0; i < n_angles; i++) {
 
@@ -635,14 +635,16 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           bool relative_padding = false;
           bool only_volume      = true;
 
-            segy->ReadAllTraces(&full_inversion_simbox,
-                                padding,
-                                only_volume,
-                                relative_padding);
-            segy->CreateRegularGrid(); //sets geometry
+          segy->ReadAllTraces(&full_inversion_simbox,
+                              padding,
+                              only_volume,
+                              relative_padding);
+          segy->CreateRegularGrid(); //sets geometry
+
+          segy->GetGeometry()->WriteGeometry();
 
           SeismicStorage seismicdata(file_name, SeismicStorage::SEGY, angles[i], segy);
-          seismic_data_angle.push_back(seismicdata);
+          seismic_data_angles.push_back(seismicdata);
 
         } //SEGY
         else if (file_type == IO::STORM || file_type == IO::SGRI) { //From ModelGeneral::readStormFile
@@ -664,7 +666,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           else
             seismicdata_tmp = SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
 
-          seismic_data_angle.push_back(seismicdata_tmp);
+          seismic_data_angles.push_back(seismicdata_tmp);
         } //STORM / SGRI
         else if (file_type == IO::CRAVA) {
 
@@ -691,7 +693,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           grid->endAccess();
 
           SeismicStorage seismicdata(file_name, SeismicStorage::FFTGRID, angles[i], grid);
-          seismic_data_angle.push_back(seismicdata);
+          seismic_data_angles.push_back(seismicdata);
 
         }
         else {
@@ -699,7 +701,33 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         }
       } //n_angles
 
-      seismic_data[this_timelapse] = seismic_data_angle;
+      seismic_data[this_timelapse] = seismic_data_angles;
+
+      //Logging if seismic data is on segy format
+      bool segy_volumes_read = false;
+      for (int i = 0; i < n_angles; i++) {
+        int seismic_type = seismic_data[this_timelapse][i].GetSeismicType();
+        if (seismic_type == 0)
+          segy_volumes_read = true;
+      }
+      if (segy_volumes_read) {
+        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+        for (int i = 0; i < n_angles; i++) {
+          int seismic_type = seismic_data[this_timelapse][i].GetSeismicType();
+          if (seismic_type == 0) {
+            SegY * segy      = seismic_data[this_timelapse][i].GetSegY();
+            double geo_angle = (-1)*full_inversion_simbox.GetAngle()*(180/M_PI);
+            if (geo_angle < 0)
+              geo_angle += 360.0;
+            LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                                  segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
+                                  segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
+                                  segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
+
+          }
+        }
+      }
 
     }//if seismicFiles
   } //n_timeLapses
@@ -3440,25 +3468,9 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
       wavelet_pre_resampling = new Wavelet1D(wavelet);
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
 
-      //H-REMOVE
-      std::string fileName = "wavelets/test_pre_resample_wavelet";
-      NRLib::Vector pre_resample(wavelet->getNz());
-      for (int ii = 0; ii < wavelet->getNz(); ii++) {
-        pre_resample(ii) = wavelet->getRAmp()[ii];
-      }
-      NRLib::WriteVectorToFile(fileName, pre_resample);
-
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
-
-      //H-REMOVE
-      fileName = "wavelets/test_post_resample_wavelet";
-      NRLib::Vector post_resample(wavelet->getNz());
-      for (int ii = 0; ii < wavelet->getNz(); ii++) {
-        post_resample(ii) = wavelet->getRAmp()[ii];
-      }
-      NRLib::WriteVectorToFile(fileName, post_resample);
 
     }
 

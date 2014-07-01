@@ -183,32 +183,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                  seis_cubes_,
                  number_of_angles_);
 
-  //Logging from processSeismic
-  bool segy_volumes_read = false;
-  for (int i = 0; i < number_of_angles_ ; i++) {
-    int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    if (seismic_type == 0)
-      segy_volumes_read = true;
-  }
-  if (segy_volumes_read) {
-    LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-    LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-    for (int i = 0; i < number_of_angles_; i++) {
-      int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-      if (seismic_type == 0) {
-        SegY * segy      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
-        double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
-        if (geo_angle < 0)
-          geo_angle += 360.0;
-        LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                             segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
-                             segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
-                             segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
-
-      }
-    }
-  }
-
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
     interval_text = "for interval " + model_settings->getIntervalName(i_interval) + " ";
