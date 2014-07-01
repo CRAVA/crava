@@ -51,6 +51,9 @@ public:
   std::string                            GetWellName()         const   { return well_name_                                                            ;}
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
   int                                    GetNFacies()          const   { return static_cast<int>(facies_map_.size())                                  ;}
+  std::vector<double>                  & GetXposBlocked(void)          { return x_pos_blocked_                                                        ;}
+  std::vector<double>                  & GetYposBlocked(void)          { return y_pos_blocked_                                                        ;}
+  std::vector<double>                  & GetZposBlocked(void)          { return z_pos_blocked_                                                        ;}
   const std::vector<double>            & GetXposBlocked(void)  const   { return x_pos_blocked_                                                        ;}
   const std::vector<double>            & GetYposBlocked(void)  const   { return y_pos_blocked_                                                        ;}
   const std::vector<double>            & GetZposBlocked(void)  const   { return z_pos_blocked_                                                        ;}
@@ -59,11 +62,17 @@ public:
   const std::vector<double>            & GetZposRawLogs()      const   { return z_pos_raw_logs_                                                       ;}
 
   const std::map<int, std::string>     & GetFaciesMap()        const   { return facies_map_                                                           ;}
+  std::vector<int>                     & GetSposVector()               { return s_pos_                                                                ;}
+  std::vector<int>                     & GetIposVector()               { return i_pos_                                                                ;}
+  std::vector<int>                     & GetJposVector()               { return j_pos_                                                                ;}
+  std::vector<int>                     & GetKposVector()               { return k_pos_                                                                ;}
   const std::vector<int>               & GetSposVector()       const   { return s_pos_                                                                ;}
   const std::vector<int>               & GetIposVector()       const   { return i_pos_                                                                ;}
   const std::vector<int>               & GetJposVector()       const   { return j_pos_                                                                ;}
   const std::vector<int>               & GetKposVector()       const   { return k_pos_                                                                ;}
 
+  std::map<std::string, std::vector<double> > & GetContLogsBlocked()   { return continuous_logs_blocked_                                              ;}
+  std::map<std::string, std::vector<int> > & GetDiscLogsBlocked()      { return discrete_logs_blocked_                                                ;}
   const std::vector<double>            & GetContLogBlocked(std::string s) const {return continuous_logs_blocked_.find(s)->second                      ;}
   const std::vector<int>               & GetDiscLogBlocked(std::string s) const {return discrete_logs_blocked_.find(s)->second                        ;}
   const std::vector<double>            & GetVpBlocked(void)    const   { return continuous_logs_blocked_.find("Vp")->second                           ;}
@@ -73,20 +82,24 @@ public:
   const std::vector<double>            & GetRhoBlocked(void)   const   { return continuous_logs_blocked_.find("Rho")->second                          ;}
         std::vector<double>            & GetRhoBlocked(void)           { return continuous_logs_blocked_.find("Rho")->second                          ;}
   const std::vector<double>            & GetMDBlocked(void)    const   { return continuous_logs_blocked_.find("MD")->second                           ;}
+  std::vector<int>                     & GetFaciesBlocked()            { return facies_blocked_                                                       ;}
   const std::vector<int>               & GetFaciesBlocked(void) const  { return facies_blocked_                                                       ;}
   const std::vector<double>            & GetVpRawLogs(void)  const     { return continuous_raw_logs_.find("Vp")->second                               ;}
   const std::vector<double>            & GetVsRawLogs(void)  const     { return continuous_raw_logs_.find("Vs")->second                               ;}
   const std::vector<double>            & GetRhoRawLogs(void) const     { return continuous_raw_logs_.find("Rho")->second                              ;}
 
+  std::map<std::string, std::vector<double> > & GetContLogsSeismicRes(){ return cont_logs_seismic_resolution_                                         ;}
   const std::vector<double>            & GetVpSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsSeismicResolution(void)  const { return cont_logs_seismic_resolution_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoSeismicResolution(void) const { return cont_logs_seismic_resolution_.find("Rho")->second               ;}
 
+  std::map<std::string, std::vector<double> > & GetContLogsHighCutBg() { return cont_logs_highcut_background_                                         ;}
   const std::vector<double>            & GetContLogHighCutBackground(std::string s) const {return cont_logs_highcut_background_.find(s)->second       ;}
   const std::vector<double>            & GetVpHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vp")->second                ;}
   const std::vector<double>            & GetVsHighCutBackground(void)  const { return cont_logs_highcut_background_.find("Vs")->second                ;}
   const std::vector<double>            & GetRhoHighCutBackground(void) const { return cont_logs_highcut_background_.find("Rho")->second               ;}
 
+  std::map<std::string, std::vector<double> > & GetContLogsHighCutSeismic() { return cont_logs_highcut_seismic_                                       ;}
   const std::vector<double>            & GetVpHighCutSeismic(void)  const { return cont_logs_highcut_seismic_.find("Vp")->second                      ;}
   const std::vector<double>            & GetVsHighCutSeismic(void)  const { return cont_logs_highcut_seismic_.find("Vs")->second                      ;}
   const std::vector<double>            & GetRhoHighCutSeismic(void) const { return cont_logs_highcut_seismic_.find("Rho")->second                     ;}
@@ -101,6 +114,8 @@ public:
   const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
   const std::vector<double>            & GetFaciesProb(int angle)      const { return facies_prob_.find(angle)->second                                ;}
   const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
+  std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
+  std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
   //const std::vector<double>            & GetActualSyntSeismicData(int angle) const { return actual_synt_seismic_data_.find(angle)->second ;}
   //const std::vector<double>            & GetWellSyntSeismicData(int angle) const { return well_synt_seismic_data_.find(angle)->second ;}
 
@@ -111,40 +126,38 @@ public:
   bool                                   GetUseForFiltering(void)           const { return (use_for_filtering_ > 0)                                   ;}
   bool                                   GetUseForBackgroundTrend(void)     const { return (use_for_background_trend_ > 0)                            ;}
 
-  float                                  GetDz(void)                        const { return dz_                                                        ;}
+  double                                 GetDz(void)                        const { return dz_                                                        ;}
 
   bool                                   HasSyntheticVsLog(void)            const { return (real_vs_log_ == 0)                                        ;}
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
   bool                                   HasDiscLog(std::string s)     { return (discrete_logs_blocked_.find(s) != discrete_logs_blocked_.end())      ;}
 
   void                                   GetVerticalTrend(const std::vector<double>  & blocked_log,
-                                                          std::vector<double>        & trend);
+                                                          std::vector<double>        & trend) const;
 
   void                                   GetVerticalTrend(const int        * blocked_log,
-                                                          std::vector<int> & trend);
-
-  //void                                   GetVerticalTrend(const std::vector<double> & blocked_log,
-  //                                                        float                     * trend) const;
+                                                          std::vector<int> & trend) const;
 
   void                                   GetVerticalTrendLimited(const std::vector<double>       & blocked_log,
                                                                  std::vector<double>             & trend,
-                                                                 const std::vector<Surface *>    & limits);
+                                                                 const std::vector<Surface *>    & limits) const;
 
   void                                   GetBlockedGrid(SeismicStorage         * grid,
                                                         const Simbox           * estimation_simbox,
                                                         std::vector<double>    & blocked_log,
                                                         int                      i_offset = 0,
-                                                        int                      j_offset = 0);
-
+                                                        int                      j_offset = 0) const;
+  /*
   void                                   GetBlockedGrid(const FFTGrid       * grid,
                                                         std::vector<double> & blocked_log,
                                                         int                   i_offset = 0,
                                                         int                   j_offset = 0);
+                                                        */
 
   void                                   GetBlockedGrid(const NRLib::Grid<float> * grid,
                                                         std::vector<double>      & blocked_log,
                                                         int                        i_offset = 0,
-                                                        int                        j_offset = 0);
+                                                        int                        j_offset = 0) const;
 
 
   //SET FUNCTIONS --------------------------------
@@ -159,7 +172,7 @@ public:
   void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
 
 
-  // FUNCTIONS -----------------------------------
+  // OTHER FUNCTIONS -----------------------------------
 
   void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                 const Simbox                  * time_simbox,
@@ -172,7 +185,7 @@ public:
                                 const std::vector<Surface *>    limits,
                                 int                           & i_move,
                                 int                           & j_move,
-                                float                         & k_move);
+                                float                         & k_move) const;
 
   void                                   EstimateCor(fftw_complex * var1_c,
                                                      fftw_complex * var2_c,
@@ -183,15 +196,17 @@ public:
                                                    int           start,
                                                    int           length,
                                                    fftw_real   * cpp_r,
-                                                   int           nzp);
+                                                   int           nzp) const;
 
-  void                                   SetLogFromVerticalTrend(const std::vector<double> & vertical_trend,
-                                                                 double                      z0,              // z-value of center in top layer
-                                                                 double                      dz,              // dz in vertical trend
-                                                                 int                         nz,              // layers in vertical trend
-                                                                 std::string                 type,
-                                                                 int                         i_angle,
-                                                                 int                         n_angles);
+  void                                   SetLogFromVerticalTrend(const std::vector<double>                    & vertical_trend,
+                                                                 std::map<std::string, std::vector<double> >  & cont_logs_seismic_resolution,
+                                                                 std::vector<std::vector<double> >            & actual_synt_seismic_data,
+                                                                 std::vector<std::vector<double> >            & well_synt_seismic_data,
+                                                                 double                                         z0,              // z-value of center in top layer
+                                                                 double                                         dz,              // dz in vertical trend
+                                                                 int                                            nz,              // layers in vertical trend
+                                                                 std::string                                    type,
+                                                                 int                                            i_angle) const;
 
   void                                   FillInSeismic(std::vector<double> & seismic_data,
                                                        int                   start,
@@ -205,9 +220,10 @@ public:
                                                             const NRLib::Grid2D<float>   &    ref_time_grad_x,
                                                             const NRLib::Grid2D<float>   &    ref_time_grad_y,
                                                             std::vector<double>          &    x_gradient,
-                                                            std::vector<double>          &    y_gradient);
+                                                            std::vector<double>          &    y_gradient) const;
 
-  void                                   SetTimeGradientSettings(float distance, float sigma_m);
+  void                                   SetTimeGradientSettings(float          distance, 
+                                                                 float          sigma_m);
 
   void                                   FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,
                                                              const Simbox                      * const estimation_simbox,
@@ -223,13 +239,13 @@ public:
 
   int                                    FindMostProbable(const int * count,
                                                           int         n_facies,
-                                                          int         block_index);
+                                                          int         block_index) const;
 
   void                                   WriteWell(const int                        formats,
                                                    const float                      max_hz_background,
                                                    const float                      max_hz_seismic,
                                                    const std::vector<std::string> & facies_name,
-                                                   const std::vector<int>         & facies_label);
+                                                   const std::vector<int>         & facies_label) const;
 
   void                                   GenerateSyntheticSeismic(const NRLib::Matrix    & reflection_matrix,
                                                                   std::vector<Wavelet *> & wavelet,
@@ -261,38 +277,53 @@ public:
   void                                   FindMeanVsVp(const NRLib::Surface<double> & top,
                                                       const NRLib::Surface<double> & bot,
                                                       double                         mean_vs_vp,
-                                                      int                            n_vs_vp);
+                                                      int                            n_vs_vp) const;
 
-  bool                                   VolumeFocus(const NRLib::Volume     & volume); //Sets all observations outside volume to missing.
-                                                                                        //Returns false if none left - in that case, object is not modified.
+  bool                                   VolumeFocus(const NRLib::Volume                            & volume,
+                                                     std::vector<double>                            & x_pos_blocked,
+                                                     std::vector<double>                            & y_pos_blocked,
+                                                     std::vector<double>                            & z_pos_blocked,
+                                                     std::vector<int>                               & facies_blocked,
+                                                     std::vector<int>                               & s_pos,
+                                                     std::vector<int>                               & i_pos,
+                                                     std::vector<int>                               & j_pos,
+                                                     std::vector<int>                               & k_pos,
+                                                     std::map<std::string, std::vector<double> >    & continuous_logs_blocked,
+                                                     std::map<std::string, std::vector<int> >       & discrete_logs_blocked,
+                                                     std::map<std::string, std::vector<double> >    & cont_logs_seismic_resolution,
+                                                     std::map<std::string, std::vector<double> >    & cont_logs_highcut_background,
+                                                     std::map<std::string, std::vector<double> >    & cont_logs_highcut_seismic,
+                                                     std::vector<std::vector<double> >              & actual_synt_seismic_data,
+                                                     std::vector<std::vector<double> >              & well_synt_seismic_data) const; //Sets all observations outside volume to missing.
+                                                                                                              //Returns false if none left - in that case, object is not modified.
 
 private:
 
   // FUNCTIONS------------------------------------
 
   void                  SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                std::vector<double>       & z_pos,
+                                                const std::vector<double>       & z_pos,
                                                 int                         n_blocks,
                                                 const std::vector<double> & vertical_trend,
                                                 double                      z0,
                                                 double                      dzVt,
-                                                int                         nz);
+                                                int                         nz) const;
 
-  void         InterpolateTrend(const double   * blocked_log,
-                                double         * trend);
+  void         InterpolateTrend(const double                    * blocked_log,
+                                double                          * trend) const;
 
-  void         InterpolateTrend(const std::vector<double> & blocked_log,
-                                double                    * trend);
+  void         InterpolateTrend(const std::vector<double>       & blocked_log,
+                                double                          * trend) const;
 
-  void         InterpolateTrend(const std::vector<double>    & blocked_log,
-                                std::vector<double>          & trend);
+  void         InterpolateTrend(const std::vector<double>       & blocked_log,
+                                std::vector<double>             & trend) const;
 
-  void         InterpolateTrend(const std::vector<double>      & blocked_log,
-                                 std::vector<double>           & trend,
-                                 const std::vector<Surface *>  & limits);
+  void         InterpolateTrend(const std::vector<double>       & blocked_log,
+                                 std::vector<double>            & trend,
+                                 const std::vector<Surface *>   & limits) const;
 
-  void         InterpolateTrend(const int        * blocked_log,
-                                std::vector<int> & trend);
+  void         InterpolateTrend(const int                       * blocked_log,
+                                std::vector<int>                & trend) const;
 
   double ComputeElasticImpedance(double         vp,
                                  float         vs,
@@ -310,129 +341,214 @@ private:
                                  const std::vector<std::string>               & disc_logs_to_be_blocked,
                                  unsigned int                                 & n_data,
                                  bool                                         & failed,
-                                 std::string                                  & err_text);
+                                 std::string                                  & err_text) const;
 
-  void    BlockWell(const Simbox                                        * const estimation_simbox,
+  void    BlockWell(const Simbox                                        * estimation_simbox,
                     const NRLib::Well                                   * well,
                     const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
                     const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
+                    const std::map<int, std::string>                    & facies_map,
                     std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                     std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
                     std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
                     std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                    std::vector<double>                                 & x_pos_blocked,
+                    std::vector<double>                                 & y_pos_blocked,
+                    std::vector<double>                                 & z_pos_blocked,
+                    std::vector<int>                                    & facies_blocked,
                     unsigned int                                          n_data,
+                    std::vector<int>                                    & i_pos,
+                    std::vector<int>                                    & j_pos,
+                    std::vector<int>                                    & k_pos,
+                    int                                                 & first_M,
+                    int                                                 & last_M,
+                    int                                                 & first_B,
+                    int                                                 & last_B,
                     unsigned int                                        & n_blocks,
+                    std::map<std::string, int>                          & n_blocks_with_data,
+                    int                                                 & n_blocks_with_data_tot,
                     bool                                                  facies_log_defined,
-                    const std::map<int, std::string>                    & facies_map,
                     bool                                                  interpolate,
+                    double                                              & dz,
                     bool                                                & failed,
-                    std::string                                         & err_text);
+                    std::string                                         & err_text) const;
 
   void    BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
                                             const NRLib::Well                                   * well,
                                             const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
-                                            const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
+                                            const std::map<std::string, std::vector<int> >      & discrete_raw_logs,
+                                            const std::map<int, std::string>                    & facies_map,
+                                            std::vector<double>                                 & x_pos_blocked,
+                                            std::vector<double>                                 & y_pos_blocked,
+                                            std::vector<double>                                 & z_pos_blocked,
+                                            std::vector<int>                                    & facies_blocked,
                                             std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
                                             std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
                                             std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
                                             std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
                                             unsigned int                                          n_data,
                                             unsigned int                                        & n_blocks,
+                                            std::map<std::string, int>                          & n_blocks_with_data,
+                                            int                                                 & n_blocks_with_data_tot,
+                                            std::vector<int>                                    & n_well_log_obs_in_interval,
+                                            std::map<std::string, int>                          & n_layers_adjusted_per_interval,
+                                            std::vector<int>                                    & i_pos,
+                                            std::vector<int>                                    & j_pos,
+                                            std::vector<int>                                    & k_pos,
+                                            std::vector<int>                                    & s_pos,
+                                            int                                                 & first_M,
+                                            int                                                 & last_M,
+                                            int                                                 & first_S,
+                                            int                                                 & last_S,
+                                            int                                                 & first_B,
+                                            int                                                 & last_B,
                                             bool                                                  facies_log_defined,
-                                            const std::map<int, std::string>                    & facies_map,
                                             bool                                                  interpolate,
                                             int                                                 & n_layers,
+                                            double                                              & dz,
                                             bool                                                & failed,
-                                            std::string                                         & err_text);
+                                            std::string                                         & err_text) const;
 
   void    FindSizeAndBlockPointers(const MultiIntervalGrid       * multiple_interval_grid,
                                    std::vector<int>              & b_ind,
                                    int                             n_data,
                                    int                           & n_layers,
+                                   int                           & first_M,
+                                   int                           & last_M,
+                                   int                           & first_S,
+                                   int                           & last_S,
                                    unsigned int                  & n_blocks,
                                    std::map<std::string, int>    & n_layers_adjusted_per_interval,
-                                   std::string                   & err_text);
+                                   std::string                   & err_text) const;
 
   void    FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
                                    std::vector<int>              & b_ind,
+                                   int                           & first_M,
+                                   int                           & last_M,
                                    unsigned int                  & n_blocks,
-                                   std::string                   & err_text);
+                                   std::string                   & err_text) const;
 
   void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
                                    std::vector<int>              & bInd,
+                                   int                           & first_M,
+                                   int                           & last_M,
                                    unsigned int                  & n_blocks,
-                                   std::string                   & err_text);
+                                   std::string                   & err_text) const;
 
-  void    FindBlockIJK(const Simbox                     * const estimation_simbox,
-                       const std::vector<int>           & b_ind);
+  void    FindBlockIJK(const Simbox                     * estimation_simbox,
+                       const std::vector<int>           & bInd,
+                       const int                        & first_M,
+                       const int                        & last_M,
+                       int                              & first_B,
+                       int                              & last_B,
+                       std::vector<int>                 & i_pos,
+                       std::vector<int>                 & j_pos,
+                       std::vector<int>                 & k_pos,
+                       double                           & dz) const;
 
   void    FindBlockIJK(const MultiIntervalGrid          * multiple_interval_grid,
-                       const std::vector<double>        & x_pos,
-                       const std::vector<double>        & y_pos,
-                       const std::vector<double>        & z_pos,
-                       const std::vector<int>           & b_ind);
+                       const std::vector<int>           & bInd,
+                       const std::vector<double>        & x_pos_raw_logs,
+                       const std::vector<double>        & y_pos_raw_logs,
+                       const std::vector<double>        & z_pos_raw_logs,
+                       const int                        & first_M,
+                       const int                        & last_M,
+                       const int                        & first_S,
+                       const int                        & last_S,
+                       int                              & first_B,
+                       int                              & last_B,
+                       std::vector<int>                 & n_well_log_obs_in_interval,
+                       std::vector<int>                 & i_pos,
+                       std::vector<int>                 & j_pos,
+                       std::vector<int>                 & k_pos,
+                       std::vector<int>                 & s_pos,
+                       double                           & dz) const;
 
-  void    FindBlockIJK(const StormContGrid              & stormgrid,
-                       const std::vector<int>             b_ind);
+  void    FindBlockIJK(const StormContGrid             & stormgrid,
+                       const std::vector<int>          & b_ind,
+                       const int                       & first_M,
+                       const int                       & last_M,
+                       int                             & first_B,
+                       int                             & last_B,
+                       std::vector<int>                & i_pos,
+                       std::vector<int>                & j_pos,
+                       std::vector<int>                & k_pos) const;
 
   void    BlockCoordinateLog(const std::vector<int>     &  b_ind,
                              const std::vector<double>  &  coord,
-                             std::vector<double>        &  blocked_coord);
+                             std::vector<double>        &  blocked_coord) const;
 
   void    BlockContinuousLog(const std::vector<int>     &  b_ind,
                              const std::vector<double>  &  well_log,
-                             std::vector<double>        &  blocked_log);
+                             std::vector<double>        &  blocked_log) const;
 
-  void    BlockFaciesLog(const std::vector<int>     & b_ind,
-                           const std::vector<int>     & well_log,
-                           const std::map<int,std::string>     & facies_map,
-                           int                          n_facies,
-                           std::vector<int>           &  blocked_log);
+  void    BlockFaciesLog(const std::vector<int>             & b_ind,
+                           const std::vector<int>           & well_log,
+                           const std::map<int,std::string>  & facies_map,
+                           int                                n_facies,
+                           std::vector<int>                 & blocked_log) const;
 
-  void    InterpolateContinuousLog(std::vector<double>   & blocked_log,
-                                   int                     start,
-                                   int                     end,
-                                   int                     index,
-                                   float                   rel);
+  void    InterpolateContinuousLog(std::vector<double>    & blocked_log,
+                                   int                      start,
+                                   int                      end,
+                                   int                      index,
+                                   float                    rel) const;
 
-  int   FindMostProbable(const std::vector<int>  & count,
-                         int                       n_facies,
-                         int                       block_index);
+  int   FindMostProbable(const std::vector<int>           & count,
+                         int                                n_facies,
+                         int                                block_index) const;
 
-  void    SmoothTrace(std::vector<float> &trace);
+  void    SmoothTrace(std::vector<float>                  & trace) const;
 
-  void    FindPeakTrace(std::vector<float> &trace, std::vector<double> &z_peak, std::vector<double> &peak,
-                        std::vector<double> &b, double dz, double z_top);
+  void    FindPeakTrace(std::vector<float>                & trace,
+                        std::vector<double>               & z_peak,
+                        std::vector<double>               & peak,
+                        std::vector<double>               & b,
+                        double                              dz,
+                        double                              z_top) const;
 
-  void    PeakMatch(std::vector<double> &zPeak, std::vector<double> &peak, std::vector<double> &b,
-                    std::vector<double> &zPeakW, std::vector<double> &peakW, std::vector<double> &bW);
+  void    PeakMatch(std::vector<double>                   & zPeak,
+                    std::vector<double>                   & peak,
+                    std::vector<double>                   & b,
+                    std::vector<double>                   & zPeakW,
+                    std::vector<double>                   & peakW,
+                    std::vector<double>                   & bW) const;
 
-  double  ComputeShift(std::vector<double> &z_peak, std::vector<double> &z_peak_w, double z0);
+  double  ComputeShift(std::vector<double>                & z_peak,
+                       std::vector<double>                & z_peak_w,
+                       double                               z0) const;
 
-  void    ComputeGradient(std::vector<double> &q_epsilon, std::vector<double> &q_epsilon_data,
-                          std::vector<double> &z_shift, int nx, int ny, double dx, double dy);
+  void    ComputeGradient(std::vector<double>             & q_epsilon,
+                          std::vector<double>             & q_epsilon_data,
+                          std::vector<double>             & z_shift,
+                          int                               nx,
+                          int                               ny,
+                          double                            dx,
+                          double                            dy) const;
 
   void    SmoothGradient(std::vector<double>               & x_gradient,
                          std::vector<double>               & y_gradient,
                          std::vector<double>               & q_epsilon,
                          std::vector<double>               & q_epsilon_data,
-                         std::vector<std::vector<double> > & sigma_gradient);
+                         std::vector<std::vector<double> > & sigma_gradient) const;
 
-  void    ComputePrecisionMatrix(double &a, double &b, double &c);
+  void    ComputePrecisionMatrix(double                     & a,
+                                 double                     & b,
+                                 double                     & c) const;
 
 
-  float   ComputeElasticImpedance(double         alpha,
-                                  double         beta,
-                                  double         rho,
-                                  const float * coeff) const;
+  float   ComputeElasticImpedance(double                      alpha,
+                                  double                      beta,
+                                  double                      rho,
+                                  const float               * coeff) const;
 
-  void    SetLogFromVerticalTrend(float     *& blocked_log,
-                                  const std::vector<double> & zpos,
-                                  int          nBlocks,
-                                  float      * vertical_trend,
-                                  double       z0,
-                                  double       dzVt,
-                                  int          nz);
+  void    SetLogFromVerticalTrend(float                       *& blocked_log,
+                                  const std::vector<double>    & zpos,
+                                  int                            nBlocks,
+                                  float                        * vertical_trend,
+                                  double                         z0,
+                                  double                         dzVt,
+                                  int                            nz) const;
 
   void    CountBlocksWithData(const std::vector<double>                          & x_pos_blocked,
                               const std::vector<double>                          & y_pos_blocked,
@@ -440,7 +556,7 @@ private:
                               const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
                               unsigned int                                         n_blocks,
                               std::map<std::string, int>                         & n_blocks_with_data,
-                              int                                                & n_blocks_with_data_tot);
+                              int                                                & n_blocks_with_data_tot) const;
 
   void    CountBlocksWithDataPerInterval(const MultiIntervalGrid                            * multiple_interval_grid,
                                          const std::vector<double>                          & x_pos_blocked,
@@ -451,21 +567,30 @@ private:
                                          std::map<std::string, int>                         & n_blocks_with_data,
                                          int                                                & n_blocks_with_data_tot) const;
 
-  void    WriteRMSWell(const float                      max_hz_background,
-                       const float                      max_hz_seismic,
-                       const std::vector<std::string> & facies_name,
-                       const std::vector<int>         & facies_label);
+  void    WriteRMSWell(const float                                max_hz_background,
+                       const float                                max_hz_seismic,
+                       const std::vector<std::string>           & facies_name,
+                       const std::vector<int>                   & facies_label) const;
 
-  void    WriteNorsarWell(const float max_hz_background,
-                          const float max_hz_seismic);
+  void    WriteNorsarWell(const float                             max_hz_background,
+                          const float                             max_hz_seismic) const;
 
-  void    FindXYZForVirtualPart(const Simbox * simbox);
+  void    FindXYZForVirtualPart(const Simbox              * simbox,
+                                const std::vector<int>    & i_pos,
+                                const std::vector<int>    & j_pos,
+                                const std::vector<int>    & k_pos,
+                                const int                 & n_blocks,
+                                const int                 & first_B,
+                                const int                 & last_B,
+                                std::vector<double>       & x_pos_blocked,
+                                std::vector<double>       & y_pos_blocked,
+                                std::vector<double>       & z_pos_blocked) const;
 
   void    UpdateLog(std::vector<double>                           & data,
-                    const std::vector<std::pair<size_t, size_t> > & intervals);
+                    const std::vector<std::pair<size_t, size_t> > & intervals) const;
 
   void    UpdateLog(std::vector<int>                              & data,
-                    const std::vector<std::pair<size_t, size_t> > & intervals);
+                    const std::vector<std::pair<size_t, size_t> > & intervals) const;
 
   // CLASS VARIABLES -----------------------------
 
@@ -531,7 +656,7 @@ private:
   bool                      interpolate_;              ///<
 
   int                       n_layers_;                 ///< Number of layers in estimation_simbox
-  float                     dz_;                       ///< Simbox dz value for block
+  double                    dz_;                       ///< Simbox dz value for block
 
   int                       first_S_;                   ///< First simbox that the well log appears in
   int                       last_S_;                    ///< Last simbox that the well log appears in
