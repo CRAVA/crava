@@ -68,7 +68,7 @@ public:
 
   FFTGrid                     * GetQualityGrid()                   { return quality_grid_      ;}
 
-  std::vector<Wavelet *>        GetWavelets()                      { return wavelets_          ;}
+  //std::vector<Wavelet *>        GetWavelets()                      { return wavelets_          ;}
 
   void                          invFFTAllGrids();
   void                          invFFTCovGrids();
@@ -107,7 +107,7 @@ public:
 
   void SetQualityGrid(FFTGrid * grid)                        { quality_grid_ = grid                                 ;}
 
-  void AddWavelet(Wavelet * wavelet)                         { wavelets_.push_back(wavelet)                         ;}
+  //void AddWavelet(Wavelet * wavelet)                         { wavelets_.push_back(wavelet)                         ;}
 
   void                          setBackgroundParameters(FFTGrid  * meanVp,
                                                         FFTGrid  * meanVs,
@@ -270,7 +270,7 @@ private:
 
   FFTGrid * quality_grid_;
 
-  std::vector<Wavelet *> wavelets_;               ///< Wavelet for angle
+  //std::vector<Wavelet *> wavelets_;               ///< Wavelet for angle
 
 };
 #endif

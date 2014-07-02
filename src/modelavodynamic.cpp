@@ -307,7 +307,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     NRLib::WriteVectorToFile(fileName, post_resample);
 
-    seismic_parameters.AddWavelet(wavelets_[i]);
+    //seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
   //H This is used in writing of wells and in faciesprob.
