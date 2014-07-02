@@ -406,6 +406,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                        missingTracesSimbox,
                        missingTracesPadding,
                        deadTracesSimbox,
+                       parName,
                        errText);
     if (stormgrid_tmp != NULL)
      delete stormgrid_tmp;
@@ -555,7 +556,8 @@ ModelGeneral::readStormFile(const std::string   & fName,
                          modelSettings->getSmoothLength(),
                          missingTracesSimbox,
                          missingTracesPadding,
-                         deadTracesSimbox, //Not used for storm-files
+                         deadTracesSimbox, // Not used for STORM files
+                         parName,
                          errText,
                          scale,
                          false);
