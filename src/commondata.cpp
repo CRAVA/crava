@@ -722,7 +722,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         }
       } //n_angles
 
-      seismic_data[this_timelapse] = seismic_data_angle;
+      seismic_data.push_back(seismic_data_angle);
 
     }//if seismicFiles
   } //n_timeLapses
@@ -8592,7 +8592,7 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   //  logLevel = LogKit::Low;
   //}
 
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
+  LogKit::LogFormatted(logLevel,"\nXY padding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_xPad, true_x_pad_factor, nx, nx_pad);
   LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",

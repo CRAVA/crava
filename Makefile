@@ -65,7 +65,7 @@ cleanall:
 	rm -f $(PROGRAM) main.o
 
 test:	$(PROGRAM) $(GRAMMAR)
-	cd test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(passive) $(case); cd ..
+	cd crava_test_suite; chmod +x TestScript.pl; perl -s ./TestScript.pl ../$(PROGRAM) $(passive) $(case); cd ..
 
 help:
 	@echo ''
