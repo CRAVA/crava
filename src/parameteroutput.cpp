@@ -473,6 +473,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const TraceHeaderFormat & thf,
                            bool                      padding)
 {
+  (void) padding;
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
   int domain_flag       = model_settings->getOutputGridDomain();

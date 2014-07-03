@@ -67,12 +67,12 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               n_blocks_with_data_tot_, facies_log_defined_, interpolate, dz_, failed, err_text);
 
   if(err_text == ""){
-    LogKit::LogFormatted(LogKit::Low,"-The following continuous logs were blocked into the simbox: ");
+    LogKit::LogFormatted(LogKit::Low,"-The following continuous logs from well \'"+well_name_+"\' were blocked into the simbox: ");
     for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
       LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
     LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
     if (disc_logs_to_be_blocked.size() > 0){
-    LogKit::LogFormatted(LogKit::Low,"-The following discrete logs were blocked into the simbox: ");
+    LogKit::LogFormatted(LogKit::Low,"-The following discrete logs from well \'"+well_name_+"\' were blocked into the simbox: ");
       for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
         LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
       if (disc_logs_to_be_blocked.size() > 1)
@@ -80,6 +80,9 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
       else
         LogKit::LogFormatted(LogKit::Low,"\n");
     }
+    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
+                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
+    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
@@ -216,22 +219,26 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
 
   if(err_text == ""){
-    if(interval_simboxes.size() == 1)
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the inversion simbox: ");
+    if(interval_simboxes.size() == 1){
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
+    }
     else
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs were blocked into the MultiIntervalGrid: ");
+      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
     for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
       LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
     LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
     if (disc_logs_to_be_blocked.size() > 0){
       if(interval_simboxes.size() == 1)
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the inversion simbox: ");
+        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
       else
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs were blocked into the MultiIntervalGrid: ");
+        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
       for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
         LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
       LogKit::LogFormatted(LogKit::Low,"\n");
     }
+    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
+                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
+    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
   }
   else{
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
@@ -1590,6 +1597,7 @@ void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
   for (int m = first_M_ ; m < last_M_ + 1 ; m++) {
     if (well_log[m] != RMISSING && well_log[m] != WELLMISSING) {
       blocked_log[b_ind[m]] += log(well_log[m]); //NBNB-PAL: Flytt denne logaritmen nedover...
+      //blocked_log[b_ind[m]] += well_log[m];
       count[b_ind[m]]++;
       //LogKit::LogFormatted(LogKit::Low,"m=%d bInd[m]  log(wellLog[m])  %d  %.5f \n",m,bInd[m],log(wellLog[m]));
     }
@@ -1597,6 +1605,7 @@ void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
   for (unsigned int l = 0 ; l < n_blocks_ ; l++) {
     if (count[l] > 0) {
       blocked_log[l] /= count[l];
+      //blocked_log[l] = log(blocked_log[l]); //tmp
       //LogKit::LogFormatted(LogKit::Low,"l=%d   count[l]=%d  sum=%.3f  blocked_log[l]=%.4f \n",l,count[l],sum, blocked_log[l]);
     }
     else
