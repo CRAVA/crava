@@ -503,10 +503,13 @@ WellData::readLASWell(const std::string              & wellFileName,
   try
   {
     NRLib::LasWell well(wellFileName);
+    well.MakeLogsUppercase();
     processNRLibWell(well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, false);
-    xpos0_ = xpos_[0];
-    ypos0_ = ypos_[0];
-    wellname_ = well.GetWellName();
+    if(errTxt_ == "") {
+      xpos0_ = xpos_[0];
+      ypos0_ = ypos_[0];
+      wellname_ = well.GetWellName();
+    }
   }
   catch (NRLib::Exception & e) {
     errTxt_ += "Error: " + NRLib::ToString(e.what());
@@ -557,19 +560,27 @@ WellData::processNRLibWell(const NRLib::Well              & well,
     nExtra = 1; //MD log, needed for writing.
   std::vector<double> * filler = NULL; //to eliminate warning.
   std::vector<const std::vector<double> *> logs(nLogs+nExtra, filler);
-  if(well.HasContLog("UTMX") == false) {
+
+  if(well.HasContLog("UTMX") == true)
+    logs[0] = &(well.GetContLog("UTMX"));
+  else if(well.HasContLog("EASTING") == true)
+    logs[0] = &(well.GetContLog("EASTING"));
+  else {
     error_ = 1;
-    errTxt_ += "Could not find log 'UTMX' in well file "+wellFileName+".\n";
+    errTxt_ += "Could not find log 'UTMX' or 'EASTING' in well file "+wellFileName+".\n";
     logs[0] = NULL;
   }
-  else
-    logs[0] = &(well.GetContLog("UTMX"));
-  if(well.HasContLog("UTMY") == false) {
+
+  if(well.HasContLog("UTMY") == true)
+    logs[1] = &(well.GetContLog("UTMY"));
+  else if(well.HasContLog("NORTHING") == true)
+    logs[1] = &(well.GetContLog("NORTHING"));
+  else {
     error_ = 1;
-    errTxt_ += "Could not find log 'UTMY' in well file "+wellFileName+".\n";
+    errTxt_ += "Could not find log 'UTMY' or 'NORTHING' in well file "+wellFileName+".\n";
     logs[1] = NULL;
   }
-  logs[1] = &(well.GetContLog("UTMY"));
+
   for(int i=0;i<nVar;i++) {
     if(well.HasContLog(parameterList[i]) == false) {
       logs[2+i] = NULL;
@@ -586,13 +597,14 @@ WellData::processNRLibWell(const NRLib::Well              & well,
 
   //Added MD log.
   int mdLog = nLogs;
-  logs[mdLog] = NULL;
   if(norsarWell==true) {
     if(well.HasContLog("MD") == false) {
       error_ = 1;
       errTxt_ += "Could not find log 'MD' in well file "+ wellFileName+ ".\n";
+      logs[mdLog] = NULL;
     }
-    logs[mdLog] = &(well.GetContLog("MD"));
+    else
+      logs[mdLog] = &(well.GetContLog("MD"));
     nLogs++;
   }
 
@@ -673,6 +685,15 @@ WellData::processNRLibWell(const NRLib::Well              & well,
       }
     }
     nFacies_ = static_cast<int>(facCodes.size());
+    if(nFacies_ > 0) {
+      faciesLogName_ = parameterList[4];
+      faciesNames_.resize(nFacies_);
+      faciesNr_ = new int[nFacies_];
+      for(size_t i=0;i<facCodes.size();i++) {
+        faciesNames_[i] = NRLib::ToString(facCodes[i]);
+        faciesNr_[i] = facCodes[i];
+      }
+    }
   }
 }
 

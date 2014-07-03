@@ -1501,8 +1501,8 @@ FaciesProb::createExpVol(const Simbox * volume)
   double maxB = exp(volume->gety0()+volume->getly());
   double minLR, maxLR;
   volume->getMinMaxZ(minLR, maxLR);
-  double minR = exp(minLR);
-  double maxR = exp(maxLR);
+  double minR = exp(minLR)*1000;
+  double maxR = exp(maxLR)*1000;
 
   double dA = (maxA-minA)/volume->getnx();
   double dB = (maxB-minB)/volume->getny();

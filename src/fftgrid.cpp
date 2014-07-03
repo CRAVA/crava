@@ -1141,6 +1141,30 @@ FFTGrid::fillInParamCorr(const Surface   * priorCorrXY,
   endAccess();
 }
 
+
+
+void
+FFTGrid::fillInTimeCov(const fftw_real * circCorrT)
+{
+  assert(istransformed_== false);
+  float value;
+
+  setAccessMode(WRITE);
+  for(int k = 0; k < nzp_; k++) {
+    for(int j = 0; j < nyp_; j++) {
+      for(int i = 0; i < rnxp_; i++) {
+          if(i==0 && j==0)
+             value=circCorrT[k];
+          else
+            value=0.0;
+
+          setNextReal(value);
+      }
+    }
+  }
+  endAccess();
+}
+
 void
 FFTGrid::fillInGenExpCorr(double Rx,
                           double Ry,
@@ -1266,10 +1290,10 @@ void FFTGrid::createGrid()
   counterForGet_  = 0;
   counterForSet_  = 0;
 
- // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createComplexGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
+ // LogKit::LogFormatted(LogKit::Error,"\nFFTGrid createGrid : nGrids = %d    maxGrids = %d\n",nGrids_,maxAllowedGrids_);
   if (nGrids_ > maxAllowedGrids_) {
     std::string text;
-    text += "\n\nERROR in FFTGrid createComplexGrid. You have allocated too many FFTGrids. The fix";
+    text += "\n\nERROR in FFTGrid createGrid. You have allocated too many FFTGrids. The fix";
     text += "\nis to increase the nGrids variable calculated in Model::checkAvailableMemory().\n";
     text += "\nDo you REALLY need to allocate more grids?\n";
     text += "\nAre there no grids that can be released?\n";
@@ -1439,7 +1463,7 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
   // k index in z direction
   float value;
 
-  // assert(istransformed_==false);
+  assert(istransformed_==false);
 
   bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
     ((i < nx_) && (j < ny_) && (k < nz_)));
@@ -2030,16 +2054,17 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void
-FFTGrid::writeFile(const std::string       & fName,
-                   const std::string       & subDir,
-                   const Simbox            * simbox,
-                   const std::string         label,
-                   const float               z0,
-                   const GridMapping       * depthMap,
-                   const GridMapping       * timeMap,
-                   const TraceHeaderFormat & thf,
-                   bool                      padding,
-                   bool                      scientific_format)
+FFTGrid::writeFile(const std::string              & fName,
+                   const std::string              & subDir,
+                   const Simbox                   * simbox,
+                   const std::string                label,
+                   const float                      z0,
+                   const GridMapping              * depthMap,
+                   const GridMapping              * timeMap,
+                   const TraceHeaderFormat        & thf,
+                   bool                             padding,
+                   bool                             scientific_format,
+                   const std::vector<std::string> & headerText)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
@@ -2058,7 +2083,7 @@ FFTGrid::writeFile(const std::string       & fName,
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((formatFlag_ & IO::SEGY) >0)
-        FFTGrid::writeSegyFile(fileName, simbox, z0, thf);
+        FFTGrid::writeSegyFile(fileName, simbox, z0, thf, headerText);
       if ((formatFlag_ & IO::SGRI) >0)
         FFTGrid::writeSgriFile(fileName, simbox, label);
       if ((formatFlag_ & IO::CRAVA) >0)
@@ -2168,17 +2193,26 @@ FFTGrid::writeStormFile(const std::string & fileName,
 
 
 int
-FFTGrid::writeSegyFile(const std::string       & fileName,
-                       const Simbox            * simbox,
-                       float                     z0,
-                       const TraceHeaderFormat & thf)
+FFTGrid::writeSegyFile(const std::string              & fileName,
+                       const Simbox                   * simbox,
+                       float                            z0,
+                       const TraceHeaderFormat        & thf,
+                       const std::vector<std::string> & headerText)
 {
   //  long int timestart, timeend;
   //  time(&timestart);
 
   std::string gfName = fileName + IO::SuffixSegy();
   //SegY * segy = new SegY(gfName, simbox);
-  TextualHeader header = TextualHeader::standardHeader();
+  TextualHeader header;
+  if(headerText.size() == 0)
+    header = TextualHeader::standardHeader();
+  else {
+    for(size_t i=0;i<headerText.size();i++) {
+      header.SetLine(i+1, headerText[i]);
+    }
+  }
+
   float dz = float(floor(simbox->getdz()+0.5));
   if(dz==0)
     dz = 1.0;

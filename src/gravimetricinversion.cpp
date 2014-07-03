@@ -38,12 +38,12 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  const State4D & state4d = modelGeneral->getState4D();
+  State4D * state4d = modelGeneral->getState4D();
   lag_index_              = modelGravityStatic->GetLagIndex();
 
-  int nxp               = seismicParameters.GetMuRho()->getNxp();
-  int nyp               = seismicParameters.GetMuRho()->getNyp();
-  int nzp               = seismicParameters.GetMuRho()->getNzp();
+  int nxp               = state4d->getMuVpStatic()->getNxp();
+  int nyp               = state4d->getMuVpStatic()->getNyp();
+  int nzp               = state4d->getMuVpStatic()->getNzp();
 
   int nx_upscaled       = modelGravityStatic->GetNx_upscaled();
   int ny_upscaled       = modelGravityStatic->GetNy_upscaled();
@@ -85,8 +85,8 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   CovExpTransform (cov_rho_current,  mean_current);
 
   // Compute joint distributions of [mc, ms] = exp([rho_current_log, rho_static_log])
-  FFTGrid * mean_rho_static = new FFTGrid(state4d.getMuRhoStatic());
-  FFTGrid * cov_rho_static  = new FFTGrid(state4d.getCovRhoRhoStaticStatic());
+  FFTGrid * mean_rho_static = new FFTGrid(state4d->getMuRhoStatic());
+  FFTGrid * cov_rho_static  = new FFTGrid(state4d->getCovRhoRhoStaticStatic());
 
   sigma_squared      = GetSigmaForTransformation(cov_rho_static);
   float mean_static  = GetMeanForTransformation(mean_rho_static);
@@ -102,8 +102,8 @@ GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGener
   CovExpTransform (cov_rho_static,  mean_static);
 
   // Cov of exp(rho_static_current_log) cov current = cov static static + cov static dynamic
-  FFTGrid * cov_rhorho_static_current = new FFTGrid(state4d.getCovRhoRhoStaticStatic());
-  FFTGrid * cov_rhorho_static_dynamic = new FFTGrid(state4d.getCovRhoRhoStaticDynamic());
+  FFTGrid * cov_rhorho_static_current = new FFTGrid(state4d->getCovRhoRhoStaticStatic());
+  FFTGrid * cov_rhorho_static_dynamic = new FFTGrid(state4d->getCovRhoRhoStaticDynamic());
 
   if(cov_rhorho_static_current->getIsTransformed())
     cov_rhorho_static_current->invFFTInPlace();

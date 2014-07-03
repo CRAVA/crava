@@ -62,6 +62,9 @@ public:
   void                       getCorrGradIJ(float & corrGradI, float &corrGradJ) const;
   Surface                  * getCorrelationDirection()  const { return correlationDirection_   ;}
   const State4D            & getState4D()               const { return state4d_                ;}
+  State4D                  * getState4D()                     { return &state4d_               ;}
+
+  FFTGrid                  * getRelativeVelocity()            { return state4d_.getRelativeVelocity();}
 
   TimeLine                 * getTimeLine()              const { return timeLine_               ;}
   std::vector<WellData *>  & getWells()             /*const*/ { return wells_                  ;}
@@ -221,6 +224,7 @@ public:
   bool              do4DRockPhysicsInversion(ModelSettings* modelSettings);
 
   void              mergeCovariance(std::vector<FFTGrid *> & sigma) {state4d_.mergeCov(sigma);}
+  void              updateState4DAllignment(FFTGrid* mu_log_vp_dynamic);
 
   void              advanceTime(const int               & previous_vintage,
                                 const double            & time_change,
@@ -230,8 +234,8 @@ public:
   void              setTimeSimbox(Simbox * new_timeSimbox);
 
   void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
-  void              dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
-  void              dumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
+  void              dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=false);
+  void              dumpSeismicParameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
 private:
   void              processWells(std::vector<WellData *> & wells,
@@ -382,7 +386,8 @@ private:
   void              makeCorr2DPositiveDefinite(Surface         * corrXY);
 
 
-  Simbox                  * timeSimbox_;                 ///< Information about simulation area.
+  Simbox                  * timeSimbox_;                 ///< Information about current simulation area.
+ // Simbox                  * timeSimboxInitial_;         ///< Information about initial simulation area.  (Used for 4D inversion when the current simBox change)
   Simbox                  * timeSimboxConstThick_;       ///< Simbox with constant thickness
 
   Surface                 * correlationDirection_;       ///< Grid giving the correlation direction.

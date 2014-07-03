@@ -344,26 +344,16 @@ int NRLib::FindGridFileType(const std::string& filename )
     throw IOError("Error opening " + filename);
   }
 
-  char buffer[162];
+  char buffer[3201];
   if (length > 161) {
-    file.read(buffer, 161);
-    buffer[161] = '\0';
+    file.read(buffer, 3200);
+    buffer[3200] = '\0';
   }
   else {
     file.read(buffer, static_cast<std::streamsize>(length));
     buffer[length] = '\0';
   }
 
-  if (length>161)
-  {
-    // Using character codes to prevent trouble with sourcefiles in Unicode.
-    // '\xc3' == 'Ã', '\xf1' == 'ñ'
-    if (buffer[0] == '\xc3' && buffer[2] == '\xf1'
-      && buffer[80] == '\xc3' && buffer[160] == '\xc3')// segyfile
-    {
-      return SEGY;
-    }
-  }
   std::string stringbuffer = std::string(buffer);
   std::istringstream i(stringbuffer);
   std::string token;
@@ -392,6 +382,29 @@ int NRLib::FindGridFileType(const std::string& filename )
   }
   else if (NRLib::IsType<double>(token)) {
     return PLAIN_ASCII;
+  }
+  else if (length>3200) //Check SEGY: Looking for EBCDIC header.
+  {
+    unsigned char * buf = reinterpret_cast<unsigned char *>(buffer);
+    std::vector<int> frequency(256,0);
+    int i;
+    for(i=0;i<3200;i++)
+      frequency[buf[i]]++;
+
+    bool segy_ok = true;
+    for(i=0;(i<64) && (segy_ok == true);i++) {
+      if(frequency[i] > 0) //Should not encounter any of these in EBCDIC
+        segy_ok = false;
+    }
+    i++;
+    for(;(i<256) && (segy_ok == true);i++) {
+      if(frequency[i] > frequency[64]) //Assumption is that EBCDIC 64 (space) is most common in header.
+        segy_ok = false;
+    }
+    if(segy_ok == true)
+    {
+      return SEGY;
+    }
   }
   return(UNKNOWN);
 }

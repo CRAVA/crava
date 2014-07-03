@@ -48,20 +48,22 @@ public:
   void         createComplexGrid();
   void         setAccessMode(int mode);
   void         endAccess();
-  void         writeFile(const std::string & fileName,
-                         const std::string & subDir,
-                         const Simbox      * simbox,
-                         const std::string   sgriLabel = "NO_LABEL",
-                         const float         z0        = 0.0,
-                         const GridMapping * depthMap  = NULL,
-                         const GridMapping * timeMap   = NULL,
-                         const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                         bool                padding   = false,
-                         bool                scientific_format = false);  //Use this instead of the ones below.
+  void         writeFile(const std::string              & fileName,
+                         const std::string              & subDir,
+                         const Simbox                   * simbox,
+                         const std::string                sgriLabel = "NO_LABEL",
+                         const float                      z0        = 0.0,
+                         const GridMapping              * depthMap  = NULL,
+                         const GridMapping              * timeMap   = NULL,
+                         const TraceHeaderFormat        & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                         bool                             padding   = false,
+                         bool                             scientific_format = false,
+                         const std::vector<std::string> & headerText = std::vector<std::string>());  //Use this instead of the ones below.
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false, bool scientific_format = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,
-                             const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+                             const TraceHeaderFormat &thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                             const std::vector<std::string> & headerText = std::vector<std::string>());
   int          writeSgriFile(const std::string & fileName, const Simbox *simbox, const std::string label);
   void         writeResampledStormCube(const GridMapping *gridmapping, const std::string & fileName,
                                        const Simbox *simbox, const int format);

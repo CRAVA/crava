@@ -75,6 +75,7 @@ public:
   void                     printPostVariances(const NRLib::Matrix & postVar0) const;
 
   void                     getNextParameterCovariance(fftw_complex **& parVar) const;
+  void                     getNextParameterCovariance2(fftw_complex **& parVar) const;
 
   static fftw_complex      getParameterCovariance(const NRLib::Matrix & prior_var,
                                                   const int           & i,
@@ -98,6 +99,7 @@ public:
   void                     writeFilePostCovGrids(Simbox const * simbox) const;
 
   std::vector<float>       createPostCov00(FFTGrid * postCov) const;
+   void                     updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber);
 
 private:
   void                     createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);

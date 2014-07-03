@@ -62,6 +62,7 @@ extern "C"
 
   extern void lib_matrDump(const char * fName, double ** mat, int n1, int n2);
   extern void lib_matrDumpCpx(const char * fName, fftw_complex **  mat, int n1, int n2);
+  extern void lib_matrDumpVecCpx(const char * fName, fftw_complex *  vec, int n);
 
 #ifdef __cplusplus
 }
