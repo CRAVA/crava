@@ -98,10 +98,10 @@ public:
   void ExpTransf(StormContGrid * grid);
 
   void ComputeSyntSeismic(const ModelSettings * model_settings,
-                          const Simbox * simbox,
-                          StormContGrid * vp,
-                          StormContGrid * vs,
-                          StormContGrid * rho);
+                          const Simbox        * simbox,
+                          StormContGrid       * vp,
+                          StormContGrid       * vs,
+                          StormContGrid       * rho);
 
   StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
                                           StormContGrid       * vs,

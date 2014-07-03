@@ -249,7 +249,23 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = orig_blocked_logs.find(it->first);
           BlockedLogsCommon * blocked_log = new BlockedLogsCommon(*(iter->second));
-          blocked_log->VolumeFocus(*simbox);
+          blocked_log->VolumeFocus(*simbox,
+                                   blocked_log->GetXposBlocked(),
+                                   blocked_log->GetYposBlocked(),
+                                   blocked_log->GetZposBlocked(),
+                                   blocked_log->GetFaciesBlocked(),
+                                   blocked_log->GetSposVector(),
+                                   blocked_log->GetIposVector(),
+                                   blocked_log->GetJposVector(),
+                                   blocked_log->GetKposVector(),
+                                   blocked_log->GetContLogsBlocked(),
+                                   blocked_log->GetDiscLogsBlocked(),
+                                   blocked_log->GetContLogsSeismicRes(),
+                                   blocked_log->GetContLogsHighCutBg(),
+                                   blocked_log->GetContLogsHighCutSeismic(),
+                                   blocked_log->GetActualSyntSeismicData(),
+                                   blocked_log->GetWellSyntSeismicData());
+
           seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
           blocked_log->GetBlockedGrid(&(orig_seis[i]), &estimation_box, seis_logs[w]);
           mapped_blocked_logs[iter->first] = blocked_log;
@@ -418,9 +434,9 @@ ModelAVODynamic::~ModelAVODynamic(void)
       delete local_noise_scale_[i];
   }
 
-  for (int i=0;i<number_of_angles_;i++)
-    if (seis_cubes_[i] != NULL)
-      delete seis_cubes_[i];
+  //for (int i=0;i<number_of_angles_;i++)
+  //  if (seis_cubes_[i] != NULL)
+  //    delete seis_cubes_[i];
 }
 
 void

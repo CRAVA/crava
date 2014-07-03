@@ -1264,13 +1264,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
     postVp_->expTransf();
-    GridMapping       * tdMap      = modelGeneral_->GetTimeDepthMapping();
-    //const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping(); //H Should be covered by the new simbox format. Need to change inside tdMap->setMappingFromVelocity?
-    const Simbox      * timeSimbox = simbox_;
-    //if(dcMap != NULL)
-      //timeSimbox = dcMap->getSimbox();
+    GridMapping * tdMap = modelGeneral_->GetTimeDepthMapping();
 
-    tdMap->setMappingFromVelocity(postVp_, timeSimbox);
+    tdMap->setMappingFromVelocity(postVp_, simbox_);
     postVp_->logTransf();
     postVp_->endAccess();
   }

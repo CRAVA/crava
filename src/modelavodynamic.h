@@ -109,7 +109,7 @@ private:
   int                               number_of_angles_;
 
   std::vector<Wavelet *>            wavelets_;               ///< Wavelet for angle
-  std::vector<FFTGrid *>            seis_cubes_;             ///< Seismic data cubes
+  std::vector<FFTGrid *>            seis_cubes_;             ///< Seismic data cubes. Deleted in the commondata destructor
 
   NRLib::Matrix                     reflection_matrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
                                                              ///< indicating that standard approximation will be used.

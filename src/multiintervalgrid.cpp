@@ -388,7 +388,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
             "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
         }
         else{
-          LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval:","Two-way-time");
+          LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval","Two-way-time");
         }
       }
       else {
@@ -642,7 +642,11 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   simbox->SetNZpad(nz_pad);
   simbox->SetZPadFactor(z_pad_fac);
 
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+" for interval \'"+simbox->GetIntervalName()+"\':\n");
+  std::string output_name = "";
+  if (simbox->GetIntervalName() != "")
+    output_name = " for interval \'" + simbox->GetIntervalName() + "\'";
+
+  LogKit::LogFormatted(logLevel,"\nPadding sizes" + text2 + output_name + ":\n");
   LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
                        z_pad, z_pad_fac, nz, nz_pad);
 }

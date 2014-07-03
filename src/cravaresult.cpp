@@ -31,7 +31,7 @@ block_grid_(NULL),
 facies_prob_undef_(NULL),
 quality_grid_(NULL),
 //reflection_matrix_(NULL),
-n_intervals_(0)
+n_intervals_(1)
 {
 }
 
@@ -194,12 +194,12 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //  There is no smoothing between intervals
 
   MultiIntervalGrid * multi_interval_grid = common_data->GetMultipleIntervalGrid();
-  int n_intervals = multi_interval_grid->GetNIntervals();
+  n_intervals_ = multi_interval_grid->GetNIntervals();
 
   const Simbox & simbox = common_data->GetFullInversionSimbox();
   Simbox simbox_final = Simbox(common_data->GetFullInversionSimbox());
 
-  if (n_intervals > 1) {
+  if (n_intervals_ > 1) {
 
     //H-TODO Written wells for multiple intervals.
 
@@ -224,10 +224,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       post_vs_  = new StormContGrid(simbox, nx, ny, nz_max);
       post_rho_ = new StormContGrid(simbox, nx, ny, nz_max);
 
-      std::vector<FFTGrid *> post_vp_intervals(n_intervals);
-      std::vector<FFTGrid *> post_vs_intervals(n_intervals);
-      std::vector<FFTGrid *> post_rho_intervals(n_intervals);
-      for (int i = 0; i < n_intervals; i++) {
+      std::vector<FFTGrid *> post_vp_intervals(n_intervals_);
+      std::vector<FFTGrid *> post_vs_intervals(n_intervals_);
+      std::vector<FFTGrid *> post_rho_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
         post_vp_intervals[i]  = seismic_parameters_intervals[i].GetPostVp();
         post_vs_intervals[i]  = seismic_parameters_intervals[i].GetPostVs();
         post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
@@ -236,7 +236,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_min);
       CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_min);
 
-      for (int i = 0; i < n_intervals; i++) {
+      for (int i = 0; i < n_intervals_; i++) {
         delete post_vp_intervals[i];
         post_vp_intervals[i] = NULL;
         delete post_vs_intervals[i];
@@ -251,10 +251,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_vs_kriged_  = new StormContGrid(simbox, nx, ny, nz_max);
         post_rho_kriged_ = new StormContGrid(simbox, nx, ny, nz_max);
 
-        std::vector<FFTGrid *> post_vp_kriged_intervals(n_intervals);
-        std::vector<FFTGrid *> post_vs_kriged_intervals(n_intervals);
-        std::vector<FFTGrid *> post_rho_kriged_intervals(n_intervals);
-        for (int i = 0; i < n_intervals; i++) {
+        std::vector<FFTGrid *> post_vp_kriged_intervals(n_intervals_);
+        std::vector<FFTGrid *> post_vs_kriged_intervals(n_intervals_);
+        std::vector<FFTGrid *> post_rho_kriged_intervals(n_intervals_);
+        for (int i = 0; i < n_intervals_; i++) {
           post_vp_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVpKriged();
           post_vs_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVsKriged();
           post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
@@ -284,14 +284,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     cr_cov_vp_rho_ = new StormContGrid(simbox, nx, ny, nz_max);
     cr_cov_vs_rho_ = new StormContGrid(simbox, nx, ny, nz_max);
 
-    std::vector<FFTGrid *> cov_vp_intervals(n_intervals);
-    std::vector<FFTGrid *> cov_vs_intervals(n_intervals);
-    std::vector<FFTGrid *> cov_rho_intervals(n_intervals);
-    std::vector<FFTGrid *> cr_cov_vp_vs_intervals(n_intervals);
-    std::vector<FFTGrid *> cr_cov_vp_rho_intervals(n_intervals);
-    std::vector<FFTGrid *> cr_cov_vs_rho_intervals(n_intervals);
+    std::vector<FFTGrid *> cov_vp_intervals(n_intervals_);
+    std::vector<FFTGrid *> cov_vs_intervals(n_intervals_);
+    std::vector<FFTGrid *> cov_rho_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vp_vs_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vp_rho_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vs_rho_intervals(n_intervals_);
 
-    for (int i = 0; i < n_intervals; i++) {
+    for (int i = 0; i < n_intervals_; i++) {
       cov_vp_intervals[i]        = seismic_parameters_intervals[i].GetCovVp();
       cov_vs_intervals[i]        = seismic_parameters_intervals[i].GetCovVs();
       cov_rho_intervals[i]       = seismic_parameters_intervals[i].GetCovRho();
@@ -314,16 +314,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int j = 0; j < n_facies; j++) {
         facies_prob_[j] = new StormContGrid(simbox, nx, ny, nz_max);
 
-        std::vector<FFTGrid *> facies_prob_intervals(n_intervals);
-        for (int i = 0; i < n_intervals; i++) {
+        std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
+        for (int i = 0; i < n_intervals_; i++) {
           facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
         }
         CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_min);
       }
 
       //Undef
-      std::vector<FFTGrid *> facies_prob_intervals_undef(n_intervals);
-      for (int i = 0; i < n_intervals; i++) {
+      std::vector<FFTGrid *> facies_prob_intervals_undef(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
         facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
       }
       CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, erosion_priorities, dz_min);
@@ -336,8 +336,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int j = 0; j < n_facies; j++) {
         facies_prob_geo_[j] = new StormContGrid(simbox, nx, ny, nz_max);
 
-        std::vector<FFTGrid *> facies_prob_intervals(n_intervals);
-        for (int i = 0; i < n_intervals; i++) {
+        std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
+        for (int i = 0; i < n_intervals_; i++) {
           facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
         }
         CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_min);
@@ -352,8 +352,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int j = 0; j < n_facies; j++) {
         lh_cubes_[j] = new StormContGrid(simbox, nx, ny, nz_max);
 
-        std::vector<FFTGrid *> lh_cubes_intervals(n_intervals);
-        for (int i = 0; i < n_intervals; i++) {
+        std::vector<FFTGrid *> lh_cubes_intervals(n_intervals_);
+        for (int i = 0; i < n_intervals_; i++) {
           lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
         }
         CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, erosion_priorities, dz_min);
@@ -365,8 +365,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
       quality_grid_ = new StormContGrid(simbox, nx, ny, nz_max);
 
-      std::vector<FFTGrid *> quality_grid_intervals(n_intervals);
-      for (int i = 0; i < n_intervals; i++) {
+      std::vector<FFTGrid *> quality_grid_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
         quality_grid_intervals[i] = seismic_parameters_intervals[i].GetQualityGrid();
       }
       CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, erosion_priorities, dz_min);
@@ -381,11 +381,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         simulations_seed1_.resize(n_simulations);
         simulations_seed2_.resize(n_simulations);
 
-        std::vector<FFTGrid *> simulations_seed0_intervals(n_intervals);
-        std::vector<FFTGrid *> simulations_seed1_intervals(n_intervals);
-        std::vector<FFTGrid *> simulations_seed2_intervals(n_intervals);
+        std::vector<FFTGrid *> simulations_seed0_intervals(n_intervals_);
+        std::vector<FFTGrid *> simulations_seed1_intervals(n_intervals_);
+        std::vector<FFTGrid *> simulations_seed2_intervals(n_intervals_);
 
-        for (int i = 0; i < n_intervals; i++) {
+        for (int i = 0; i < n_intervals_; i++) {
           simulations_seed0_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed0(j);
           simulations_seed1_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed1(j);
           simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
@@ -402,8 +402,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     if (model_settings->getWritePrediction() && model_settings->getDebugFlag()) {
       block_grid_ = new StormContGrid(simbox, nx, ny, nz_max);
 
-      std::vector<FFTGrid *> block_grid_intervals(n_intervals);
-      for (int i = 0; i < n_intervals; i++) {
+      std::vector<FFTGrid *> block_grid_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
         block_grid_intervals[i] = seismic_parameters_intervals[i].GetBlockGrid();
       }
       CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, erosion_priorities, dz_min);
@@ -411,7 +411,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     //Correlations and post variances
     //Do not combine, store and write per interval
-    for (int i = 0; i < n_intervals; i++) {
+    for (int i = 0; i < n_intervals_; i++) {
       corr_T_.push_back(seismic_parameters_intervals[i].GetCorrT());
       if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
         corr_T_filtered_.push_back(seismic_parameters_intervals[i].GetCorrTFiltered());
@@ -543,7 +543,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
                                 const std::vector<int> & erosion_priorities,
                                 double                   dz_min)
 {
-  int n_intervals = multi_interval_grid->GetNIntervals();
+  //int n_intervals = multi_interval_grid->GetNIntervals();
   int nx = final_grid->GetNI();
   int ny = final_grid->GetNJ();
   int nz = final_grid->GetNK();
@@ -554,10 +554,10 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-      std::vector<std::vector<float> > new_traces(n_intervals);
+      std::vector<std::vector<float> > new_traces(n_intervals_);
 
       //Resample each trace to new nz
-      for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
+      for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
 
         Simbox * interval_simbox       = multi_interval_grid->GetIntervalSimbox(i_interval);
         FFTGrid * interval_grid        = interval_grids[i_interval];
@@ -680,7 +680,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
       } //n_intervals
 
       //Combine vectors for each interval to one trace in stormgrid
-      std::vector<int> interval_indexes(n_intervals, 0);
+      std::vector<int> interval_indexes(n_intervals_, 0);
 
       for (int k = 0; k < nz; k++) {
 
@@ -693,13 +693,13 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         final_grid->FindCenterOfCell(i, j, k, tmp_x, tmp_y, tmp_z);
 
         int i_interval = 0;
-        for (i_interval = 0; i_interval < n_intervals; i_interval++) {
+        for (i_interval = 0; i_interval < n_intervals_; i_interval++) {
           Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
 
           if (interval_simbox->IsInside(tmp_x, tmp_y, tmp_z))
             break;
         }
-        if (i_interval < (n_intervals-1)) { //Also check if it hits the next interval, unless it is the last one.
+        if (i_interval < (n_intervals_-1)) { //Also check if it hits the next interval, unless it is the last one.
           Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval+1);
 
           if (interval_simbox->IsInside(tmp_x, tmp_y, tmp_z))
@@ -1366,15 +1366,15 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
 
   ExpTransf(background_vp_);
   ParameterOutput::WriteFile(model_settings, background_vp_, file_name_vp, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_vp_;
+  //delete background_vp_;
 
   ExpTransf(background_vs_);
   ParameterOutput::WriteFile(model_settings, background_vs_, file_name_vs, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_vs_;
+  //delete background_vs_;
 
   ExpTransf(background_rho_);
   ParameterOutput::WriteFile(model_settings, background_rho_, file_name_rho, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_rho_;
+  //delete background_rho_;
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
@@ -1404,10 +1404,10 @@ void CravaResult::ExpTransf(StormContGrid * grid)
 }
 
 void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
-                                     const Simbox * simbox,
-                                     StormContGrid * vp,
-                                     StormContGrid * vs,
-                                     StormContGrid * rho)
+                                     const Simbox        * simbox,
+                                     StormContGrid       * vp,
+                                     StormContGrid       * vs,
+                                     StormContGrid       * rho)
 {
   LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
@@ -1548,6 +1548,7 @@ void CravaResult::AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & bl
     BlockedLogsCommon * blocked_log = iter->second;
 
     BlockedLogsCommon * new_blocked_log = new BlockedLogsCommon(*blocked_log); //copy
+    //delete blocked_log; //H-MEMORY
 
     std::string name = blocked_log->GetWellName();
 
@@ -1597,7 +1598,8 @@ void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>          
       float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();
 
       if (wavelet_estimated[i] == true && synt_seis[i][w].size() > 0)
-        blocked_log->SetLogFromVerticalTrend(synt_seis[i][w], z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i, n_angles);
+        blocked_log->SetLogFromVerticalTrend(synt_seis[i][w], blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
+                                             z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i);// n_angles);
     }
 
     w++;

@@ -1329,7 +1329,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[i] = NRLib::ParseType<float>(dummyStr);
+    rAmp[i] = NRLib::ParseType<float>(dummyStr);
   }
   file.close();
 }
