@@ -1,7 +1,7 @@
 test_suite
 cravarun
-grammar
-compare
+grammar.exe
+compare.exe
 
 *.o
 

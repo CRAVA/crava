@@ -132,38 +132,39 @@ FFTGrid::~FFTGrid()
 }
 
 void
-FFTGrid::fillInData(const Simbox  * timeSimbox,
-                    StormContGrid * grid,
-                    const SegY   *  segy,
-                    float           smooth_length,
-                    int           & missingTracesSimbox,
-                    int           & missingTracesPadding,
-                    int           & deadTracesSimbox,
-                    std::string   & errTxt,
-                    bool            scale,
-                    bool            is_segy)
+FFTGrid::fillInData(const Simbox      * timeSimbox,
+                    StormContGrid     * grid,
+                    const SegY        * segy,
+                    float               smooth_length,
+                    int               & missingTracesSimbox,
+                    int               & missingTracesPadding,
+                    int               & deadTracesSimbox,
+                    const std::string & parName,
+                    std::string       & errTxt,
+                    bool                scale,
+                    bool                is_segy)
 {
   assert(cubetype_ != CTMISSING);
 
   createRealGrid();
 
+  size_t max_extrap_start = 0;
+  size_t max_extrap_end   = 0;
+
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  float scalevert, scalehor;
-  if(scale == false || is_segy == true)
-  {
-    scalevert = 1.0;
-    scalehor = 1.0;
-  }
-  else //from sgri file
+  float scalevert = 1.0;
+  float scalehor  = 1.0;
+
+  if (scale)
   {
     LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
     scalevert = 0.001f; //1000.0;
     scalehor  = 0.001f; //1000.0;
   }
 
-  LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data into %dx%dx%d grid:",nxp_,nyp_,nzp_);
+  LogKit::LogFormatted(LogKit::Low,"\nResampling %s data into %dx%dx%d grid:",parName.c_str(),nxp_,nyp_,nzp_);
 
   setAccessMode(READANDWRITE);
 
@@ -178,22 +179,23 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
   // Find proper length of time samples to get N*log(N) performance in FFT.
   //
   size_t n_samples = 0;
-  float dz_data = 0.0;
-  float dz_min = 0.0;
-  if(is_segy) {
+  float  dz_data   = 0.0;
+  float  dz_min    = 0.0;
+
+  if (is_segy) {
     n_samples = segy->FindNumberOfSamplesInLongestTrace();
     dz_data   = segy->GetDz();
     dz_min    = dz_data/4.0f;
   }
-  else
+  else {
     n_samples = grid->GetNK();
-
-  int    nt        = findClosestFactorableNumber(static_cast<int>(n_samples));
-  int    mt        = 4*nt; // Use four times the sampling density for the fine-meshed data
+  }
 
   //
   // Create FFT plans
   //
+  int          nt       = findClosestFactorableNumber(static_cast<int>(n_samples));
+  int          mt       = 4*nt; // Use four times the sampling density for the fine-meshed data
   rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
   rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
@@ -207,15 +209,21 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
   for (int j = 0 ; j < nyp_ ; j++) {
     for (int i = 0 ; i < rnxp_ ; i++) {
 
+      //if (i==0 && j==0) { //xxxxxxxxxxxxxxx
+      if (true) { //xxxxxxxxxxxxxxx
+
       int refi  = getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
       int refj  = getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
       int refk  = 0;
 
       double x, y, z0;
       timeSimbox->getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
-      x*= scalehor;
-      y*= scalehor;
-      z0*= scalevert;
+
+      x             *= scalehor;
+      y             *= scalehor;
+      z0            *= scalevert;
+      smooth_length *= scalevert;
+
 
       double dz = timeSimbox->getdz(refi, refj)*scalevert;
       float  xf = static_cast<float>(x);
@@ -229,77 +237,81 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
           is_inside = true;
       }
 
-      if(is_inside == true) {
+      if (is_inside) {
         bool  missing = true;
         float z0_data = RMISSING;
 
         std::vector<float> data_trace;
-        size_t grid_i = 0;
-        size_t grid_j = 0;
+        size_t grid_i =   0;
+        size_t grid_j =   0;
         double grid_x = 0.0;
         double grid_y = 0.0;
-        double grid_z = 0.0;;
-        float value = 0.0;
+        double grid_z = 0.0;
+        float  value  = 0.0;
 
-        float z_min = 0.0;
-        float z_max = 0.0;
-
-        //Get data_trace for this i and j.
-        if(is_segy) {
+        if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
         }
         else {
+          float z_min = 0.0;
+          float z_max = 0.0;
           grid->FindXYIndex(xf, yf, grid_i, grid_j);
-          for(size_t k = 0; k < grid->GetNK(); k++) {
+          for (size_t k = 0; k < grid->GetNK(); k++) {
             grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
             value = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
             data_trace.push_back(value);
 
-            if(k == 0)
+            if (k == 0)
               z_min = static_cast<float>(grid_z);
-            if(k == grid->GetNK()-1)
+            if (k == grid->GetNK() - 1)
               z_max = static_cast<float>(grid_z);
           }
 
-          dz_data = (z_max- z_min) / grid->GetNK();
-          dz_min = dz_data/4.0f;
+          dz_data = (z_max - z_min) / grid->GetNK();
+          dz_min  = dz_data/4.0f;
           z0_data = z_min;
         }
 
-        size_t n_trace = data_trace.size();
-        float trend_first = 0.0;
-        float trend_last = 0.0;
 
-        if(cubetype_ != DATA) {
-          //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
-          if(data_trace[0] == 0) {
-            std::vector<float> data_trace_new;
-            for(size_t k_trace = 0; k_trace < n_trace; k_trace++) {
-              if(data_trace[k_trace] != 0)
-                data_trace_new.push_back(data_trace[k_trace]);
-            }
-            data_trace = data_trace_new;
-            n_trace = data_trace.size();
-          }
+        /*
+        std::cout << "INPUT: xf, yf, z0_data, dz_data = " << std::fixed << std::setprecision(2) << xf << " , " << yf << " , " << z0_data << " , " << dz_data << std::endl;
+        for (unsigned int kk = 0 ; kk < data_trace.size() ; kk++) {
+          std::cout << std::setw(3) << kk << "  "
+                    << std::setprecision(2) << std::setw(20) << z0_data + kk*dz_data
+                    << std::setprecision(6) << std::setw(20) << data_trace[kk] << std::endl;
+        }
+        */
 
-          n_samples = data_trace.size();
-          nt = findClosestFactorableNumber(static_cast<int>(n_samples));
+        size_t n_data      = data_trace.size();
+        float  trend_first = 0.0;
+        float  trend_last  = 0.0;
+
+        // Dette må vi gjøre annerledes. Vi trenger å vite når vi har seismikk eller ikke
+        // Her antar jeg at vi ikke har seismicc hvis kuben er av typen STORM
+
+        if (cubetype_ != DATA || !is_segy) {
+
+          extrapolateAtEnds(data_trace,        // Get rid of leading and trailing zeros
+                            max_extrap_start,
+                            max_extrap_end);
+
+          trend_first = data_trace[0];
+          trend_last  = data_trace[n_data - 1];
+
+          removeTrendFromTrace(data_trace,
+                               trend_first,
+                               trend_last);
+
+          nt = findClosestFactorableNumber(static_cast<int>(n_data));
           mt = 4*nt;
 
           fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
           fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-
-          //Remove trend from trace
-          trend_first = data_trace[0];
-          trend_last = data_trace[n_trace - 1];
-          float trend_inc = (trend_last - trend_first) / (n_trace - 1);
-          for(size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
-            data_trace[k_trace] -= trend_first + k_trace * trend_inc;
-          }
         }
 
-        //Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside.
-        if(is_segy == false || (is_segy == true && !missing)) {
+        // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside.
+
+        if (!is_segy || (is_segy && !missing)) {
           int         cnt      = nt/2 + 1;
           int         rnt      = 2*cnt;
           int         cmt      = mt/2 + 1;
@@ -311,19 +323,12 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
 
-          //float       zn_data  = z0_data + dz_data*static_cast<float>(data_trace.size());
-
           std::vector<float> grid_trace(nzp_);
 
-          std::string errText = "";
-          smooth_length*=scalevert;
-          if(cubetype_ == DATA) {
+          if (cubetype_ == DATA) {
             smoothTraceInGuardZone(data_trace,
-                                   //z0_data,
-                                   //zn_data,
                                    dz_data,
                                    smooth_length);
-                                   //errText);
           }
 
           resampleTrace(data_trace,
@@ -336,17 +341,6 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
                         cmt,
                         rmt);
 
-          std::vector<float> data_trace_trend_long;
-          if(cubetype_ != DATA) {
-            float trend_inc = (trend_last - trend_first) / (rmt - 1);
-
-            data_trace_trend_long.resize(rmt);
-            for(int k_trace = 0; k_trace < rmt; k_trace++) {
-              data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
-            }
-          }
-
-          //Includes a shift
           interpolateGridValues(grid_trace,
                                 z0_grid,     // Centre of first cell
                                 dz_grid,
@@ -355,30 +349,34 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
                                 dz_min,
                                 rmt);
 
-          //Interpolate and shift trend before adding to grid_trace.
-          //Alternative: add trend before interpolating and change values under l2 < 0 || l1 > n_fine
-          if(cubetype_ != DATA) {
-            std::vector<float> trend_interpolated(nzp_);
-            interpolateAndShiftTrend(trend_interpolated,
-                                      z0_grid,     // Centre of first cell
-                                      dz_grid,
-                                      data_trace_trend_long,
-                                      z0_data,     // Time of first data sample
-                                      dz_min,
-                                      rmt);
+        // Dette må vi gjøre annerledes. Vi trenger å vite når vi har seismikk eller ikke
+        // Her antar jeg at vi ikke har seismicc hvis kuben er av typen STORM
 
-            //Add trend
-            for(size_t k_trace = 0; k_trace < grid_trace.size(); k_trace++)
-              grid_trace[k_trace] += trend_interpolated[k_trace];
+          if (cubetype_ != DATA || !is_segy) {
+            addTrendToTrace(grid_trace,
+                            trend_first,
+                            trend_last,
+                            n_data,
+                            nz_,
+                            dz_data,
+                            dz_grid,
+                            z0_grid,
+                            z0_data);
           }
 
-          errTxt += errText;
+          /*
+          for (size_t k = 0 ; k < static_cast<size_t>(grid_trace.size()) ; k++) {
+            std::cout << std::fixed
+                      << std::setw(3)  << k <<  " "
+                      << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
+                      << std::setw(12) << std::setprecision(6) << grid_trace[k] << std::endl;
+          }
+          */
 
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
           setTrace(grid_trace, i, j);
-
         }
         else {
           setTrace(0.0f, i, j); // Dead traces (in case we allow them)
@@ -399,7 +397,7 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
         std::cout << "^";
         fflush(stdout);
       }
-
+      } /// xxxxxxxxxxxxxxxxx i==1 j==9
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
@@ -408,16 +406,65 @@ FFTGrid::fillInData(const Simbox  * timeSimbox,
   fftwnd_destroy_plan(fftplan1);
   fftwnd_destroy_plan(fftplan2);
 
+  if (max_extrap_start > 0) {
+    LogKit::LogFormatted(LogKit::Low,"WARNING: Data did not cover grid. The top %d layers were partly or fully extrapolated from first defined value\n", max_extrap_start);
+  }
+  if (max_extrap_end > 0) {
+    LogKit::LogFormatted(LogKit::Low,"WARNING: Data did not cover grid. The bottom %d layers were partly or fully extrapolated from last defined value\n", max_extrap_end);
+  }
+
   Timings::setTimeResamplingSeismic(wall,cpu);
 }
 
 void
+FFTGrid::extrapolateAtEnds(std::vector<float> & data_trace,
+                           size_t             & max_extrap_start,
+                           size_t             & max_extrap_end)
+{
+  size_t n = data_trace.size();
+  //
+  // Get rid of leading zeros (= undefined values)
+  //
+  size_t k = 0;
+  while (data_trace[k] == 0.0) {
+    k++;
+  }
+  size_t first_def = k;
+  for (k = 0 ; k < first_def ; k++) {
+    data_trace[k] = data_trace[first_def];
+  }
+  //
+  // Get rid of trailing zeros (= undefined values)
+  //
+  k = n - 1;
+  while (data_trace[k] == 0.0) {
+    k--;
+  }
+  size_t last_def = k;
+  for (k = last_def + 1 ; k < n ; k++) {
+    data_trace[k] = data_trace[last_def];
+  }
+  max_extrap_start = std::max(max_extrap_start, first_def);
+  max_extrap_end   = std::max(max_extrap_end, n - last_def - 1);
+}
+
+void
+FFTGrid::removeTrendFromTrace(std::vector<float> & data_trace,
+                              float                trend_first,
+                              float                trend_last)
+{
+  size_t n = data_trace.size();
+  float  a = (trend_last - trend_first)/(n - 1); // Slope
+
+  for (size_t k = 0 ; k < n ; k++) {
+    data_trace[k] -= trend_first + a*k;
+  }
+}
+
+void
 FFTGrid::smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                //float                z0_data,
-                                //float                zn_data,
                                 float                dz_data,
                                 float                smooth_length)
-                                //std::string        & errTxt)
 {
   // We recommend a guard zone of at least half a wavelet on each side of
   // the target zone and that half a wavelet of the guard zone is smoothed.
@@ -511,6 +558,114 @@ FFTGrid::resampleTrace(const std::vector<float> & data_trace,
   float scale = 1/static_cast<float>(rnt);
   for(int i = 0 ; i < rmt ; i++) {
     rAmpFine[i] = scale*rAmpFine[i];
+  }
+}
+
+void
+FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
+                               float                z0_grid,
+                               float                dz_grid,
+                               fftw_real          * rAmpFine,
+                               float                z0_data,
+                               float                dz_fine,
+                               int                  n_fine)
+{
+  //
+  // Bilinear interpolation
+  //
+  // refk establishes link between traces order and grid order
+  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
+  // In grid :    B B B B B B C C C A A A
+
+  float z0_shift    = z0_grid - z0_data;
+  float inv_dz_fine = 1.0f/dz_fine;
+
+  int n_grid = static_cast<int>(grid_trace.size());
+
+  for (int k = 0 ; k < n_grid ; k++) {
+    int refk = getZSimboxIndex(k);
+    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
+    int   l1 = static_cast<int>(floor(dl));
+    int   l2 = static_cast<int>(ceil(dl));
+
+    if (l2 < 0 || l1 > n_fine - 1) {
+      grid_trace[k] = 0.0f;
+    }
+    else {
+      if (l1 < 0) {
+        grid_trace[k] = rAmpFine[l2];
+      }
+      else if (l2 > n_fine - 1) {
+        grid_trace[k] = rAmpFine[l1];
+      }
+      else if (l1 == l2) {
+        grid_trace[k] = rAmpFine[l1];
+      }
+      else {
+        float w1 = ceil(dl) - dl;
+        float w2 = dl - floor(dl);
+        grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
+      }
+    }
+  }
+}
+
+void
+FFTGrid::addTrendToTrace(std::vector<float> & grid_trace,
+                         float                trend_first,
+                         float                trend_last,
+                         size_t               n_data,
+                         int                  nz,
+                         float                dz_data,
+                         float                dz_grid,
+                         float                z0_grid,
+                         float                z0_data)
+{
+  //
+  // First we have to transform trend values from data world to grid world
+  //
+  std::vector<float> trend(nz);
+  float a = (trend_last - trend_first)/((n_data - 1)*dz_data); // Slope
+  for (size_t k = 0 ; k < static_cast<size_t>(nz) ; k++) {
+    float z  = z0_grid + k*dz_grid;
+    trend[k] = a*(z - z0_data) + trend_first;
+  }
+
+  //    std::cout << "INPUT2 : nz, n_pad trend_last= " << nz << " " << grid_trace.size() - nz << "    " << trend_last << std::endl;
+
+  for (size_t k = 0 ; k < static_cast<size_t>(nz) ; k++) {
+
+    /*
+      std::cout << std::fixed
+              << std::setw(3)  << k <<  " "
+              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
+              << std::setw(12) << std::setprecision(6) << grid_trace[k] << "   trend :  "
+              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
+              << std::setw(12) << std::setprecision(6) << trend[k] << "  total :  "
+              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
+              << std::setw(12) << std::setprecision(6) << grid_trace[k] + trend[k] << std::endl;
+    */
+
+    grid_trace[k] += trend[k];
+  }
+
+  size_t n_pad  = grid_trace.size() - nz;
+  // Slope in padding. We are not using npad - 1.  We do not need padding to end at start value.
+  a = (grid_trace[nz - 1] - grid_trace[0])/n_pad;
+
+  for (size_t k = 0 ; k < n_pad ; k++) {
+
+    /*
+    std::cout << std::fixed
+              << std::setw(3)  << nz + k
+              << std::setw(27) <<  " " << "    padding trend :  "
+              << std::setw( 8) << std::setprecision(1) << z0_grid + (nz + k)*dz_grid
+              << std::setw(12) << std::setprecision(6) << trend_last - a*k << "   total : "
+              << std::setw(15) << std::setprecision(1) << z0_grid + (nz + k)*dz_grid
+              << std::setw(12) << std::setprecision(6) << trend_last - a*k << std::endl;
+    */
+
+    grid_trace[nz + k] = trend_last - a*k;
   }
 }
 
@@ -724,108 +879,6 @@ double FFTGrid::InterpolateBilinearXY(double x_min,
 
   return returnvalue;
 }
-
-void
-FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
-                               float                z0_grid,
-                               float                dz_grid,
-                               fftw_real          * rAmpFine,
-                               float                z0_data,
-                               float                dz_fine,
-                               int                  n_fine)
-{
-  //
-  // Bilinear interpolation
-  //
-  // refk establishes link between traces order and grid order
-  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
-  // In grid :    B B B B B B C C C A A A
-
-  float z0_shift    = z0_grid - z0_data;
-  float inv_dz_fine = 1.0f/dz_fine;
-
-  int n_grid = static_cast<int>(grid_trace.size());
-
-  for (int k = 0 ; k < n_grid ; k++) {
-    int refk = getZSimboxIndex(k);
-    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
-    int   l1 = static_cast<int>(floor(dl));
-    int   l2 = static_cast<int>(ceil(dl));
-
-    if (l2 < 0 || l1 > n_fine - 1) {
-      grid_trace[k] = 0.0f;
-    }
-    else {
-      if (l1 < 0) {
-        grid_trace[k] = rAmpFine[l2];
-      }
-      else if (l2 > n_fine - 1) {
-        grid_trace[k] = rAmpFine[l1];
-      }
-      else if (l1 == l2) {
-        grid_trace[k] = rAmpFine[l1];
-      }
-      else {
-        float w1 = ceil(dl) - dl;
-        float w2 = dl - floor(dl);
-        grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
-      }
-    }
-  }
-}
-
-void
-FFTGrid::interpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
-                                  float                      z0_grid,
-                                  float                      dz_grid,
-                                  const std::vector<float> & trend_long,
-                                  float                      z0_data,
-                                  float                      dz_fine,
-                                  int                        n_fine)
-{
-  //
-  // Bilinear interpolation
-  //
-  // refk establishes link between traces order and grid order
-  // In trace:    A A A B B B B B B C C C     (A and C are values in padding)
-  // In grid :    B B B B B B C C C A A A
-
-  float z0_shift    = z0_grid - z0_data;
-  float inv_dz_fine = 1.0f/dz_fine;
-
-  int n_grid = static_cast<int>(interpolated_trend.size());
-
-  for (int k = 0 ; k < n_grid ; k++) {
-    int refk = getZSimboxIndex(k);
-    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
-    int   l1 = static_cast<int>(floor(dl));
-    int   l2 = static_cast<int>(ceil(dl));
-
-    if (l2 < 0 || l1 > n_fine - 1) {
-      if(l2 < 0)
-        interpolated_trend[k] = trend_long[0];
-      if(l1 > n_fine -1)
-        interpolated_trend[k] = trend_long[n_fine - 1];
-    }
-    else {
-      if (l1 < 0) {
-        interpolated_trend[k] = trend_long[l2];
-      }
-      else if (l2 > n_fine - 1) {
-        interpolated_trend[k] = trend_long[l1];
-      }
-      else if (l1 == l2) {
-        interpolated_trend[k] = trend_long[l1];
-      }
-      else {
-        float w1 = ceil(dl) - dl;
-        float w2 = dl - floor(dl);
-        interpolated_trend[k] = w1*trend_long[l1] + w2*trend_long[l2];
-      }
-    }
-  }
-}
-
 
 void
 FFTGrid::setTrace(const std::vector<float> & trace, size_t i, size_t j)
@@ -2180,6 +2233,9 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
   int i,j,k;
   double x,y,z;
   std::vector<float> trace(segynz);//Maximum amount of data needed.
+
+  // std::cout << "\nz0, dz = " << z0 << " " << dz << std::endl;
+
   for(j=0;j<simbox->getny();j++)
   {
     for(i=0;i<simbox->getnx();i++)
@@ -2199,6 +2255,12 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
         int    firstData = static_cast<int>(floor(0.5+(z-z0)/dz));
         int    endData   = static_cast<int>(floor(0.5+((z-z0)+nz_*gdz)/dz));
 
+        //xxxxx
+        /*
+        std::cout << "OUTPUT: z = gdz, firstData, endData = " << z << " " << gdz << " " << firstData << " " << endData << std::endl;
+        std::cout << "x , y = " << x << " , " << y << std::endl;
+        */
+
         if(endData > segynz)
         {
           printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz_, endData);
@@ -2207,8 +2269,10 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
         for(k=0;k<firstData;k++)
           trace[k] = 0;
 //          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
-        for(;k<endData;k++)
+        for(;k<endData;k++) {
           trace[k] = this->getRegularZInterpolatedRealValue(i,j,z0,dz,k,z,gdz);
+
+        }
         for(;k<segynz;k++)
           trace[k] = 0;
 //          trace[k] = -1e35; //NBNB-Frode: Norsar-hack
@@ -2481,6 +2545,18 @@ FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
   float v1 = getRealValue(i,j,kGrid);
   float v2 = getRealValue(i,j,kGrid+1);
   float v  = (1-t)*v1+t*v2;
+
+  /*
+  std::cout  << std::fixed
+             << std::setprecision(2) << std::setw(10) << z0Grid + kGrid*dzGrid
+             << std::setprecision(6) << std::setw(10) << getRealValue(i,j,kGrid) << "    "
+             << std::setprecision(2) << std::setw(10) << z0Grid + (kGrid+1)*dzGrid
+             << std::setprecision(6) << std::setw(10) << getRealValue(i,j,kGrid+1)
+             << std::setprecision(2) << std::setw(20) << z
+             << std::setprecision(6) << std::setw(20) << v << std::endl;
+  */
+
+
   return(v);
 }
 

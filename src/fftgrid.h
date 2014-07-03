@@ -31,22 +31,30 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  void                 fillInData(const Simbox  * timeSimbox,
-                                  StormContGrid * grid,
-                                  const SegY   *  segy,
-                                  float           smooth_length,
-                                  int           & missingTracesSimbox,
-                                  int           & missingTracesPadding,
-                                  int           & deadTracesSimbox,
-                                  std::string   & errTxt,
-                                  bool            scale = false,
-                                  bool            is_segy = true);
+  void                 fillInData(const Simbox      * timeSimbox,
+                                  StormContGrid     * grid,
+                                  const SegY        *  segy,
+                                  float               smooth_length,
+                                  int               & missingTracesSimbox,
+                                  int               & missingTracesPadding,
+                                  int               & deadTracesSimbox,
+                                  const std::string & parName,
+                                  std::string       & errTxt,
+                                  bool                scale = false,
+                                  bool                is_segy = true);
+
+  void                 extrapolateAtEnds(std::vector<float> & data_trace,
+                                         size_t             & max_extrap_start,
+                                         size_t             & max_extrap_end);
+
+  void                 removeTrendFromTrace(std::vector<float> & data_trace,
+                                            float                trend_first,
+                                            float                trend_last);
+
   void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                              //float                z0_data,
-                                              //float                zn_data,
                                               float                dz_data,
                                               float                smooth_length);
-                                              //std::string        & errTxt);
+
   void                 resampleTrace(const std::vector<float> & data_trace,
                                      const rfftwnd_plan       & fftplan1,
                                      const rfftwnd_plan       & fftplan2,
@@ -56,6 +64,16 @@ public:
                                      int                        rnt,
                                      int                        cmt,
                                      int                        rmt);
+
+  void                 addTrendToTrace(std::vector<float> & grid_trace,
+                                       float                trend_first,
+                                       float                trend_last,
+                                       size_t               n_data,
+                                       int                  nz,
+                                       float                dz_data,
+                                       float                dz_grid,
+                                       float                z0_grid,
+                                       float                z0_data);
 
   double               InterpolateTrilinear(double  x_min,
                                    double           x_max,
@@ -81,13 +99,7 @@ public:
                                              float                z0_data,
                                              float                dz_fine,
                                              int                  n_fine);
-  void                 interpolateAndShiftTrend(std::vector<float>       & interpolated_trend,
-                                                float                      z0_grid,
-                                                float                      dz_grid,
-                                                const std::vector<float> & trend_long,
-                                                float                      z0_data,
-                                                float                      dz_fine,
-                                                int                        n_fine);
+
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
 
