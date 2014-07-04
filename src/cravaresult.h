@@ -129,6 +129,8 @@ public:
 
   void AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs);
 
+  void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
+
 private:
 
   //Resuls per interval
@@ -169,6 +171,7 @@ private:
   StormContGrid                  * background_rho_;
 
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
+  std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_;
 
   std::vector<StormContGrid *>     simulations_seed0_; //Vector over number of simulations
   std::vector<StormContGrid *>     simulations_seed1_;

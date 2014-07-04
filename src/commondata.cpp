@@ -135,15 +135,15 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_) {
     if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
       if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
-                                                       background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
+                                                       multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
       else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
-                                                       background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
+                                                       multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
     }
     else //Not estimation
-      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, multiple_interval_grid_, &full_inversion_simbox_,
-                                                     background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
+                                                    multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
   }
 
   // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
@@ -6775,6 +6775,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       InputFiles                                                 * input_files,
                                       const std::vector<NRLib::Well>                             & wells,
                                       std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                      std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
                                       MultiIntervalGrid                                          * multi_interval_grid,
                                       Simbox                                                     * inversion_simbox,
                                       std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters, //vector (intervals) vector (parameters)
@@ -6882,7 +6883,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           }
 
           //Block logs to bg_simbox
-          std::map<std::string, BlockedLogsCommon *> bg_blocked_logs;
+          std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_tmp;
           if (bg_simbox != NULL) {
             for (size_t j = 0; j < wells.size(); j++) {
               bg_blocked_log = NULL;
@@ -6908,7 +6909,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                                      false,
                                                      err_text);
 
-              bg_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bg_blocked_log));
+              bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bg_blocked_log));
             }
           }
 
@@ -6916,9 +6917,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             background_parameters[i][j] = new NRLib::Grid<float>();
 
           //Create background
-          Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs, model_settings, err_text);
+          Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, err_text);
 
-          //H Need to write bg_blocked_logs to file (here or in CravaResult) CRA-544.
+          //These logs are written out in CravaResult if multiple interval isn't used
+          if (n_intervals == 1)
+            bg_blocked_logs = bg_blocked_logs_tmp;
 
         }
       }

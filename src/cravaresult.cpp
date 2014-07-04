@@ -748,8 +748,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   float dt = static_cast<float>(simbox.getdz());
 
-  //CRA-544: Include blocked background logs when writing blocked logs to file //H-TODO
-
   //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
 
   //H-TODO Resample well logs to the final resolution
@@ -950,10 +948,16 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
     //Write blocked wells
     if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
       WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+
+      //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
+      //Do not write if multiple intervals is used
+      if (n_intervals_ == 1)
+        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
-    if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
-      WriteWells(common_data->GetWells(), model_settings);
-    }
+
+    //if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
+    //  WriteWells(common_data->GetWells(), model_settings);
+    //}
 
     if (model_settings->getKrigingParameter() > 0 && model_settings->getWritePrediction()) {
       KrigingData3D kd(common_data->GetBlockedLogs(), 1); // 1 = full resolution logs

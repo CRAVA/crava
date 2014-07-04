@@ -59,6 +59,7 @@ public:
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogs()                                 const { return mapped_blocked_logs_                           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsForCorr()                          const { return mapped_blocked_logs_for_correlation_           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsInterval(int i)                    const { return mapped_blocked_logs_intervals_.find(i)->second ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBgBlockedLogs()                               const { return mapped_bg_blocked_logs_                        ;}
 
   std::vector<Surface *>                                             & GetFaciesEstimInterval()                               { return facies_estim_interval_                         ;}
 
@@ -675,6 +676,7 @@ private:
                                           InputFiles                                                 * input_files,
                                           const std::vector<NRLib::Well>                             & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                          std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
                                           MultiIntervalGrid                                          * multi_interval_grid,
                                           Simbox                                                     * inversion_simbox,
                                           std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
@@ -870,6 +872,7 @@ private:
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
   std::map<int, std::map<std::string, BlockedLogsCommon *> >   mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
+  std::map<std::string, BlockedLogsCommon *>                   mapped_bg_blocked_logs_;              ///< Blocked logs for extended background simbox
   std::vector<std::string>                                     continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
   std::vector<std::string>                                     discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
