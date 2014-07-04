@@ -558,32 +558,32 @@ private:
                                                   const Simbox           & estimation_simbox,
                                                   std::string            & err_text) const;
 
-  void                CheckFaciesNamesConsistency(const ModelSettings     * model_settings,
-                                                  const InputFiles        * input_files,
-                                                  std::string             & tmp_err_text) const;
+  void               CheckFaciesNamesConsistency(const ModelSettings     * model_settings,
+                                                 const InputFiles        * input_files,
+                                                 std::string             & tmp_err_text) const;
 
-  void                SetFaciesNamesFromRockPhysics(std::vector<std::string>                                   & facies_names,
-                                                    std::vector<int>                                           & facies_nr) const;
+  void               SetFaciesNamesFromRockPhysics(std::vector<std::string>                                   & facies_names,
+                                                   std::vector<int>                                           & facies_nr) const;
 
-  void                ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
-                                               ModelSettings                                    * model_settings,
-                                               std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                                               const std::vector<Simbox *>                      & interval_simboxes,
-                                               const Simbox                                     & full_inverion_simbox,
-                                               std::string                                      & err_text) const;
+  void               ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
+                                              ModelSettings                                    * model_settings,
+                                              std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
+                                              const std::vector<Simbox *>                      & interval_simboxes,
+                                              const Simbox                                     & full_inverion_simbox,
+                                              std::string                                      & err_text) const;
 
-  void                ReadGridFromFile(const std::string                  & file_name,
-                                       const std::string                  & par_name,
-                                       const float                          offset,
-                                       std::vector<NRLib::Grid<float> *>  & grid,
-                                       const SegyGeometry                *& geometry,
-                                       const TraceHeaderFormat            * format,
-                                       int                                  grid_type,
-                                       const std::vector<Simbox *>          & interval_simboxes,
-                                       const Simbox                       * inversion_simbox,
-                                       const ModelSettings                * model_settings,
-                                       std::string                        & err_text,
-                                       bool                                 nopadding = false) const;
+  void               ReadGridFromFile(const std::string                  & file_name,
+                                      const std::string                  & par_name,
+                                      const float                          offset,
+                                      std::vector<NRLib::Grid<float> *>  & grid,
+                                      const SegyGeometry                *& geometry,
+                                      const TraceHeaderFormat            * format,
+                                      int                                  grid_type,
+                                      const std::vector<Simbox *>          & interval_simboxes,
+                                      const Simbox                       * inversion_simbox,
+                                      const ModelSettings                * model_settings,
+                                      std::string                        & err_text,
+                                      bool                                 nopadding = false) const;
 
   void               GetZPaddingFromCravaFile(const std::string & file_name,
                                               std::string       & err_text,
@@ -715,7 +715,8 @@ private:
                                                    Simbox      *& bg_simbox,
                                                    int            output_format,
                                                    int            output_domain,
-                                                   int            other_output) const;
+                                                   int            other_output,
+                                                   std::string    interval_name) const;
 
   bool               SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                            const InputFiles                                            * input_files,

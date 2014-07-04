@@ -109,28 +109,6 @@ public:
 
 private:
 
-
-  //void                   makeFaciesProb(int                                        nfac,
-  //                                      FFTGrid                                  * postVp,
-  //                                      FFTGrid                                  * postVs,
-  //                                      FFTGrid                                  * postRho,
-  //                                      const std::vector<NRLib::Matrix>         & sigmaEOrig,
-  //                                      bool                                       useFilter,
-  //                                      std::map<std::string, BlockedLogsCommon *> blocked_wells,
-  //                                      //int                                nWells,
-  //                                      const std::vector<Surface *>             & faciesEstimInterval,
-  //                                      const double                               dz,
-  //                                      bool                                       relative,
-  //                                      bool                                       noVs,
-  //                                      float                                      p_undef,
-  //                                      const float                              * priorFacies,
-  //                                      FFTGrid                                 ** priorFaciesCubes,
-  //                                      AVOInversion                             * avoInversionResult,
-  //                                      const SeismicParametersHolder            & seismicParameters,
-  //                                      const std::vector<Grid2D *>              & noiseScale,
-  //                                      const ModelSettings                      * modelSettings,
-  //                                      FFTGrid                                  * seismicLH);
-
   int                    MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
                                                             std::vector<Simbox*>                                   & volume,
                                                             AVOInversion                                           * avoInversionResult,
@@ -145,6 +123,7 @@ private:
                                                             const double                                           & trend2_min,
                                                             const double                                           & trend2_max,
                                                             bool                                                     useFilter);
+
   void                   checkProbabilities(const std::vector<std::string>  & faciesNames,
                                             FFTGrid                        ** faciesProb,
                                             int                               nFacies) const;
@@ -179,25 +158,25 @@ private:
                                                                     CravaTrend                                                & trend_cubes);
 
 
-  void     makeFaciesProb(int                                 nFac,
-                          FFTGrid                           * vp,
-                          FFTGrid                           * vs,
-                          FFTGrid                           * rho,
-                          const std::vector<NRLib::Matrix>  & sigmaEOrig,
-                          bool                                useFilter,
-                          std::map<std::string, BlockedLogsCommon *> blocked_wells,
-                          const std::vector<Surface *>      & faciesEstimInterval,
-                          const double                        dz,
-                          bool                                relative,
-                          bool                                noVs,
-                          float                               p_undef,
-                          const std::vector<float>          & priorFacies,
-                          std::vector<FFTGrid *>              priorFaciesCubes,
-                          AVOInversion                      * avoInversionResult,
-                          const std::vector<Grid2D *>       & noiseScale,
-                          const ModelSettings               * modelSettings,
-                          FFTGrid                           * seismicLH,
-                          const std::vector<std::string>      facies_names);
+  void                   makeFaciesProb(int                                 nFac,
+                                        FFTGrid                           * vp,
+                                        FFTGrid                           * vs,
+                                        FFTGrid                           * rho,
+                                        const std::vector<NRLib::Matrix>  & sigmaEOrig,
+                                        bool                                useFilter,
+                                        std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                                        const std::vector<Surface *>      & faciesEstimInterval,
+                                        const double                        dz,
+                                        bool                                relative,
+                                        bool                                noVs,
+                                        float                               p_undef,
+                                        const std::vector<float>          & priorFacies,
+                                        std::vector<FFTGrid *>              priorFaciesCubes,
+                                        AVOInversion                      * avoInversionResult,
+                                        const std::vector<Grid2D *>       & noiseScale,
+                                        const ModelSettings               * modelSettings,
+                                        FFTGrid                           * seismicLH,
+                                        const std::vector<std::string>      facies_names);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<double> & vp,
                                                        const std::vector<double> & vs,

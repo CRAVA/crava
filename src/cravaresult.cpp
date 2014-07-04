@@ -1593,6 +1593,7 @@ void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>          
     const std::vector<int> & jpos = blocked_log->GetJposVector();
     float z0 = static_cast<float> (blocked_log->GetZposBlocked()[0]);
 
+    blocked_log->SetNAngles(n_angles);
     for (int i = 0; i < n_angles; i++) {
       //int nz = wavelet[i]->getNz();
       float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();

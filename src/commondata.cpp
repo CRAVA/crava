@@ -6803,9 +6803,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
   background_parameters.resize(n_intervals);
   for (int i = 0; i < n_intervals; i++) {
     background_parameters[i].resize(3);
-    //for (int j = 0; j < 3; j++) {
-    //  background_parameters[i][j] = new NRLib::Grid<float>();
-    //}
   }
 
   if (model_settings->getGenerateBackground()) {
@@ -6867,8 +6864,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
 
             //Create a sepeate background simbox based on correlation_direction
-            //H SetupExtendedBackgroundSimbox writes background simboxes. Keep`writing? Need to change names based on interval
-            SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(), model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag());
+            SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(),
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
             std::string err_text_tmp = "";
             int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
             if (status != Simbox::BOXOK) {
@@ -7463,7 +7460,8 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
                                                Simbox      *& bg_simbox,
                                                int            output_format,
                                                int            output_domain,
-                                               int            other_output) const
+                                               int            other_output,
+                                               std::string    interval_name) const
 {
   assert (bg_simbox == NULL); //avoid memory leaks
   //
@@ -7524,9 +7522,13 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   bg_simbox = new Simbox(simbox);
   bg_simbox->setDepth(top_surf, bot_surf, nz);
 
+  std::string interval_name_out = "";
+  if (interval_name != "")
+    interval_name_out = "_" + interval_name;
+
   if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
-    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG";
-    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG";
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG" + interval_name_out;
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG" + interval_name_out;
     bg_simbox->WriteTopBaseSurfaceGrids(top_surf_name,
                                         base_surf_name,
                                         IO::PathToBackground(),
@@ -8623,7 +8625,7 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   //  logLevel = LogKit::Low;
   //}
 
-  LogKit::LogFormatted(logLevel,"\nPadding sizes"+text1+":\n");
+  LogKit::LogFormatted(logLevel,"\nXY padding sizes"+text1+":\n");
   LogKit::LogFormatted(logLevel,"  xPad, xPadFac, nx, nxPad                 : %6.fm, %5.3f, %5d, %4d\n",
                        true_xPad, true_x_pad_factor, nx, nx_pad);
   LogKit::LogFormatted(logLevel,"  yPad, yPadFac, ny, nyPad                 : %6.fm, %5.3f, %5d, %4d\n",

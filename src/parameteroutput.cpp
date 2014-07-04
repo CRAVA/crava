@@ -473,6 +473,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const TraceHeaderFormat & thf,
                            bool                      padding)
 {
+  (void) padding;
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
   int domain_flag       = model_settings->getOutputGridDomain();
@@ -592,10 +593,10 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
     for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
       simbox->getXYCoord(i,j,x,y);
       for (int k = 0; k < nz; k++) {
-        time = (*mapping)(i,j,k);
+        time   = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
 
-        float value = storm_grid->GetValueZInterpolated(x, y, kindex);
+        float value = storm_grid->GetValue(i, j, int(floor(kindex)));
 
         //float value = getRealValueInterpolated(i,j,kindex);
         (*outgrid)(i,j,k) = value;

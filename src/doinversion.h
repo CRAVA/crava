@@ -10,17 +10,8 @@ class ModelGravityStatic;
 class ModelGravityDynamic;
 class ModelGeneral;
 class InputFiles;
-//class CommonData;
 class Simbox;
 class SeismicParametersHolder;
-
-//void setupStaticModels(ModelGeneral           *& modelGeneral,
-//                       ModelAVOStatic         *& modelAVOstatic,
-//                       ModelGravityStatic     *& modelGravityStatic,
-//                       ModelSettings           * modelSettings,
-//                       InputFiles              * inputFiles,
-//                       SeismicParametersHolder & seismicParameters,
-//                       Simbox                 *& timeBGSimbox);
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
@@ -31,25 +22,9 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
                        CommonData               * commonData,
                        int                        i_interval);
 
-//bool doFirstAVOInversion(ModelSettings           * modelSettings,
-//                         ModelGeneral            * modelGeneral,
-//                         ModelAVOStatic          * modelAVOStatic,
-//                         SeismicParametersHolder & seismicParameters,
-//                         InputFiles              * inputFiles,
-//                         int                       sortedVintage,
-//                         Simbox                  * timeBGSimbox);
-
-//bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
-//                             ModelGeneral            * modelGeneral,
-//                             ModelAVOStatic          * modelAVOStatic,
-//                             InputFiles              * inputFiles,
-//                             SeismicParametersHolder & seismicParameters,
-//                             int                       sortedVintage);
-
 bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                              ModelGeneral            * modelGeneral,
                              ModelAVOStatic          * modelAVOstatic,
-                             //AVOInversion            * avoinversion,
                              CommonData              * commonData,
                              SeismicParametersHolder & seismicParameters,
                              //InputFiles              * inputFiles,

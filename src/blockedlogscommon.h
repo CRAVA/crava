@@ -6,6 +6,7 @@
 #define BLOCKEDLOGSCOMMON_H
 
 #include "src/seismicstorage.h"
+#include "src/commondata.h"
 #include "fftw.h"
 #include <map>
 #include <string>

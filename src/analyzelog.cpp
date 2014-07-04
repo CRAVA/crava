@@ -400,7 +400,7 @@ Analyzelog::CalculateNumberOfLags(int                                           
 }
 */
 
-void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >            & log_data,
+void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >           & ln_data_map, //map from well to log
                                 const std::vector<std::vector<NRLib::Grid<float> *> > & background,
                                 const std::vector<std::string>                        & well_names,
                                 const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
@@ -414,24 +414,25 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
   int   nd_tot        = 0;
   int   log_nr        = -1;
   //
-  // These three data contain all data from all wells and all intervals
+  // The three vectors below contain data from all wells and all intervals
   //
-  std::vector<double>  ln_data;
+  std::vector<double>  mean_vector;
+  std::vector<double>  ln_data_vector;
   std::vector<double>  low_freq_log;
-  std::vector<double>  mean;
 
   assert(log_name == "Vp" || log_name == "Vs" || log_name == "Rho");
 
   for (int i = 0; i < n_wells_; i++){
     std::vector<double>              temp_log(0);
-    log_data.insert(std::pair<std::string, std::vector<double> >(well_names[i], temp_log));
+    ln_data_map.insert(std::pair<std::string, std::vector<double> >(well_names[i], temp_log));
 
     std::vector<double> temp_low_freq_log =  mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetContLogHighCutBackground(log_name);
 
 
     for (size_t j = 0; j < interval_simboxes.size(); j++){
-      std::string interval_name       = interval_simboxes[j]->GetIntervalName();
-      nd                              = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name);
+      std::vector<double>   mean;
+      std::string           interval_name = interval_simboxes[j]->GetIntervalName();
+      nd                    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNumberOfBlocks();
 
       const std::vector<int>    & i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
       const std::vector<int>    & j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
@@ -454,28 +455,29 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
 
       if (background[j][log_nr]->GetN() > 0){
           for(int n = 0; n < nd; n++){
+            mean_vector.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
             mean.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
           }
       }
       else{
         for(int n = 0; n < nd; n++){
-          mean.push_back(0);
+          mean_vector.push_back(0);
+          mean.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
         }
       }
 
-      //log_data.find(well_names[i])->second.resize(nd, 0.0);
 
       for (int j = 0; j < nd; j++){
         low_freq_log.push_back(temp_low_freq_log[j]);
-        if(blocked_well_log[j] != RMISSING && mean[j] != RMISSING){
-          log_data.find(well_names[i])->second.push_back(blocked_well_log[j] - mean[j]);
+        if(blocked_well_log[j] != RMISSING && mean_vector[j] != RMISSING){
+          ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[j] - mean[j]);
           global_mean   += blocked_well_log[j] - mean[j];
-          ln_data.push_back(blocked_well_log[j] - mean[j]);
+          ln_data_vector.push_back(blocked_well_log[j] - mean[j]);
           count++;
         }
         else{
-          ln_data.push_back(RMISSING);
-          log_data.find(well_names[i])->second.push_back(RMISSING);
+          ln_data_vector.push_back(RMISSING);
+          ln_data_map.find(well_names[i])->second.push_back(RMISSING);
         }
       }
     }
@@ -486,7 +488,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
   // Check consistency with background model
   //
 
-  bool background_ok = CheckConsistencyBackground(ln_data, mean, low_freq_log, nd_tot);
+  bool background_ok = CheckConsistencyBackground(ln_data_vector, mean_vector, low_freq_log, nd_tot);
   if(background_ok == false){
     err_txt += "The background model does not correspond with well log '"+ log_name +"'; prior correlation estimation failed.\n";
     TaskList::addTask("Check that the background model does not deviate significantly from well log '" + log_name + "'.\n");
@@ -499,9 +501,9 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
   if(count > 0){
     global_mean /= count;
     for(int i = 0 ; i < n_wells_ ; i++){
-      for(size_t k = 0 ; k < log_data.find(well_names[i])->second.size(); k++){
-        if (log_data.find(well_names[i])->second[k] != RMISSING){
-          log_data.find(well_names[i])->second[k] -= global_mean;
+      for(size_t k = 0 ; k < ln_data_map.find(well_names[i])->second.size(); k++){
+        if (ln_data_map.find(well_names[i])->second[k] != RMISSING){
+          ln_data_map.find(well_names[i])->second[k] -= global_mean;
         }
       }
     }
@@ -765,9 +767,9 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                                                            const std::vector<std::string>                     & well_names,
                                                            const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
                                                            const std::vector<Simbox *>                        & interval_simboxes,
-                                                           const std::map<std::string, std::vector<double> >   & log_data_vp,
-                                                           const std::map<std::string, std::vector<double> >   & log_data_vs,
-                                                           const std::map<std::string, std::vector<double> >   & log_data_rho,
+                                                           const std::map<std::string, std::vector<double> >  & log_data_vp,
+                                                           const std::map<std::string, std::vector<double> >  & log_data_vs,
+                                                           const std::map<std::string, std::vector<double> >  & log_data_rho,
                                                            bool                                                 all_Vs_logs_synthetic,
                                                            bool                                                 all_Vs_logs_non_synthetic,
                                                            NRLib::Vector                                      & regression_coef,

@@ -323,10 +323,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     NRLib::WriteVectorToFile(fileName, post_resample);
 
-    //seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
-  //H This is used in writing of wells and in faciesprob.
+  //This is used in writing of wells and in faciesprob.
   if (model_settings->getEstimateWaveletNoise())
     CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox);
 
@@ -354,9 +353,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
-    //H-TODO Adjust name to intervals
+    std::string interval_name_out = "";
+    if (model_settings->getIntervalName(i_interval) != "")
+      interval_name_out = "_" + model_settings->getIntervalName(i_interval) + "_";
+
     std::string angle     = NRLib::ToString(theta_deg_[i], 1);
-    std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
+    std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + interval_name_out + IO::SuffixGeneralData();
     error_smooth[i]->printToFile(file_name);
   }
 
@@ -393,10 +395,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       if ((model_settings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
         (model_settings->getEstimationMode() && model_settings->getEstimateWavelet(this_timelapse_)[l]))
       {
-        std::string angle     = NRLib::ToString(theta_deg_[l], 1);
+        std::string angle             = NRLib::ToString(theta_deg_[l], 1);
+        std::string interval_name_out = "";
+        if (model_settings->getIntervalName(i_interval) != "")
+          interval_name_out = "_"+model_settings->getIntervalName(i_interval);
 
-        //H-TODO Adjust name to intervals
-        std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
+        std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle + interval_name_out;
         wavelets_[l]->writeWaveletToFile(file_name, 1.0,false); // dt_max = 1.0;
       }
       model_variance_[l] *= gain*gain;

@@ -26,7 +26,6 @@ public:
               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
               const Simbox                               * simbox,
               const ModelSettings                        * modelSettings,
-              //ModelGeneral                             * modelGeneral,
               SeismicParametersHolder                    & seismicParameters);
 
 private:
