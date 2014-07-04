@@ -1366,15 +1366,12 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
 
   ExpTransf(background_vp_);
   ParameterOutput::WriteFile(model_settings, background_vp_, file_name_vp, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_vp_;
 
   ExpTransf(background_vs_);
   ParameterOutput::WriteFile(model_settings, background_vs_, file_name_vs, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_vs_;
 
   ExpTransf(background_rho_);
   ParameterOutput::WriteFile(model_settings, background_rho_, file_name_rho, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
-  delete background_rho_;
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
