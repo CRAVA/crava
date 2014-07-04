@@ -836,6 +836,12 @@ private:
                                     const Simbox                               & simbox,
                                     int                                          n_angles);
 
+  void               DumpVector(const std::vector<float> data,
+                                const std::string        name) const;
+  void               DumpVector(const fftw_real   * data,
+                                int                 n_data,
+                                const std::string   name) const;
+
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
