@@ -3216,8 +3216,8 @@ bool CommonData::WaveletHandling(ModelSettings                                  
   }
 
   //Add in synthetic sesmic (moved from wavelet1D.cpp)
-  std::vector<Wavelet *> first_wavelets = wavelets[0];
-  GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs, reflection_matrix[0], &estimation_simbox);
+  //std::vector<Wavelet *> first_wavelets = wavelets[0];
+  //GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs, reflection_matrix[0], &estimation_simbox);
 
   return true;
 }
