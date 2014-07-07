@@ -146,22 +146,24 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
 {
   assert(cubetype_ != CTMISSING);
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   createRealGrid();
 
   size_t max_extrap_start = 0;
   size_t max_extrap_end   = 0;
 
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
+  bool   seismic_data     = (cubetype_ == DATA);
 
-  float scalevert = 1.0;
-  float scalehor  = 1.0;
+  float  scalvert         = 1.0;
+  float  scalhor          = 1.0;
 
-  if (scale)
-  {
+  if (scale) {
     LogKit::LogFormatted(LogKit::Low,"Sgri file read. Rescaling z axis from s to ms, x and y from km to m. \n");
-    scalevert = 0.001f; //1000.0;
-    scalehor  = 0.001f; //1000.0;
+    scalvert       = 0.001f; //1000.0;
+    scalhor        = 0.001f; //1000.0;
+    smooth_length *= scalvert;
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling %s data into %dx%dx%d grid:",parName.c_str(),nxp_,nyp_,nzp_);
@@ -179,18 +181,15 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   // Find proper length of time samples to get N*log(N) performance in FFT.
   //
   size_t n_samples = 0;
-  float  dz_data   = 0.0;
-  float  dz_min    = 0.0;
 
   if (is_segy) {
     n_samples = segy->FindNumberOfSamplesInLongestTrace();
-    dz_data   = segy->GetDz();
-    dz_min    = dz_data/4.0f;
   }
   else {
     n_samples = grid->GetNK();
   }
 
+  // Kanskje flytte dette lenger inn for å rydde opp rundt FFTPLAN-lagingen?????
   //
   // Create FFT plans
   //
@@ -219,59 +218,35 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
       double x, y, z0;
       timeSimbox->getCoord(refi, refj, refk, x, y, z0);  // Get lateral position and z-start (z0)
 
-      x             *= scalehor;
-      y             *= scalehor;
-      z0            *= scalevert;
-      smooth_length *= scalevert;
-
-
-      double dz = timeSimbox->getdz(refi, refj)*scalevert;
-      float  xf = static_cast<float>(x);
-      float  yf = static_cast<float>(y);
+      double dz      = timeSimbox->getdz(refi, refj);
+      float  xf      = static_cast<float>(x*scalhor);
+      float  yf      = static_cast<float>(y*scalhor);
+      float  dz_grid = static_cast<float>(dz*scalvert);
+      float  z0_grid = static_cast<float>(z0*scalvert);
 
       bool is_inside = false;
-      if(is_segy)
+      if (is_segy)
         is_inside = segy->GetGeometry()->IsInside(xf, yf);
-      else {
-        if(grid->IsInside(xf, yf) == 1)
-          is_inside = true;
-      }
+      else
+        is_inside = grid->IsInside(xf, yf);
 
       if (is_inside) {
         bool  missing = true;
         float z0_data = RMISSING;
+        float dz_data = RMISSING;
+        float dz_min  = RMISSING;
 
         std::vector<float> data_trace;
-        size_t grid_i =   0;
-        size_t grid_j =   0;
-        double grid_x = 0.0;
-        double grid_y = 0.0;
-        double grid_z = 0.0;
-        float  value  = 0.0;
 
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+          dz_data = segy->GetDz();
+          dz_min  = dz_data/4.0f;
         }
         else {
-          float z_min = 0.0;
-          float z_max = 0.0;
-          grid->FindXYIndex(xf, yf, grid_i, grid_j);
-          for (size_t k = 0; k < grid->GetNK(); k++) {
-            grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
-            value = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
-            data_trace.push_back(value);
-
-            if (k == 0)
-              z_min = static_cast<float>(grid_z);
-            if (k == grid->GetNK() - 1)
-              z_max = static_cast<float>(grid_z);
-          }
-
-          dz_data = (z_max - z_min) / grid->GetNK();
-          dz_min  = dz_data/4.0f;
-          z0_data = z_min;
+          // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside. Catch and tur into missing!!
+          makeTraceFromStormGrid(grid, data_trace, z0_data, dz_data, dz_min, xf, yf);
         }
-
 
         /*
         std::cout << "INPUT: xf, yf, z0_data, dz_data = " << std::fixed << std::setprecision(2) << xf << " , " << yf << " , " << z0_data << " , " << dz_data << std::endl;
@@ -282,36 +257,32 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
         }
         */
 
-        size_t n_data      = data_trace.size();
-        float  trend_first = 0.0;
-        float  trend_last  = 0.0;
+        if (!is_segy || (is_segy && !missing)) { // Denne bør bli ==> !missing
 
-        // Dette må vi gjøre annerledes. Vi trenger å vite når vi har seismikk eller ikke
-        // Her antar jeg at vi ikke har seismicc hvis kuben er av typen STORM
+          size_t n_data      = data_trace.size();
+          float  trend_first = 0.0;
+          float  trend_last  = 0.0;
 
-        if (cubetype_ != DATA || !is_segy) {
+          if (!seismic_data) {
 
-          extrapolateAtEnds(data_trace,        // Get rid of leading and trailing zeros
-                            max_extrap_start,
-                            max_extrap_end);
+            extrapolateAtEnds(data_trace,        // Get rid of leading and trailing zeros
+                              max_extrap_start,
+                              max_extrap_end);
 
-          trend_first = data_trace[0];
-          trend_last  = data_trace[n_data - 1];
+            trend_first = data_trace[0];
+            trend_last  = data_trace[n_data - 1];
 
-          removeTrendFromTrace(data_trace,
-                               trend_first,
-                               trend_last);
+            removeTrendFromTrace(data_trace,
+                                 trend_first,
+                                 trend_last);
 
-          nt = findClosestFactorableNumber(static_cast<int>(n_data));
-          mt = 4*nt;
+            nt = findClosestFactorableNumber(static_cast<int>(n_data));
+            mt = 4*nt;
 
-          fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-          fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-        }
+            fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+            fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+          }
 
-        // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside.
-
-        if (!is_segy || (is_segy && !missing)) {
           int         cnt      = nt/2 + 1;
           int         rnt      = 2*cnt;
           int         cmt      = mt/2 + 1;
@@ -320,12 +291,9 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
           fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-          float       dz_grid  = static_cast<float>(dz);
-          float       z0_grid  = static_cast<float>(z0);
-
           std::vector<float> grid_trace(nzp_);
 
-          if (cubetype_ == DATA) {
+          if (seismic_data) {
             smoothTraceInGuardZone(data_trace,
                                    dz_data,
                                    smooth_length);
@@ -349,11 +317,8 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                                 dz_min,
                                 rmt);
 
-        // Dette må vi gjøre annerledes. Vi trenger å vite når vi har seismikk eller ikke
-        // Her antar jeg at vi ikke har seismicc hvis kuben er av typen STORM
-
-          if (cubetype_ != DATA || !is_segy) {
-            addTrendToTrace(grid_trace,
+          if (!seismic_data) {
+            addTrendToTrace(grid_trace, // Trend is also added in padding so that the grid_trace is filled everywhere
                             trend_first,
                             trend_last,
                             n_data,
@@ -414,6 +379,43 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   }
 
   Timings::setTimeResamplingSeismic(wall,cpu);
+}
+
+
+void
+FFTGrid::makeTraceFromStormGrid(StormContGrid      * grid,
+                                std::vector<float> & data_trace,
+                                float              & z0_data,
+                                float              & dz_data,
+                                float              & dz_min,
+                                float                xf,
+                                float                yf)
+{
+  size_t grid_i =   0;
+  size_t grid_j =   0;
+
+  double grid_x = 0.0;
+  double grid_y = 0.0;
+  double grid_z = 0.0;
+
+  float z_min   = 0.0;
+  float z_max   = 0.0;
+
+  grid->FindXYIndex(xf, yf, grid_i, grid_j);
+  for (size_t k = 0; k < grid->GetNK(); k++) {
+    grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
+    float value  = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+    data_trace.push_back(value);
+
+    if (k == 0)
+      z_min = static_cast<float>(grid_z);
+    if (k == grid->GetNK() - 1)
+      z_max = static_cast<float>(grid_z);
+  }
+
+  dz_data = (z_max - z_min) / grid->GetNK();
+  dz_min  = dz_data/4.0f;
+  z0_data = z_min;
 }
 
 void

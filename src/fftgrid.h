@@ -43,6 +43,14 @@ public:
                                   bool                scale = false,
                                   bool                is_segy = true);
 
+  void                 makeTraceFromStormGrid(StormContGrid      * grid,
+                                              std::vector<float> & data_trace,
+                                              float              & z0_data,
+                                              float              & dz_data,
+                                              float              & dz_min,
+                                              float                xf,
+                                              float                yf);
+
   void                 extrapolateAtEnds(std::vector<float> & data_trace,
                                          size_t             & max_extrap_start,
                                          size_t             & max_extrap_end);
