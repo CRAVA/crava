@@ -259,11 +259,17 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   //
   if (cov_estimated){
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
+
+
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
       for(int j = 0; j < 3; j++){
-        circ_auto_cov [i][j]= ComputeCircAutoCov(auto_cov, low_int_cut, nzp, i, j);
+        std::vector<double> corr_t(auto_cov.size());
+        for (size_t k = 0; k < auto_cov.size(); k++){
+          corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+        }
+        circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t, low_int_cut, nzp);
       }
     }
 
@@ -273,6 +279,13 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
     crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
+
+    covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));
+    covVs_      ->multiplyByScalar(static_cast<float>(auto_cov[0](1,1)));
+    covRho_     ->multiplyByScalar(static_cast<float>(auto_cov[0](2,2)));
+    crCovVpVs_  ->multiplyByScalar(static_cast<float>(auto_cov[0](0,1)));
+    crCovVpRho_ ->multiplyByScalar(static_cast<float>(auto_cov[0](0,2)));
+    crCovVsRho_ ->multiplyByScalar(static_cast<float>(auto_cov[0](1,2)));
 
     for(int i = 0; i < 3; i++){
       for (int j = 0; j < 3; j++){
@@ -509,13 +522,11 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 
 
 //--------------------------------------------------------------------
-fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov,
+fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<double>            & auto_cov,
                                                          int                                  minIntFq,
-                                                         int                                  nzp,
-                                                         size_t                               i,
-                                                         size_t                               j) const
+                                                         int                                  nzp) const
 {
-  assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
+  //assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
 
   size_t n = auto_cov.size();
 
@@ -530,8 +541,10 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib
       else
         refk = nzp - k;
 
-      if(refk < n)
-        circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk](i,j));
+      if(refk < n){
+        //circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk](i,j));
+        circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk]);
+      }
       else
         circ_auto_cov[k] = 0.0;
     }
@@ -539,7 +552,7 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<NRLib
       circ_auto_cov[k] = RMISSING;
   }
 
-  MakeCircAutoCovPosDef(circ_auto_cov, minIntFq, nzp);
+  makeCircCorrTPosDef(circ_auto_cov, minIntFq, nzp);
 
   return circ_auto_cov;
 }
@@ -581,6 +594,7 @@ SeismicParametersHolder::computeCircCorrT(const std::vector<double> & priorCorrT
 }
 
 //--------------------------------------------------------------------
+/*
 void  SeismicParametersHolder::MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
                                                      int          min_int_fq,
                                                      int          nzp) const
@@ -607,6 +621,7 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
   }
 
 }
+*/
 
 //--------------------------------------------------------------------
 
