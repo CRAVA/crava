@@ -5945,6 +5945,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 {
   //Resample to either a NRLib::Grid or a FFTGrid.
   //The one resampled to needs to be defined outside this function, and the other needs to be sent in as an empty grid.
+  float res_fac = 4.0; //Degree of refinement, must be integer.
 
   assert(grid_type != CTMISSING);
 
@@ -6002,14 +6003,14 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
   if (is_segy) {
     n_samples = segy->FindNumberOfSamplesInLongestTrace();
     dz_data   = segy->GetDz();
-    dz_min    = dz_data/4.0f;
+    dz_min    = dz_data/res_fac;
   }
   else if (is_storm) {
     n_samples = storm_grid->GetNK();
   }
 
   int nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
-  int mt = 4*nt;           // Use four times the sampling density for the fine-meshed data
+  int mt = static_cast<int>(res_fac)*nt;           // Use four times the sampling density for the fine-meshed data
 
   //
   // Create FFT plans
@@ -6059,38 +6060,32 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         float z0_data = RMISSING;
 
         std::vector<float> data_trace;
-        size_t grid_i = 0;
-        size_t grid_j = 0;
-        double grid_x = 0.0;
-        double grid_y = 0.0;
-        double grid_z = 0.0;
-        float  value  = 0.0f;
 
         //Get data_trace for this i and j.
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
         }
         else if (is_storm) {
-          float z_min = 0.0f;
-          float z_max = 0.0f;
+          size_t i_in, j_in, k_in;
+          storm_grid->FindIndex(x, y, z0, i_in, j_in, k_in);
+          double grid_x = 0.0;
+          double grid_y = 0.0;
+          double grid_z = 0.0;
+          float  value  = 0.0f;
+          storm_grid->FindCenterOfCell(i_in, j_in, 0, grid_x, grid_y, grid_z);
+          float z_min = static_cast<float>(grid_z);
+          storm_grid->FindCenterOfCell(i_in, j_in, storm_grid->GetNK()-1, grid_x, grid_y, grid_z);
+          float z_max = static_cast<float>(grid_z);
 
-          storm_grid->FindXYIndex(xf, yf, grid_i, grid_j);
-          for (size_t k = 0; k < grid_new->GetNK(); k++) {
-            storm_grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
-            value = storm_grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+          for (k_in = 0; k_in < storm_grid->GetNK(); k_in++) {
+            value = storm_grid->GetValue(i_in, j_in, k_in);
             data_trace.push_back(value);
-
-            if (k == 0)
-              z_min = static_cast<float>(grid_z);
-            if (k == grid_new->GetNK()-1)
-              z_max = static_cast<float>(grid_z);
           }
 
-          dz_data = (z_max- z_min) / storm_grid->GetNK();
-          dz_min = dz_data/4.0f;
+          dz_data = (z_max- z_min) / (storm_grid->GetNK()-1);
+          dz_min = dz_data/res_fac;
           z0_data = z_min;
         }
-
         size_t n_trace = data_trace.size();
         float trend_first = 0.0f;
         float trend_last  = 0.0f;
@@ -6109,7 +6104,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
           n_samples = data_trace.size();
           nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
-          mt = 4*nt;
+          mt = static_cast<int>(res_fac)*nt;
           fftwnd_destroy_plan(fftplan1);
           fftwnd_destroy_plan(fftplan2);
           fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -6157,7 +6152,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
           std::vector<float> data_trace_trend_long;
           if (grid_type != DATA) {
-            float trend_inc = (trend_last - trend_first) / (rmt - 1);
+            float trend_inc = (trend_last - trend_first) / (res_fac*(n_trace - 1));
 
             data_trace_trend_long.resize(rmt);
             for (int k_trace = 0; k_trace < rmt; k_trace++) {
@@ -9753,4 +9748,25 @@ void CommonData::ReleaseBackgroundGrids(int   i_interval,
   assert (elastic_param < static_cast<int>(3) && i_interval < static_cast<int>(background_parameters_.size()));
   delete background_parameters_[i_interval][elastic_param];
   background_parameters_[i_interval][elastic_param] = NULL;
+}
+
+void
+CommonData::DumpVector(const std::vector<float> data,
+                       const std::string        name) const
+{
+  std::ofstream dump(name.c_str(), std::ofstream::out);
+  for(size_t i=0;i<data.size();i++)
+  dump << data[i] << "\n";
+  dump.close();
+}
+
+void
+CommonData::DumpVector(const fftw_real   * data,
+                       int                 n_data,
+                       const std::string   name) const
+{
+  std::ofstream dump(name.c_str(), std::ofstream::out);
+  for(int i=0;i<n_data;i++)
+  dump << data[i] << "\n";
+  dump.close();
 }

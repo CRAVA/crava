@@ -834,6 +834,12 @@ private:
   void               PrintSettings(const ModelSettings    * model_settings,
                                    const InputFiles       * input_files) const;
 
+  void               DumpVector(const std::vector<float> data,
+                                const std::string        name) const;
+  void               DumpVector(const fftw_real   * data,
+                                int                 n_data,
+                                const std::string   name) const;
+
   // CLASS VARIABLES ---------------------------------------------------
 
   // Bool variables indicating whether the corresponding data processing
