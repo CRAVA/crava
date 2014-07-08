@@ -596,11 +596,8 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
         time   = (*mapping)(i,j,k);
         kindex = float((time - static_cast<float>(simbox->getTop(x,y)))/simbox->getdz());
 
-        //float value = storm_grid->GetValue(i, j, int(floor(kindex)));
-
         float value = storm_grid->GetValueInterpolated(i, j, kindex);
 
-        //float value = getRealValueInterpolated(i,j,kindex);
         (*outgrid)(i,j,k) = value;
       }
     }

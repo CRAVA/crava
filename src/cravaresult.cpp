@@ -527,7 +527,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //We need synt_seis from well wavelets, but it needs to be based on simbox_final/blocked_logs_final
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
-
   bool wavelet_estimated = false;
   for (int i = 0; i < model_settings->getNumberOfAngles(0); i++) {
     if (model_settings->getEstimateWavelet(0)[i] == true)
@@ -748,7 +747,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
   //Results are combined to one grid in CombineResults first
   const Simbox & simbox = common_data->GetFullInversionSimbox();
 
-  float dt = static_cast<float>(simbox.getdz());
+  //float dt = static_cast<float>(simbox.getdz());
 
   //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
 
@@ -797,30 +796,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         ParameterOutput::WriteFile(model_settings, block_grid_, "BlockGrid", IO::PathToInversionResults(), &simbox);
 
     }
-
-    //Write well wavelets
-    //int w = 0;
-    //const std::map<std::string, BlockedLogsCommon *> & blocked_logs = common_data->GetBlockedLogs();
-
-    //for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
-    //  std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    //  const BlockedLogsCommon * blocked_log = iter->second;
-
-    //  if(blocked_log->GetUseForWaveletEstimation() &&
-    //    ((model_settings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || model_settings->getEstimationMode())) {
-
-    //    std::string well_name(blocked_log->GetWellName());
-    //    NRLib::Substitute(well_name,"/","_");
-    //    NRLib::Substitute(well_name," ","_");
-    //    std::string file_name = IO::PrefixWellWavelet() + well_name + "_RESAMPLED";
-
-    //    int n_angles = wavelets_intervals_[0].size();
-    //    for (int i = 0; i < n_angles; i++) {
-    //      wavelets_intervals_[0][i]->writeWaveletToFile(file_name, 1.0f, true);
-    //    }
-    //  }
-    //  w++;
-    //}
 
     //Write seismic data
     if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
@@ -930,16 +905,16 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
       std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
 
-      if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-        WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
+      //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+      //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
 
       //delete corr_T_[i];
       //fftw_free(corr_T_[i]);
 
-      if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-        WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-        //delete [] corr_T_filtered_[i];
-      }
+      //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
+      //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
+      //  //delete [] corr_T_filtered_[i];
+      //}
 
       if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
         WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);

@@ -305,23 +305,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
-    //H-REMOVE
-    //std::string fileName = "wavelets/test_pre_resample_wavelet";
-    //NRLib::Vector pre_resample(wavelets_[i]->getNz());
-    //for (int ii = 0; ii < wavelets_[i]->getNz(); ii++) {
-    //  pre_resample(ii) = wavelets_[i]->getRAmp()[ii];
-    //}
-    //NRLib::WriteVectorToFile(fileName, pre_resample);
-
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
-
-    //H-REMOVE
-    //fileName = "wavelets/test_post_resample_wavelet";
-    //NRLib::Vector post_resample(wavelets_[i]->getNz());
-    //for (int ii = 0; ii < wavelets_[i]->getNz(); ii++) {
-    //  post_resample(ii) = wavelets_[i]->getRAmp()[ii];
-    //}
-    //NRLib::WriteVectorToFile(fileName, post_resample);
 
   }
 

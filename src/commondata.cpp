@@ -2959,28 +2959,27 @@ CommonData::FindMeanVsVp(const NRLib::Well            & well,
 }
 
 
-bool CommonData::WaveletHandling(ModelSettings                                                   * model_settings,
-                                 InputFiles                                                      * input_files,
-                                 const Simbox                                                    & estimation_simbox,
-                                 const Simbox                                                    & full_inversion_simbox,
-                                 std::map<std::string, BlockedLogsCommon *>                      & mapped_blocked_logs,
-                                 std::vector<std::vector<SeismicStorage> >                       & seismic_data,
-                                 std::map<int, std::vector<Wavelet *> >                          & wavelets,
-                                 std::map<int, std::vector<Grid2D *> >                           & local_noise_scales,
-                                 std::map<int, std::vector<Grid2D *> >                           & local_shifts,
-                                 std::map<int, std::vector<Grid2D *> >                           & local_scales,
-                                 std::map<int, std::vector<float> >                              & global_noise_estimates,
-                                 std::map<int, std::vector<float> >                              & sn_ratios,
-                                 //std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis, //map timelapse, vector angles, vector wells
-                                 bool                                                            & use_local_noise,
-                                 std::vector<std::vector<double> >                               & t_grad_x,
-                                 std::vector<std::vector<double> >                               & t_grad_y,
-                                 NRLib::Grid2D<float>                                            & ref_time_grad_x,
-                                 NRLib::Grid2D<float>                                            & ref_time_grad_y,
-                                 std::vector<NRLib::Matrix >                                     & reflection_matrix,
-                                 std::string                                                     & wavelet_est_int_top,
-                                 std::string                                                     & wavelet_est_int_bot,
-                                 std::string                                                     & err_text_common) const {
+bool CommonData::WaveletHandling(ModelSettings                              * model_settings,
+                                 InputFiles                                 * input_files,
+                                 const Simbox                               & estimation_simbox,
+                                 const Simbox                               & full_inversion_simbox,
+                                 std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                 std::vector<std::vector<SeismicStorage> >  & seismic_data,
+                                 std::map<int, std::vector<Wavelet *> >     & wavelets,
+                                 std::map<int, std::vector<Grid2D *> >      & local_noise_scales,
+                                 std::map<int, std::vector<Grid2D *> >      & local_shifts,
+                                 std::map<int, std::vector<Grid2D *> >      & local_scales,
+                                 std::map<int, std::vector<float> >         & global_noise_estimates,
+                                 std::map<int, std::vector<float> >         & sn_ratios,
+                                 bool                                       & use_local_noise,
+                                 std::vector<std::vector<double> >          & t_grad_x,
+                                 std::vector<std::vector<double> >          & t_grad_y,
+                                 NRLib::Grid2D<float>                       & ref_time_grad_x,
+                                 NRLib::Grid2D<float>                       & ref_time_grad_y,
+                                 std::vector<NRLib::Matrix >                & reflection_matrix,
+                                 std::string                                & wavelet_est_int_top,
+                                 std::string                                & wavelet_est_int_bot,
+                                 std::string                                & err_text_common) const {
 
   int n_timeLapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
@@ -3027,7 +3026,6 @@ bool CommonData::WaveletHandling(ModelSettings                                  
     std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
     wavelets[i].resize(n_angles, NULL);
-    //std::vector<Wavelet *> wavelet(n_angles);
 
     std::vector<Grid2D *> local_noise_scale(n_angles, NULL); ///< Scale factors for local noise
     std::vector<Grid2D *> local_shift(n_angles, NULL);
@@ -3135,11 +3133,8 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
     // check if local noise is set for some angles.
     bool local_noise_set = false;
-    //std::vector<std::vector<std::vector<double> > > synt_seis_angles(n_angles);
 
     for (int j = 0; j < n_angles; j++) {
-
-      //synt_seis_angles[j].resize(n_wells);
 
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
@@ -3157,7 +3152,6 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                   estimation_simbox,
                                   full_inversion_simbox,
                                   reflection_matrix[i],
-                                  //synt_seis_angles[j],
                                   err_text,
                                   wavelets[i][j],
                                   local_noise_scale[j],
@@ -3211,8 +3205,6 @@ bool CommonData::WaveletHandling(ModelSettings                                  
     global_noise_estimates[i] = sn_ratio;
     sn_ratios[i]              = sn_ratio;
 
-    //synt_seis[i]              = synt_seis_angles;
-
   } //timelapse
 
 
@@ -3226,10 +3218,6 @@ bool CommonData::WaveletHandling(ModelSettings                                  
     err_text_common += err_text;
     return false;
   }
-
-  //Add in synthetic sesmic (moved from wavelet1D.cpp)
-  //std::vector<Wavelet *> first_wavelets = wavelets[0];
-  //GenerateSyntheticSeismicLogs(first_wavelets, mapped_blocked_logs, reflection_matrix[0], &estimation_simbox);
 
   return true;
 }
@@ -3285,27 +3273,26 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
 }
 
 int
-CommonData::Process1DWavelet(const ModelSettings                      * model_settings,
-                             const InputFiles                         * input_files,
-                             SeismicStorage                           * seismic_data,
+CommonData::Process1DWavelet(const ModelSettings                        * model_settings,
+                             const InputFiles                           * input_files,
+                             SeismicStorage                             * seismic_data,
                              std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                             const std::vector<Surface *>             & wavelet_estim_interval,
-                             const Simbox                             & estimation_simbox,
-                             const Simbox                             & full_inversion_simbox,
-                             const NRLib::Matrix                      & reflection_matrix,
-                             //std::vector<std::vector<double> >        & synt_seis,
-                             std::string                              & err_text,
-                             Wavelet                                 *& wavelet,
-                             Grid2D                                  *& local_noise_scale, //local noise estimates?
-                             Grid2D                                  *& local_shift,
-                             Grid2D                                  *& local_scale,
-                             unsigned int                               i_timelapse,
-                             unsigned int                               j_angle,
-                             const float                                angle,
-                             float                                    & sn_ratio,
-                             bool                                       estimate_wavelet,
-                             bool                                       use_ricker_wavelet,
-                             bool                                       use_local_noise) const
+                             const std::vector<Surface *>               & wavelet_estim_interval,
+                             const Simbox                               & estimation_simbox,
+                             const Simbox                               & full_inversion_simbox,
+                             const NRLib::Matrix                        & reflection_matrix,
+                             std::string                                & err_text,
+                             Wavelet                                   *& wavelet,
+                             Grid2D                                    *& local_noise_scale, //local noise estimates?
+                             Grid2D                                    *& local_shift,
+                             Grid2D                                    *& local_scale,
+                             unsigned int                                 i_timelapse,
+                             unsigned int                                 j_angle,
+                             const float                                  angle,
+                             float                                      & sn_ratio,
+                             bool                                         estimate_wavelet,
+                             bool                                         use_ricker_wavelet,
+                             bool                                         use_local_noise) const
 {
   assert (wavelet == NULL && local_noise_scale == NULL && local_shift == NULL && local_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
   float * reflection_coefs = new float[3];
@@ -3341,7 +3328,6 @@ CommonData::Process1DWavelet(const ModelSettings                      * model_se
                             wavelet_estim_interval,
                             model_settings,
                             reflection_matrix,
-                            //synt_seis,
                             j_angle,
                             error,
                             err_text);
