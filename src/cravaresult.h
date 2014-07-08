@@ -112,6 +112,12 @@ public:
                                     const NRLib::Matrix                        & reflection_matrix,
                                     const Simbox                               & simbox);
 
+  void GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
+                               CommonData                                 * common_data,
+                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                               const Simbox                               & simbox,
+                               const NRLib::Matrix                        & reflection_matrix);
+
   //void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
   //                             std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
   //                             const std::vector<std::vector<std::vector<double> > > & synt_seis,

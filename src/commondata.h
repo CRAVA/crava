@@ -85,7 +85,7 @@ public:
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
 
-  const std::vector<std::vector<std::vector<double> > >              & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
+  //const std::vector<std::vector<std::vector<double> > >              & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
 
   bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
@@ -392,7 +392,7 @@ private:
                                      std::map<int, std::vector<Grid2D *> >                           & local_scale,
                                      std::map<int, std::vector<float> >                              & global_noise_estimate,
                                      std::map<int, std::vector<float> >                              & sn_ratio,
-                                     std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis, //map timelapse, vector angles, vector wells
+                                     //std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis, //map timelapse, vector angles, vector wells
                                      bool                                                            & use_local_noise,
                                      std::vector<std::vector<double> >                               & t_grad_x,
                                      std::vector<std::vector<double> >                               & t_grad_y,
@@ -459,7 +459,7 @@ private:
                                       const Simbox                             & estimation_simbox,
                                       const Simbox                             & full_inversion_simbox,
                                       const NRLib::Matrix                      & reflection_matrix,
-                                      std::vector<std::vector<double> >        & synt_seis,
+                                      //std::vector<std::vector<double> >        & synt_seis,
                                       std::string                              & err_text,
                                       Wavelet                                 *& wavelet,
                                       Grid2D                                  *& local_noise_scale,
@@ -925,7 +925,7 @@ private:
   std::map<int, std::vector<float> >                              global_noise_estimates_;
   std::map<int, std::vector<float> >                              sn_ratios_;
   bool                                                            use_local_noises_;
-  std::map<int, std::vector<std::vector<std::vector<double> > > > synt_seis_;
+  //std::map<int, std::vector<std::vector<std::vector<double> > > > synt_seis_;
   std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
   std::string                                                  wavelet_est_int_bot_ ;
 

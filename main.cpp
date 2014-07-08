@@ -357,13 +357,11 @@ int main(int argc, char** argv)
 
     } //interval_loop
 
-
     //Combine interval grids to one grid per parameter
     LogKit::WriteHeader("Combine Results and Write to Files");
     crava_result->CombineResults(modelSettings,
                                  common_data,
-                                 seismicParametersIntervals,
-                                 inputFiles);
+                                 seismicParametersIntervals);
 
     //Write results
     crava_result->WriteResults(modelSettings,

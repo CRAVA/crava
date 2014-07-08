@@ -528,51 +528,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //We need synt_seis from well wavelets, but it needs to be based on simbox_final/blocked_logs_final
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
 
-  int n_angles = model_settings->getNumberOfAngles(0);
-
-  //Need to set angles in blocked_log before wavelet estimation
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    blocked_log->SetNAngles(n_angles);
+  bool wavelet_estimated = false;
+  for (int i = 0; i < model_settings->getNumberOfAngles(0); i++) {
+    if (model_settings->getEstimateWavelet(0)[i] == true)
+      wavelet_estimated = true;
   }
 
-  std::vector<std::vector<std::vector<double> > > synt_seis_angles(n_angles);
-
-  std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
-
-  std::vector<Surface *> wavelet_estim_interval;
-  std::string            err_text_tmp = "";
-
-  CommonData::FindWaveletEstimationInterval(common_data->GetWaveletEstIntTop(), common_data->GetWaveletEstIntBot(), wavelet_estim_interval, simbox_final, err_text_tmp);
-
-  int n_wells = blocked_logs_.size();
-
-  for (int i = 0; i < n_angles; i++) {
-
-    int error            = 0;
-    std::string err_text = "";
-
-
-    synt_seis_angles[i].resize(n_wells);
-
-    if (estimate_wavelet[i] == true) {
-
-      Wavelet * wavelet_tmp = new Wavelet1D(&simbox_final,
-                                            &common_data->GetSeismicDataTimeLapse(0)[i],
-                                            blocked_logs_,
-                                            wavelet_estim_interval,
-                                            model_settings,
-                                            reflection_matrix_,
-                                            synt_seis_angles[i],
-                                            i,
-                                            error,
-                                            err_text);
-
-      delete wavelet_tmp;
-    }
-  }
+  if (wavelet_estimated == true)
+    GenerateWellOptSyntSeis(model_settings, common_data, blocked_logs_, simbox_final, reflection_matrix_);
 
 }
 
@@ -1648,3 +1611,47 @@ void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>           
 //    w++;
 //  }
 //}
+
+void CravaResult::GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
+                                          CommonData                                 * common_data,
+                                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                          const Simbox                               & simbox,
+                                          const NRLib::Matrix                        & reflection_matrix)
+{
+  int n_angles = model_settings->getNumberOfAngles(0);
+
+  //Need to set angles in blocked_log before wavelet estimation
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    blocked_log->SetNAngles(n_angles);
+  }
+
+  std::vector<Surface *> wavelet_estim_interval;
+  std::string            err_text_tmp = "";
+  int                    error        = 0;
+
+  CommonData::FindWaveletEstimationInterval(common_data->GetWaveletEstIntTop(), common_data->GetWaveletEstIntBot(), wavelet_estim_interval, simbox, err_text_tmp);
+  const std::vector<bool> & estimate_wavelet = model_settings->getEstimateWavelet(0);
+
+  for (int i = 0; i < n_angles; i++) {
+
+    if (estimate_wavelet[i] == true) {
+
+      //Adds well_synt_seismic_data to blocked_logs
+      Wavelet * wavelet_tmp = new Wavelet1D(&simbox,
+                                            &common_data->GetSeismicDataTimeLapse(0)[i],
+                                            blocked_wells,
+                                            wavelet_estim_interval,
+                                            model_settings,
+                                            reflection_matrix,
+                                            i,
+                                            error,
+                                            err_text_tmp,
+                                            false);
+
+      delete wavelet_tmp;
+    }
+  }
+}

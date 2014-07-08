@@ -3006,7 +3006,7 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 
 //--------------------------------------------------------------------------------------
 void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                const std::vector<double>       & z_pos,
+                                                const std::vector<double> & z_pos,
                                                 int                         n_blocks,
                                                 const std::vector<double> & vertical_trend,
                                                 double                      z0,
