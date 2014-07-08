@@ -87,12 +87,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   //AngulurCorr between angle i and j
   angular_corr_ = common_data->GetAngularCorrelation(this_timelapse_);
 
-  //Add seismic data to blocked logs (before resampling to intervals).
-  AddSeismicLogs(model_general->GetBlockedWells(), //H moved to commondata
-                 seismic_data,
-                 simbox,
-                 number_of_angles_);
-
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
 
@@ -181,34 +175,13 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                            +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
       }
     }
+
   }
 
-  //Logging from processSeismic
-
-  bool segy_volumes_read = false;
-  for (int i = 0; i < number_of_angles_ ; i++) {
-    int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-    if (seismic_type == 0)
-      segy_volumes_read = true;
-  }
-  if (segy_volumes_read) {
-    LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-    LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
-    for (int i = 0; i < number_of_angles_; i++) {
-      int seismic_type = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
-      if (seismic_type == 0) {
-        SegY * segy      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
-        double geo_angle = (-1)*simbox->getAngle()*(180/M_PI);
-        if (geo_angle < 0)
-          geo_angle += 360.0;
-        LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                             segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
-                             segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
-                             segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
-
-      }
-    }
-  }
+  //Add seismic data to blocked logs
+  AddSeismicLogs(model_general->GetBlockedWells(),
+                 seis_cubes_,
+                 number_of_angles_);
 
   std::string interval_text = "";
   if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
@@ -334,10 +307,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
 
-    seismic_parameters.AddWavelet(wavelets_[i]);
   }
 
-  //H This is used in writing of wells and in faciesprob.
+  //This is used in writing of wells and in faciesprob.
   if (model_settings->getEstimateWaveletNoise())
     CommonData::GenerateSyntheticSeismicLogs(wavelets_, model_general->GetBlockedWells(), reflection_matrix_, simbox);
 
@@ -365,9 +337,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
-    //H-TODO Adjust name to intervals
+    std::string interval_name_out = "";
+    if (model_settings->getIntervalName(i_interval) != "")
+      interval_name_out = "_" + model_settings->getIntervalName(i_interval) + "_";
+
     std::string angle     = NRLib::ToString(theta_deg_[i], 1);
-    std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
+    std::string file_name = IO::PrefixWavelet() + std::string("Diff_") + angle + interval_name_out + IO::SuffixGeneralData();
     error_smooth[i]->printToFile(file_name);
   }
 
@@ -404,10 +379,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       if ((model_settings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0 ||
         (model_settings->getEstimationMode() && model_settings->getEstimateWavelet(this_timelapse_)[l]))
       {
-        std::string angle     = NRLib::ToString(theta_deg_[l], 1);
+        std::string angle             = NRLib::ToString(theta_deg_[l], 1);
+        std::string interval_name_out = "";
+        if (model_settings->getIntervalName(i_interval) != "")
+          interval_name_out = "_"+model_settings->getIntervalName(i_interval);
 
-        //H-TODO Adjust name to intervals
-        std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
+        std::string file_name = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle + interval_name_out;
         wavelets_[l]->writeWaveletToFile(file_name, 1.0,false); // dt_max = 1.0;
       }
       model_variance_[l] *= gain*gain;
@@ -445,9 +422,9 @@ ModelAVODynamic::~ModelAVODynamic(void)
       delete local_noise_scale_[i];
   }
 
-  for (int i=0;i<number_of_angles_;i++)
-    if (seis_cubes_[i] != NULL)
-      delete seis_cubes_[i];
+  //for (int i=0;i<number_of_angles_;i++)
+  //  if (seis_cubes_[i] != NULL)
+  //    delete seis_cubes_[i];
 }
 
 void
@@ -639,6 +616,22 @@ void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> 
         blocked_log->SetLogFromGrid(seismic_data[i].GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
       else //STORM / SGRI
         blocked_log->SetLogFromGrid(seismic_data[i].GetStorm(), i, n_angles, "SEISMIC_DATA");
+
+    }
+  }
+}
+
+void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                     std::vector<FFTGrid *>                     & seismic_grids,
+                                     int                                          n_angles)
+{
+  for (int i = 0; i < n_angles; i++) {
+
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
+
+      blocked_log->SetLogFromGrid(seismic_grids[i], i, n_angles, "SEISMIC_DATA");
 
     }
   }

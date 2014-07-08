@@ -8,7 +8,6 @@
 #include <math.h>
 #include <string>
 
-//#include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
 #include "src/simbox.h"
 #include "src/fftgrid.h"
@@ -21,7 +20,6 @@
 #include "src/krigingdata3d.h"
 #include "src/parameteroutput.h"
 
-//#include "src/wavelet.h"
 #include "src/wavelet1D.h"
 
 class FFTGrid;
@@ -98,10 +96,10 @@ public:
   void ExpTransf(StormContGrid * grid);
 
   void ComputeSyntSeismic(const ModelSettings * model_settings,
-                          const Simbox * simbox,
-                          StormContGrid * vp,
-                          StormContGrid * vs,
-                          StormContGrid * rho);
+                          const Simbox        * simbox,
+                          StormContGrid       * vp,
+                          StormContGrid       * vs,
+                          StormContGrid       * rho);
 
   StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
                                           StormContGrid       * vs,
@@ -114,11 +112,17 @@ public:
                                     const NRLib::Matrix                        & reflection_matrix,
                                     const Simbox                               & simbox);
 
-  void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
-                               std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
-                               const std::vector<std::vector<std::vector<double> > > & synt_seis,
-                               const Simbox                                          & simbox,
-                               const std::vector<bool>                               & wavelet_estimated);
+  void GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
+                               CommonData                                 * common_data,
+                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                               const Simbox                               & simbox,
+                               const NRLib::Matrix                        & reflection_matrix);
+
+  //void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
+  //                             std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
+  //                             const std::vector<std::vector<std::vector<double> > > & synt_seis,
+  //                             const Simbox                                          & simbox,
+  //                             const std::vector<bool>                               & wavelet_estimated);
 
   //GET FUNCTIONS
 
@@ -128,6 +132,8 @@ public:
   void AddBackgroundRho(FFTGrid * rho) { background_rho_intervals_.push_back(new FFTGrid(rho)) ;}
 
   void AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs);
+
+  void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
 
 private:
 
@@ -169,6 +175,7 @@ private:
   StormContGrid                  * background_rho_;
 
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
+  std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_;
 
   std::vector<StormContGrid *>     simulations_seed0_; //Vector over number of simulations
   std::vector<StormContGrid *>     simulations_seed1_;

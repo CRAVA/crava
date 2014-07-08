@@ -91,6 +91,11 @@ Volume(*simbox),
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
 {
+  std::string   s = "";
+  this->setArea(simbox, static_cast<int>(simbox->getnx()),
+                  static_cast<int>(simbox->getny()), s);
+  CopyAllPadding(*simbox, simbox->getMaxLz(), s);
+  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
 
   interval_name_  = "";
   status_         = simbox->status_;
@@ -117,20 +122,13 @@ base_eroded_surface_(NULL)
   botName_        = simbox->botName_;
   grad_x_         = 0;
   grad_y_         = 0;
-
-  std::string   s = "";
-  this->setArea(simbox, static_cast<int>(simbox->getnx()),
-                  static_cast<int>(simbox->getny()), s);
-  CopyAllPadding(*simbox, simbox->getMaxLz(), s);
-  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
-
 }
 
 //
 //
 //
 
-Simbox::Simbox(const Simbox   & simbox):
+Simbox::Simbox(const Simbox & simbox):
 Volume(simbox),
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
@@ -180,7 +178,10 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   top_eroded_surface_(NULL),
   base_eroded_surface_(NULL)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox for interval \'%s\'.\n",interval_name.c_str());
+  std::string output_name = "";
+  if (interval_name != "")
+    output_name = " for interval \'" + interval_name + "\'";
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox %s.\n",output_name.c_str());
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());

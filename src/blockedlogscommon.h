@@ -224,7 +224,7 @@ public:
                                                             std::vector<double>          &    x_gradient,
                                                             std::vector<double>          &    y_gradient) const;
 
-  void                                   SetTimeGradientSettings(float          distance, 
+  void                                   SetTimeGradientSettings(float          distance,
                                                                  float          sigma_m);
 
   void                                   FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,

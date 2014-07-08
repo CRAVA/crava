@@ -212,20 +212,19 @@ int main(int argc, char** argv)
     std::vector<SeismicParametersHolder> seismicParametersIntervals(common_data->GetMultipleIntervalGrid()->GetNIntervals());
 
     //Loop over intervals
-    for (int i_interval = 0; i_interval < common_data->GetMultipleIntervalGrid()->GetNIntervals(); i_interval++) {
+    int n_intervals = common_data->GetMultipleIntervalGrid()->GetNIntervals();
+    for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
       modelGeneral       = NULL;
       modelAVOstatic     = NULL;
       modelGravityStatic = NULL;
 
       std::string interval_text = "";
-      if (common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)
+      if (n_intervals > 1)
         interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
       LogKit::WriteHeader("Setting up model" + interval_text);
 
       //Priormodell i 3D
-
-
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
       //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
@@ -352,8 +351,10 @@ int main(int argc, char** argv)
 
       crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
 
-    } //interval_loop
+      if (n_intervals == 1)
+        crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
+    } //interval_loop
 
     //Combine interval grids to one grid per parameter
     LogKit::WriteHeader("Combine Results and Write to Files");

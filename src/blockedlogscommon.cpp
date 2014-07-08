@@ -63,7 +63,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               facies_map_, continuous_logs_blocked_, cont_logs_highcut_seismic_,
               cont_logs_highcut_background_, discrete_logs_blocked_,
               x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, facies_blocked_,
-              n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_, 
+              n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_,
               n_blocks_with_data_tot_, facies_log_defined_, interpolate, dz_, failed, err_text);
 
   if(err_text == ""){
@@ -462,9 +462,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
                              n_layers_adjusted_per_interval,
                              err_text);
     if (err_text == ""){
-      FindBlockIJK(multiple_interval_grid, b_ind, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(), 
-                  first_M, last_M, first_S, last_S, first_B, last_B, n_well_log_obs_in_interval, 
-                  i_pos, j_pos, k_pos, s_pos, dz);
+      FindBlockIJK(multiple_interval_grid, b_ind, GetXposRawLogs(), GetYposRawLogs(), GetZposRawLogs(),
+                   first_M, last_M, first_S, last_S, first_B, last_B, n_well_log_obs_in_interval,
+                   i_pos, j_pos, k_pos, s_pos, dz);
 
       // Coordinate logs and necessary logs
 
@@ -2519,11 +2519,11 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
       else {  //Check if position is within inversion simbox.
         double xp, yp, zp;
         estimation_simbox->getCoord(i_index, j_index, 0, xp, yp, zp);
-        if(inversion_simbox.isInside(xp, yp) == false) 
+        if (inversion_simbox.isInside(xp, yp) == false)
           continue;
       }
 
-      for ( j=0; j<n_angles; j++ ){
+      for (j = 0; j < n_angles; j++) {
 
         for (m=0; m<static_cast<int>(n_blocks_); m++)
           seis_log[m] = seis_cube_small[j](k,l,m);
@@ -3016,7 +3016,7 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 
 //--------------------------------------------------------------------------------------
 void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                const std::vector<double>       & z_pos,
+                                                const std::vector<double> & z_pos,
                                                 int                         n_blocks,
                                                 const std::vector<double> & vertical_trend,
                                                 double                      z0,
@@ -3073,11 +3073,11 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
                                                  std::map<std::string, std::vector<double> >  & cont_logs_seismic_resolution,
                                                  std::vector<std::vector<double> >            & actual_synt_seismic_data,
                                                  std::vector<std::vector<double> >            & well_synt_seismic_data,
-                                                 double                      z0,              // z-value of center in top layer
-                                                 double                      dz,              // dz in vertical trend
-                                                 int                         nz,              // layers in vertical trend
-                                                 std::string                 type,
-                                                 int                         i_angle) const
+                                                 double                                         z0,              // z-value of center in top layer
+                                                 double                                         dz,              // dz in vertical trend
+                                                 int                                            nz,              // layers in vertical trend
+                                                 std::string                                    type,
+                                                 int                                            i_angle) const
 {
   //n_angles_ = n_angles;
 
@@ -3106,13 +3106,11 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
     }
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
-    if (well_synt_seismic_data.size() == 0)
-    {
+    if (well_synt_seismic_data.size() == 0) {
       well_synt_seismic_data.resize(n_angles_);  //n_angles_ set in CommonData before wavelet is estimated
-      for (int i=0; i<n_angles_; i++)
-      {
+      for (int i = 0; i < n_angles_; i++) {
         well_synt_seismic_data[i].resize(n_blocks_);
-        for (int j=0; j<static_cast<int>(n_blocks_); j++)
+        for (int j = 0; j < static_cast<int>(n_blocks_); j++)
           well_synt_seismic_data[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
       }
     }

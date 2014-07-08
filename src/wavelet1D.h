@@ -20,14 +20,14 @@ public:
   Wavelet1D();
   Wavelet1D(const Simbox                                     * simbox,
             SeismicStorage                                   * seismic_data,
-            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+            std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
             const std::vector<Surface *>                     & estimInterval,
             const ModelSettings                              * modelSettings,
             const NRLib::Matrix                              & reflCoef,
-            std::vector<std::vector<double> >                & synt_seis,
             int                                                iAngle,
             int                                              & errCode,
-            std::string                                      & errTxt);
+            std::string                                      & errTxt,
+            bool                                               writing = true);
 
   Wavelet1D(const std::string & fileName,
             int                 fileFormat,

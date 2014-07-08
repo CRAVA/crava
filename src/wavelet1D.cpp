@@ -37,17 +37,18 @@ Wavelet1D::Wavelet1D()
 
 Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      SeismicStorage                                   * seismic_data,
-                     const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                     std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
                      const NRLib::Matrix                              & reflection_matrix,
-                     std::vector<std::vector<double> >                & synt_seis,
                      int                                                iAngle,
                      int                                              & errCode,
-                     std::string                                      & errTxt)
+                     std::string                                      & errTxt,
+                     bool                                               writing)
   : Wavelet(1)
 {
-  LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
+  if (writing)
+    LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
 
   coeff_[0]   = static_cast<float>(reflection_matrix(iAngle,0));
   coeff_[1]   = static_cast<float>(reflection_matrix(iAngle,1));
@@ -55,7 +56,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
-  nzp_        = simbox->getnz();
+  nzp_        = simbox->GetNZpad();
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
@@ -130,7 +131,8 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     BlockedLogsCommon * blocked_log = iter->second;
 
     if(blocked_log->GetUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
+      if (writing)
+        LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
 
       //
       // Block seismic data for this well
@@ -266,7 +268,11 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       }
     }
 
-    for(int w = 0; w < nWells; w++) { // gets syntetic seismic with estimated wavelet
+    // gets syntetic seismic with estimated wavelet
+    int w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
 
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
@@ -283,16 +289,17 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
 
+      std::vector<double> synt_seis;
       if (wellWeight[w] > 0) {
-        synt_seis[w].resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+        synt_seis.resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
         for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
-          synt_seis[w][i] = synt_seis_r[w][i];
+          synt_seis[i] = synt_seis_r[w][i];
 
-        //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic/CravaResult
-        //blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
+        blocked_log->SetLogFromVerticalTrend(synt_seis, blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
+                                             z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
 
       }
-      //w++;
+      w++;
     }
 
     float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
@@ -300,7 +307,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
     waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-    LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+
+    if (writing)
+      LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
     if (waveletLength_ < 50.0) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
@@ -324,7 +333,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
-    int w = 0;
+    w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;
@@ -339,6 +348,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         fileName = IO::PrefixWellWavelet() + wellname + "_";
+        if (writing)
           writeWaveletToFile(fileName, 1.0f,true);
       }
       w++;
@@ -349,7 +359,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
     dz_   = truedDz;
 
-    if(ModelSettings::getDebugLevel() > 1)
+    if(ModelSettings::getDebugLevel() > 1 && writing == true)
       writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
 
     if (scaleOpt == RMISSING) {

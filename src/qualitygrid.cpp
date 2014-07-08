@@ -21,12 +21,10 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                          const Simbox                               * simbox,
                          const ModelSettings                        * modelSettings,
-                         //ModelGeneral                             * modelGeneral,
                          SeismicParametersHolder                    & seismicParameters)
 : wellValue_(0)
 {
 
-  //const int nWells = modelSettings->getNumberOfWells();
   const int nWells = blocked_wells.size();
 
   wellValue_.resize(nWells);
@@ -47,11 +45,7 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
 
   std::string fileName = "Seismic_Quality_Grid";
 
-  //H-Writing
-  //ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
   seismicParameters.SetQualityGrid(grid);
-
-  //delete grid;
 }
 
 void QualityGrid::generateProbField(FFTGrid                                   *& grid,

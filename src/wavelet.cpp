@@ -438,6 +438,7 @@ Wavelet::resample(float dz,
         z = static_cast<float>( dz*k );
       else
         z = static_cast<float>( dz*(k-nzp) );
+
       wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
     }
     else
@@ -476,14 +477,6 @@ Wavelet::shiftFromFFTOrder()
   assert(isReal_);
   assert(inFFTorder_);
 
-  //H-REMOVE
-  //std::string fileName = "wavelets/test_pre_shift_wavelet";
-  //NRLib::Vector pre_shift(nzp_);
-  //for (int i = 0; i < nzp_; i++) {
-  //  pre_shift(i) = rAmp_[i];
-  //}
-  //NRLib::WriteVectorToFile(fileName, pre_shift);
-
   fftw_real * wlet  = new fftw_real[nzp_];
 
   int index = 0;
@@ -502,16 +495,8 @@ Wavelet::shiftFromFFTOrder()
   rAmp_ = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-  //H-REMOVE
-  //fileName = "wavelets/test_post_shift_wavelet";
-  //NRLib::Vector post_shift(nzp_);
-  //for (int i = 0; i < nzp_; i++) {
-  //  post_shift(i) = rAmp_[i];
-  //}
-  //NRLib::WriteVectorToFile(fileName, post_shift);
-
   inFFTorder_ = false;
-
+  cz_         = nzp_/2+1;
 }
 
 
@@ -1319,7 +1304,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[i] = NRLib::ParseType<float>(dummyStr);
+    rAmp[i] = NRLib::ParseType<float>(dummyStr);
   }
   file.close();
 }

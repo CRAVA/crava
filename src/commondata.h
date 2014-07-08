@@ -59,6 +59,7 @@ public:
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogs()                                 const { return mapped_blocked_logs_                           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsForCorr()                          const { return mapped_blocked_logs_for_correlation_           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsInterval(int i)                    const { return mapped_blocked_logs_intervals_.find(i)->second ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBgBlockedLogs()                               const { return mapped_bg_blocked_logs_                        ;}
 
   std::vector<Surface *>                                             & GetFaciesEstimInterval()                               { return facies_estim_interval_                         ;}
 
@@ -84,8 +85,6 @@ public:
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
 
-  const std::vector<std::vector<std::vector<double> > >              & GetSyntSeis(int time_lapse)                            { return synt_seis_.find(time_lapse)->second            ;}
-
   bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
   const std::vector<std::vector<double> >                            & GetTGradY()                                      const { return t_grad_y_                                      ;}
@@ -102,6 +101,9 @@ public:
 
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
+
+  const std::string                                                  & GetWaveletEstIntTop()                            const { return wavelet_est_int_top_                           ;}
+  const std::string                                                  & GetWaveletEstIntBot()                            const { return wavelet_est_int_bot_                           ;}
 
   static void         ResampleTrace(const std::vector<float> & data_trace,
                                     const rfftwnd_plan       & fftplan1,
@@ -138,10 +140,10 @@ public:
                                                   const NRLib::Matrix                      & reflection_matrix,
                                                   const Simbox                             * time_simbox);
 
-    NRLib::Matrix     & SetupDefaultReflectionMatrix(double                 vsvp,
-                                                   const ModelSettings  * model_settings,
-                                                   int                    number_of_angles,
-                                                   int                    this_time_lapse) const;
+  NRLib::Matrix      SetupDefaultReflectionMatrix(double                 vsvp,
+                                                  const ModelSettings  * model_settings,
+                                                  int                    number_of_angles,
+                                                  int                    this_time_lapse) const;
 
   void               SetupCorrectReflectionMatrix(const ModelSettings * model_settings,
                                                   std::vector<NRLib::Matrix > & reflection_matrix) const; //Only for those instances where this is possible.
@@ -171,6 +173,12 @@ public:
                                    const Simbox  * simbox) const;
 
   void               ReleaseBackgroundGrids(int i_interval, int elastic_param);
+
+  static   void      FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
+                                                   const std::string      & wavelet_est_int_bot,
+                                                   std::vector<Surface *> & wavelet_estim_interval,
+                                                   const Simbox           & estimation_simbox,
+                                                   std::string            & err_text);
 
 private:
 
@@ -384,26 +392,27 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                            const std::vector<NRLib::Matrix>            & refl_mat,
                                            std::string                                 & err_text) const;
 
-  bool               WaveletHandling(ModelSettings                                     * model_settings,
-                                     InputFiles                                        * input_files,
-                                     const Simbox                                      & estimation_simbox,
-                                     const Simbox                                      & full_inversion_simbox,
-                                     std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs,
-                                     std::vector<std::vector<SeismicStorage> >         & seismic_data,
-                                     std::map<int, std::vector<Wavelet *> >            & wavelets,
-                                     std::map<int, std::vector<Grid2D *> >             & local_noise_scale,
-                                     std::map<int, std::vector<Grid2D *> >             & local_shift,
-                                     std::map<int, std::vector<Grid2D *> >             & local_scale,
-                                     std::map<int, std::vector<float> >                & global_noise_estimate,
-                                     std::map<int, std::vector<float> >                & sn_ratio,
-									 std::map<int, std::vector<std::vector<std::vector<double> > > > & synt_seis, //map timelapse, vector angles, vector wells
-                                     bool                                              & use_local_noise,
-                                     std::vector<std::vector<double> >                 & t_grad_x,
-                                     std::vector<std::vector<double> >                 & t_grad_y,
-                                     NRLib::Grid2D<float>                              & ref_time_grad_x,
-                                     NRLib::Grid2D<float>                              & ref_time_grad_y,
-                                     std::vector<NRLib::Matrix>                        & refl_mat,
-                                     std::string                                       & err_text_common) const;
+  bool               WaveletHandling(ModelSettings                              * model_settings,
+                                     InputFiles                                 * input_files,
+                                     const Simbox                               & estimation_simbox,
+                                     const Simbox                               & full_inversion_simbox,
+                                     std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                     std::vector<std::vector<SeismicStorage> >  & seismic_data,
+                                     std::map<int, std::vector<Wavelet *> >     & wavelets,
+                                     std::map<int, std::vector<Grid2D *> >      & local_noise_scale,
+                                     std::map<int, std::vector<Grid2D *> >      & local_shift,
+                                     std::map<int, std::vector<Grid2D *> >      & local_scale,
+                                     std::map<int, std::vector<float> >         & global_noise_estimate,
+                                     std::map<int, std::vector<float> >         & sn_ratio,
+                                     bool                                       & use_local_noise,
+                                     std::vector<std::vector<double> >          & t_grad_x,
+                                     std::vector<std::vector<double> >          & t_grad_y,
+                                     NRLib::Grid2D<float>                       & ref_time_grad_x,
+                                     NRLib::Grid2D<float>                       & ref_time_grad_y,
+                                     std::vector<NRLib::Matrix>                 & refl_mat,
+                                     std::string                                & wavelet_est_int_top,
+                                     std::string                                & wavelet_est_int_bot,
+                                     std::string                                & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
                                             std::vector<std::vector<SeismicStorage> >   & seismic_data,
@@ -453,27 +462,26 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                 const std::string & read_reason,
                                 std::string       & err_text) const;
 
-  int                Process1DWavelet(const ModelSettings                      * modelSettings,
-                                      const InputFiles                         * inputFiles,
-                                      SeismicStorage                           * seismic_data,
+  int                Process1DWavelet(const ModelSettings                        * modelSettings,
+                                      const InputFiles                           * inputFiles,
+                                      SeismicStorage                             * seismic_data,
                                       std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                                      const std::vector<Surface *>             & waveletEstimInterval,
-                                      const Simbox                             & estimation_simbox,
-                                      const Simbox                             & full_inversion_simbox,
-                                      const NRLib::Matrix                      & reflection_matrix,
-                                      std::vector<std::vector<double> >        & synt_seis,
-                                      std::string                              & err_text,
-                                      Wavelet                                 *& wavelet,
-                                      Grid2D                                  *& local_noise_scale,
-                                      Grid2D                                  *& local_noise_shift,
-                                      Grid2D                                  *& local_noise_estimate,
-                                      unsigned int                               i_timelapse,
-                                      unsigned int                               j_angle,
-                                      const float                                angle,
-                                      float                                    & sn_ratio,
-                                      bool                                       estimate_wavlet,
-                                      bool                                       use_ricker_wavelet,
-                                      bool                                       use_local_noise) const;
+                                      const std::vector<Surface *>               & waveletEstimInterval,
+                                      const Simbox                               & estimation_simbox,
+                                      const Simbox                               & full_inversion_simbox,
+                                      const NRLib::Matrix                        & reflection_matrix,
+                                      std::string                                & err_text,
+                                      Wavelet                                   *& wavelet,
+                                      Grid2D                                    *& local_noise_scale,
+                                      Grid2D                                    *& local_noise_shift,
+                                      Grid2D                                    *& local_noise_estimate,
+                                      unsigned int                                 i_timelapse,
+                                      unsigned int                                 j_angle,
+                                      const float                                  angle,
+                                      float                                      & sn_ratio,
+                                      bool                                         estimate_wavlet,
+                                      bool                                         use_ricker_wavelet,
+                                      bool                                         use_local_noise) const;
 
   int                Process3DWavelet(const ModelSettings                      * model_settings,
                                       const InputFiles                         * input_files,
@@ -494,11 +502,6 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                       const std::vector<std::vector<double> >  & t_grad_x,
                                       const std::vector<std::vector<double> >  & t_grad_y,
                                       bool                                       estimate_wavelet) const;
-
-  void               FindWaveletEstimationInterval(InputFiles             * input_files,
-                                                   std::vector<Surface *> & wavelet_estim_interval,
-                                                   const Simbox           & estimation_simbox,
-                                                   std::string            & err_text) const;
 
   void               ComputeStructureDepthGradient(double                 v0,
                                                    double                 radius,
@@ -572,32 +575,32 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                   const Simbox           & estimation_simbox,
                                                   std::string            & err_text) const;
 
-  void                CheckFaciesNamesConsistency(const ModelSettings     * model_settings,
-                                                  const InputFiles        * input_files,
-                                                  std::string             & tmp_err_text) const;
+  void               CheckFaciesNamesConsistency(const ModelSettings     * model_settings,
+                                                 const InputFiles        * input_files,
+                                                 std::string             & tmp_err_text) const;
 
-  void                SetFaciesNamesFromRockPhysics(std::vector<std::string>                                   & facies_names,
-                                                    std::vector<int>                                           & facies_nr) const;
+  void               SetFaciesNamesFromRockPhysics(std::vector<std::string>                                   & facies_names,
+                                                   std::vector<int>                                           & facies_nr) const;
 
-  void                ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
-                                               ModelSettings                                    * model_settings,
-                                               std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
-                                               const std::vector<Simbox *>                      & interval_simboxes,
-                                               const Simbox                                     & full_inverion_simbox,
-                                               std::string                                      & err_text) const;
+  void               ReadPriorFaciesProbCubes(const InputFiles                                 * input_files,
+                                              ModelSettings                                    * model_settings,
+                                              std::vector<std::vector<NRLib::Grid<float> *> >  & prior_facies_prob_cubes,
+                                              const std::vector<Simbox *>                      & interval_simboxes,
+                                              const Simbox                                     & full_inverion_simbox,
+                                              std::string                                      & err_text) const;
 
-  void                ReadGridFromFile(const std::string                  & file_name,
-                                       const std::string                  & par_name,
-                                       const float                          offset,
-                                       std::vector<NRLib::Grid<float> *>  & grid,
-                                       const SegyGeometry                *& geometry,
-                                       const TraceHeaderFormat            * format,
-                                       int                                  grid_type,
-                                       const std::vector<Simbox *>          & interval_simboxes,
-                                       const Simbox                       * inversion_simbox,
-                                       const ModelSettings                * model_settings,
-                                       std::string                        & err_text,
-                                       bool                                 nopadding = false) const;
+  void               ReadGridFromFile(const std::string                  & file_name,
+                                      const std::string                  & par_name,
+                                      const float                          offset,
+                                      std::vector<NRLib::Grid<float> *>  & grid,
+                                      const SegyGeometry                *& geometry,
+                                      const TraceHeaderFormat            * format,
+                                      int                                  grid_type,
+                                      const std::vector<Simbox *>          & interval_simboxes,
+                                      const Simbox                       * inversion_simbox,
+                                      const ModelSettings                * model_settings,
+                                      std::string                        & err_text,
+                                      bool                                 nopadding = false) const;
 
   void               GetZPaddingFromCravaFile(const std::string & file_name,
                                               std::string       & err_text,
@@ -689,6 +692,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                           InputFiles                                                 * input_files,
                                           const std::vector<NRLib::Well>                             & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                          std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
                                           MultiIntervalGrid                                          * multi_interval_grid,
                                           Simbox                                                     * inversion_simbox,
                                           std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
@@ -729,7 +733,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                    Simbox      *& bg_simbox,
                                                    int            output_format,
                                                    int            output_domain,
-                                                   int            other_output) const;
+                                                   int            other_output,
+                                                   std::string    interval_name) const;
 
   bool               SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                            const InputFiles                                            * input_files,
@@ -845,11 +850,6 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   void               PrintSettings(const ModelSettings    * model_settings,
                                    const InputFiles       * input_files) const;
 
-  void               AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const std::vector<SeismicStorage>          & seismic_data,
-                                    const Simbox                               & simbox,
-                                    int                                          n_angles);
-
   void               DumpVector(const std::vector<float> data,
                                 const std::string        name) const;
   void               DumpVector(const fftw_real   * data,
@@ -896,6 +896,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
   std::map<int, std::map<std::string, BlockedLogsCommon *> >   mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
+  std::map<std::string, BlockedLogsCommon *>                   mapped_bg_blocked_logs_;              ///< Blocked logs for extended background simbox
   std::vector<std::string>                                     continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
   std::vector<std::string>                                     discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
@@ -919,19 +920,20 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   bool                                                         forward_modeling_;
 
   std::vector<NRLib::Matrix>                                   reflection_matrix_;             // reflection matrix per timelapse
-  std::vector<int>                                             n_angles_;                      // Number of angles
+  std::vector<int>                                             n_angles_;                      // Number of angles for each timelapse
   bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 
   // Wavelet
-  std::vector<Wavelet*>                                           temporary_wavelets_;            ///< Wavelet per angle
-  std::map<int, std::vector<Wavelet *> >                          wavelets_; //Map time_lapse, vector angles
-  std::map<int, std::vector<Grid2D *> >                           local_noise_scales_;
-  std::map<int, std::vector<Grid2D *> >                           local_shifts_;
-  std::map<int, std::vector<Grid2D *> >                           local_scales_;
-  std::map<int, std::vector<float> >                              global_noise_estimates_;
-  std::map<int, std::vector<float> >                              sn_ratios_;
-  bool                                                            use_local_noises_;
-  std::map<int, std::vector<std::vector<std::vector<double> > > > synt_seis_;
+  std::vector<Wavelet*>                                        temporary_wavelets_;            ///< Wavelet per angle
+  std::map<int, std::vector<Wavelet *> >                       wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
+  std::map<int, std::vector<Grid2D *> >                        local_shifts_;
+  std::map<int, std::vector<Grid2D *> >                        local_scales_;
+  std::map<int, std::vector<float> >                           global_noise_estimates_;
+  std::map<int, std::vector<float> >                           sn_ratios_;
+  bool                                                         use_local_noises_;
+  std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
+  std::string                                                  wavelet_est_int_bot_ ;
 
   std::vector<std::vector<double> >                            t_grad_x_;
   std::vector<std::vector<double> >                            t_grad_y_;

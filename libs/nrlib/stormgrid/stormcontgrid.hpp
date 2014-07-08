@@ -109,6 +109,10 @@ namespace NRLib {
                                                    const size_t & ind2,
                                                    const double & t) const;
 
+    float GetValueInterpolated(const int   & i,
+                               const int   & j,
+                               const float & k) const;
+
     float  GetValueZInterpolated(double x, double y, double z)const;
     float  GetValueClosestInZ(double x, double y, double z)const;
     double GetZMin()const      { return Volume::GetZMin(GetNI(), GetNJ()); }
