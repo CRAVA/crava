@@ -192,6 +192,7 @@ private:
   bool               OptimizeWellLocations(ModelSettings                                 * model_settings,
                                            InputFiles                                    * input_files,
                                            const Simbox                                  * estimation_simbox,
+                                           const Simbox                                  & inversion_simbox,
                                            std::vector<NRLib::Well>                      & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                            std::vector<std::vector<SeismicStorage> >     & seismic_data,
@@ -279,14 +280,27 @@ private:
 
   bool               BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                              const Simbox                                               & estimation_simbox,
-                                             const MultiIntervalGrid                                    * multiple_interval_grid,
                                              std::vector<NRLib::Well>                                   & wells,
                                              std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                              std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
-                                             std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
-                                             std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                              std::string                                                & err_text) const;
+
+  bool               BlockLogsForCorrelation(const ModelSettings                                        * const model_settings,
+                                             const MultiIntervalGrid                                    * multiple_interval_grid,
+                                             std::vector<NRLib::Well>                                   & wells,
+                                             std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                             std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                             std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
+                                             std::string                                                & err_text_common) const;
+
+bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
+                                           const MultiIntervalGrid                                    * multiple_interval_grid,
+                                           std::vector<NRLib::Well>                                   & wells,
+                                           std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                           std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                           std::string                                                & err_text_common) const;
 
   bool               RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
                                                        ModelSettings * model_settings,
@@ -859,6 +873,8 @@ private:
   bool read_seismic_;
   bool read_wells_;
   bool block_wells_;
+  bool inversion_wells_;
+  bool correlation_wells_;
   bool setup_reflection_matrix_;
   bool temporary_wavelet_;
   bool optimize_well_location_;

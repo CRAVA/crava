@@ -225,8 +225,6 @@ int main(int argc, char** argv)
       LogKit::WriteHeader("Setting up model" + interval_text);
 
       //Priormodell i 3D
-
-
       const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
       //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding

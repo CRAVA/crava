@@ -24,6 +24,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   read_seismic_(false),
   read_wells_(false),
   block_wells_(false),
+  inversion_wells_(false),
+  correlation_wells_(false),
   setup_reflection_matrix_(false),
   temporary_wavelet_(false),
   optimize_well_location_(false),
@@ -82,9 +84,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   // if correlations should be estimated
   if (wells_.size() > 0) {
     if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
-      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
-                                              discrete_logs_to_be_blocked_, mapped_blocked_logs_, mapped_blocked_logs_for_correlation_,
-                                              mapped_blocked_logs_intervals_, err_text);
+      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                             discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
   }
   else
     block_wells_ = true;
@@ -96,9 +97,13 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 7. Optimization of well location
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
-    optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
+    optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
   if (!model_settings->getOptimizeWellLocation())
     optimize_well_location_ = true;
+
+  //Block wells for inversion purposes, ok now that moving of wells is done.
+  inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+                                                 discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
@@ -156,8 +161,12 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 13. Setup of prior correlation
   if(read_seismic_) {
     if(model_settings->getEstimateCorrelations() == true) {
+      //Block wells for inversion purposes
+      correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+                                                   discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
+
       model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
-      if(read_wells_ && setup_multigrid_) {
+      if(read_wells_ && setup_multigrid_ && correlation_wells_) {
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
@@ -4390,20 +4399,15 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                          const Simbox                                               & estimation_simbox,
-                                         const MultiIntervalGrid                                    * multiple_interval_grid,
                                          std::vector<NRLib::Well>                                   & wells,
                                          std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                          std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                          std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
-                                         std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
-                                         std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                          std::string                                                & err_text_common) const
 {
   LogKit::WriteHeader("Blocking wells for estimation");
 
   std::string err_text                          = "";
-  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-
 
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked.push_back("Vp");
@@ -4428,24 +4432,70 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     err_text += e.what();
   }
 
+  //Need to set angles in blocked_logs_common before wavelet estimation
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_common.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    int n_angles = model_settings->getNumberOfAngles(0);
+    blocked_log->SetNAngles(n_angles);
+  }
+
+  if(err_text != "") {
+    err_text_common += err_text;
+    return false;
+  }
+
+  return true;
+}
+
+bool
+CommonData::BlockLogsForCorrelation(const ModelSettings                                        * const model_settings,
+                                    const MultiIntervalGrid                                    * multiple_interval_grid,
+                                    std::vector<NRLib::Well>                                   & wells,
+                                    std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                    std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                    std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
+                                    std::string                                                & err_text_common) const
+{
   // Block logs to interval simboxes for estimation
-  if(err_text == "") {
-    if (model_settings->getEstimateCorrelations()) {
-      try{
-        LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for correlation estimation:\n");
-        for (unsigned int i = 0; i < wells.size(); i++) {
-          mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
-            new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid,
-                                  model_settings->getRunFromPanel(), err_text)));
-        }
+  std::string err_text;
+  //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+
+  if (model_settings->getEstimateCorrelations()) {
+    try{
+      LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for correlation estimation:\n");
+      for (unsigned int i = 0; i < wells.size(); i++) {
+        mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
+          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid,
+                                model_settings->getRunFromPanel(), err_text)));
       }
-      catch(NRLib::Exception & e) {
+    }
+    catch(NRLib::Exception & e) {
       err_text += e.what();
-      }
     }
   }
 
+  if(err_text != "") {
+    err_text_common += err_text;
+    return(false);
+  }
+
+  return(true);
+}
+
+
+bool
+CommonData::BlockLogsForInversion(const ModelSettings                                        * const model_settings,
+                                  const MultiIntervalGrid                                    * multiple_interval_grid,
+                                  std::vector<NRLib::Well>                                   & wells,
+                                  std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                  std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                  std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                  std::string                                                & err_text_common) const
+{
   // Block logs to each interval simbox
+  std::string err_text;
   try {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
     for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
@@ -4464,27 +4514,19 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     err_text += e.what();
   }
 
-  //Need to set angles in blocked_logs_common before wavelet estimation
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_common.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    int n_angles = model_settings->getNumberOfAngles(0);
-    blocked_log->SetNAngles(n_angles);
-  }
-
   if(err_text != "") {
     err_text_common += err_text;
-    return false;
+    return(false);
   }
 
-  return true;
+  return(true);
 }
 
 
 bool  CommonData::OptimizeWellLocations(ModelSettings                                 * model_settings,
                                         InputFiles                                    * input_files,
                                         const Simbox                                  * estimation_simbox,
+                                        const Simbox                                  & inversion_simbox,
                                         std::vector<NRLib::Well>                      & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::vector<std::vector<SeismicStorage> >     & seismic_data,
@@ -4560,7 +4602,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     i_max_offset = static_cast<int>(std::ceil(max_offset/dx));
     j_max_offset = static_cast<int>(std::ceil(max_offset/dy));
 
-    bl->FindOptimalWellLocation(seismic_data[0], estimation_simbox, reflection_matrix[0], n_angles,angle_weight,
+    bl->FindOptimalWellLocation(seismic_data[0], estimation_simbox, inversion_simbox, reflection_matrix[0], n_angles,angle_weight,
                                 max_shift,i_max_offset,j_max_offset, well_move_interval,i_move,j_move,k_move);
 
     delta_X = i_move*dx*cos(angle) - j_move*dy*sin(angle);

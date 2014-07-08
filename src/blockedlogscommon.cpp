@@ -2379,6 +2379,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
                                                 const Simbox                  * estimation_simbox,
+                                                const Simbox                  & inversion_simbox,
                                                 const NRLib::Matrix           & refl_matrix,
                                                 int                             n_angles,
                                                 const std::vector<float>      & angle_weight,
@@ -2398,9 +2399,10 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   float max_tot;
   float f1,f2,f3;
 
-  int nx              = seismic_data[0].GetNx();
-  int ny              = seismic_data[0].GetNy();
-  int nzp             = seismic_data[0].GetNz();
+  int nx              = estimation_simbox->getnx();
+  int ny              = estimation_simbox->getny();
+  int nz              = estimation_simbox->getnz();
+  int nzp             = 2.0*nz; //Should not hurt, only single traces here.
   int cnzp            = nzp/2+1;
   int rnzp            = 2*cnzp;
   int i_tot_offset    = 2*i_max_offset+1;
@@ -2451,9 +2453,9 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     j_offset[j+j_max_offset]=j;
   }
 
-  GetVerticalTrendLimited(GetVpRawLogs(), vp_vert, limits);
-  GetVerticalTrendLimited(GetVsRawLogs(), vs_vert, limits);
-  GetVerticalTrendLimited(GetRhoRawLogs(), rho_vert, limits);
+  GetVerticalTrendLimited(GetVpBlocked(), vp_vert, limits);
+  GetVerticalTrendLimited(GetVsBlocked(), vs_vert, limits);
+  GetVerticalTrendLimited(GetRhoBlocked(), rho_vert, limits);
 
   std::vector<bool> has_data(n_layers_);
   for (i = 0 ; i < n_layers_ ; i++) {
@@ -2506,14 +2508,22 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
 
   // Loop through possible well locations
   for (k=0; k<i_tot_offset; k++){
-    if (i_pos_[0]+i_offset[k]<0 || i_pos_[0]+i_offset[k]>nx-1) //Check if position is within seismic range
+    int i_index = i_pos_[0]+i_offset[k];
+    if (i_index<0 || i_index>nx-1) //Check if position is within seismic range
       continue;
 
     for (l=0; l<j_tot_offset; l++){
-      if (j_pos_[0]+j_offset[l]<0 || j_pos_[0]+j_offset[l]>ny-1) //Check if position is within seismic range
+      int j_index = j_pos_[0]+j_offset[l];
+      if (j_index<0 || j_index>ny-1) //Check if position is within seismic range
         continue;
+      else {  //Check if position is within inversion simbox.
+        double xp, yp, zp;
+        estimation_simbox->getCoord(i_index, j_index, 0, xp, yp, zp);
+        if (inversion_simbox.isInside(xp, yp) == false)
+          continue;
+      }
 
-      for ( j=0; j<n_angles; j++ ){
+      for (j = 0; j < n_angles; j++) {
 
         for (m=0; m<static_cast<int>(n_blocks_); m++)
           seis_log[m] = seis_cube_small[j](k,l,m);
@@ -2528,7 +2538,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
 
       // if the sum from -max_shift to max_shift ms is
       // positive then polarity is positive
-      dz = static_cast<float>(estimation_simbox->getRelThick(i_pos_[0]+i_offset[k],j_pos_[0]+j_offset[l])*estimation_simbox->getdz());
+      dz = static_cast<float>(estimation_simbox->getRelThick(i_index,j_index)*estimation_simbox->getdz());
       sum = 0;
       for ( j=0; j<n_angles; j++ ){
         if (angle_weight[j] > 0){
