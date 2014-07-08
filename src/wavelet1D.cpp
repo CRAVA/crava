@@ -132,7 +132,8 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     BlockedLogsCommon * blocked_log = iter->second;
 
     if(blocked_log->GetUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
+      if (writing)
+        LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
 
       //
       // Block seismic data for this well
@@ -307,7 +308,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
     waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-    LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+
+    if (writing)
+      LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
     if (waveletLength_ < 50.0) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");

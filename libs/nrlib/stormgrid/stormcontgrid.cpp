@@ -416,6 +416,30 @@ double StormContGrid::GetValueZInterpolatedFromIndexNoMissing(const size_t & ind
   return(value);
 }
 
+float StormContGrid::GetValueInterpolated(const int   & i,
+                                          const int   & j,
+                                          const float & k) const
+{
+  float value, val1, val2;
+
+  int k1 = int(floor(k));
+  val1 = GetValue(i, j, k1);
+  if (val1 == missing_code_)
+    return(missing_code_);
+
+  int k2 = k1+1;
+  if (k1 == static_cast<int>(GetNK()-1))
+    k2 = k1;
+
+  val2 = GetValue(i, j, k2);
+  if (val2 == missing_code_)
+    return (val1);
+
+  value = float(1.0-(k-k1))*val1+float(k-k1)*val2;
+  return(value);
+
+}
+
 float StormContGrid::GetValueZInterpolated(double x, double y, double z)const
 {
 
