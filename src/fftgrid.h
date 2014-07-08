@@ -35,6 +35,7 @@ public:
                                   StormContGrid     * grid,
                                   const SegY        *  segy,
                                   float               smooth_length,
+                                  int                 n_threads,
                                   int               & missingTracesSimbox,
                                   int               & missingTracesPadding,
                                   int               & deadTracesSimbox,

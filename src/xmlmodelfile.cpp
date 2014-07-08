@@ -11,6 +11,10 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "nrlib/exception/exception.hpp"
 #include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/iotools/logkit.hpp"
@@ -5400,6 +5404,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+  legalCommands.push_back("number-of-threads");
   legalCommands.push_back("fft-grid-padding");
   legalCommands.push_back("vp-vs-ratio");
   legalCommands.push_back("vp-vs-ratio-from-wells");
@@ -5423,6 +5428,37 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("3d-wavelet-tuning-factor");
   legalCommands.push_back("gradient-smoothing-range");
   legalCommands.push_back("estimate-well-gradient-from-seismic");
+
+#ifdef PARALLEL
+  int n_thread = 1;
+  if (parseValue(root, "number-of-threads", n_thread, errTxt) == true)
+    modelSettings_->setNumberOfThreads(n_thread);
+
+#pragma omp parallel
+#pragma omp master
+  {
+    // NBNB-PAL: Det er sikkert ikke riktig å sette antall tråder lik antall processorer. Sjekk det ut.
+    int n_processors = omp_get_num_procs();
+    int n_threads    = n_processors;
+    int i            = modelSettings_->getNumberOfThreads();
+    if (i < 0) {
+      n_threads -= std::abs(i);
+      if (n_threads < 1) {
+        errTxt += "\nYou have asked for parallelization and less than 1 threads. This is inconsistent.\n";
+      }
+      n_threads  = std::max(n_threads, 1);
+    }
+    else if (i > 0) {
+      n_threads  = i;
+      if (n_threads > n_processors) {
+        errTxt += std::string("\nYou have asked for ") + NRLib::ToString(n_threads)
+          + std::string(" threads but only ") + NRLib::ToString(n_processors) + " seem to be available\n";
+      }
+      n_threads  = std::min(n_threads, n_processors);
+    }
+    modelSettings_->setNumberOfThreads(n_threads);
+  }
+#endif
 
   parseFFTGridPadding(root, errTxt);
 
@@ -5474,10 +5510,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     else
       errTxt += "The number of data in neighbourhood when doing kriging must be larger than or equal to zero\n";
   }
-  int level = 0;
 
   parseSeismicQualityGrid(root, errTxt);
 
+  int level = 0;
   if(parseValue(root, "debug-level", level, errTxt) == true)
     modelSettings_->setDebugFlag(level);
 

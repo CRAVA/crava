@@ -139,6 +139,7 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                     StormContGrid     * grid,
                     const SegY        * segy,
                     float               smooth_length,
+                    int                 n_threads,
                     int               & missingTracesSimbox,
                     int               & missingTracesPadding,
                     int               & deadTracesSimbox,
@@ -202,7 +203,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   // entering the for-loop and sums the variables on leaving the loop.
 
   int  chunk_size = 1;
-  int  n_threads  = 4;
 #pragma omp parallel for schedule(dynamic, chunk_size) reduction(+:count1, count2, count3) num_threads(n_threads)
 #endif
 

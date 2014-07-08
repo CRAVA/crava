@@ -190,6 +190,7 @@ ModelSettings::ModelSettings(void)
   RMSPriorGiven_           =    false;
 
   seed_                    =        0;
+  number_of_threads_       =        0;
 }
 
 ModelSettings::~ModelSettings(void)

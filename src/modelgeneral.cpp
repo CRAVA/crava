@@ -14,6 +14,10 @@
 #include <typeinfo>
 #include <algorithm>
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
 #include "src/xmlmodelfile.h"
@@ -405,6 +409,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                        stormgrid_tmp,
                        segy,
                        modelSettings->getSmoothLength(),
+                       modelSettings->getNumberOfThreads(),
                        missingTracesSimbox,
                        missingTracesPadding,
                        deadTracesSimbox,
@@ -556,6 +561,7 @@ ModelGeneral::readStormFile(const std::string   & fName,
                          stormgrid,
                          segy_tmp,
                          modelSettings->getSmoothLength(),
+                         modelSettings->getNumberOfThreads(),
                          missingTracesSimbox,
                          missingTracesPadding,
                          deadTracesSimbox, // Not used for STORM files
@@ -1567,10 +1573,22 @@ void
 ModelGeneral::printSettings(ModelSettings     * modelSettings,
                             const InputFiles  * inputFiles)
 {
+#ifdef PARALLEL
+#pragma omp parallel
+#pragma omp master
+  {
+    int n_processors = omp_get_num_procs();
+    int n_threads    = modelSettings->getNumberOfThreads();
+    //int max_threads  = omp_get_max_threads(); // Do not use: This number is sometimes 1 even though 8 threads are running
+
+    LogKit::LogFormatted(LogKit::Low,"\nThreads in use                             : %d/%d\n",n_threads,n_processors);
+  }
+#endif
+
   LogKit::WriteHeader("Model settings");
 
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
-  if(modelSettings->getForwardModeling()==true)
+  if (modelSettings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
   else if (modelSettings->getEstimationMode()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");

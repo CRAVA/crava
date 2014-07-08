@@ -39,6 +39,7 @@ public:
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
+  int                              getNumberOfThreads(void)             const { return number_of_threads_                         ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
   int                              getKrigingParameter(void)            const { return krigingParameter_                          ;}
   float                            getConstBackValue(int i)             const { return constBackValue_[i]                         ;}
@@ -328,6 +329,7 @@ public:
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
   void addLogName(const std::string & log_name)           { logNames_.push_back(log_name)                        ;}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
+  void setNumberOfThreads(int n_threads)                  { number_of_threads_        = n_threads                ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
   void setAlphaMin(float alpha_min)                       { alpha_min_                = alpha_min                ;}
@@ -669,6 +671,7 @@ private:
   std::map<std::string, std::map<std::string, float> >      priorFaciesProbInterval_;
   std::map<std::string, std::map<std::string, float> >      volumefractionInterval_;
 
+  int                               number_of_threads_;
   int                               nWells_;
   int                               nSimulations_;
 
