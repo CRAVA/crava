@@ -20,7 +20,7 @@ public:
   Wavelet1D();
   Wavelet1D(const Simbox                                     * simbox,
             SeismicStorage                                   * seismic_data,
-            const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+            std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
             const std::vector<Surface *>                     & estimInterval,
             const ModelSettings                              * modelSettings,
             const NRLib::Matrix                              & reflCoef,

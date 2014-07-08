@@ -422,11 +422,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       post_cov_rho00_.push_back(seismic_parameters_intervals[i].GetPostCovRho00());
     }
 
-    //Wavelets
-    //for (int i = 0; i < n_intervals; i++) {
-    //  wavelets_intervals_.push_back(seismic_parameters_intervals[i].GetWavelets());
-    //}
-
   }
   else {
 
@@ -434,11 +429,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     // Results in seismic_parameters are stored as fftgrid
 
     //CreateStormGrid() creates a storm grid from fft grid, and deletes the fft_grid
-
-
-    //Wavelets
-    //wavelets_intervals_.push_back(seismic_parameters_intervals[0].GetWavelets());
-
 
     std::string interval_name = multi_interval_grid->GetIntervalName(0);
 
@@ -530,10 +520,59 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
 
   //From CommonData::WaveletHandling
-  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox_final);
+  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox_final);
 
   //From wavelet1D.cpp
-  SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final, model_settings->getEstimateWavelet(0));
+  //SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final, model_settings->getEstimateWavelet(0));
+
+  //We need synt_seis from well wavelets, but it needs to be based on simbox_final/blocked_logs_final
+  //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
+
+  int n_angles = model_settings->getNumberOfAngles(0);
+
+  //Need to set angles in blocked_log before wavelet estimation
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    blocked_log->SetNAngles(n_angles);
+  }
+
+  std::vector<std::vector<std::vector<double> > > synt_seis_angles(n_angles);
+
+  std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
+
+  std::vector<Surface *> wavelet_estim_interval;
+  std::string            err_text_tmp = "";
+
+  CommonData::FindWaveletEstimationInterval(common_data->GetWaveletEstIntTop(), common_data->GetWaveletEstIntBot(), wavelet_estim_interval, simbox_final, err_text_tmp);
+
+  int n_wells = blocked_logs_.size();
+
+  for (int i = 0; i < n_angles; i++) {
+
+    int error            = 0;
+    std::string err_text = "";
+
+
+    synt_seis_angles[i].resize(n_wells);
+
+    if (estimate_wavelet[i] == true) {
+
+      Wavelet * wavelet_tmp = new Wavelet1D(&simbox_final,
+                                            &common_data->GetSeismicDataTimeLapse(0)[i],
+                                            blocked_logs_,
+                                            wavelet_estim_interval,
+                                            model_settings,
+                                            reflection_matrix_,
+                                            synt_seis_angles[i],
+                                            i,
+                                            error,
+                                            err_text);
+
+      delete wavelet_tmp;
+    }
+  }
 
 }
 
@@ -1579,34 +1618,33 @@ void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>           
   }
 }
 
-void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
-                                          std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
-                                          const std::vector<std::vector<std::vector<double> > > & synt_seis, //vector(angle) vector(wells)
-                                          const Simbox                                          & simbox,
-                                          const std::vector<bool>                               & wavelet_estimated)
-{
-  int nz  = simbox.getnz();
-
-  int w = 0;
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    int n_angles = wavelet.size();
-    const std::vector<int> & ipos = blocked_log->GetIposVector();
-    const std::vector<int> & jpos = blocked_log->GetJposVector();
-    float z0 = static_cast<float> (blocked_log->GetZposBlocked()[0]);
-
-    blocked_log->SetNAngles(n_angles);
-    for (int i = 0; i < n_angles; i++) {
-      //int nz = wavelet[i]->getNz();
-      float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();
-
-      if (wavelet_estimated[i] == true && synt_seis[i][w].size() > 0)
-        blocked_log->SetLogFromVerticalTrend(synt_seis[i][w], blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
-                                             z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i);// n_angles);
-    }
-
-    w++;
-  }
-}
+//void CravaResult::SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
+//                                          std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
+//                                          const std::vector<std::vector<std::vector<double> > > & synt_seis, //vector(angle) vector(wells)
+//                                          const Simbox                                          & simbox,
+//                                          const std::vector<bool>                               & wavelet_estimated)
+//{
+//  int nz  = simbox.getnz();
+//
+//  int w = 0;
+//  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+//    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+//    BlockedLogsCommon * blocked_log = iter->second;
+//
+//    int n_angles = wavelet.size();
+//    const std::vector<int> & ipos = blocked_log->GetIposVector();
+//    const std::vector<int> & jpos = blocked_log->GetJposVector();
+//    float z0 = static_cast<float> (blocked_log->GetZposBlocked()[0]);
+//
+//    blocked_log->SetNAngles(n_angles);
+//    for (int i = 0; i < n_angles; i++) {
+//      float dz_well = static_cast<float>(simbox.getRelThick(ipos[0], jpos[0])) * wavelet[i]->getDz();
+//
+//      if (wavelet_estimated[i] == true && synt_seis[i][w].size() > 0)
+//        blocked_log->SetLogFromVerticalTrend(synt_seis[i][w], blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
+//                                             z0, dz_well, nz, "WELL_SYNTHETIC_SEISMIC", i);
+//    }
+//
+//    w++;
+//  }
+//}

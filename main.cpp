@@ -362,7 +362,8 @@ int main(int argc, char** argv)
     LogKit::WriteHeader("Combine Results and Write to Files");
     crava_result->CombineResults(modelSettings,
                                  common_data,
-                                 seismicParametersIntervals);
+                                 seismicParametersIntervals,
+                                 inputFiles);
 
     //Write results
     crava_result->WriteResults(modelSettings,

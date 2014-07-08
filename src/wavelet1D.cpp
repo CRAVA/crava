@@ -37,7 +37,7 @@ Wavelet1D::Wavelet1D()
 
 Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      SeismicStorage                                   * seismic_data,
-                     const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                     std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
                      const std::vector<Surface *>                     & estimInterval,
                      const ModelSettings                              * modelSettings,
                      const NRLib::Matrix                              & reflection_matrix,
@@ -266,7 +266,11 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       }
     }
 
-    for(int w = 0; w < nWells; w++) { // gets syntetic seismic with estimated wavelet
+    //for(int w = 0; w < nWells; w++) { // gets syntetic seismic with estimated wavelet
+    int w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
 
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
@@ -290,9 +294,11 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
         //Since all wavelets are estimated in CommonData we need to save synt_seis per timelapse here and SetLogFromVerticalTrend again in modelAVODynamic/CravaResult
         //blocked_log->SetLogFromVerticalTrend(synt_seis, z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
+        blocked_log->SetLogFromVerticalTrend(synt_seis[w], blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
+                                             z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
 
       }
-      //w++;
+      w++;
     }
 
     float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
@@ -324,7 +330,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
 
-    int w = 0;
+    w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;

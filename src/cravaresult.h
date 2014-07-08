@@ -8,7 +8,6 @@
 #include <math.h>
 #include <string>
 
-//#include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
 #include "src/simbox.h"
 #include "src/fftgrid.h"
@@ -21,7 +20,6 @@
 #include "src/krigingdata3d.h"
 #include "src/parameteroutput.h"
 
-//#include "src/wavelet.h"
 #include "src/wavelet1D.h"
 
 class FFTGrid;
@@ -114,11 +112,11 @@ public:
                                     const NRLib::Matrix                        & reflection_matrix,
                                     const Simbox                               & simbox);
 
-  void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
-                               std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
-                               const std::vector<std::vector<std::vector<double> > > & synt_seis,
-                               const Simbox                                          & simbox,
-                               const std::vector<bool>                               & wavelet_estimated);
+  //void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
+  //                             std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
+  //                             const std::vector<std::vector<std::vector<double> > > & synt_seis,
+  //                             const Simbox                                          & simbox,
+  //                             const std::vector<bool>                               & wavelet_estimated);
 
   //GET FUNCTIONS
 

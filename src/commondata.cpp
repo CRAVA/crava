@@ -150,7 +150,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (block_wells_ && optimize_well_location_)
     wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_, local_shifts_,
                                         local_scales_, global_noise_estimates_, sn_ratios_, synt_seis_, use_local_noises_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
-                                        reflection_matrix_, err_text);
+                                        reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, err_text);
 
 
   // 13. Setup of prior correlation
@@ -2969,6 +2969,8 @@ bool CommonData::WaveletHandling(ModelSettings                                  
                                  NRLib::Grid2D<float>                                            & ref_time_grad_x,
                                  NRLib::Grid2D<float>                                            & ref_time_grad_y,
                                  std::vector<NRLib::Matrix >                                     & reflection_matrix,
+                                 std::string                                                     & wavelet_est_int_top,
+                                 std::string                                                     & wavelet_est_int_bot,
                                  std::string                                                     & err_text_common) const {
 
   int n_timeLapses     = model_settings->getNumberOfTimeLapses();
@@ -2977,7 +2979,9 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 
   std::string err_text_tmp("");
   std::vector<Surface *> wavelet_estim_interval;
-  FindWaveletEstimationInterval(input_files, wavelet_estim_interval, full_inversion_simbox, err_text_tmp);
+  wavelet_est_int_top = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
+  wavelet_est_int_bot = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
+  FindWaveletEstimationInterval(wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, err_text_tmp);
 
   if (err_text_tmp != "")
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
@@ -3192,7 +3196,6 @@ bool CommonData::WaveletHandling(ModelSettings                                  
       }
     }
 
-    //wavelets[i]               = wavelet;
     local_noise_scales[i]     = local_noise_scale;
     local_shifts[i]           = local_shift;
     local_scales[i]           = local_scale;
@@ -3223,32 +3226,33 @@ bool CommonData::WaveletHandling(ModelSettings                                  
 }
 
 void
-CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
+CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
+                                          const std::string      & wavelet_est_int_bot,
                                           std::vector<Surface *> & wavelet_estim_interval,
-                                          const Simbox           & estimation_simbox,
-                                          std::string            & err_text) const
+                                          const Simbox           & simbox,
+                                          std::string            & err_text)
 
 {
-  const double x0 = estimation_simbox.getx0();
-  const double y0 = estimation_simbox.gety0();
-  const double lx = estimation_simbox.getlx();
-  const double ly = estimation_simbox.getly();
-  const int nx    = estimation_simbox.getnx();
-  const int ny    = estimation_simbox.getny();
+  const double x0 = simbox.getx0();
+  const double y0 = simbox.gety0();
+  const double lx = simbox.getlx();
+  const double ly = simbox.getly();
+  const int nx    = simbox.getnx();
+  const int ny    = simbox.getny();
 
   //
   // Get wavelet estimation interval
   //
-  const std::string & topWEI  = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
-  const std::string & baseWEI = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
+  //const std::string & topWEI  = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
+  //const std::string & baseWEI = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
 
-  if (topWEI != "" && baseWEI != "") {
+  if (wavelet_est_int_top != "" && wavelet_est_int_bot != "") {
     wavelet_estim_interval.resize(2);
     try {
-      if (NRLib::IsNumber(topWEI))
-        wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWEI.c_str()));
+      if (NRLib::IsNumber(wavelet_est_int_top))
+        wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(wavelet_est_int_top.c_str()));
       else {
-        Surface tmpSurf(topWEI);
+        Surface tmpSurf(wavelet_est_int_top);
         wavelet_estim_interval[0] = new Surface(tmpSurf);
       }
     }
@@ -3257,10 +3261,10 @@ CommonData::FindWaveletEstimationInterval(InputFiles             * input_files,
     }
 
     try {
-      if (NRLib::IsNumber(baseWEI))
-        wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWEI.c_str()));
+      if (NRLib::IsNumber(wavelet_est_int_bot))
+        wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(wavelet_est_int_bot.c_str()));
       else {
-        Surface tmpSurf(baseWEI);
+        Surface tmpSurf(wavelet_est_int_bot);
         wavelet_estim_interval[1] = new Surface(tmpSurf);
       }
     }
@@ -4458,6 +4462,15 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   }
   catch (NRLib::Exception & e) {
     err_text += e.what();
+  }
+
+  //Need to set angles in blocked_logs_common before wavelet estimation
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_common.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    int n_angles = model_settings->getNumberOfAngles(0);
+    blocked_log->SetNAngles(n_angles);
   }
 
   if(err_text != "") {

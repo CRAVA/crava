@@ -104,6 +104,9 @@ public:
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
 
+  const std::string                                                  & GetWaveletEstIntTop()                            const { return wavelet_est_int_top_                           ;}
+  const std::string                                                  & GetWaveletEstIntBot()                            const { return wavelet_est_int_bot_                           ;}
+
   static void         ResampleTrace(const std::vector<float> & data_trace,
                                     const rfftwnd_plan       & fftplan1,
                                     const rfftwnd_plan       & fftplan2,
@@ -172,6 +175,12 @@ public:
                                    const Simbox  * simbox) const;
 
   void               ReleaseBackgroundGrids(int i_interval, int elastic_param);
+
+  static   void      FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
+                                                   const std::string      & wavelet_est_int_bot,
+                                                   std::vector<Surface *> & wavelet_estim_interval,
+                                                   const Simbox           & estimation_simbox,
+                                                   std::string            & err_text);
 
 private:
 
@@ -390,6 +399,8 @@ private:
                                      NRLib::Grid2D<float>                                            & ref_time_grad_x,
                                      NRLib::Grid2D<float>                                            & ref_time_grad_y,
                                      std::vector<NRLib::Matrix>                                      & refl_mat,
+                                     std::string                                                     & wavelet_est_int_top,
+                                     std::string                                                     & wavelet_est_int_bot,
                                      std::string                                                     & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
@@ -482,10 +493,10 @@ private:
                                       const std::vector<std::vector<double> >  & t_grad_y,
                                       bool                                       estimate_wavelet) const;
 
-  void               FindWaveletEstimationInterval(InputFiles             * input_files,
-                                                   std::vector<Surface *> & wavelet_estim_interval,
-                                                   const Simbox           & estimation_simbox,
-                                                   std::string            & err_text) const;
+  //void               FindWaveletEstimationInterval(InputFiles             * input_files,
+  //                                                 std::vector<Surface *> & wavelet_estim_interval,
+  //                                                 const Simbox           & estimation_simbox,
+  //                                                 std::string            & err_text) const;
 
   void               ComputeStructureDepthGradient(double                 v0,
                                                    double                 radius,
@@ -902,7 +913,7 @@ private:
   bool                                                         forward_modeling_;
 
   std::vector<NRLib::Matrix>                                   reflection_matrix_;             // reflection matrix per timelapse
-  std::vector<int>                                             n_angles_;                      // Number of angles
+  std::vector<int>                                             n_angles_;                      // Number of angles for each timelapse
   bool                                                         refmat_from_file_global_vpvs_;  // True if reflection matrix is from file or set up from global vp/vs value.
 
   // Wavelet
@@ -915,6 +926,8 @@ private:
   std::map<int, std::vector<float> >                              sn_ratios_;
   bool                                                            use_local_noises_;
   std::map<int, std::vector<std::vector<std::vector<double> > > > synt_seis_;
+  std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
+  std::string                                                  wavelet_est_int_bot_ ;
 
   std::vector<std::vector<double> >                            t_grad_x_;
   std::vector<std::vector<double> >                            t_grad_y_;
