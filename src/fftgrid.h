@@ -46,6 +46,7 @@ public:
 
   void                 makeTraceFromStormGrid(StormContGrid      * grid,
                                               std::vector<float> & data_trace,
+                                              bool               & missing,
                                               float              & z0_data,
                                               float              & dz_data,
                                               float              & dz_min,

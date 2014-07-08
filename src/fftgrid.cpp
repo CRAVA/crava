@@ -155,6 +155,8 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
 
   createRealGrid();
 
+  size_t n_data_prev      = 0;
+
   size_t max_extrap_start = 0;
   size_t max_extrap_end   = 0;
 
@@ -242,8 +244,7 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           dz_min  = dz_data/4.0f;
         }
         else {
-          // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside. Catch and turn into missing!!
-          makeTraceFromStormGrid(grid, data_trace, z0_data, dz_data, dz_min, xf, yf);
+          makeTraceFromStormGrid(grid, data_trace, missing, z0_data, dz_data, dz_min, xf, yf);
         }
 
         /*
@@ -255,7 +256,7 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
         }
         */
 
-        if (!is_segy || (is_segy && !missing)) { // Denne bør bli ==> !missing
+        if (!missing) {
           size_t n_data      = data_trace.size();
           float  trend_first = 0.0;
           float  trend_last  = 0.0;
@@ -272,7 +273,10 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                                  trend_first,
                                  trend_last);
 
-            nt = findClosestFactorableNumber(static_cast<int>(n_data));
+            if (n_data != n_data_prev) { // Hack to save some time ...
+              nt = findClosestFactorableNumber(static_cast<int>(n_data));
+              n_data_prev = n_data;
+            }
           }
 
           int          mt       = 4*nt; // Use four times the sampling density for the fine-meshed data
@@ -387,38 +391,46 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
 void
 FFTGrid::makeTraceFromStormGrid(StormContGrid      * grid,
                                 std::vector<float> & data_trace,
+                                bool               & missing,
                                 float              & z0_data,
                                 float              & dz_data,
                                 float              & dz_min,
                                 float                xf,
                                 float                yf)
 {
-  size_t grid_i =   0;
-  size_t grid_j =   0;
+  try {
+    size_t grid_i =   0;
+    size_t grid_j =   0;
 
-  double grid_x = 0.0;
-  double grid_y = 0.0;
-  double grid_z = 0.0;
+    double grid_x = 0.0;
+    double grid_y = 0.0;
+    double grid_z = 0.0;
 
-  float z_min   = 0.0;
-  float z_max   = 0.0;
+    float z_min   = 0.0;
+    float z_max   = 0.0;
 
-  grid->FindXYIndex(xf, yf, grid_i, grid_j);
-  for (size_t k = 0; k < grid->GetNK(); k++) {
-    grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
-    float value  = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
-    data_trace.push_back(value);
+    grid->FindXYIndex(xf, yf, grid_i, grid_j);
+    for (size_t k = 0; k < grid->GetNK(); k++) {
+      grid->FindCenterOfCell(grid_i, grid_j, k, grid_x, grid_y, grid_z);
+      float value  = grid->GetValueZInterpolated(grid_x, grid_y, grid_z);
+      data_trace.push_back(value);
 
-    if (k == 0)
-      z_min = static_cast<float>(grid_z);
-    if (k == grid->GetNK() - 1)
-      z_max = static_cast<float>(grid_z);
+      if (k == 0)
+        z_min = static_cast<float>(grid_z);
+      if (k == grid->GetNK() - 1)
+        z_max = static_cast<float>(grid_z);
+    }
+
+    dz_data = (z_max - z_min) / grid->GetNK();
+    dz_min  = dz_data/4.0f;
+    z0_data = z_min;
+    missing = false;
   }
-
-  dz_data = (z_max - z_min) / grid->GetNK();
-  dz_min  = dz_data/4.0f;
-  z0_data = z_min;
+  catch (NRLib::Exception & e) {
+    missing = true; // Asking for coordinates outside grid
+  }
 }
+
 
 void
 FFTGrid::extrapolateAtEnds(std::vector<float> & data_trace,
