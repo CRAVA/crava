@@ -149,11 +149,9 @@ public:
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real                   * ComputeCircAutoCov(const std::vector<NRLib::Matrix>   & auto_cov,
+  fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov,
                                                    int                                  minIntFq,
-                                                   int                                  nzp,
-                                                   size_t                               i,
-                                                   size_t                               j) const;
+                                                   int                                  nzp) const;
 
   fftw_real                   * computeCircCorrT(const std::vector<double> & priorCorrT,
                                                  const int                 & minIntFq,
@@ -210,9 +208,11 @@ private:
                                               int nxp, int nyp, int nzp,
                                               bool fileGrid);
 
+  /*
   void                          MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
                                                      int          minIntFq,
                                                      int          nzp) const;
+                                                     */
 
   void                          makeCircCorrTPosDef(fftw_real * circCorrT,
                                                     const int & minIntFq,
