@@ -22,43 +22,69 @@ PURIFY      =
 mode        = all
 
 ifeq ($(GCCNEW),1)
-GXXWARNING += -Wno-unused-but-set-variable
+  GXXWARNING += -Wno-unused-but-set-variable
 endif
 
+#o======================================================o
+#|                        Mode                          |
+#o======================================================o
+
 ifeq ($(mode),debug)
-# Don't use -O2 (makes it impossible to set breakpoints)
-DEBUG = -g
-OPT   = -O0
+  # Don't use -O2 (makes it impossible to set breakpoints)
+  DEBUG = -g
+  OPT   = -O0
 endif
 
 ifeq ($(mode),profile)
-# Don't use -ggdb here
-DEBUG   = -g
-PROFILE = -pg
+  # Don't use -ggdb here
+  DEBUG   = -g
+  PROFILE = -pg
 endif
 
 ifeq ($(mode),purify)
-# Don't use -ggdb here
-DEBUG   = -g
-OPT     = -O0
-PROGRAM = cravarun.purify
-PURIFY  = purify -best-effort
+  # Don't use -ggdb here
+  DEBUG   = -g
+  OPT     = -O0
+  PROGRAM = cravarun.purify
+  PURIFY  = purify -best-effort
 endif
+
+#o======================================================o
+#|                  Parallelization                     |
+#o======================================================o
+
+#ifneq ($(parallel),no)                                  # default = yes
+ifeq ($(parallel),yes)                                  # default = no
+  PARALLEL     = -fopenmp -DPARALLEL
+  EXTRALFLAGS += -fopenmp
+endif
+
+#o======================================================o
+#|              RedHat vs. Ubuntu linking               |
+#o======================================================o
 
 ifeq ($(at),nr)
-ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
+  ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
 else
-ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
+  ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
 endif
 
+#o======================================================o
+#|              LAPACK vs. Intel MKL                    |
+#o======================================================o
+
 ifeq ($(lib),mkl)
-ATLASLFLAGS  =
-MKLINCLUDE  := /nr/prog/intel/Compiler/mkl/include
-MKLPATH     := /nr/prog/intel/Compiler/mkl/lib/intel64
-MKLLFLAGS   := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
-                 $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
-                 -lpthread -ldl
+  ATLASLFLAGS  =
+  MKLINCLUDE  := /nr/prog/intel/Compiler/mkl/include
+  MKLPATH     := /nr/prog/intel/Compiler/mkl/lib/intel64
+  MKLLFLAGS   := -L$(MKLPATH) -I$(MKLINCLUDE) -Wl,--start-group $(MKLPATH)/libmkl_intel_lp64.a \
+                   $(MKLPATH)/libmkl_sequential.a $(MKLPATH)/libmkl_core.a -Wl,--end-group \
+                   -lpthread -ldl
 endif
+
+#o======================================================o
+#|                    Remove blanks                     |
+#o======================================================o
 
 OPT     := $(strip $(OPT))
 PROFILE := $(strip $(PROFILE))
@@ -66,10 +92,9 @@ DEBUG   := $(strip $(DEBUG))
 CDIR    := $(strip $(CDIR))
 PURIFY  := $(strip $(PURIFY))
 
-EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR))
+EXTRAFLAGS = $(strip $(OPT) $(PROFILE) $(DEBUG) $(CDIR) $(PARALLEL))
 
 CFLAGS     = $(GCCWARNING)
 CXXFLAGS   = $(GXXWARNING)
 CPPFLAGS   = $(EXTRAFLAGS)
 LFLAGS     = $(EXTRALFLAGS) $(PROFILE) $(ATLASLFLAGS)$(MKLLFLAGS) $(DEBUG) -lm
-

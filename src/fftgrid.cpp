@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <string>
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "lib/random.h"
 #include "lib/utils.h"
 #include "lib/timekit.hpp"
@@ -32,7 +36,6 @@
 #include "src/io.h"
 #include "src/tasklist.h"
 #include "src/seismicparametersholder.h"
-
 
 FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
 {
@@ -181,35 +184,30 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   // Find proper length of time samples to get N*log(N) performance in FFT.
   //
   size_t n_samples = 0;
-
   if (is_segy) {
     n_samples = segy->FindNumberOfSamplesInLongestTrace();
   }
   else {
     n_samples = grid->GetNK();
   }
+  int nt = findClosestFactorableNumber(static_cast<int>(n_samples));
 
-  // Kanskje flytte dette lenger inn for å rydde opp rundt FFTPLAN-lagingen?????
-  //
-  // Create FFT plans
-  //
-  int          nt       = findClosestFactorableNumber(static_cast<int>(n_samples));
-  int          mt       = 4*nt; // Use four times the sampling density for the fine-meshed data
-  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  int count1 = 0; // Part of simbox is outside seismic data
+  int count2 = 0; // Part of padding is outside seismic data
+  int count3 = 0; // Simbox is inside seismic data but trace is missing
 
-  //
-  // Do resampling
-  //
-  missingTracesSimbox  = 0; // Part of simbox is outside seismic data
-  missingTracesPadding = 0; // Part of padding is outside seismic data
-  deadTracesSimbox     = 0; // Simbox is inside seismic data but trace is missing
+#ifdef PARALLEL
+  // Parallelize outer loop. The keyword collapse(2) would have added inner loop
+  // The reduction in the omp pragma takes a local copy of the variable when
+  // entering the for-loop and sums the variables on leaving the loop.
+
+  int  chunk_size = 1;
+  int  n_threads  = 4;
+#pragma omp parallel for schedule(dynamic, chunk_size) reduction(+:count1, count2, count3) num_threads(n_threads)
+#endif
 
   for (int j = 0 ; j < nyp_ ; j++) {
     for (int i = 0 ; i < rnxp_ ; i++) {
-
-      //if (i==0 && j==0) { //xxxxxxxxxxxxxxx
-      if (true) { //xxxxxxxxxxxxxxx
 
       int refi  = getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
       int refj  = getFillNumber(j, ny_, nyp_ ); // Find index (special treatment for padding)
@@ -244,7 +242,7 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           dz_min  = dz_data/4.0f;
         }
         else {
-          // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside. Catch and tur into missing!!
+          // Stormcontgrid does not return missing, but FindXYIndex has a throw if it is outside. Catch and turn into missing!!
           makeTraceFromStormGrid(grid, data_trace, z0_data, dz_data, dz_min, xf, yf);
         }
 
@@ -258,13 +256,11 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
         */
 
         if (!is_segy || (is_segy && !missing)) { // Denne bør bli ==> !missing
-
           size_t n_data      = data_trace.size();
           float  trend_first = 0.0;
           float  trend_last  = 0.0;
 
           if (!seismic_data) {
-
             extrapolateAtEnds(data_trace,        // Get rid of leading and trailing zeros
                               max_extrap_start,
                               max_extrap_end);
@@ -277,19 +273,19 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                                  trend_last);
 
             nt = findClosestFactorableNumber(static_cast<int>(n_data));
-            mt = 4*nt;
-
-            fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-            fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
           }
 
-          int         cnt      = nt/2 + 1;
-          int         rnt      = 2*cnt;
-          int         cmt      = mt/2 + 1;
-          int         rmt      = 2*cmt;
+          int          mt       = 4*nt; // Use four times the sampling density for the fine-meshed data
+          int          cnt      = nt/2 + 1;
+          int          rnt      = 2*cnt;
+          int          cmt      = mt/2 + 1;
+          int          rmt      = 2*cmt;
 
-          fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
-          fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+          rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+          rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+
+          fftw_real  * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+          fftw_real  * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
           std::vector<float> grid_trace(nzp_);
 
@@ -341,35 +337,41 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
+          //fftwnd_destroy_plan(fftplan1);
+          //fftwnd_destroy_plan(fftplan2);
+
           setTrace(grid_trace, i, j);
         }
         else {
           setTrace(0.0f, i, j); // Dead traces (in case we allow them)
-          deadTracesSimbox++;
+          count1++;
         }
 
       }
       else {
         setTrace(0.0f, i, j);   // Outside seismic data grid
         if (i < nx_ && j < ny_ )
-          missingTracesSimbox++;
+          count2++;
         else
-          missingTracesPadding++;
+          count3++;
       }
 
+#ifdef PARALLEL
+#pragma omp critical
+#endif
       if (rnxp_*j + i + 1 >= static_cast<int>(nextMonitor)) {
         nextMonitor += monitorSize;
         std::cout << "^";
         fflush(stdout);
       }
-      } /// xxxxxxxxxxxxxxxxx i==1 j==9
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
   endAccess();
 
-  fftwnd_destroy_plan(fftplan1);
-  fftwnd_destroy_plan(fftplan2);
+  deadTracesSimbox     = count1; // Need to use temporary variables for parallelization
+  missingTracesSimbox  = count2; // Need to use temporary variables for parallelization
+  missingTracesPadding = count3; // Need to use temporary variables for parallelization
 
   if (max_extrap_start > 0) {
     LogKit::LogFormatted(LogKit::Low,"WARNING: Data did not cover grid. The top %d layers were partly or fully extrapolated from first defined value\n", max_extrap_start);
@@ -446,8 +448,14 @@ FFTGrid::extrapolateAtEnds(std::vector<float> & data_trace,
   for (k = last_def + 1 ; k < n ; k++) {
     data_trace[k] = data_trace[last_def];
   }
-  max_extrap_start = std::max(max_extrap_start, first_def);
-  max_extrap_end   = std::max(max_extrap_end, n - last_def - 1);
+
+#ifdef PARALLEL
+#pragma omp critical
+#endif
+  {
+    max_extrap_start = std::max(max_extrap_start, first_def);
+    max_extrap_end   = std::max(max_extrap_end, n - last_def - 1);
+  }
 }
 
 void
