@@ -128,7 +128,7 @@ int SeismicStorage::GetNx() const {
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
     nx = storm_grid_->GetNI();
   else if (seismic_type_ == FFTGRID)
-    nx = fft_grid_->getNxp();
+    nx = fft_grid_->getNx();
 
   return nx;
 }
@@ -142,7 +142,7 @@ int SeismicStorage::GetNy() const {
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
     ny = storm_grid_->GetNJ();
   else if (seismic_type_ == FFTGRID)
-    ny = fft_grid_->getNyp();
+    ny = fft_grid_->getNy();
 
   return ny;
 }
@@ -156,7 +156,7 @@ int SeismicStorage::GetNz() const {
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
     nz = storm_grid_->GetNK();
   else if (seismic_type_ == FFTGRID)
-    nz = fft_grid_->getNzp();
+    nz = fft_grid_->getNz();
 
   return nz;
 }
