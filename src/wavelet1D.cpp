@@ -57,7 +57,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
   theta_      = seismic_data->GetAngle();
-  nzp_        = simbox->getnz();
+  nzp_        = simbox->GetNZpad();
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
