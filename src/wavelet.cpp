@@ -167,13 +167,7 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
   for (int i = 0; i < nz_; ++i) {
     t = (i-cz_) * dz_;
     rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
-    /*
-         t = i * dz_;
-        rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
-        if(i>0)
-        rAmp_[nz_-i] = static_cast<fftw_real>(Ricker(-t, peakFrequency));
-        */
-     }
+  }
 
 
   formats_       = modelSettings->getWaveletFormatFlag();
@@ -188,8 +182,6 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
         rAmp_[i]=RMISSING;
     }//end for i
   }
-  printToFile("ricker20.txt",true);
-
 }
 
 Wavelet::Wavelet(int /*difftype */,
