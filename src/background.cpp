@@ -1611,7 +1611,7 @@ Background::makeTrendZone(const float   * trend,
     // Set layer in background model from surface
     for(size_t j=0 ; j<ny; j++) {
       for(size_t i=0 ; i<nx; i++)
-        trend_zone(i,j,k) = float(surface(i,j));
+        trend_zone(i,j,k) = static_cast<float>(surface(i,j));
     }
   }
 }
@@ -1632,11 +1632,14 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
   const double y0   = kriged_zone.GetYMin();
   const double lx   = kriged_zone.GetLX();
   const double ly   = kriged_zone.GetLY();
-  //
-  // Template surface to be kriged
-  //
-  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+
+#ifdef PARALLEL
+  int  chunk_size = 1;
+#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
+#endif
+
   for (size_t k=0; k<nz; k++) {
+    Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
     // Set trend for layer
     surface.Assign(trend[k]);
@@ -1647,7 +1650,7 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
     // Set layer in background model from surface
     for(size_t j=0 ; j<ny; j++) {
       for(size_t i=0 ; i<nx; i++)
-        kriged_zone(i,j,k) = float(surface(i,j));
+        kriged_zone(i,j,k) = static_cast<float>(surface(i,j));
     }
   }
 }
@@ -1696,7 +1699,7 @@ Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
   if (iWells > 0) {
     for (int k = 0 ; k < nz ; k++) {
       if (count[k] > 0) {
-        trend[k] = trend[k]/count[k];
+        trend[k] = trend[k]/static_cast<float>(count[k]);
       }
     }
   }

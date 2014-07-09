@@ -1581,7 +1581,7 @@ ModelGeneral::printSettings(ModelSettings     * modelSettings,
     int n_threads    = modelSettings->getNumberOfThreads();
     //int max_threads  = omp_get_max_threads(); // Do not use: This number is sometimes 1 even though 8 threads are running
 
-    LogKit::LogFormatted(LogKit::Low,"\nThreads in use                             : %d/%d\n",n_threads,n_processors);
+    LogKit::LogFormatted(LogKit::Low,"\nThreads in use                             : %d / %d\n",n_threads,n_processors);
   }
 #endif
 

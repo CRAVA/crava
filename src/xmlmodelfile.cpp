@@ -5404,7 +5404,9 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     return(false);
 
   std::vector<std::string> legalCommands;
+#ifdef PARALLEL
   legalCommands.push_back("number-of-threads");
+#endif
   legalCommands.push_back("fft-grid-padding");
   legalCommands.push_back("vp-vs-ratio");
   legalCommands.push_back("vp-vs-ratio-from-wells");
@@ -5430,34 +5432,9 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("estimate-well-gradient-from-seismic");
 
 #ifdef PARALLEL
-  int n_thread = 1;
+  int n_thread = 0;
   if (parseValue(root, "number-of-threads", n_thread, errTxt) == true)
     modelSettings_->setNumberOfThreads(n_thread);
-
-#pragma omp parallel
-#pragma omp master
-  {
-    // NBNB-PAL: Det er sikkert ikke riktig å sette antall tråder lik antall processorer. Sjekk det ut.
-    int n_processors = omp_get_num_procs();
-    int n_threads    = n_processors;
-    int i            = modelSettings_->getNumberOfThreads();
-    if (i < 0) {
-      n_threads -= std::abs(i);
-      if (n_threads < 1) {
-        errTxt += "\nYou have asked for parallelization and less than 1 threads. This is inconsistent.\n";
-      }
-      n_threads  = std::max(n_threads, 1);
-    }
-    else if (i > 0) {
-      n_threads  = i;
-      if (n_threads > n_processors) {
-        errTxt += std::string("\nYou have asked for ") + NRLib::ToString(n_threads)
-          + std::string(" threads but only ") + NRLib::ToString(n_processors) + " seem to be available\n";
-      }
-      n_threads  = std::min(n_threads, n_processors);
-    }
-    modelSettings_->setNumberOfThreads(n_threads);
-  }
 #endif
 
   parseFFTGridPadding(root, errTxt);
@@ -5978,8 +5955,9 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
 
 
 void
-XmlModelFile::checkConsistency(std::string & errTxt) {
-  if(modelSettings_->getForwardModeling() == true)
+XmlModelFile::checkConsistency(std::string & errTxt)
+{
+  if (modelSettings_->getForwardModeling() == true)
     checkForwardConsistency(errTxt);
   else {
     if (modelSettings_->getEstimationMode())
@@ -5987,7 +5965,7 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     else
       checkInversionConsistency(errTxt);
   }
-  if(modelSettings_->getLocalWaveletVario()==NULL)
+  if (modelSettings_->getLocalWaveletVario()==NULL)
       modelSettings_->copyBackgroundVarioToLocalWaveletVario();
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
@@ -6026,13 +6004,13 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
 
     double vpvs = 0.0;
     bool vpvs_exists = false;
-    for(size_t i = 0; i < interval_names.size(); i++) {
+    for (size_t i = 0; i < interval_names.size(); i++) {
       if(vpvs_ratio_intervals.count(interval_names[i]) > 0) {
         vpvs = vpvs_ratio_intervals.find(interval_names[i])->second;
         vpvs_exists = true;
       }
 
-      if(vpvs < vpvsMin && vpvs_exists) {
+      if (vpvs < vpvsMin && vpvs_exists) {
         errTxt += "Specified Vp/Vs of "+NRLib::ToString(vpvs,2)+" for interval " + interval_names[i]
                   +" is less than minimum allowed value of "+NRLib::ToString(vpvsMin,2) + ".\n";
       }
@@ -6043,6 +6021,33 @@ XmlModelFile::checkConsistency(std::string & errTxt) {
     }
   }
   checkRockPhysicsConsistency(errTxt);
+
+#ifdef PARALLEL
+#pragma omp parallel
+#pragma omp master
+  {
+    // NBNB-PAL: Det er sikkert ikke riktig å sette antall tråder lik antall processorer. Sjekk det ut.
+    int n_processors = omp_get_num_procs();
+    int n_threads    = n_processors;
+    int i            = modelSettings_->getNumberOfThreads();
+    if (i < 0) {
+      n_threads -= std::abs(i);
+      if (n_threads < 1) {
+        errTxt += "\nYou have asked for parallelization and less than 1 threads. This is inconsistent.\n";
+      }
+      n_threads  = std::max(n_threads, 1);
+    }
+    else if (i > 0) {
+      n_threads  = i;
+      if (n_threads > n_processors) {
+        errTxt += std::string("\nYou have asked for ") + NRLib::ToString(n_threads)
+          + std::string(" threads but only ") + NRLib::ToString(n_processors) + " seem to be available\n";
+      }
+      n_threads  = std::min(n_threads, n_processors);
+    }
+    modelSettings_->setNumberOfThreads(n_threads);
+  }
+#endif
 }
 
 void
