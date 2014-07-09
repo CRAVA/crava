@@ -2692,33 +2692,12 @@ Background::FillInVerticalTrend(FFTGrid                   * grid,
 
 //-------------------------------------------------------------------------------
 void
-Background::ResampleBackgroundModel(NRLib::Grid<float>  * bg_vp,
-                                    NRLib::Grid<float>  * bg_vs,
-                                    NRLib::Grid<float>  * bg_rho,
-                                    const Simbox        * bg_simbox,
-                                    const Simbox        * simbox)
+Background::ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
+                                    NRLib::Grid<float>  * & bg_vs,
+                                    NRLib::Grid<float>  * & bg_rho,
+                                    const Simbox        *   bg_simbox,
+                                    const Simbox        *   simbox)
 {
-  //bool is_file = model_settings->getFileGrid();
-
-  //H Writing of grids missing
-  //if ((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-  //  std::string file_name_1 = IO::PrefixBackground() + "Vp_BackgroundGrid";
-  //  std::string file_name_2 = IO::PrefixBackground() + "Vs_BackgroundGrid";
-  //  std::string file_name_3 = IO::PrefixBackground() + "Rho_BackgroundGrid";
-
-  //  FFTGrid * exp_vp = CopyFFTGrid(bg_vp, true, is_file);
-  //  exp_vp->writeFile(file_name_1, IO::PathToBackground(), time_bg_simbox);
-  //  delete exp_vp;
-
-  //  FFTGrid * exp_vs = CopyFFTGrid(bg_vs, true, is_file);
-  //  exp_vs->writeFile(file_name_2, IO::PathToBackground(), time_bg_simbox);
-  //  delete exp_vs;
-
-  //  FFTGrid * exp_rho = CopyFFTGrid(bg_rho, true, is_file);
-  //  exp_rho->writeFile(file_name_3, IO::PathToBackground(), time_bg_simbox);
-  //  delete exp_rho;
-  //}
-
   NRLib::Grid<float> * res_bg_vp  = new NRLib::Grid<float>();
   NRLib::Grid<float> * res_bg_vs  = new NRLib::Grid<float>();
   NRLib::Grid<float> * res_bg_rho = new NRLib::Grid<float>();
@@ -2728,28 +2707,14 @@ Background::ResampleBackgroundModel(NRLib::Grid<float>  * bg_vp,
   ResampleParameter(res_bg_vs,  bg_vs,  simbox, bg_simbox);
   ResampleParameter(res_bg_rho, bg_rho, simbox, bg_simbox);
 
-  //if ((model_settings->getOutputGridsOther() & IO::EXTRA_GRIDS) > 0) {
-  //  std::string file_name_1 = IO::PrefixBackground() + "Vp_InversionGrid";
-  //  std::string file_name_2 = IO::PrefixBackground() + "Vs_InversionGrid";
-  //  std::string file_name_3 = IO::PrefixBackground() + "Rho_InversionGrid";
-
-  //  FFTGrid * exp_res_vp = CopyFFTGrid(res_bg_vp, true, is_file);
-  //  exp_res_vp->writeFile(file_name_1, IO::PathToBackground(), time_simbox);
-  //  delete exp_res_vp;
-
-  //  FFTGrid * exp_res_vs = CopyFFTGrid(res_bg_vs, true, is_file);
-  //  exp_res_vs->writeFile(file_name_2, IO::PathToBackground(), time_simbox);
-  //  delete exp_res_vs;
-
-  //  FFTGrid * exp_res_rho = CopyFFTGrid(res_bg_rho, true, is_file);
-  //  exp_res_rho->writeFile(file_name_3, IO::PathToBackground(), time_simbox);
-  //  delete exp_res_rho;
-  //}
+  delete bg_vp;
+  delete bg_vs;
+  delete bg_rho;
 
   bg_vp  = res_bg_vp;
   bg_vs  = res_bg_vs;
   bg_rho = res_bg_rho;
- }
+}
 
 void
 Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to

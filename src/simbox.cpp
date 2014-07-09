@@ -91,12 +91,6 @@ Volume(*simbox),
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
 {
-  std::string   s = "";
-  this->setArea(simbox, static_cast<int>(simbox->getnx()),
-                  static_cast<int>(simbox->getny()), s);
-  CopyAllPadding(*simbox, simbox->getMaxLz(), s);
-  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
-
   interval_name_  = "";
   status_         = simbox->status_;
   cosrot_         = cos(GetAngle());
@@ -122,6 +116,13 @@ base_eroded_surface_(NULL)
   botName_        = simbox->botName_;
   grad_x_         = 0;
   grad_y_         = 0;
+
+  std::string   s = "";
+  this->setArea(simbox, static_cast<int>(simbox->getnx()),
+                  static_cast<int>(simbox->getny()), s);
+  CopyAllPadding(*simbox, 0.0, s); //Second parameter is smallest legal ratio between thickest and thinnest; since this is a copy, allow anything.
+  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
+
 }
 
 //
@@ -136,7 +137,7 @@ base_eroded_surface_(NULL)
   std::string s   = "";
   this->setArea(&simbox, static_cast<int>(simbox.getnx()),
                   static_cast<int>(simbox.getny()), s);
-  this->CopyAllPadding(simbox, simbox.getMaxLz(), s);
+  this->CopyAllPadding(simbox, 0.0, s);
   this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
   interval_name_  = "";
   status_         = simbox.status_;
@@ -252,7 +253,9 @@ Simbox::Simbox(const Simbox         * simbox,
                int                    output_format,
                std::string          & err_text,
                bool                 & failed)
-: Volume(*simbox)
+: Volume(*simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
 {
   LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface for interval \'%s\'.\n",interval_name.c_str());
   interval_name_  = interval_name;
