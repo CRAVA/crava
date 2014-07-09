@@ -100,11 +100,11 @@ private:
   //                                                  const ModelSettings                             * model_settings,
   //                                                  std::string                                     & err_text);
 
-  void         ResampleBackgroundModel(NRLib::Grid<float>  * bg_vp,
-                                       NRLib::Grid<float>  * bg_vs,
-                                       NRLib::Grid<float>  * bg_rho,
-                                       const Simbox        * bg_simbox,
-                                       const Simbox        * simbox);
+  void         ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
+                                       NRLib::Grid<float>  * & bg_vs,
+                                       NRLib::Grid<float>  * & bg_rho,
+                                       const Simbox        *   bg_simbox,
+                                       const Simbox        *   simbox);
 
   //void         padAndSetBackgroundModel(FFTGrid * bgAlpha,
   //                                      FFTGrid * bgBeta,
