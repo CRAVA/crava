@@ -28,17 +28,9 @@
 #include "src/io.h"
 
 //----------------------------------------------------------------------------
-WellData::WellData(const std::string              & wellFileName,
-                   const std::vector<std::string> & logNames,
-                   const std::vector<bool>        & inverseVelocity,
-                   ModelSettings                  * modelSettings,
-                   int                              indicatorFacies,
-                   int                              indicatorFiltering,
-                   int                              indicatorWavelet,
-                   int                              indicatorBGTrend,
-                   int                              indicatorRealVs,
-                   bool                             porosityLogGiven,
-                   bool                             faciesLogGiven)
+WellData::WellData(const std::string & wellFileName,
+                   ModelSettings     * modelSettings,
+                   int                 iWell)
   : modelSettings_(modelSettings),
     wellname_(""),
     wellfilename_(""),
@@ -59,12 +51,17 @@ WellData::WellData(const std::string              & wellFileName,
     blockedLogsOrigThick_(NULL),
     blockedLogsConstThick_(NULL),
     blockedLogsExtendedBG_(NULL),
-    useForFaciesProbabilities_(indicatorFacies),
-    useForFiltering_(indicatorFiltering),
-    useForWaveletEstimation_(indicatorWavelet),
-    useForBackgroundTrend_(indicatorBGTrend),
-    realVsLog_(indicatorRealVs)
+    useForFaciesProbabilities_(modelSettings->getIndicatorFacies(iWell) ),
+    useForFiltering_          (modelSettings->getIndicatorFilter(iWell) ),
+    useForWaveletEstimation_  (modelSettings->getIndicatorWavelet(iWell)),
+    useForBackgroundTrend_    (modelSettings->getIndicatorBGTrend(iWell)),
+    realVsLog_                (modelSettings->getIndicatorRealVs(iWell) )
 {
+  const std::vector<std::string> & logNames         = modelSettings->getLogNames();
+  const std::vector<bool>        & inverseVelocity  = modelSettings->getInverseVelocity();
+  bool                             faciesLogGiven   = modelSettings->getFaciesLogGiven();
+  bool                             porosityLogGiven = modelSettings->getPorosityLogGiven();
+
   errTxt_="";
   if(wellFileName.find(".nwh",0) != std::string::npos)
     readNorsarWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
