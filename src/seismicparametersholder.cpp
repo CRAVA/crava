@@ -267,7 +267,10 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
       for(int j = 0; j < 3; j++){
         std::vector<double> corr_t(auto_cov.size());
         for (size_t k = 0; k < auto_cov.size(); k++){
-          corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+          if(auto_cov[0](i,j) > 0)
+            corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+          else 
+            corr_t[k] = 0;
         }
         circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t, low_int_cut, nzp);
       }
@@ -630,6 +633,7 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
                                              const int & minIntFq,
                                              const int & nzp) const
 {
+  fftw_real      first_element = circCorrT[0];
   fftw_complex * fftCircCorrT;
   fftCircCorrT = FFTGrid::fft1DzInPlace(circCorrT, nzp);
 
@@ -647,13 +651,15 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
   // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
   //           do we avoid this, or how do we flag the problem?
   //
-  float scale;
-  if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-    scale = float( 1.0f/circCorrT[0] );
-  else  {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
-    exit(1);
+  float scale = 0;
+  if (first_element > 0){ // Erik N: Since some cross correlations are set to 0 for synthetic logs
+    if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
+      scale = float( 1.0f/circCorrT[0] );
+    else  {
+      LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+      LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+      exit(1);
+    }
   }
 
   for(int k=0; k<nzp; k++)

@@ -1067,7 +1067,11 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         temp_auto_cov[i](0,1) = temp_auto_cov[i](0,1)/(count[i](0,1) - 1);
       }
       else{
-        temp_auto_cov[i](0,1)  = std::sqrt(temp_auto_cov[i](0,0))*std::sqrt(temp_auto_cov[i](1,1))*0.70;
+        double temp = temp_auto_cov[i](0,0)*temp_auto_cov[i](1,1);
+        if (temp >= 0)
+          temp_auto_cov[i](0,1)  = std::sqrt(temp)*0.70;
+        else
+          temp_auto_cov[i](0,1)  = - std::sqrt(std::abs(temp))*0.70;
       }
       if(count[i](0,2) > 1){
         temp_auto_cov[i](0,2) = temp_auto_cov[i](0,2)/(count[i](0,2) - 1);
@@ -1081,9 +1085,6 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       else{
         temp_auto_cov[i](1,2)  = 0.0;
       }
-      temp_auto_cov[i](1,0) = temp_auto_cov[i](0,1);
-      temp_auto_cov[i](2,0) = temp_auto_cov[i](2,0);
-      temp_auto_cov[i](2,1) = temp_auto_cov[i](1,2);
     }
 
   }
@@ -1139,25 +1140,51 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   for(int i=1; i<max_lag_with_data; i++){
     for(int j=0 ; j<3; j++){
       for(int k=j; k<3; k++){
-        if(count[i-1](j,k)>0)                 // Find previous estimated autocov with data
-          i_prev[j][k]=i-1;
-        if(i_next[j][k]<i+1){
-          i_next[j][k]++;
-        while(count[i_next[j][k]](j,k) == 0 && i_next[j][k]<max_lag_with_data)   // Find next estimated autocov with data
-          i_next[j][k]++;
-      }
-      c_prev[j][k]    = temp_auto_cov[i_prev[j][k]](j,k);
-      c_next[j][k]    = temp_auto_cov[i_next[j][k]](j,k);
-      nipol    = std::min(count[i_prev[j][k]](j,k),count[i_next[j][k]](j,k));
-      cipol    = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
-      auto_cov[i](j,k) = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
-      auto_cov[i](k,j) = auto_cov[i](j,k);
+        //
+        // Vp-Vp, Vp-Rho, Rho-Rho or non-synthetic logs
+        //
+        if ((j == 0 && k == 0) || (j == 0 && k ==2) || (j ==2 && k == 2) || !all_Vs_logs_synthetic){
+          if(count[i-1](j,k)>0)                 // Find previous estimated autocov with data
+            i_prev[j][k]=i-1;
+          if(i_next[j][k]<i+1){
+            i_next[j][k]++;
+            while(count[i_next[j][k]](j,k) == 0 && i_next[j][k]<max_lag_with_data)   // Find next estimated autocov with data
+              i_next[j][k]++;
+          }
+          c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
+          c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
+          nipol             = std::min(count[i_prev[j][k]](j,k),count[i_next[j][k]](j,k));
+          cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
+          auto_cov[i](j,k)  = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
+          auto_cov[i](k,j)  = auto_cov[i](j,k);
 
-      //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
-      //                   i,nTT[i],corTT[i],iprev,cprev,inext,cnext,nipol,cipol);
+          //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
+          //                   i,nTT[i],corTT[i],iprev,cprev,inext,cnext,nipol,cipol);
+        }
+        //
+        // Vp-Vs, Vs-Vs and Vs-Rho if all Vs logs are synthetic
+        //
+        else {
+          if ((j==0 && k == 1) || (j == 1 && k == 1)){
+            // use same weights as for Vp correlations
+            i_prev[j][k]      = i_prev[0][0];
+            i_next[j][k]      = i_next[0][0];
+            c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
+            c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
+            nipol             = std::min(count[i_prev[j][k]](0,0),count[i_next[j][k]](0,0));
+            cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
+            auto_cov[i](j,k)  = (count[i](0,0)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](0,0)+nipol);
+            auto_cov[i](k,j)  = auto_cov[i](j,k);
+          }
+          else if(j == 1 && k ==2){
+            i_prev[j][k]      = i-1;
+            i_next[j][k]      = i;
+            auto_cov[i](j,k)  = 0.0;
+            auto_cov[i](k,j)  = 0.0;
+          }
+        }
       }
     }
-
   }
 
   // Last time step with data
@@ -1205,7 +1232,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     file << " Time increment is: " << min_dz << "\n"
          << "   i      n_VpVp    cov(Vp_0,Vp_i)      n_VsVs    cov(Vs_0,Vs_i)      nRR    cov(R_0,R_i)  \n"
          << "----------------------------------------------------------------------------------------\n";
-    for(int i=0; i<max_nd+1; i++){
+    for(int i=0; i<max_nd; i++){
       file << std::fixed
            << std::right
            << std::setprecision(3)
