@@ -82,63 +82,14 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   grad_y_      = 0;
 }
 
-
 //
 // Constructor that copies all simbox data from simbox
 //
-Simbox::Simbox(const Simbox * simbox):
-Volume(*simbox),
-top_eroded_surface_(NULL),
-base_eroded_surface_(NULL)
-{
-  interval_name_  = "";
-  status_         = simbox->status_;
-  cosrot_         = cos(GetAngle());
-  sinrot_         = sin(GetAngle());
-  dx_             = simbox->dx_;
-  dy_             = simbox->dy_;
-  dz_             = simbox->dz_;
-  nx_             = simbox->nx_;
-  ny_             = simbox->ny_;
-  nz_             = simbox->nz_;
-  inLine0_        = simbox->inLine0_;
-  crossLine0_     = simbox->crossLine0_;
-  ilStepX_        = simbox->ilStepX_;
-  ilStepY_        = simbox->ilStepY_;
-  xlStepX_        = simbox->xlStepX_;
-  xlStepY_        = simbox->xlStepY_;
-  lz_eroded_      = 0;
-  topName_        = "";
-  botName_        = "";
-  constThick_     = simbox->constThick_;
-  minRelThick_    = simbox->minRelThick_;
-  topName_        = simbox->topName_;
-  botName_        = simbox->botName_;
-  grad_x_         = 0;
-  grad_y_         = 0;
-
-  std::string   s = "";
-  this->setArea(simbox, static_cast<int>(simbox->getnx()),
-                  static_cast<int>(simbox->getny()), s);
-  CopyAllPadding(*simbox, 0.0, s); //Second parameter is smallest legal ratio between thickest and thinnest; since this is a copy, allow anything.
-  SetErodedSurfaces(simbox->GetTopErodedSurface(), simbox->GetBaseErodedSurface(), true);
-
-}
-
-//
-//
-//
-
 Simbox::Simbox(const Simbox & simbox):
 Volume(simbox),
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
 {
-  std::string s   = "";
-  this->setArea(&simbox, static_cast<int>(simbox.getnx()),
-                  static_cast<int>(simbox.getny()), s);
-  this->CopyAllPadding(simbox, 0.0, s);
-  this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
   interval_name_  = "";
   status_         = simbox.status_;
   cosrot_         = cos(GetAngle());
@@ -159,6 +110,12 @@ base_eroded_surface_(NULL)
   botName_        = simbox.botName_;
   grad_x_         = 0;
   grad_y_         = 0;
+
+  std::string s   = "";
+  this->setArea(&simbox, static_cast<int>(simbox.getnx()),
+                  static_cast<int>(simbox.getny()), s);
+  this->CopyAllPadding(simbox, 0.0, s); //Second parameter is smallest legal ratio between thickest and thinnest; since this is a copy, allow anything.
+  this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
 }
 
 

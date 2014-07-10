@@ -253,7 +253,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
         if (index_j >= fft_grid_->getNy())
           index_j = fft_grid_->getNy()-1;
 
-        trace_data[trace_index] = fft_grid_->getRealTrace2(index_i, index_j);
+        trace_data[trace_index] = fft_grid_->getRealTrace(index_i, index_j);
 
         trace_index++;
 
@@ -284,7 +284,7 @@ SeismicStorage::GetRealTrace(const Simbox * estimation_simbox,
     }
   }
   else { //FFTGrid
-    value = fft_grid_->getRealTrace2(i, j);
+    value = fft_grid_->getRealTrace(i, j);
   }
 
   return value;

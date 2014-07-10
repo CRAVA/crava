@@ -70,6 +70,8 @@ CommonData::CommonData(ModelSettings * model_settings,
     const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
     full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
   }
+  //Set up simbox for writing
+  SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, multiple_interval_grid_);
 
   // 3. read seismic data and create estimation simbox.
   read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
@@ -573,7 +575,6 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   if (err_text == "") {
     EstimateXYPaddingSizes(&full_inversion_simbox, model_settings);
   }
-
   else {
     err_text_common += err_text;
     return false;
@@ -581,6 +582,74 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
   return true;
 }
+
+void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
+                                   const Simbox      & full_inversion_simbox,
+                                   ModelSettings     * model_settings,
+                                   MultiIntervalGrid * multi_interval_grid)
+{
+  //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
+  //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
+
+  output_simbox = Simbox(full_inversion_simbox_);
+  output_simbox.SetSurfaces(full_inversion_simbox_.GetTopErodedSurface(), full_inversion_simbox_.GetBaseErodedSurface());
+  int n_intervals = multi_interval_grid->GetNIntervals();
+
+  int index_i = 0;
+  int index_j = 0;
+
+  double dz_min    = FindDzMin(multi_interval_grid, index_i, index_j);
+  double top_value = multi_interval_grid->GetIntervalSimbox(0)->getTop(index_i, index_j);
+  double bot_value = multi_interval_grid->GetIntervalSimbox(n_intervals-1)->getBot(index_i, index_j);
+
+  int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
+
+  output_simbox.setDepth(*output_simbox.GetTopSurface().Clone(), *output_simbox.GetBotSurface().Clone(), nz_new, false); //Also set nz_pad = nz
+  std::string err_text_tmp = "";
+  output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
+  MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
+
+}
+
+double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j)
+{
+  double min_dz   = std::numeric_limits<double>::infinity();
+  int nx          = multi_interval_grid->GetIntervalSimbox(0)->getnx();
+  int ny          = multi_interval_grid->GetIntervalSimbox(0)->getny();
+  int n_intervals = multi_interval_grid->GetNIntervals();
+
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+
+      double min_dz_trace = std::numeric_limits<double>::infinity();
+
+      //Find minumum dz for each interval
+      for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
+
+        const Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+
+        double top_value = interval_simbox->getTop(i,j);
+        double bot_value = interval_simbox->getBot(i,j);
+        int nz           = interval_simbox->getnz();
+
+        double min_dz_interval = (bot_value - top_value) / nz;
+
+        if (min_dz_interval < min_dz_trace)
+          min_dz_trace = min_dz_interval;
+      }
+
+      if (min_dz_trace < min_dz) {
+        min_dz  = min_dz_trace;
+        index_i = i;
+        index_j = j;
+
+      }
+    }
+  }
+
+  return(min_dz);
+}
+
 
 
 bool CommonData::ReadSeismicData(ModelSettings                               * model_settings,
@@ -2533,18 +2602,16 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
   // if not already made. A-matrix may need Vp/Vs-ratio from background model or wells.
   //
   const std::string & refl_matr_file = input_files->getReflMatrFile();
-  //const double vpvs                  = model_settings->getVpVsRatio("");
 
-  int n_timelapses = model_settings->getNumberOfTimeLapses(); //Returnerer timeLapseAngle_.size()
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
   for (int i = 0; i < n_timelapses; i++) {
 
     int n_angles_this_timelapse = model_settings->getNumberOfAngles(i);
-    //NRLib::Matrix  reflection_matrix(n_angles, 3);
     n_angles.push_back(n_angles_this_timelapse);
 
     if (refl_matr_file != "") { //File should have one line for each seismic data file. Check: if (input_files->getNumberOfSeismicFiles(thisTimeLapse) > 0 ) ?
       std::string tmp_err_text("");
-      float                   ** reflection_matrix_array = ReadMatrix(refl_matr_file, n_angles_this_timelapse, 3, "reflection matrix", tmp_err_text);
+      float ** reflection_matrix_array = ReadMatrix(refl_matr_file, n_angles_this_timelapse, 3, "reflection matrix", tmp_err_text);
       if (reflection_matrix_array == NULL) {
         err_text += "Reading of file "+ refl_matr_file + " for reflection matrix failed\n";
         err_text += tmp_err_text;
@@ -2566,7 +2633,6 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
       refmat_from_file_global_vpvs = true;
     }
     else if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end()) {
-   // else if (vpvs != RMISSING) {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs ratio specified in model file.\n");
       double vsvp = 1.0/model_settings->getVpVsRatio("");
       reflection_matrix.push_back(SetupDefaultReflectionMatrix(vsvp, model_settings, n_angles_this_timelapse, i));
@@ -2579,10 +2645,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
       refmat_from_file_global_vpvs = false;
     }
 
-    //reflection_matrix_[i] = reflection_matrix;
-
   } //nTimeLapses
-
 
   if (err_text != "") {
     err_text_common += err_text;
@@ -2643,9 +2706,8 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings                            
 
   //3. Use Ricker - wavelet.
   //4. 1 wavelet per angle
-  //5 Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
+  //5. Frequency per ange: Take 100 traces from first AVO-vintage on this angle. Find peak-frequency for these.
   int n_angles = model_settings->getNumberOfAngles(0);
-  //int error = 0;
 
   for (int j = 0 ; j < n_angles; j++) {
     //Check all timelapses for this angle, choose the first one;
@@ -2885,7 +2947,7 @@ CommonData::FindVsVpForZone(int                   i_interval,
       origin = "background model (less than 10 well points available)";
     }
   }
-  else {  //background
+  else { //background
     vsvp = GetBackgroundVsVpRatioInterval(i_interval);
     if (model_settings->getGenerateBackgroundFromRockPhysics())
       origin = "Rock Physics model";
@@ -3240,9 +3302,6 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
   //
   // Get wavelet estimation interval
   //
-  //const std::string & topWEI  = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
-  //const std::string & baseWEI = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
-
   if (wavelet_est_int_top != "" && wavelet_est_int_bot != "") {
     wavelet_estim_interval.resize(2);
     try {
@@ -3387,8 +3446,6 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     //If wavelet isn't estimated it needs to be resampled in order to calculate SN-Ratio
     //The wavelet also needs to be resampled in modelAVODynamic to the different intervals.
     //Here we make a different copy to be sent to modelAVODynamic, so the same wavelet isn't resampled twice.
-    //wavelet_pre_resampling = new Wavelet1D(wavelet);
-
     if (error == 0) {
       delete wavelet_pre_resampling;
       wavelet_pre_resampling = new Wavelet1D(wavelet);
@@ -3887,7 +3944,7 @@ CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                 
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
-    if (blocked_log->GetIsDeviated() == false) //H Changed to false, check
+    if (blocked_log->GetIsDeviated() == false)
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, simbox);
   }
 }
@@ -5432,13 +5489,6 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
       std::string interval_name = multi_interval_grid->GetIntervalName(i);
       my_map = model_settings->getPriorFaciesProb(interval_name);
 
-      //if (n_intervals > 1) {
-      //  std::string interval_name = model_settings->getIntervalName(i);
-      //  my_map = model_settings->getPriorFaciesProbInterval(interval_name);
-      //}
-      //else
-      //  my_map = model_settings->getPriorFaciesProb();
-
       for (int j = 0; j < n_facies; j++) {
         map_type::iterator iter = my_map.find(facies_names[j]);
         if (iter!=my_map.end())
@@ -6741,8 +6791,6 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       std::string   & err_text_common) const
 {
   assert (time_depth_mapping == NULL); // to avoid memory leaks
-  //time_depth_mapping   = NULL;
-  //From ModelGeneral::ProcessDepthConversion
   std::string err_text = "";
 
   NRLib::Grid<float> * velocity = NULL;
@@ -6993,7 +7041,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                         background_parameters[i][0],
                                         background_parameters[i][1],
                                         background_parameters[i][2],
-                                        simbox,
+                                        *simbox,
                                         trend_cubes[i]);
 
       }
@@ -7558,7 +7606,7 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   //
   // Make new simbox
   //
-  bg_simbox = new Simbox(simbox);
+  bg_simbox = new Simbox(*simbox);
   bg_simbox->setDepth(top_surf, bot_surf, nz);
 
   std::string interval_name_out = "";

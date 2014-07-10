@@ -39,6 +39,8 @@ public:
 
   const Simbox                                                       & GetEstimationSimbox()                            const { return estimation_simbox_                             ;}
   const Simbox                                                       & GetFullInversionSimbox()                         const { return full_inversion_simbox_                         ;}
+  const Simbox                                                       & GetOutputSimbox()                                const { return output_simbox_                                 ;}
+        Simbox                                                       & GetOutputSimbox()                                      { return output_simbox_                                 ;}
   const std::vector<NRLib::Well>                                     & GetWells()                                       const { return wells_                                         ;}
         std::vector<NRLib::Well>                                     & GetWells()                                             { return wells_                                         ;}
   const MultiIntervalGrid                                            * GetMultipleIntervalGrid()                        const { return multiple_interval_grid_                        ;}
@@ -229,6 +231,13 @@ private:
                                                 InputFiles              * input_files,
                                                 Simbox                  & full_inversion_simbox,
                                                 std::string             & err_text) const;
+
+  void               SetupOutputSimbox(Simbox            & output_simbox,
+                                       const Simbox      & full_inversion_simbox,
+                                       ModelSettings     * model_settings,
+                                       MultiIntervalGrid * multi_interval_grid);
+
+  double             FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j);
 
   void               WriteAreas(const SegyGeometry  * area_params,
                                 Simbox              * time_simbox,
@@ -883,8 +892,10 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   MultiIntervalGrid                                          * multiple_interval_grid_;
   Simbox                                                       estimation_simbox_;
+  Simbox                                                       output_simbox_;         //Output simbox for writing. Top and bot surfaces are the visible surfaces (eroded surfaces)
   Simbox                                                       full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
                                                                                        //Not to be used for any z-resolution purposes.
+
 
   std::vector<std::vector<SeismicStorage> >                    seismic_data_; //Map timelapse
 
