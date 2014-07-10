@@ -45,6 +45,12 @@ public:
                      const std::vector<int> & erosion_priorities,
                      double                   dz_min);
 
+  float GetResampledTraceValue(const std::vector<float> & resampled_trace,
+                               const Simbox             & interval_simbox,
+                               const double             & global_x,
+                               const double             & global_y,
+                               const double             & global_z);
+
   void WriteResults(ModelSettings * model_settings,
                     CommonData    * common_data);
 
@@ -85,8 +91,11 @@ public:
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid);
 
-  StormContGrid * CreateStormGrid(const Simbox       & simbox,
-                                  NRLib::Grid<float> * grid);
+  //StormContGrid * CreateStormGrid(const Simbox       & simbox,
+  //                                NRLib::Grid<float> * grid);
+
+  void CreateStormGrid(StormContGrid & grid_new,
+                       FFTGrid       * fft_grid);
 
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
