@@ -41,6 +41,7 @@ public:
   ~Crava();
 
   int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
+
   int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
 
   FFTGrid              * getPostAlpha() { return postAlpha_ ;}
@@ -64,6 +65,40 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
+  void                   fillErrMultVectors(fftw_complex *& errMult1,           // Filled in method
+                                            fftw_complex *& errMult2,           // Filled in method
+                                            fftw_complex *& errMult3,           // Filled in method
+                                            fftw_complex ** K,
+                                            fftw_complex    kD,
+                                            fftw_complex    kD3,
+                                            Wavelet      ** seisWavelet,
+                                            Wavelet1D    ** seisWaveletForNorm,
+                                            Wavelet1D    ** errorSmooth3,
+                                            float        ** A,
+                                            bool            constThickness,
+                                            int             n,                  // ntheta
+                                            int             k);
+
+  void                   invertSeismicData(fftw_complex **& parVar,      // Filled in method
+                                           fftw_complex  *& ijkMean,     // Filled in method
+                                           fftw_complex   * ijkData,
+                                           fftw_complex   * ijkDataMean,
+                                           fftw_complex   * ijkRes,
+                                           fftw_complex   * ijkAns,
+                                           fftw_complex  *& errMult1,
+                                           fftw_complex  *& errMult2,
+                                           fftw_complex  *& errMult3,
+                                           fftw_complex  ** K,
+                                           fftw_complex  ** KS,
+                                           fftw_complex  ** KScc,
+                                           fftw_complex  ** margVar,
+                                           fftw_complex  ** reduceVar,
+                                           fftw_complex  ** errVar,
+                                           double        ** errThetaCov,
+                                           int              n,           // ntheta
+                                           float            wnc,
+                                           bool             invert_frequency);
+
   void                   computeDataVariance(void);
   void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
 
@@ -169,7 +204,7 @@ private:
   Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
   FFTGrid         ** seisData_;         // Data
   double          ** errThetaCov_;      //
-  float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
+  float              wnc_;              // if wnc=0.01 1% of the error wariance is white this has largest effect on
                                         // high frequency components. It makes everything run smoother we
                                         // avoid ill posed problems.
   float           ** A_;                // coefficients in Aki-Richards 3 term reflection coefficients
