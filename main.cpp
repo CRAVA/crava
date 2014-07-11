@@ -273,15 +273,6 @@ int main(int argc, char** argv)
 
       }
 
-      /* Debugging
-      seismicParametersIntervals[i_interval].GetCovVp()->writeStormFile("vp_cov", simbox);
-      seismicParametersIntervals[i_interval].GetCovVs()->writeStormFile("vs_cov", simbox);
-      seismicParametersIntervals[i_interval].GetCovRho()->writeStormFile("rho_cov", simbox);
-      seismicParametersIntervals[i_interval].GetCrCovVpRho()->writeStormFile("vprho_cov", simbox);
-      seismicParametersIntervals[i_interval].GetCrCovVpVs()->writeStormFile("vpvs_cov", simbox);
-      seismicParametersIntervals[i_interval].GetCrCovVsRho()->writeStormFile("vsrho_cov", simbox);
-      */
-
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
       LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
       setupStaticModels(modelGeneral,

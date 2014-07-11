@@ -279,7 +279,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   postRho_->fftInPlace();
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
-  seismicParameters.FFTCovGrids();
+  //seismicParameters.FFTCovGrids();
 
   seismicParameters.SetPostVar0(postVar0_);
   seismicParameters.SetPostCovVp00(postCovVp00_);
@@ -1009,6 +1009,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   FFTGrid * postCrCovVpVs  = seismicParameters.GetCrCovVpVs();
   FFTGrid * postCrCovVpRho = seismicParameters.GetCrCovVpRho();
   FFTGrid * postCrCovVsRho = seismicParameters.GetCrCovVsRho();
+
 
   if (modelGeneral->GetIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
