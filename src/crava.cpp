@@ -1879,9 +1879,9 @@ Crava::printEnergyToScreen()
 
 
 void
-Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
-                         bool                            useFilter,
-                         SeismicParametersHolder       & seismicParameters)
+Crava::computeFaciesProb(SpatialWellFilter       * filteredlogs,
+                         bool                      useFilter,
+                         SeismicParametersHolder & seismicParameters)
 {
   ModelSettings * modelSettings = modelSettings_;
 
@@ -1931,18 +1931,18 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
     std::string baseName = IO::PrefixFaciesProbability();
 
     FFTGrid * likelihood = NULL;
-    if((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
+    if ((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
       int nx = postAlpha_->getNx();
       int ny = postAlpha_->getNy();
       int nz = postAlpha_->getNz();
-      if(postAlpha_->isFile()==1)
+      if (postAlpha_->isFile())
         likelihood = new FFTFileGrid(nx, ny, nz, nx, ny, nz);
       else
         likelihood = new FFTGrid(nx, ny, nz, nx, ny, nz);
       likelihood->createRealGrid(false);
     }
 
-    if(modelSettings->getFaciesProbRelative())
+    if (modelSettings->getFaciesProbRelative())
     {
       meanAlpha_->subtract(postAlpha_);
       meanAlpha_->changeSign();
@@ -1950,7 +1950,7 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       meanBeta_->changeSign();
       meanRho_->subtract(postRho_);
       meanRho_->changeSign();
-      if(modelSettings->getFaciesProbFromRockPhysics())
+      if (modelSettings->getFaciesProbFromRockPhysics())
         baseName += "Rock_Physics_";
 
       std::vector<double> trend_min;
@@ -1997,34 +1997,34 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       FindSamplingMinMax(modelGeneral_->getTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
 
       fprob_ = new FaciesProb(postAlpha_,
-                                postBeta_,
-                                postRho_,
-                                nfac,
-                                modelSettings->getPundef(),
-                                modelGeneral_->getPriorFacies(),
-                                modelGeneral_->getPriorFaciesCubes(),
-                                likelihood,
-                                modelGeneral_->getRockDistributionTime0(),
-                                modelGeneral_->getFaciesNames(),
-                                modelAVOstatic_->getFaciesEstimInterval(),
-                                this,
-                                seismicParameters,
-                                modelAVOdynamic_->getLocalNoiseScales(),
-                                modelSettings_,
-                                filteredlogs,
-                                wells_,
-                                modelGeneral_->getTrendCubes(),
-                                nWells_,
-                                simbox_->getdz(),
-                                useFilter,
-                                false,
-                                trend_min[0],
-                                trend_max[0],
-                                trend_min[1],
-                                trend_max[1]);
+                              postBeta_,
+                              postRho_,
+                              nfac,
+                              modelSettings->getPundef(),
+                              modelGeneral_->getPriorFacies(),
+                              modelGeneral_->getPriorFaciesCubes(),
+                              likelihood,
+                              modelGeneral_->getRockDistributionTime0(),
+                              modelGeneral_->getFaciesNames(),
+                              modelAVOstatic_->getFaciesEstimInterval(),
+                              this,
+                              seismicParameters,
+                              modelAVOdynamic_->getLocalNoiseScales(),
+                              modelSettings_,
+                              filteredlogs,
+                              wells_,
+                              modelGeneral_->getTrendCubes(),
+                              nWells_,
+                              simbox_->getdz(),
+                              useFilter,
+                              false,
+                              trend_min[0],
+                              trend_max[0],
+                              trend_min[1],
+                              trend_max[1]);
 
     }
-    if(!modelSettings->getFaciesProbFromRockPhysics()){
+    if (!modelSettings->getFaciesProbFromRockPhysics()){
       fprob_->calculateConditionalFaciesProb(wells_,
                                              nWells_,
                                              modelAVOstatic_->getFaciesEstimInterval(),
@@ -2035,7 +2035,7 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
 
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF){
-      for(int i=0;i<nfac;i++)
+      for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName +"With_Undef_"+ facies_names[i];
@@ -2050,14 +2050,14 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                                         modelGeneral_->getPriorFaciesCubes());
 
     if (modelSettings->getOutputGridsOther() & IO::FACIESPROB){
-      for(int i=0;i<nfac;i++)
+      for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
         std::string fileName = baseName + facies_names[i];
         ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       }
     }
-    if(modelSettings->getFaciesProbFromRockPhysics() == false) {
+    if (modelSettings->getFaciesProbFromRockPhysics() == false) {
       fprob_->writeBWFaciesProb(wells_, nWells_);
       std::vector<double> pValue = fprob_->calculateChiSquareTest(wells_, nWells_, modelAVOstatic_->getFaciesEstimInterval());
 
@@ -2065,7 +2065,7 @@ Crava::computeFaciesProb(SpatialWellFilter             * filteredlogs,
         QualityGrid qualityGrid(pValue, wells_, simbox_, modelSettings, modelGeneral_);
     }
 
-    if(likelihood != NULL) {
+    if (likelihood != NULL) {
       for(int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelGeneral_->getPriorFacies(), modelGeneral_->getPriorFaciesCubes());

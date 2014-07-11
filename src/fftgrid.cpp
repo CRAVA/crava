@@ -155,13 +155,9 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
 
   createRealGrid();
 
-  size_t n_data_prev      = 0;
-
+  bool   seismic_data     = (cubetype_ == DATA);
   size_t max_extrap_start = 0;
   size_t max_extrap_end   = 0;
-
-  bool   seismic_data     = (cubetype_ == DATA);
-
   float  scalvert         = 1.0;
   float  scalhor          = 1.0;
 
@@ -193,7 +189,12 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   else {
     n_samples = grid->GetNK();
   }
-  int nt = findClosestFactorableNumber(static_cast<int>(n_samples));
+  int nt     = findClosestFactorableNumber(static_cast<int>(n_samples));
+  int mt     = 4*nt; // Use four times the sampling density for the fine-meshed data
+  int cnt    = nt/2 + 1;
+  int rnt    = 2*cnt;
+  int cmt    = mt/2 + 1;
+  int rmt    = 2*cmt;
 
   int count1 = 0; // Part of simbox is outside seismic data
   int count2 = 0; // Part of padding is outside seismic data
@@ -203,7 +204,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
   // Parallelize outer loop. The keyword collapse(2) would have added inner loop
   // The reduction in the omp pragma takes a local copy of the variable when
   // entering the for-loop and sums the variables on leaving the loop.
-
   int  chunk_size = 1;
 #pragma omp parallel for schedule(dynamic, chunk_size) reduction(+:count1, count2, count3) num_threads(n_threads)
 #endif
@@ -247,15 +247,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           makeTraceFromStormGrid(grid, data_trace, missing, z0_data, dz_data, dz_min, xf, yf);
         }
 
-        /*
-        std::cout << "INPUT: xf, yf, z0_data, dz_data = " << std::fixed << std::setprecision(2) << xf << " , " << yf << " , " << z0_data << " , " << dz_data << std::endl;
-        for (unsigned int kk = 0 ; kk < data_trace.size() ; kk++) {
-          std::cout << std::setw(3) << kk << "  "
-                    << std::setprecision(2) << std::setw(20) << z0_data + kk*dz_data
-                    << std::setprecision(6) << std::setw(20) << data_trace[kk] << std::endl;
-        }
-        */
-
         if (!missing) {
           size_t n_data      = data_trace.size();
           float  trend_first = 0.0;
@@ -272,18 +263,7 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
             removeTrendFromTrace(data_trace,
                                  trend_first,
                                  trend_last);
-
-            if (n_data != n_data_prev) { // Hack to save some time ...
-              nt = findClosestFactorableNumber(static_cast<int>(n_data));
-              n_data_prev = n_data;
-            }
           }
-
-          int          mt       = 4*nt; // Use four times the sampling density for the fine-meshed data
-          int          cnt      = nt/2 + 1;
-          int          rnt      = 2*cnt;
-          int          cmt      = mt/2 + 1;
-          int          rmt      = 2*cmt;
 
           rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
           rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
@@ -329,20 +309,11 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                             z0_data);
           }
 
-          /*
-          for (size_t k = 0 ; k < static_cast<size_t>(grid_trace.size()) ; k++) {
-            std::cout << std::fixed
-                      << std::setw(3)  << k <<  " "
-                      << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
-                      << std::setw(12) << std::setprecision(6) << grid_trace[k] << std::endl;
-          }
-          */
-
           fftw_free(rAmpData);
           fftw_free(rAmpFine);
 
-          //fftwnd_destroy_plan(fftplan1);
-          //fftwnd_destroy_plan(fftplan2);
+          //fftwnd_destroy_plan(fftplan1); // Crashes with parallelization
+          //fftwnd_destroy_plan(fftplan2); // Crashes with parallelization
 
           setTrace(grid_trace, i, j);
         }
@@ -350,7 +321,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
           setTrace(0.0f, i, j); // Dead traces (in case we allow them)
           count1++;
         }
-
       }
       else {
         setTrace(0.0f, i, j);   // Outside seismic data grid
@@ -653,21 +623,7 @@ FFTGrid::addTrendToTrace(std::vector<float> & grid_trace,
     trend[k] = a*(z - z0_data) + trend_first;
   }
 
-  //    std::cout << "INPUT2 : nz, n_pad trend_last= " << nz << " " << grid_trace.size() - nz << "    " << trend_last << std::endl;
-
   for (size_t k = 0 ; k < static_cast<size_t>(nz) ; k++) {
-
-    /*
-      std::cout << std::fixed
-              << std::setw(3)  << k <<  " "
-              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
-              << std::setw(12) << std::setprecision(6) << grid_trace[k] << "   trend :  "
-              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
-              << std::setw(12) << std::setprecision(6) << trend[k] << "  total :  "
-              << std::setw(15) << std::setprecision(1) << z0_grid + k*dz_grid
-              << std::setw(12) << std::setprecision(6) << grid_trace[k] + trend[k] << std::endl;
-    */
-
     grid_trace[k] += trend[k];
   }
 
@@ -676,17 +632,6 @@ FFTGrid::addTrendToTrace(std::vector<float> & grid_trace,
   a = (grid_trace[nz - 1] - grid_trace[0])/n_pad;
 
   for (size_t k = 0 ; k < n_pad ; k++) {
-
-    /*
-    std::cout << std::fixed
-              << std::setw(3)  << nz + k
-              << std::setw(27) <<  " " << "    padding trend :  "
-              << std::setw( 8) << std::setprecision(1) << z0_grid + (nz + k)*dz_grid
-              << std::setw(12) << std::setprecision(6) << trend_last - a*k << "   total : "
-              << std::setw(15) << std::setprecision(1) << z0_grid + (nz + k)*dz_grid
-              << std::setw(12) << std::setprecision(6) << trend_last - a*k << std::endl;
-    */
-
     grid_trace[nz + k] = trend_last - a*k;
   }
 }
@@ -2256,8 +2201,6 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
   double x,y,z;
   std::vector<float> trace(segynz);//Maximum amount of data needed.
 
-  // std::cout << "\nz0, dz = " << z0 << " " << dz << std::endl;
-
   for(j=0;j<simbox->getny();j++)
   {
     for(i=0;i<simbox->getnx();i++)
@@ -2276,12 +2219,6 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
         double gdz       = simbox->getdz()*simbox->getRelThick(i,j);
         int    firstData = static_cast<int>(floor(0.5+(z-z0)/dz));
         int    endData   = static_cast<int>(floor(0.5+((z-z0)+nz_*gdz)/dz));
-
-        //xxxxx
-        /*
-        std::cout << "OUTPUT: z = gdz, firstData, endData = " << z << " " << gdz << " " << firstData << " " << endData << std::endl;
-        std::cout << "x , y = " << x << " , " << y << std::endl;
-        */
 
         if(endData > segynz)
         {
@@ -2567,17 +2504,6 @@ FFTGrid::getRegularZInterpolatedRealValue(int i, int j, double z0Reg,
   float v1 = getRealValue(i,j,kGrid);
   float v2 = getRealValue(i,j,kGrid+1);
   float v  = (1-t)*v1+t*v2;
-
-  /*
-  std::cout  << std::fixed
-             << std::setprecision(2) << std::setw(10) << z0Grid + kGrid*dzGrid
-             << std::setprecision(6) << std::setw(10) << getRealValue(i,j,kGrid) << "    "
-             << std::setprecision(2) << std::setw(10) << z0Grid + (kGrid+1)*dzGrid
-             << std::setprecision(6) << std::setw(10) << getRealValue(i,j,kGrid+1)
-             << std::setprecision(2) << std::setw(20) << z
-             << std::setprecision(6) << std::setw(20) << v << std::endl;
-  */
-
 
   return(v);
 }
@@ -2924,8 +2850,7 @@ int FFTGrid::findClosestFactorableNumber(int leastint)
           for(m=0;m<maxant11+1;m++)
             for(n=maxant11;n<maxant13+1;n++)
             {
-              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
               if ((factor >=  leastint) &&  (factor <  closestprod))
               {
                 closestprod=factor;
