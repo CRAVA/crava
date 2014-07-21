@@ -209,6 +209,20 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
 #endif
 
   for (int j = 0 ; j < nyp_ ; j++) {
+    //
+    // We allocate rfftwnd_plans and fftw_reals here so that each thread gets its
+    // coopies during parallelization. I tried to move the allocation further out
+    // using OMP private/threadprivate, but didn't succeed. A thing that actually
+    // would work is to make an nthread long array of plans and fftw_reals but
+    // this makes somewhat uglier code ...
+    //
+
+    rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+    rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+
+    fftw_real  * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+    fftw_real  * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
+
     for (int i = 0 ; i < rnxp_ ; i++) {
 
       int refi  = getFillNumber(i, nx_, nxp_ ); // Find index (special treatment for padding)
@@ -265,12 +279,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                                  trend_last);
           }
 
-          rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-          rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-
-          fftw_real  * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
-          fftw_real  * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
-
           std::vector<float> grid_trace(nzp_);
 
           if (seismic_data) {
@@ -308,13 +316,6 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
                             z0_grid,
                             z0_data);
           }
-
-          fftw_free(rAmpData);
-          fftw_free(rAmpFine);
-
-          //fftwnd_destroy_plan(fftplan1); // Crashes with parallelization
-          //fftwnd_destroy_plan(fftplan2); // Crashes with parallelization
-
           setTrace(grid_trace, i, j);
         }
         else {
@@ -339,6 +340,13 @@ FFTGrid::fillInData(const Simbox      * timeSimbox,
         fflush(stdout);
       }
     }
+
+    fftw_free(rAmpData);
+    fftw_free(rAmpFine);
+
+    //fftwnd_destroy_plan(fftplan1); // Crashes with parallelization
+    //fftwnd_destroy_plan(fftplan2); // Crashes with parallelization
+
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
   endAccess();
