@@ -889,44 +889,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
-  fftw_complex * errMult1    = new fftw_complex[ntheta_];
-  fftw_complex * errMult2    = new fftw_complex[ntheta_];
-  fftw_complex * errMult3    = new fftw_complex[ntheta_];
-
-  fftw_complex * ijkData     = new fftw_complex[ntheta_];
-  fftw_complex * ijkDataMean = new fftw_complex[ntheta_];
-  fftw_complex * ijkRes      = new fftw_complex[ntheta_];
-  fftw_complex * ijkMean     = new fftw_complex[3];
-  fftw_complex * ijkAns      = new fftw_complex[3];
-
-  fftw_complex **  K  = new fftw_complex*[ntheta_];
-  for (int i = 0; i < ntheta_; i++)
-    K[i] = new fftw_complex[3];
-
-  fftw_complex **  KS  = new fftw_complex*[ntheta_];
-  for (int i = 0; i < ntheta_; i++)
-    KS[i] = new fftw_complex[3];
-
-  fftw_complex **  KScc  = new fftw_complex*[3]; // cc - complex conjugate (and transposed)
-  for (int i = 0; i < 3; i++)
-    KScc[i] = new fftw_complex[ntheta_];
-
-  fftw_complex **  parVar = new fftw_complex*[3];
-  for (int i = 0; i < 3; i++)
-    parVar[i] = new fftw_complex[3];
-
-  fftw_complex **  margVar = new fftw_complex*[ntheta_];
-  for(int i = 0; i < ntheta_; i++)
-    margVar[i] = new fftw_complex[ntheta_];
-
-  fftw_complex **  errVar = new fftw_complex*[ntheta_];
-  for(int i = 0; i < ntheta_; i++)
-    errVar[i] = new fftw_complex[ntheta_];
-
-  fftw_complex ** reduceVar = new fftw_complex*[3];
-  for (int i = 0; i < 3; i++)
-    reduceVar[i]= new fftw_complex[3];
-
   Wavelet1D * diff1Operator = new Wavelet1D(Wavelet::FIRSTORDERFORWARDDIFF,nz_,nzp_);
   Wavelet1D * diff2Operator = new Wavelet1D(diff1Operator,Wavelet::FIRSTORDERBACKWARDDIFF);
   Wavelet1D * diff3Operator = new Wavelet1D(diff2Operator,Wavelet::FIRSTORDERCENTRALDIFF);
@@ -964,6 +926,16 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   else
     seismicParameters.FFTCovGrids();
 
+  Wavelet1D ** seisWaveletForNorm = new Wavelet1D * [ntheta_];
+
+  for (int l = 0 ; l < ntheta_ ; l++) {
+    seisWaveletForNorm[l] = seisWavelet_[l]->createWavelet1DForErrorNorm();
+    seisWaveletForNorm[l]->fft1DInPlace();
+    if (simbox_->getIsConstantThick()) {
+      seisWavelet_[l]->fft1DInPlace();
+    }
+  }
+
   postCovAlpha      ->setAccessMode(FFTGrid::READ);
   postCovBeta       ->setAccessMode(FFTGrid::READ);
   postCovRho        ->setAccessMode(FFTGrid::READ);
@@ -981,16 +953,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   // Computes the posterior mean first below the covariance is computed
   // To avoid to many grids in memory at the same time
 
-  Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
-  for (int l = 0 ; l < ntheta_ ; l++)
-  {
-    seisWaveletForNorm[l]=seisWavelet_[l]->createWavelet1DForErrorNorm();
-    seisWaveletForNorm[l]->fft1DInPlace();
-    if (simbox_->getIsConstantThick()) {
-      seisWavelet_[l]->fft1DInPlace();
-    }
-  }
-
   LogKit::LogFormatted(LogKit::Low,"\nBuilding posterior distribution:");
   float monitorSize = std::max(1.0f, static_cast<float>(nzp_)*0.02f);
   float nextMonitor = monitorSize;
@@ -1001,8 +963,26 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
   for (int k = 0 ; k < nzp_ ; k++) { // We are now in frequency (Fourier) domain
 
-    float realFrequency    = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
-    bool  invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() && realFrequency < highCut_;
+    fftw_complex *  errMult1    = new fftw_complex[ntheta_];
+    fftw_complex *  errMult2    = new fftw_complex[ntheta_];
+    fftw_complex *  errMult3    = new fftw_complex[ntheta_];
+
+    fftw_complex *  ijkData     = new fftw_complex[ntheta_];
+    fftw_complex *  ijkDataMean = new fftw_complex[ntheta_];
+    fftw_complex *  ijkRes      = new fftw_complex[ntheta_];
+    fftw_complex *  ijkMean     = new fftw_complex[3];
+    fftw_complex *  ijkAns      = new fftw_complex[3];
+
+    fftw_complex ** K           = allocateFFTComplex(ntheta_, 3      );
+    fftw_complex ** KS          = allocateFFTComplex(ntheta_, 3      );
+    fftw_complex ** KScc        = allocateFFTComplex(3      , ntheta_);
+    fftw_complex ** parVar      = allocateFFTComplex(3      , 3      );
+    fftw_complex ** reduceVar   = allocateFFTComplex(3      , 3      );
+    fftw_complex ** margVar     = allocateFFTComplex(ntheta_, ntheta_);
+    fftw_complex ** errVar      = allocateFFTComplex(ntheta_, ntheta_);
+
+    float realFrequency         = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_ - k)); // the physical frequency
+    bool  invert_frequency      = realFrequency > lowCut_*simbox_->getMinRelThick() && realFrequency < highCut_;
 
     if (invert_frequency) {
       fillErrMultVectors(errMult1,
@@ -1078,6 +1058,36 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
       }
     }
 
+    delete [] errMult1;
+    delete [] errMult2;
+    delete [] errMult3;
+
+    delete [] ijkData;
+    delete [] ijkDataMean;
+    delete [] ijkRes;
+    delete [] ijkMean ;
+    delete [] ijkAns;
+
+    for (int i = 0; i < 3; i++) {
+      delete [] KScc[i];
+      delete [] parVar[i] ;
+      delete [] reduceVar[i];
+    }
+    delete [] KScc;
+    delete [] parVar;
+    delete [] reduceVar;
+
+    for(int i = 0; i < ntheta_; i++) {
+      delete [] K[i];
+      delete [] KS[i];
+      delete [] margVar[i] ;
+      delete [] errVar[i] ;
+    }
+    delete [] K;
+    delete [] KS;
+    delete [] margVar;
+    delete [] errVar;
+
     // Log progress
     if (k+1 >= static_cast<int>(nextMonitor))
     {
@@ -1126,10 +1136,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
       }
     }
   }
-  for (int l=0 ; l<ntheta_ ; l++)
-    delete seisData_[l];
-
-  LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
   if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
     LogKit::WriteHeader("Setup time-to-depth relationship");
@@ -1171,47 +1177,21 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     writeBWPredicted();
   }
 
-  delete [] seisData_;
-  delete [] errMult1;
-  delete [] errMult2;
-  delete [] errMult3;
-  delete [] ijkData;
-  delete [] ijkDataMean;
-  delete [] ijkRes;
-  delete [] ijkMean ;
-  delete [] ijkAns;
-  delete    diff1Operator;
-  delete    diff3Operator;
-
+  delete diff1Operator;
+  delete diff3Operator;
 
   for(int i = 0; i < ntheta_; i++)
   {
-    delete[]  K[i];
-    delete[]  KS[i];
-    delete[]  margVar[i] ;
-    delete[] errVar[i] ;
-    delete errorSmooth3[i];
     delete errorSmooth[i];
+    delete errorSmooth3[i];
     delete seisWaveletForNorm[i];
+    delete seisData_[i];
   }
 
-  delete[] K;
-  delete[] KS;
-  delete[] margVar;
-  delete[] errVar  ;
-  delete[] errorSmooth3;
-  delete[] errorSmooth;
-  delete[] seisWaveletForNorm;
-
-  for(int i = 0; i < 3; i++)
-  {
-    delete[] KScc[i];
-    delete[] parVar[i] ;
-    delete[] reduceVar[i];
-  }
-  delete[] KScc;
-  delete[] parVar;
-  delete[] reduceVar;
+  delete [] errorSmooth3;
+  delete [] errorSmooth;
+  delete [] seisWaveletForNorm;
+  delete [] seisData_;
 
   Timings::setTimeInversion(wall,cpu);
   return(0);
@@ -1252,6 +1232,16 @@ Crava::makeErrorSmooth(Wavelet1D **& errorSmooth,
     delete errorSmooth2;
     delete wavelet1D;
   }
+}
+
+//-------------------------------------------------------------
+fftw_complex **
+Crava::allocateFFTComplex(int m, int n)
+{
+  fftw_complex ** C = new fftw_complex * [m];
+  for (int i = 0 ; i < m ; i++)
+    C[i] = new fftw_complex[n];
+  return C;
 }
 
 //--------------------------------------------------------------------

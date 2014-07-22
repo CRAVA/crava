@@ -65,6 +65,9 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
+
+  fftw_complex **        allocateFFTComplex(int m, int n);
+
   void                   makeErrorSmooth(Wavelet1D **& errorSmooth,
                                          Wavelet1D **& errorSmooth3,
                                          FFTGrid   **  seisData,
