@@ -65,6 +65,12 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
+  void                   makeErrorSmooth(Wavelet1D **& errorSmooth,
+                                         Wavelet1D **& errorSmooth3,
+                                         FFTGrid   **  seisData,
+                                         float     *   thetaDeg,
+                                         int           ntheta);
+
   void                   fillErrMultVectors(fftw_complex *& errMult1,           // Filled in method
                                             fftw_complex *& errMult2,           // Filled in method
                                             fftw_complex *& errMult3,           // Filled in method
@@ -85,6 +91,7 @@ private:
                                            fftw_complex   * ijkDataMean,
                                            fftw_complex   * ijkRes,
                                            fftw_complex   * ijkAns,
+                                           fftw_complex     ijkErrCorr,
                                            fftw_complex  *& errMult1,
                                            fftw_complex  *& errMult2,
                                            fftw_complex  *& errMult3,
@@ -96,8 +103,16 @@ private:
                                            fftw_complex  ** errVar,
                                            double        ** errThetaCov,
                                            int              n,           // ntheta
-                                           float            wnc,
-                                           bool             invert_frequency);
+                                           float            wnc);
+
+  void                   getNextErrorVariance(fftw_complex **& errVar,
+                                              fftw_complex   * errMult1,
+                                              fftw_complex   * errMult2,
+                                              fftw_complex   * errMult3,
+                                              fftw_complex     ijkErrCorr,
+                                              double        ** errThetaCov,
+                                              int              ntheta,
+                                              float            wnc) const;
 
   void                   computeDataVariance(void);
   void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
@@ -168,15 +183,6 @@ private:
 
   void                   SetComplexVector(NRLib::ComplexVector & V,
                                           fftw_complex         * v);
-
-  void                   getNextErrorVariance(fftw_complex **& errVar,
-                                              fftw_complex   * errMult1,
-                                              fftw_complex   * errMult2,
-                                              fftw_complex   * errMult3,
-                                              int              ntheta,
-                                              float            wnc,
-                                              double        ** errThetaCov,
-                                              bool             invert_frequency) const;
 
   bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox

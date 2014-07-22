@@ -935,43 +935,14 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   delete diff2Operator;
   diff3Operator->fft1DInPlace();
 
-  Wavelet1D ** errorSmooth  = new Wavelet1D*[ntheta_];
-  Wavelet1D ** errorSmooth2 = new Wavelet1D*[ntheta_];
-  Wavelet1D ** errorSmooth3 = new Wavelet1D*[ntheta_];
+  Wavelet1D ** errorSmooth  = new Wavelet1D * [ntheta_];
+  Wavelet1D ** errorSmooth3 = new Wavelet1D * [ntheta_];
 
-  int cnxp  = nxp_/2+1;
-
-  for (int l = 0; l < ntheta_ ; l++)
-  {
-    std::string angle = NRLib::ToString(thetaDeg_[l], 1);
-    std::string fileName;
-    seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
-
-    Wavelet1D* wavelet1D = seisWavelet_[l]->createWavelet1DForErrorNorm(); //
-
-    errorSmooth[l]  = new Wavelet1D(wavelet1D ,Wavelet::FIRSTORDERFORWARDDIFF);
-    errorSmooth2[l] = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
-    errorSmooth3[l] = new Wavelet1D(errorSmooth2[l],Wavelet::FIRSTORDERCENTRALDIFF);
-    fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
-    errorSmooth3[l]->printToFile(fileName);
-    errorSmooth3[l]->fft1DInPlace();
-
-    fileName = IO::PrefixWavelet() + angle + IO::SuffixGeneralData();
-    wavelet1D->printToFile(fileName);
-    wavelet1D->fft1DInPlace();
-
-    fileName = std::string("FourierWavelet_") + angle + IO::SuffixGeneralData();
-    wavelet1D->printToFile(fileName);
-    delete wavelet1D;
-
-    delete errorSmooth2[l];
-  }
-
-  delete[] errorSmooth2;
-
-  postAlpha_->setAccessMode(FFTGrid::READANDWRITE);
-  postBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
-  postRho_  ->setAccessMode(FFTGrid::READANDWRITE);
+  makeErrorSmooth(errorSmooth,
+                  errorSmooth3,
+                  seisData_,
+                  thetaDeg_,
+                  ntheta_);
 
   FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
   FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
@@ -1000,11 +971,15 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
   postCrCovAlphaRho ->setAccessMode(FFTGrid::READ);
   postCrCovBetaRho  ->setAccessMode(FFTGrid::READ);
 
+  postAlpha_->setAccessMode(FFTGrid::READANDWRITE);
+  postBeta_ ->setAccessMode(FFTGrid::READANDWRITE);
+  postRho_  ->setAccessMode(FFTGrid::READANDWRITE);
+
   errCorr_->fftInPlace();
   errCorr_->setAccessMode(FFTGrid::READ);
 
-  // Computes the posterior mean first  below the covariance is computed
-  // To avoid to many grids in mind at the same time
+  // Computes the posterior mean first below the covariance is computed
+  // To avoid to many grids in memory at the same time
 
   Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
   for (int l = 0 ; l < ntheta_ ; l++)
@@ -1024,24 +999,28 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  for (int k = 0 ; k < nzp_ ; k++) {
+  for (int k = 0 ; k < nzp_ ; k++) { // We are now in frequency (Fourier) domain
 
     float realFrequency    = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
     bool  invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() && realFrequency < highCut_;
 
-    fillErrMultVectors(errMult1,
-                       errMult2,
-                       errMult3,
-                       K,
-                       diff1Operator->getCAmp(k),     // defines content of kD
-                       diff3Operator->getCAmp(k),     // defines  kD3
-                       seisWavelet_,
-                       seisWaveletForNorm,
-                       errorSmooth3,
-                       A_,
-                       simbox_->getIsConstantThick(),
-                       ntheta_,
-                       k);
+    if (invert_frequency) {
+      fillErrMultVectors(errMult1,
+                         errMult2,
+                         errMult3,
+                         K,
+                         diff1Operator->getCAmp(k),     // defines content of kD
+                         diff3Operator->getCAmp(k),     // defines  kD3
+                         seisWavelet_,
+                         seisWaveletForNorm,
+                         errorSmooth3,
+                         A_,
+                         simbox_->getIsConstantThick(),
+                         ntheta_,
+                         k);
+    }
+
+    int cnxp = nxp_/2+1;
 
     for (int j = 0 ; j < nyp_ ; j++) {
       for (int i = 0 ; i < cnxp ; i++) {
@@ -1055,30 +1034,34 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
           ijkRes[l]  = ijkData[l];
         }
 
+        fftw_complex ijkErrCorr = errCorr_->getNextComplex();
+
         if (modelGeneral->getIs4DActive())
           seismicParameters.getNextParameterCovariance2(parVar); // NBNB disturbs test suite use line under to check
         else
           seismicParameters.getNextParameterCovariance(parVar);
 
-        invertSeismicData(parVar,
-                          ijkMean,
-                          ijkData,
-                          ijkDataMean,
-                          ijkRes,
-                          ijkAns,
-                          errMult1,
-                          errMult2,
-                          errMult3,
-                          K,
-                          KS,
-                          KScc,
-                          margVar,
-                          reduceVar,
-                          errVar,
-                          errThetaCov_,
-                          ntheta_,
-                          wnc_,
-                          invert_frequency);
+        if (invert_frequency) {
+          invertSeismicData(parVar,
+                            ijkMean,
+                            ijkData,
+                            ijkDataMean,
+                            ijkRes,
+                            ijkAns,
+                            ijkErrCorr,
+                            errMult1,
+                            errMult2,
+                            errMult3,
+                            K,
+                            KS,
+                            KScc,
+                            margVar,
+                            reduceVar,
+                            errVar,
+                            errThetaCov_,
+                            ntheta_,
+                            wnc_);
+        }
 
         postAlpha_->setNextComplex(ijkMean[0]);
         postBeta_ ->setNextComplex(ijkMean[1]);
@@ -1236,6 +1219,43 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
 
 //--------------------------------------------------------------------
 void
+Crava::makeErrorSmooth(Wavelet1D **& errorSmooth,
+                       Wavelet1D **& errorSmooth3,
+                       FFTGrid   **  seisData,
+                       float     *   thetaDeg,
+                       int           ntheta)
+{
+  Wavelet1D * wavelet1D    = NULL;
+  Wavelet1D * errorSmooth2 = NULL;
+
+  for (int l = 0; l < ntheta ; l++)
+  {
+    seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
+
+    wavelet1D       = seisWavelet_[l]->createWavelet1DForErrorNorm();
+    errorSmooth[l]  = new Wavelet1D(wavelet1D     , Wavelet::FIRSTORDERFORWARDDIFF);
+    errorSmooth2    = new Wavelet1D(errorSmooth[l], Wavelet::FIRSTORDERBACKWARDDIFF);
+    errorSmooth3[l] = new Wavelet1D(errorSmooth2  , Wavelet::FIRSTORDERCENTRALDIFF);
+
+    std::string angle    = NRLib::ToString(thetaDeg[l], 1);
+    std::string fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
+    errorSmooth3[l]->printToFile(fileName);
+    errorSmooth3[l]->fft1DInPlace();
+
+    fileName = IO::PrefixWavelet() + angle + IO::SuffixGeneralData();
+    wavelet1D->printToFile(fileName);
+    wavelet1D->fft1DInPlace();
+
+    fileName = std::string("FourierWavelet_") + angle + IO::SuffixGeneralData();
+    wavelet1D->printToFile(fileName);
+
+    delete errorSmooth2;
+    delete wavelet1D;
+  }
+}
+
+//--------------------------------------------------------------------
+void
 Crava::fillErrMultVectors(fftw_complex *& errMult1,           // Filled in method
                           fftw_complex *& errMult2,           // Filled in method
                           fftw_complex *& errMult3,           // Filled in method
@@ -1294,6 +1314,7 @@ Crava::invertSeismicData(fftw_complex **& parVar,      // Filled in method
                          fftw_complex   * ijkDataMean,
                          fftw_complex   * ijkRes,
                          fftw_complex   * ijkAns,
+                         fftw_complex     ijkErrCorr,
                          fftw_complex  *& errMult1,
                          fftw_complex  *& errMult2,
                          fftw_complex  *& errMult3,
@@ -1305,45 +1326,38 @@ Crava::invertSeismicData(fftw_complex **& parVar,      // Filled in method
                          fftw_complex  ** errVar,
                          double        ** errThetaCov,
                          int              n,           // ntheta
-                         float            wnc,
-                         bool             invert_frequency)
+                         float            wnc)
 {
-  //double priorVarVp = parVar[0][0].re;
+  getNextErrorVariance(errVar,
+                       errMult1,
+                       errMult2,
+                       errMult3,
+                       ijkErrCorr,
+                       errThetaCov,
+                       n, wnc);
 
-  getNextErrorVariance(errVar, errMult1, errMult2, errMult3, n, wnc, errThetaCov, invert_frequency);
+  lib_matrProdCpx(K, parVar, n, 3 ,3, KS);                   // KS is defined here
+  lib_matrProdAdjointCpx(KS, K, n, 3 ,n, margVar);           // margVar = (K)S(K)' is defined here
+  lib_matrAddMatCpx(errVar, n, n, margVar);                  // errVar is added to margVar = (WDA)S(WDA)'  + errVar
 
-  if (invert_frequency) {
-    lib_matrProdCpx(K, parVar, n, 3 ,3, KS);                   // KS is defined here
-    lib_matrProdAdjointCpx(KS, K, n, 3 ,n, margVar);           // margVar = (K)S(K)' is defined here
-    lib_matrAddMatCpx(errVar, n, n, margVar);                  // errVar is added to margVar = (WDA)S(WDA)'  + errVar
+  int cholFlag = lib_matrCholCpx(n, margVar);                // Choleskey factor of margVar is Defined
 
-    int cholFlag = lib_matrCholCpx(n, margVar);                    // Choleskey factor of margVar is Defined
+  if (cholFlag == 0) {                                       // If not, posterior = prior
+    lib_matrAdjoint(KS, n, 3, KScc);                         // WDAScc is adjoint of WDAS
+    lib_matrAXeqBMatCpx(n, margVar, KS, 3);                  // redefines WDAS
+    lib_matrProdCpx(KScc, KS, 3, n, 3, reduceVar);           // defines reduceVar
+    lib_matrSubtMatCpx(reduceVar, 3, 3, parVar);             // redefines parVar as the posterior solution
 
-    if (cholFlag == 0) { // If not, posterior is identical to prior
+    lib_matrProdMatVecCpx(K, ijkMean, n, 3, ijkDataMean);    //  defines content of ijkDataMean
+    lib_matrSubtVecCpx(ijkDataMean, n, ijkData);             //  redefines content of ijkData
 
-      lib_matrAdjoint(KS, n, 3, KScc);                         // WDAScc is adjoint of WDAS
-      lib_matrAXeqBMatCpx(n, margVar, KS, 3);                  // redefines WDAS
-      lib_matrProdCpx(KScc, KS, 3, n, 3, reduceVar);           // defines reduceVar
-      lib_matrSubtMatCpx(reduceVar, 3, 3, parVar);             // redefines parVar as the posterior solution
+    lib_matrProdAdjointMatVecCpx(KS, ijkData, 3, n, ijkAns); // defines ijkAns
 
-      lib_matrProdMatVecCpx(K, ijkMean, n, 3, ijkDataMean);    //  defines content of ijkDataMean
-      lib_matrSubtVecCpx(ijkDataMean, n, ijkData);             //  redefines content of ijkData
-
-      lib_matrProdAdjointMatVecCpx(KS, ijkData, 3, n, ijkAns); // defines ijkAns
-
-      lib_matrAddVecCpx(ijkAns, 3, ijkMean);                   // redefines ijkMean
-      lib_matrProdMatVecCpx(K,ijkMean, n, 3, ijkData);         // redefines ijkData
-      lib_matrSubtVecCpx(ijkData, n, ijkRes);                  // redefines ijkRes
-    }
-
-    // quality control DEBUG
-    //if (priorVarVp*4 < ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re) {
-    //  double justfactor = sqrt(ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)/sqrt(priorVarVp);
-    //}
+    lib_matrAddVecCpx(ijkAns, 3, ijkMean);                   // redefines ijkMean
+    lib_matrProdMatVecCpx(K,ijkMean, n, 3, ijkData);         // redefines ijkData
+    lib_matrSubtVecCpx(ijkData, n, ijkRes);                  // redefines ijkRes
   }
 }
-
-
 
 //--------------------------------------------------------------------
 void
@@ -1351,35 +1365,26 @@ Crava::getNextErrorVariance(fftw_complex **& errVar,
                             fftw_complex   * errMult1,
                             fftw_complex   * errMult2,
                             fftw_complex   * errMult3,
-                            int              ntheta,
-                            float            wnc,
+                            fftw_complex     ijkErrCorr,
                             double        ** errThetaCov,
-                            bool             invert_frequency) const
+                            int              ntheta,
+                            float            wnc) const
 {
   fftw_complex ijkErrLam;
-  fftw_complex ijkTmp;
+  ijkErrLam.re = static_cast<float>(sqrt(ijkErrCorr.re * ijkErrCorr.re));
+  ijkErrLam.im = 0.0;
 
-  ijkTmp = errCorr_->getNextComplex();
-
-  ijkErrLam.re        = float( sqrt(ijkTmp.re * ijkTmp.re));
-  ijkErrLam.im        = 0.0;
-
-
-  if(invert_frequency) // inverting only relevant frequencies
-  {
-    for(int l = 0; l < ntheta; l++ ) {
-      for(int m = 0; m < ntheta; m++ )
-      {        // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
-        errVar[l][m].re  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im));
-        errVar[l][m].re += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im));
-        if(l==m) {
-          errVar[l][m].re += float( wnc*errThetaCov[l][m] * errMult3[l].re  * errMult3[l].re);
-          errVar[l][m].im   = 0.0;
-        }
-        else {
-          errVar[l][m].im  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
-          errVar[l][m].im += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
-        }
+  for(int l = 0; l < ntheta; l++ ) {
+    for(int m = 0; m < ntheta; m++ ) { // Note we multiply kWNorm[l] and comp.conj(kWNorm[m]) hence the + and not a minus as in pure multiplication
+      errVar[l][m].re  = static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult1[l].re *  errMult1[m].re +  errMult1[l].im *  errMult1[m].im));
+      errVar[l][m].re += static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * ( errMult2[l].re *  errMult2[m].re +  errMult2[l].im *  errMult2[m].im));
+      if(l==m) {
+        errVar[l][m].re += static_cast<float>( wnc*errThetaCov[l][m] * errMult3[l].re  * errMult3[l].re);
+        errVar[l][m].im  = 0.0;
+      }
+      else {
+        errVar[l][m].im  = static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
+        errVar[l][m].im += static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
       }
     }
   }
