@@ -40,7 +40,26 @@ public:
 
   ~Crava();
 
-  int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
+  int                    computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
+                                                       const Simbox            *  simbox,
+                                                       SeismicParametersHolder &  seismicParameters,
+                                                       FFTGrid                 *& postAlpha,
+                                                       FFTGrid                 *& postBeta,
+                                                       FFTGrid                 *& postRho,
+                                                       FFTGrid                 *& errCorr,
+                                                       FFTGrid                 ** seisData,
+                                                       Wavelet                 ** seisWavelet,
+                                                       double                  ** errThetaCov,
+                                                       float                   ** A,
+                                                       float                   *  thetaDeg,
+                                                       int                        ntheta,
+                                                       float                      lowCut,
+                                                       float                      highCut,
+                                                       float                      wnc,
+                                                       int                        nz,
+                                                       int                        nzp,
+                                                       int                        nyp,
+                                                       int                        nxp);
 
   int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
 
@@ -71,6 +90,7 @@ private:
   void                   makeErrorSmooth(Wavelet1D **& errorSmooth,
                                          Wavelet1D **& errorSmooth3,
                                          FFTGrid   **  seisData,
+                                         Wavelet   **  seisWavelet,
                                          float     *   thetaDeg,
                                          int           ntheta);
 
