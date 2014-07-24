@@ -989,7 +989,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
 
-
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
 
@@ -1066,6 +1065,8 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
+  bool serial = false;
+
   for (int k = 0 ; k < nzp ; k++) { // We are now in frequency (Fourier) domain
 
     fftw_complex *  errMult1    = new fftw_complex[ntheta];
@@ -1110,21 +1111,37 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
     for (int j = 0 ; j < nyp ; j++) {
       for (int i = 0 ; i < cnxp ; i++) {
 
-        ijkMean[0] = postAlpha->getNextComplex();
-        ijkMean[1] = postBeta ->getNextComplex();
-        ijkMean[2] = postRho  ->getNextComplex();
+        fftw_complex ijkErrCorr;
 
-        for (int l = 0 ; l < ntheta ; l++) {
-          ijkData[l] = seisData[l]->getNextComplex();
-          ijkRes[l]  = ijkData[l];
+        if (fileGrid_ || serial) {
+          ijkMean[0] = postAlpha->getNextComplex();
+          ijkMean[1] = postBeta ->getNextComplex();
+          ijkMean[2] = postRho  ->getNextComplex();
+
+          for (int l = 0 ; l < ntheta ; l++) {
+            ijkData[l] = seisData[l]->getNextComplex();
+            ijkRes[l]  = ijkData[l];
+          }
+          ijkErrCorr = errCorr->getNextComplex();
+
+          if (modelGeneral->getIs4DActive())
+            seismicParameters.getNextParameterCovariance2(parVar); // NBNB disturbs test suite use line under to check
+          else
+            seismicParameters.getNextParameterCovariance(parVar);
         }
+        else {
+          ijkMean[0] = postAlpha->getComplexValue(i, j, k, true);
+          ijkMean[1] = postBeta ->getComplexValue(i, j, k, true);
+          ijkMean[2] = postRho  ->getComplexValue(i, j, k, true);
 
-        fftw_complex ijkErrCorr = errCorr->getNextComplex();
+          for (int l = 0 ; l < ntheta ; l++) {
+            ijkData[l] = seisData[l]->getComplexValue(i, j, k, true);
+            ijkRes[l]  = ijkData[l];
+          }
+          ijkErrCorr = errCorr->getComplexValue(i, j, k, true);
 
-        if (modelGeneral->getIs4DActive())
-          seismicParameters.getNextParameterCovariance2(parVar); // NBNB disturbs test suite use line under to check
-        else
-          seismicParameters.getNextParameterCovariance(parVar);
+          seismicParameters.getParameterCovariance(parVar, i, j, k, modelGeneral->getIs4DActive());
+        }
 
         if (invert_frequency) {
           invertSeismicData(parVar,
@@ -1148,18 +1165,34 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
                             wnc);
         }
 
-        postAlpha->setNextComplex(ijkMean[0]);
-        postBeta ->setNextComplex(ijkMean[1]);
-        postRho  ->setNextComplex(ijkMean[2]);
-        postCovAlpha->setNextComplex(parVar[0][0]);
-        postCovBeta ->setNextComplex(parVar[1][1]);
-        postCovRho  ->setNextComplex(parVar[2][2]);
-        postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
-        postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
-        postCrCovBetaRho  ->setNextComplex(parVar[1][2]);
-
-        for (int l=0 ; l<ntheta ; l++)
-          seisData[l]->setNextComplex(ijkRes[l]);
+        if (fileGrid_ || serial) {
+          for (int l=0 ; l<ntheta ; l++) {
+            seisData[l]     ->setNextComplex(ijkRes[l]);
+          }
+          postAlpha         ->setNextComplex(ijkMean[0]);
+          postBeta          ->setNextComplex(ijkMean[1]);
+          postRho           ->setNextComplex(ijkMean[2]);
+          postCovAlpha      ->setNextComplex(parVar[0][0]);
+          postCovBeta       ->setNextComplex(parVar[1][1]);
+          postCovRho        ->setNextComplex(parVar[2][2]);
+          postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
+          postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
+          postCrCovBetaRho  ->setNextComplex(parVar[1][2]);
+        }
+        else {
+          for (int l=0 ; l<ntheta ; l++) {
+            seisData[l]     ->setComplexValue(i, j, k, ijkRes[l]   , true);
+          }
+          postAlpha         ->setComplexValue(i, j, k, ijkMean[0]  , true);
+          postBeta          ->setComplexValue(i, j, k, ijkMean[1]  , true);
+          postRho           ->setComplexValue(i, j, k, ijkMean[2]  , true);
+          postCovAlpha      ->setComplexValue(i, j, k, parVar[0][0], true);
+          postCovBeta       ->setComplexValue(i, j, k, parVar[1][1], true);
+          postCovRho        ->setComplexValue(i, j, k, parVar[2][2], true);
+          postCrCovAlphaBeta->setComplexValue(i, j, k, parVar[0][1], true);
+          postCrCovAlphaRho ->setComplexValue(i, j, k, parVar[0][2], true);
+          postCrCovBetaRho  ->setComplexValue(i, j, k, parVar[1][2], true);
+        }
       }
     }
 
