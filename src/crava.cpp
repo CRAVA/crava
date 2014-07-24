@@ -219,6 +219,71 @@ Crava::Crava(ModelSettings           * modelSettings,
                                   nyp_,
                                   nxp_);
 
+  //Finish use of seisData, since we need the memory.
+  if ((outputGridsSeismic_ & IO::RESIDUAL) > 0)
+  {
+    if (!simbox_->getIsConstantThick())
+      multiplyDataByScaleWaveletAndWriteToFile("residuals");
+    else {
+      for (int l=0 ; l<ntheta_ ; l++) {
+        std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+        std::string sgriLabel = " Residuals for incidence angle "+angle;
+        std::string fileName  = IO::PrefixResiduals() + angle;
+        seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
+        seisData_[l]->invFFTInPlace();
+        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+        seisData_[l]->endAccess();
+      }
+    }
+  }
+
+  for(int i = 0 ; i < ntheta_ ; i++)
+    delete seisData_[i];
+  delete [] seisData_;
+
+  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
+    LogKit::WriteHeader("Setup time-to-depth relationship");
+    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
+    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
+    postAlpha_->expTransf();
+    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
+    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
+    const Simbox      * timeSimbox = simbox_;
+    if(dcMap != NULL)
+      timeSimbox = dcMap->getSimbox();
+
+    tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
+    postAlpha_->logTransf();
+    postAlpha_->endAccess();
+  }
+
+  //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
+  if (modelAVOdynamic_->getUseLocalNoise()) {
+    FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
+    FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
+    FFTGrid * postCovRho         = seismicParameters.GetCovRho();
+
+    seismicParameters.invFFTCovGrids();
+    seismicParameters.updatePriorVar();
+
+    postVar0_       = seismicParameters.getPriorVar0(); //Updated variables
+    postCovAlpha00_ = seismicParameters.createPostCov00(postCovAlpha);
+    postCovBeta00_  = seismicParameters.createPostCov00(postCovBeta);
+    postCovRho00_   = seismicParameters.createPostCov00(postCovRho);
+
+    seismicParameters.FFTCovGrids();
+
+    correctAlphaBetaRho(modelSettings_);
+  }
+
+  if (!doing4DInversion_) {
+    if (writePrediction_)
+      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
+                                       outputGridsElastic_, fileGrid_, -1, false);
+
+    writeBWPredicted();
+  }
+
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
@@ -1157,77 +1222,6 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
   for (int l=0 ; l<ntheta ; l++)
     seisData[l]->endAccess();
 
-  //Finish use of seisData, since we need the memory.
-  if ((outputGridsSeismic_ & IO::RESIDUAL) > 0)
-  {
-    if(simbox->getIsConstantThick() != true)
-      multiplyDataByScaleWaveletAndWriteToFile("residuals");
-    else
-    {
-      for (int l=0 ; l<ntheta ; l++)
-      {
-        std::string angle     = NRLib::ToString(thetaDeg[l],1);
-        std::string sgriLabel = " Residuals for incidence angle "+angle;
-        std::string fileName  = IO::PrefixResiduals() + angle;
-        seisData[l]->setAccessMode(FFTGrid::RANDOMACCESS);
-        seisData[l]->invFFTInPlace();
-        seisData[l]->writeFile(fileName, IO::PathToInversionResults(), simbox, sgriLabel);
-        seisData[l]->endAccess();
-      }
-    }
-  }
-
-  //
-  // NBNB_PAL: Move to outside ...
-  //
-
-  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
-    LogKit::WriteHeader("Setup time-to-depth relationship");
-    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
-    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-    postAlpha_->expTransf();
-    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
-    const Simbox      * timeSimbox = simbox_;
-    if(dcMap != NULL)
-      timeSimbox = dcMap->getSimbox();
-
-    tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
-    postAlpha_->logTransf();
-    postAlpha_->endAccess();
-  }
-
-  //
-  // NBNB_PAL: Move to outside ...
-  //
-
- //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if (modelAVOdynamic_->getUseLocalNoise()) {
-    seismicParameters.invFFTCovGrids();
-    seismicParameters.updatePriorVar();
-
-    postVar0_       = seismicParameters.getPriorVar0(); //Updated variables
-    postCovAlpha00_ = seismicParameters.createPostCov00(postCovAlpha);
-    postCovBeta00_  = seismicParameters.createPostCov00(postCovBeta);
-    postCovRho00_   = seismicParameters.createPostCov00(postCovRho);
-
-    seismicParameters.FFTCovGrids();
-
-    correctAlphaBetaRho(modelSettings_);
-  }
-
-  //
-  // NBNB_PAL: Move to outside ...
-  //
-  if (doing4DInversion_==false)
-  {
-    if(writePrediction_ == true )
-      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
-                                       outputGridsElastic_, fileGrid_, -1, false);
-
-    writeBWPredicted();
-  }
-
   delete diff1Operator;
   delete diff3Operator;
 
@@ -1236,13 +1230,11 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
     delete errorSmooth[i];
     delete errorSmooth3[i];
     delete seisWaveletForNorm[i];
-    delete seisData[i];
   }
 
   delete [] errorSmooth3;
   delete [] errorSmooth;
   delete [] seisWaveletForNorm;
-  delete [] seisData;
 
   Timings::setTimeInversion(wall,cpu);
   return(0);
