@@ -21,17 +21,9 @@ namespace NRLib {
 class WellData
 {
 public:
-  WellData(const std::string              & wellFileName,
-           const std::vector<std::string> & logNames,
-           const std::vector<bool>        & inverseVelocity,
-           ModelSettings                  * modelSettings,
-           int                              indicatorFacies,
-           int                              indicatorFilter,
-           int                              indicatorWavelet,
-           int                              indicatorBGTrend,
-           int                              indicatorRealVs,
-           bool                             porosityLogGiven,
-           bool                             faciesLogGiven);
+  WellData(const std::string & wellFileName,
+           ModelSettings     * modelSettings,
+           int                 iWell);
   ~WellData(void);
 
   const float       * getAlpha(int &nData) const;

@@ -2980,8 +2980,8 @@ TravelTimeInversion::calculateFullPosteriorModel(const std::vector<int>  & obser
         mu_m[1] = mu_vs ->getNextComplex();
         mu_m[2] = mu_rho->getNextComplex();
 
-        seismic_parameters.getNextParameterCovariance2(Sigma_m); // NBNB OK disturbes test suite use line under to check if OK
-         //seismic_parameters.getNextParameterCovariance(Sigma_m);  seismic_parameters.getNextParameterCovariance2 should be used allways
+        bool doing4D = true;
+        seismic_parameters.getNextParameterCovariance(Sigma_m, doing4D); // NBNB OK disturbes test suite use line under to check if OK
 
         if (filter == 0) {
           // Prior = posterior

@@ -34,21 +34,21 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   calculateRest();
 
   LogKit::LogFormatted(logLevel,"\nSection                              CPU time               Wall time");
-  LogKit::LogFormatted(logLevel,"\n---------------------------------------------------------------------\n");
-  reportOne("Loading seismic data     ", c_loadingSeismic    , w_loadingSeismic    , c_total_, w_total_,logLevel);
-  reportOne("Resampling seismic data  ", c_resamplingSeismic_, w_resamplingSeismic_, c_total_, w_total_,logLevel);
-  reportOne("Wells                    ", c_wells_            , w_wells_            , c_total_, w_total_,logLevel);
-  reportOne("Wavelets                 ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
-  reportOne("Prior expection          ", c_priorExpectation_ , w_priorExpectation_ , c_total_, w_total_,logLevel);
-  reportOne("Prior correlation        ", c_priorCorrelation_ , w_priorCorrelation_ , c_total_, w_total_,logLevel);
-  reportOne("Building stochas. model  ", c_stochasticModel_  , w_stochasticModel_  , c_total_, w_total_,logLevel);
-  reportOne("Inversion                ", c_prediction        , w_prediction        , c_total_, w_total_,logLevel);
-  reportOne("Simulation               ", c_simulation        , w_simulation        , c_total_, w_total_,logLevel);
-  reportOne("Parameter filter         ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
-  reportOne("Facies probabilities     ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
-  reportOne("Kriging                  ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
-  reportOne("Miscellaneous            ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
-  LogKit::LogFormatted(logLevel,  "---------------------------------------------------------------------\n");
+  LogKit::LogFormatted(logLevel,"\n-----------------------------------------------------------------------\n");
+  reportOne("Loading seismic data       ", c_loadingSeismic    , w_loadingSeismic    , c_total_, w_total_,logLevel);
+  reportOne("Resampling seismic data    ", c_resamplingSeismic_, w_resamplingSeismic_, c_total_, w_total_,logLevel);
+  reportOne("Wells                      ", c_wells_            , w_wells_            , c_total_, w_total_,logLevel);
+  reportOne("Wavelets                   ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
+  reportOne("Prior expectation          ", c_priorExpectation_ , w_priorExpectation_ , c_total_, w_total_,logLevel);
+  reportOne("Prior correlation          ", c_priorCorrelation_ , w_priorCorrelation_ , c_total_, w_total_,logLevel);
+  reportOne("Building stochastic model  ", c_stochasticModel_  , w_stochasticModel_  , c_total_, w_total_,logLevel);
+  reportOne("Inversion                  ", c_prediction        , w_prediction        , c_total_, w_total_,logLevel);
+  reportOne("Simulation                 ", c_simulation        , w_simulation        , c_total_, w_total_,logLevel);
+  reportOne("Parameter filter           ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
+  reportOne("Facies probabilities       ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
+  reportOne("Kriging                    ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
+  reportOne("Miscellaneous              ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
+  LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------\n");
   reportOne("Total                    ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
 }
 

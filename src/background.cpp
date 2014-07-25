@@ -7,6 +7,10 @@
 #include <string.h>
 #include <algorithm>
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "lib/kriging1d.h"
 #include "lib/utils.h"
 
@@ -278,9 +282,9 @@ Background::generateBackgroundModel(FFTGrid                      *& bgAlpha,
                                                          modelSettings->getBackgroundVario(),
                                                          modelSettings->getDebugFlag());
 
-  makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp" , modelSettings->getFileGrid());
-  makeKrigedBackground(krigingDataBeta , bgBeta , trendBeta , simbox, covGrid2D, "Vs" , modelSettings->getFileGrid());
-  makeKrigedBackground(krigingDataRho  , bgRho  , trendRho  , simbox, covGrid2D, "Rho", modelSettings->getFileGrid());
+  makeKrigedBackground(krigingDataAlpha, bgAlpha, trendAlpha, simbox, covGrid2D, "Vp" , modelSettings->getFileGrid(), modelSettings->getNumberOfThreads());
+  makeKrigedBackground(krigingDataBeta , bgBeta , trendBeta , simbox, covGrid2D, "Vs" , modelSettings->getFileGrid(), modelSettings->getNumberOfThreads());
+  makeKrigedBackground(krigingDataRho  , bgRho  , trendRho  , simbox, covGrid2D, "Rho", modelSettings->getFileGrid(), modelSettings->getNumberOfThreads());
 
   delete &covGrid2D;
 
@@ -488,9 +492,9 @@ Background::generateMultizoneBackgroundModel(FFTGrid                       *& bg
                        vtAlpha,vtBeta,vtRho,
                        ipos,jpos,kpos);
 
-    makeKrigedZone(krigingDataAlpha, trendAlphaZone[i], alpha_zones[i], covGrid2D);
-    makeKrigedZone(krigingDataBeta , trendBetaZone[i] , beta_zones[i],  covGrid2D);
-    makeKrigedZone(krigingDataRho  , trendRhoZone[i]  , rho_zones[i],   covGrid2D);
+    makeKrigedZone(krigingDataAlpha, trendAlphaZone[i], alpha_zones[i], covGrid2D, modelSettings->getNumberOfThreads());
+    makeKrigedZone(krigingDataBeta , trendBetaZone[i] , beta_zones[i],  covGrid2D, modelSettings->getNumberOfThreads());
+    makeKrigedZone(krigingDataRho  , trendRhoZone[i]  , rho_zones[i],   covGrid2D, modelSettings->getNumberOfThreads());
 
     delete [] avgDevAlphaZone;
     delete [] avgDevBetaZone;
@@ -1505,6 +1509,7 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
                                  const Simbox                     * simbox,
                                  const CovGrid2D                  & covGrid2D,
                                  const std::string                & type,
+                                 int                                n_threads,
                                  bool                               isFile) const
 {
   std::string text = "\nBuilding "+type+" background:";
@@ -1524,10 +1529,19 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
   const double lx   = simbox->getlx();
   const double ly   = simbox->getly();
 
+  bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
+  bgGrid->createRealGrid();
+  bgGrid->setType(FFTGrid::PARAMETER);
+  bgGrid->setAccessMode(FFTGrid::WRITE);
+
   //
-  // Template surface to be kriged
+  // Store a surface for each layer (needed for parallelization)
   //
-  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+  Surface tmp(x0, y0, lx, ly, nx, ny, RMISSING);
+  std::vector<Surface> surfaces(0);
+  surfaces.reserve(nzp);
+  for (int k=0 ; k<nzp ; k++)
+    surfaces.push_back(tmp);
 
   float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;
@@ -1536,30 +1550,18 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  bgGrid->createRealGrid();
-  bgGrid->setType(FFTGrid::PARAMETER);
-  bgGrid->setAccessMode(FFTGrid::WRITE);
+#ifdef PARALLEL
+  int  chunk_size = 1;
+#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
+#endif
 
-  for (int k=0 ; k<nzp ; k++)
-  {
+  for (int k=0 ; k<nzp ; k++) {
     // Set trend for layer
-    surface.Assign(trend[k]);
+    surfaces[k].Assign(trend[k]);
 
     // Kriging of layer
-    Kriging2D::krigSurface(surface, krigingData[k], covGrid2D);
+    Kriging2D::krigSurface(surfaces[k], krigingData[k], covGrid2D);
 
-    // Set layer in background model from surface
-    for(int j=0 ; j<nyp ; j++) {
-      for(int i=0 ; i<rnxp ; i++) {
-        if(i<nxp)
-          bgGrid->setNextReal(float(surface(i,j)));
-        else
-          bgGrid->setNextReal(0);  //dummy in padding (but there is no padding)
-      }
-    }
-
-    // Log progress
     if (k+1 >= static_cast<int>(nextMonitor))
     {
       nextMonitor += monitorSize;
@@ -1567,6 +1569,20 @@ Background::makeKrigedBackground(const std::vector<KrigingData2D> & krigingData,
       fflush(stdout);
     }
   }
+
+  // Set surfaces in grid (done by master when parallelization)
+  for (int k=0 ; k<nzp ; k++) {
+    // Set layer in background model from surface
+    for (int j=0 ; j<nyp ; j++) {
+      for (int i=0 ; i<rnxp ; i++) {
+        if (i<nxp)
+          bgGrid->setNextReal(static_cast<float>(surfaces[k](i,j)));
+        else
+          bgGrid->setNextReal(0.0f);  //dummy in padding (but there is no padding)
+      }
+    }
+  }
+
   bgGrid->endAccess();
 }
 
@@ -1595,7 +1611,7 @@ Background::makeTrendZone(const float   * trend,
     // Set layer in background model from surface
     for(size_t j=0 ; j<ny; j++) {
       for(size_t i=0 ; i<nx; i++)
-        trend_zone(i,j,k) = float(surface(i,j));
+        trend_zone(i,j,k) = static_cast<float>(surface(i,j));
     }
   }
 }
@@ -1605,7 +1621,8 @@ void
 Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
                            const float                      * trend,
                            StormContGrid                    & kriged_zone,
-                           const CovGrid2D                  & covGrid2D) const
+                           const CovGrid2D                  & covGrid2D,
+                           int                                n_threads) const
 {
   const size_t nx   = kriged_zone.GetNI();
   const size_t ny   = kriged_zone.GetNJ();
@@ -1615,11 +1632,14 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
   const double y0   = kriged_zone.GetYMin();
   const double lx   = kriged_zone.GetLX();
   const double ly   = kriged_zone.GetLY();
-  //
-  // Template surface to be kriged
-  //
-  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
-  for (size_t k=0; k<nz; k++) {
+
+#ifdef PARALLEL
+  int  chunk_size = 1;
+#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
+#endif
+
+  for (int k=0; k<static_cast<int>(nz); k++) {
+    Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
     // Set trend for layer
     surface.Assign(trend[k]);
@@ -1630,7 +1650,7 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
     // Set layer in background model from surface
     for(size_t j=0 ; j<ny; j++) {
       for(size_t i=0 ; i<nx; i++)
-        kriged_zone(i,j,k) = float(surface(i,j));
+        kriged_zone(i,j,k) = static_cast<float>(surface(i,j));
     }
   }
 }
@@ -1679,7 +1699,7 @@ Background::calculateVerticalTrend(std::vector<float *>   wellTrend,
   if (iWells > 0) {
     for (int k = 0 ; k < nz ; k++) {
       if (count[k] > 0) {
-        trend[k] = trend[k]/count[k];
+        trend[k] = trend[k]/static_cast<float>(count[k]);
       }
     }
   }

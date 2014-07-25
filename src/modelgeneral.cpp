@@ -14,6 +14,10 @@
 #include <typeinfo>
 #include <algorithm>
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
 #include "src/xmlmodelfile.h"
@@ -405,6 +409,7 @@ ModelGeneral::readSegyFile(const std::string       & fileName,
                        stormgrid_tmp,
                        segy,
                        modelSettings->getSmoothLength(),
+                       modelSettings->getNumberOfThreads(),
                        missingTracesSimbox,
                        missingTracesPadding,
                        deadTracesSimbox,
@@ -556,6 +561,7 @@ ModelGeneral::readStormFile(const std::string   & fName,
                          stormgrid,
                          segy_tmp,
                          modelSettings->getSmoothLength(),
+                         modelSettings->getNumberOfThreads(),
                          missingTracesSimbox,
                          missingTracesPadding,
                          deadTracesSimbox, // Not used for STORM files
@@ -1567,10 +1573,22 @@ void
 ModelGeneral::printSettings(ModelSettings     * modelSettings,
                             const InputFiles  * inputFiles)
 {
+#ifdef PARALLEL
+#pragma omp parallel
+#pragma omp master
+  {
+    int n_processors = omp_get_num_procs();
+    int n_threads    = modelSettings->getNumberOfThreads();
+    //int max_threads  = omp_get_max_threads(); // Do not use: This number is sometimes 1 even though 8 threads are running
+
+    LogKit::LogFormatted(LogKit::Low,"\nThreads in use                             : %d / %d\n",n_threads,n_processors);
+  }
+#endif
+
   LogKit::WriteHeader("Model settings");
 
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
-  if(modelSettings->getForwardModeling()==true)
+  if (modelSettings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
   else if (modelSettings->getEstimationMode()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : estimation\n");
@@ -3421,54 +3439,52 @@ ModelGeneral::copyCorrelationsTo4DState(SeismicParametersHolder                 
 }
 
 void
-ModelGeneral::processWells(std::vector<WellData *> & wells,
-                             Simbox              * timeSimbox,
-                             ModelSettings      *& modelSettings,
-                             const InputFiles    * inputFiles,
-                             std::string         & errText,
-                             bool                & failed)
+ModelGeneral::processWells(std::vector<WellData*> & wells,
+                           Simbox                 * timeSimbox,
+                           ModelSettings         *& modelSettings,
+                           const InputFiles       * inputFiles,
+                           std::string            & errText,
+                           bool                   & failed)
 {
-  int     nWells         = modelSettings->getNumberOfWells();
+  int nWells = modelSettings->getNumberOfWells();
 
-  if(nWells > 0) {
+  if (nWells > 0) {
 
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
     LogKit::WriteHeader("Reading and processing wells");
 
-    bool    faciesLogGiven = modelSettings->getFaciesLogGiven();
-    bool    porosityLogGiven = modelSettings->getPorosityLogGiven();
-    int     nFacies        = 0;
-    int     error = 0;
+    int nFacies = 0;
+    int error   = 0;
 
     std::string tmpErrText("");
+
     wells.resize(nWells);
-    for(int i=0 ; i<nWells ; i++) {
+
+#ifdef PARALLEL
+    int chunk_size = 1;
+    int n_threads  = modelSettings->getNumberOfThreads();
+#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
+#endif
+
+    for (int i=0 ; i<nWells ; i++) {
+      std::string tmpErrTxt("");
       wells[i] = new WellData(inputFiles->getWellFile(i),
-        modelSettings->getLogNames(),
-        modelSettings->getInverseVelocity(),
-        modelSettings,
-        modelSettings->getIndicatorFacies(i),
-        modelSettings->getIndicatorFilter(i),
-        modelSettings->getIndicatorWavelet(i),
-        modelSettings->getIndicatorBGTrend(i),
-        modelSettings->getIndicatorRealVs(i),
-        porosityLogGiven,
-        faciesLogGiven);
-      if(wells[i]->checkError(tmpErrText) != 0) {
-        errText += tmpErrText;
+                              modelSettings,
+                              i);
+      if (wells[i]->checkError(tmpErrTxt) != 0) {
+        tmpErrText += tmpErrTxt;
         error = 1;
       }
     }
-
 
     if (error == 0) {
       if(modelSettings->getFaciesLogGiven()) {
         setFaciesNamesFromWells(wells, modelSettings, tmpErrText, error);
         nFacies = static_cast<int>(faciesNames_.size()); // nFacies is set in setFaciesNames()
       }
-      if (error>0)
+      if (error > 0)
         errText += "Prior facies probabilities from wells failed.\n"+tmpErrText;
 
       int   * validWells    = new int[nWells];
@@ -3481,7 +3497,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
       float * devAngle      = new float[nWells];
       int  ** faciesCount   = NULL;
 
-      if(nFacies > 0) {
+      if (nFacies > 0) {
         faciesCount = new int * [nWells];
         for (int i = 0 ; i < nWells ; i++)
           faciesCount[i] = new int[nFacies];
@@ -3497,31 +3513,31 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
       {
         bool skip = false;
         LogKit::LogFormatted(LogKit::Low,wells[i]->getWellname()+" : \n");
-        if(wells[i]!=NULL) {
+        if (wells[i]!=NULL) {
           if(wells[i]->checkSimbox(timeSimbox) == 1) {
             skip = true;
             nohit++;
             TaskList::addTask("Consider increasing the inversion volume such that well "+wells[i]->getWellname()+ " can be included");
           }
-          if(wells[i]->getNd() == 0) {
+          if (wells[i]->getNd() == 0) {
             LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
             skip = true;
             empty++;
             TaskList::addTask("Check the log entries in well "+wells[i]->getWellname()+".");
           }
-          if(wells[i]->isFaciesOk()==0) {
+          if (wells[i]->isFaciesOk()==0) {
             LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
             skip = true;
             facieslognotok++;
             TaskList::addTask("Check the facies logs in well "+wells[i]->getWellname()+".\n       The facies logs in this well are wrong and the well is ignored");
           }
-          if(wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
+          if (wells[i]->removeDuplicateLogEntries(timeSimbox, nMerges[i]) == false) {
             LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
             skip = true;
             upwards++;
             TaskList::addTask("Check the TWT log in well "+wells[i]->getWellname()+".\n       The well is moving too much upwards, and the well is ignored");
           }
-          if(skip)
+          if (skip)
             validIndex[i] = false;
           else {
             validIndex[i] = true;
@@ -3566,7 +3582,7 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
       //
       // Print facies count for each well
       //
-      if(nFacies > 0) {
+      if (nFacies > 0) {
         //
         // Probabilities
         //
@@ -3639,12 +3655,12 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
       //
       // Remove invalid wells
       //
-      for(int i=0 ; i<nWells ; i++)
+      for (int i=0 ; i<nWells ; i++)
         if (!validIndex[i])
           delete wells[i];
-      for(int i=0 ; i<count ; i++)
+      for (int i=0 ; i<count ; i++)
         wells[i] = wells[validWells[i]];
-      for(int i=count ; i<nWells ; i++)
+      for (int i=count ; i<nWells ; i++)
         wells[i] = NULL;
       nWells = count;
       modelSettings->setNumberOfWells(nWells);
@@ -3662,9 +3678,9 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
         LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) do not hit the inversion volume and will be ignored.\n",nohit);
       if (empty>0)
         LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) contain no log entries and will be ignored.\n",empty);
-      if(facieslognotok>0)
+      if (facieslognotok>0)
         LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) have wrong facies logs and will be ignored.\n",facieslognotok);
-      if(upwards>0)
+      if (upwards>0)
         LogKit::LogFormatted(LogKit::Low,"\nWARNING: %d well(s) are moving upwards in TWT and will be ignored.\n",upwards);
       if (nWells==0 && modelSettings->getNoWellNedded()==false) {
         LogKit::LogFormatted(LogKit::Low,"\nERROR: There are no wells left for data analysis. Please check that the inversion area given");
@@ -3679,14 +3695,14 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
         error = 1;
       }
 
-      if(nFacies > 0) {
+      if (nFacies > 0) {
         int fc;
-        for(int i = 0; i < nFacies; i++){
+        for (int i = 0; i < nFacies; i++){
           fc = 0;
-          for(int j = 0; j < nWells; j++){
+          for (int j = 0; j < nWells; j++){
             fc+=faciesCount[j][i];
           }
-          if(fc == 0){
+          if (fc == 0){
             LogKit::LogFormatted(LogKit::Low,"\nWARNING: Facies %s is not observed in any of the wells, and posterior facies probability can not be estimated for this facies.\n",faciesNames_[i].c_str() );
             TaskList::addTask("In order to estimate prior facies probability for facies "+ faciesNames_[i] + " add wells which contain observations of this facies.\n");
           }
@@ -3703,20 +3719,20 @@ ModelGeneral::processWells(std::vector<WellData *> & wells,
 }
 
 void
-ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
-                                      ModelSettings            *& modelSettings,
-                                      std::string               & tmpErrText,
-                                      int                       & error)
+ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>    wells,
+                                      ModelSettings           *& modelSettings,
+                                      std::string              & tmpErrText,
+                                      int                      & error)
 {
   int min,max;
   int globalmin = 0;
   int globalmax = 0;
   bool first = true;
   for (int w = 0; w < modelSettings->getNumberOfWells(); w++) {
-    if(wells[w]->isFaciesLogDefined())
+    if (wells[w]->isFaciesLogDefined())
     {
       wells[w]->getMinMaxFnr(min,max);
-      if(first==true)
+      if (first)
       {
         globalmin = min;
         globalmax = max;
@@ -3724,7 +3740,7 @@ ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
       }
       else
       {
-        if(min<globalmin)
+        if (min<globalmin)
           globalmin = min;
         if(max>globalmax)
           globalmax = max;
@@ -3735,19 +3751,19 @@ ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
   int nnames = globalmax - globalmin + 1;
   std::vector<std::string> names(nnames);
 
-  for(int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
+  for (int w=0 ; w<modelSettings->getNumberOfWells() ; w++)
   {
-    if(wells[w]->isFaciesLogDefined())
+    if (wells[w]->isFaciesLogDefined())
     {
-      for(int i=0 ; i < wells[w]->getNFacies() ; i++)
+      for (int i=0 ; i < wells[w]->getNFacies() ; i++)
       {
         std::string name = wells[w]->getFaciesName(i);
         int         fnr  = wells[w]->getFaciesNr(i) - globalmin;
 
-        if(names[fnr] == "") {
+        if (names[fnr] == "") {
           names[fnr] = name;
         }
-        else if(names[fnr] != name)
+        else if (names[fnr] != name)
         {
           tmpErrText += "Problem with facies logs. Facies names and numbers are not uniquely defined.\n";
           error++;
@@ -3763,12 +3779,12 @@ ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
       LogKit::LogFormatted(LogKit::Low,"    %2d           %-20s\n",i+globalmin,names[i].c_str());
 
   int nFacies = 0;
-  for(int i=0 ; i<nnames ; i++)
-    if(names[i] != "")
+  for (int i=0 ; i<nnames ; i++)
+    if (names[i] != "")
       nFacies++;
 
-  for(int i=0 ; i<nnames ; i++) {
-    if(names[i] != "") {
+  for (int i=0 ; i<nnames ; i++) {
+    if (names[i] != "") {
       faciesLabels_.push_back(globalmin + i);
       faciesNames_.push_back(names[i]);
     }
@@ -3776,10 +3792,10 @@ ModelGeneral::setFaciesNamesFromWells(std::vector<WellData *>     wells,
 }
 
 void
-ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
-                                    float                       ** reflectionMatrix,
-                                    ModelSettings                * modelSettings,
-                                    const std::vector<Surface *> & interval)
+ModelGeneral::processWellLocation(FFTGrid                     ** seisCube,
+                                  float                       ** reflectionMatrix,
+                                  ModelSettings                * modelSettings,
+                                  const std::vector<Surface *> & interval)
 {
   LogKit::WriteHeader("Estimating optimized well location");
 
@@ -3808,23 +3824,23 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
   for (w = 0 ; w < nWells ; w++) {
-    if( wells_[w]->isDeviated()==true )
+    if (wells_[w]->isDeviated())
       continue;
 
     BlockedLogs * bl = wells_[w]->getBlockedLogsOrigThick();
     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
 
-    if( nMoveAngles==0 )
+    if(nMoveAngles == 0)
       continue;
 
-    for( i=0; i<nAngles; i++ )
+    for (i=0; i<nAngles; i++)
       angleWeight[i] = 0;
 
-    for( i=0; i<nMoveAngles; i++ ){
-      moveAngle   = modelSettings->getWellMoveAngle(w,i);
+    for (i=0; i<nMoveAngles; i++) {
+      moveAngle = modelSettings->getWellMoveAngle(w,i);
 
-      for( j=0; j<nAngles; j++ ){
-        if( moveAngle == seismicAngle[j]){
+      for (j=0; j<nAngles; j++) {
+        if (moveAngle == seismicAngle[j]) {
           angleWeight[j] = modelSettings->getWellMoveWeight(w,i);
           break;
         }
@@ -3832,9 +3848,9 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
     }
 
     sum = 0;
-    for( i=0; i<nAngles; i++ )
+    for (i=0; i<nAngles; i++ )
       sum += angleWeight[i];
-    if( sum == 0 )
+    if (sum == 0 )
       continue;
 
     iMaxOffset = static_cast<int>(std::ceil(maxOffset/dx));
@@ -3851,28 +3867,28 @@ ModelGeneral::processWellLocation(FFTGrid                       ** seisCube,
     wells_[w]->getWellname().c_str(), kMove, iMove, deltaX, jMove, deltaY);
   }
 
-   for (w = 0 ; w < nWells ; w++){
-     nMoveAngles = modelSettings->getNumberOfWellAngles(w);
+  for (w = 0 ; w < nWells ; w++) {
+    nMoveAngles = modelSettings->getNumberOfWellAngles(w);
 
-    if( wells_[w]->isDeviated()==true && nMoveAngles > 0 )
+    if (wells_[w]->isDeviated()==true && nMoveAngles > 0 )
     {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
-          wells_[w]->getWellname().c_str());
+                           wells_[w]->getWellname().c_str());
       TaskList::addTask("Well "+NRLib::ToString(wells_[w]->getWellname())+" can not be moved. Remove <optimize-location-to> for this well");
     }
-   }
+  }
 }
 void
-ModelGeneral::processPriorCorrelations(Background                     * background,
-                                       std::vector<WellData *>          wells,
-                                       const Simbox                   * timeSimbox,
-                                       const ModelSettings            * modelSettings,
-                                       const std::vector<float>       & priorFacies,
-                                       FFTGrid                       ** seisCube,
-                                       const InputFiles               * inputFiles,
-                                       SeismicParametersHolder        & seismicParameters,
-                                       std::string                    & errText,
-                                       bool                           & failed)
+ModelGeneral::processPriorCorrelations(Background                * background,
+                                       std::vector<WellData*>      wells,
+                                       const Simbox              * timeSimbox,
+                                       const ModelSettings       * modelSettings,
+                                       const std::vector<float>  & priorFacies,
+                                       FFTGrid                  ** seisCube,
+                                       const InputFiles          * inputFiles,
+                                       SeismicParametersHolder   & seismicParameters,
+                                       std::string               & errText,
+                                       bool                      & failed)
 {
   bool printResult = ((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0 ||
                       modelSettings->getEstimationMode() == true);

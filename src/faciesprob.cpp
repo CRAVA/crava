@@ -129,7 +129,7 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
     densdim = static_cast<int>(sigmaEOrig.size());
     posteriorPdf.resize(densdim);
     volume.resize(densdim);
-    for (int i=0;i<densdim;i++){
+    for (int i=0 ; i < densdim ; i++) {
       posteriorPdf[i].resize(nFacies_, NULL);
     }
     nDimensions = MakePosteriorElasticPDF3D(posteriorPdf,
@@ -148,7 +148,8 @@ FaciesProb::FaciesProb(FFTGrid                                            * alph
                                             modelSettings,
                                             facies_names);
 
-  }else{
+  }
+  else {
     densdim = 1;
     volume.resize(densdim);
     syntWellLength_ = 100;
@@ -358,7 +359,7 @@ void FaciesProb::makeFaciesDens(int                                nfac,
 
     NRLib::Vector h1(3);
 
-    for(int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++)
+    for (int i=0 ; i < static_cast<int>(alphaFiltered.size()) ; i++)
     {
       h1(0) = static_cast<double>(alphaFiltered[i]);
       h1(1) = static_cast<double>(betaFiltered[i]);
@@ -419,11 +420,11 @@ void FaciesProb::makeFaciesDens(int                                nfac,
     }
   }
 
-  if(sigmae(0,0) < kstda*kstda)
+  if (sigmae(0,0) < kstda*kstda)
     sigmae(0,0) = kstda*kstda;
-  if(sigmae(1,1) < kstdb*kstdb)
+  if (sigmae(1,1) < kstdb*kstdb)
     sigmae(1,1) = kstdb*kstdb;
-  if(sigmae(2,2) < kstdr*kstdr)
+  if (sigmae(2,2) < kstdr*kstdr)
     sigmae(2,2) = kstdr*kstdr;
 
   //Establish limits before we invert sigma.
@@ -496,9 +497,9 @@ void FaciesProb::makeFaciesDens(int                                nfac,
     }
   }
   // normalize smoother
-  for(int l=0 ; l < nbinsr ; l++)
-    for(int k=0 ; k < nbinsb ; k++)
-      for(int j=0 ; j < nbinsa ; j++)
+  for (int l=0 ; l < nbinsr ; l++)
+    for (int k=0 ; k < nbinsb ; k++)
+      for (int j=0 ; j < nbinsa ; j++)
         smooth[j+k*nbinsa+l*nbinsa*nbinsb]/=sum;
 
   FFTGrid *smoother;
@@ -513,9 +514,9 @@ void FaciesProb::makeFaciesDens(int                                nfac,
 
   smoother->fftInPlace();
 
-  for(int i=0 ; i < nFacies_ ; i++)
+  for (int i=0 ; i < nFacies_ ; i++)
   {
-    if(ModelSettings::getDebugLevel() >= 1)
+    if (ModelSettings::getDebugLevel() >= 1)
     {
       std::string baseName = "Hist_" + NRLib::ToString(i) + IO::SuffixAsciiFiles();
       std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
@@ -528,8 +529,8 @@ void FaciesProb::makeFaciesDens(int                                nfac,
   }
 
 
-    for(int l=0;l<nFacies_;l++){
-      if(ModelSettings::getDebugLevel() >= 1) {
+    for (int l=0;l<nFacies_;l++){
+      if (ModelSettings::getDebugLevel() >= 1) {
         std::string baseName = "Smoothed_hist_" + NRLib::ToString(index) + NRLib::ToString(l) + IO::SuffixAsciiFiles();
         std::string fileName = IO::makeFullFileName(IO::PathToDebug(), baseName);
         density[l]->writeAsciiFile(fileName);
@@ -540,20 +541,20 @@ void FaciesProb::makeFaciesDens(int                                nfac,
   delete [] smooth;
 }
 
-int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >         & posteriorPdf,
-                                                   std::vector<Simbox *>                                    & volume,
-                                                   Crava                                                    * cravaResult,
-                                                   SeismicParametersHolder                                  & seismicParameters,
-                                                   std::vector<FFTGrid *>                                   & priorFaciesCubes,
-                                                   const ModelSettings                                      * modelSettings,
-                                                   const std::map<std::string, DistributionsRock *>         & rock_distributions,
-                                                   const std::vector<std::string>                           & facies_names,
-                                                   const double                                             & dz,
-                                                   const double                                             & trend1_min,
-                                                   const double                                             & trend1_max,
-                                                   const double                                             & trend2_min,
-                                                   const double                                             & trend2_max,
-                                                   bool                                                       useFilter)
+int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> > & posteriorPdf,
+                                                   std::vector<Simbox *>                            & volume,
+                                                   Crava                                            * cravaResult,
+                                                   SeismicParametersHolder                          & seismicParameters,
+                                                   std::vector<FFTGrid *>                           & priorFaciesCubes,
+                                                   const ModelSettings                              * modelSettings,
+                                                   const std::map<std::string, DistributionsRock *> & rock_distributions,
+                                                   const std::vector<std::string>                   & facies_names,
+                                                   const double                                     & dz,
+                                                   const double                                     & trend1_min,
+                                                   const double                                     & trend1_max,
+                                                   const double                                     & trend2_min,
+                                                   const double                                     & trend2_max,
+                                                   bool                                               useFilter)
 {
   double eps = 0.000001;
   int nDimensions = 0;
@@ -564,35 +565,37 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   if ((trend1_min>trend1_max) || (trend2_min > trend2_max)) {
     throw NRLib::Exception("Facies probabilities: The given trend minimum value is larger than the trend maximum value");
   }
-  else if((trend1_max-trend1_min)<eps && (trend2_max-trend2_min)>eps ){
+  else if ((trend1_max-trend1_min)<eps && (trend2_max-trend2_min)>eps ){
     throw NRLib::Exception("Facies probabilities: Trend 2 min/max values are given, but no trend 1 min/max values");
   }
 
   // CHECK INPUT AND DEDUCE POSTERIOR ELASTIC PDF CLASS ------------------------------------------
 
   // both trend vectors have the same number of bins
-  if((trend2_max-trend2_min)>eps && (trend1_max-trend1_min)>eps){
+  if ((trend2_max-trend2_min)>eps && (trend1_max-trend1_min)>eps){
     nDimensions = 5;
     // add one bin and subtract dx/10 to avoid numerical errors since the entire range is used
     trend1.resize(nBinsTrend_+1);
     trend2.resize(nBinsTrend_+1);
     trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
     trend2BinSize_ = (trend2_max - trend2_min)/nBinsTrend_;
-    for(int i=0; i<nBinsTrend_+1; i++){
+    for (int i=0; i<nBinsTrend_+1; i++){
       trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
       trend2[i] = trend2_min + i*trend2BinSize_ - trend1BinSize_/10;
     }
   //it is not possible to have a trend2 but no trend1
-  }else if((trend2_max-trend2_min)<eps && (trend1_max-trend1_min)>eps){
+  }
+  else if ((trend2_max-trend2_min)<eps && (trend1_max-trend1_min)>eps){
     nDimensions = 4;
     trend1.resize(nBinsTrend_+1);
     trend2.resize(1,trend2_min);
     trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
-    for(int i=0; i<nBinsTrend_+1; i++){
+    for (int i=0; i<nBinsTrend_+1; i++){
       trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
     }
     // if trend2max==trend1min and trend1max==trend1min
-  }else{
+  }
+  else {
     trend1.resize(1,trend1_min);
     trend2.resize(1,trend2_min);
     nDimensions = 3;
@@ -600,10 +603,10 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 
   // AUTOMATIC DIMENSION REDUCTION ----------------------------------------------
 
-  double ** sigma_pri_temp = new double *[3];
+  double ** sigma_pri_temp  = new double *[3];
   double ** sigma_post_temp = new double *[3];
-  for(int i=0; i<3; i++){
-    sigma_pri_temp[i] = new double[3];
+  for (int i=0; i<3; i++) {
+    sigma_pri_temp[i]  = new double[3];
     sigma_post_temp[i] = new double[3];
   }
 
@@ -630,7 +633,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     v[2].push_back(1);
   }
 
-  for(int i=0;i<3;i++){
+  for (int i=0;i<3;i++){
     delete [] sigma_pri_temp[i];
     delete [] sigma_post_temp[i];
   }

@@ -384,6 +384,10 @@ int main(int argc, char** argv)
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA finished ***\n");
+    //
+    // The exit(0) is needed to get the gprof output file gmon.out ...
+    //
+    exit(0);
   }
   catch (std::bad_alloc& ba) {
     std::cerr << "Out of memory: " << ba.what() << std::endl;
