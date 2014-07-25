@@ -4,6 +4,10 @@
 
 #include "rfftw.h"
 
+#ifdef PARALLEL
+#include <omp.h>
+#endif
+
 #include "src/crava.h"
 #include "src/wavelet.h"
 #include "src/wavelet1D.h"
@@ -217,7 +221,9 @@ Crava::Crava(ModelSettings           * modelSettings,
                                   nz_,
                                   nzp_,
                                   nyp_,
-                                  nxp_);
+                                  nxp_,
+                                  modelSettings->getNumberOfThreads(),
+                                  fileGrid_);
 
   //Finish use of seisData, since we need the memory.
   if ((outputGridsSeismic_ & IO::RESIDUAL) > 0)
@@ -985,7 +991,9 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
                                      int                        nz,
                                      int                        nzp,
                                      int                        nyp,
-                                     int                        nxp)
+                                     int                        nxp,
+                                     int                        n_threads,
+                                     bool                       fileGrid)
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
 
@@ -1065,7 +1073,13 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-  bool serial = false;
+#ifdef PARALLEL
+  if (fileGrid) {
+    n_threads = 1; // Parallelization doesn't work when using FFTFileGrid due to disk access.
+  }
+  int  chunk_size = 1;
+#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
+#endif
 
   for (int k = 0 ; k < nzp ; k++) { // We are now in frequency (Fourier) domain
 
@@ -1113,7 +1127,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
 
         fftw_complex ijkErrCorr;
 
-        if (fileGrid_ || serial) {
+        if (fileGrid) {
           ijkMean[0] = postAlpha->getNextComplex();
           ijkMean[1] = postBeta ->getNextComplex();
           ijkMean[2] = postRho  ->getNextComplex();
@@ -1162,7 +1176,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
                             wnc);
         }
 
-        if (fileGrid_ || serial) {
+        if (fileGrid) {
           for (int l=0 ; l<ntheta ; l++) {
             seisData[l]     ->setNextComplex(ijkRes[l]);
           }

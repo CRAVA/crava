@@ -59,7 +59,9 @@ public:
                                                        int                        nz,
                                                        int                        nzp,
                                                        int                        nyp,
-                                                       int                        nxp);
+                                                       int                        nxp,
+                                                       int                        nThreads,
+                                                       bool                       fileGrid);
 
   int                    computeSyntSeismicOld(FFTGrid * Alpha, FFTGrid * Beta, FFTGrid * Rho);
 
