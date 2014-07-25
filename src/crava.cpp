@@ -1124,10 +1124,7 @@ Crava::computePostMeanResidAndFFTCov(ModelGeneral            *  modelGeneral,
           }
           ijkErrCorr = errCorr->getNextComplex();
 
-          if (modelGeneral->getIs4DActive())
-            seismicParameters.getNextParameterCovariance2(parVar); // NBNB disturbs test suite use line under to check
-          else
-            seismicParameters.getNextParameterCovariance(parVar);
+          seismicParameters.getNextParameterCovariance(parVar, modelGeneral->getIs4DActive());
         }
         else {
           ijkMean[0] = postAlpha->getComplexValue(i, j, k, true);

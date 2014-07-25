@@ -74,13 +74,22 @@ public:
 
   void                     printPostVariances(const NRLib::Matrix & postVar0) const;
 
-  void                     getNextParameterCovariance(fftw_complex **& parVar) const;
-  void                     getNextParameterCovariance2(fftw_complex **& parVar) const;
+  void                     getNextParameterCovariance(fftw_complex **& parVar,
+                                                      bool             doing4D) const;
 
   void                     getParameterCovariance(fftw_complex **& parVar,
                                                   int              i,
                                                   int              j,
                                                   int              k,
+                                                  bool             doing4D) const;
+
+  void                     findParameterVariances(fftw_complex **& parVar,
+                                                  fftw_complex     ii,
+                                                  fftw_complex     jj,
+                                                  fftw_complex     kk,
+                                                  fftw_complex     ij,
+                                                  fftw_complex     ik,
+                                                  fftw_complex     jk,
                                                   bool             doing4D) const;
 
   static fftw_complex      getParameterCovariance(const NRLib::Matrix & prior_var,
