@@ -1638,7 +1638,7 @@ Background::makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
 #pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
 #endif
 
-  for (size_t k=0; k<nz; k++) {
+  for (int k=0; k<static_cast<int>(nz); k++) {
     Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
     // Set trend for layer
