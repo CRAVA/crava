@@ -194,6 +194,7 @@ private:
                                     const Simbox                     * simbox,
                                     const CovGrid2D                  & covGrid2D,
                                     const std::string                & type,
+                                    int                                n_threads,
                                     bool                               isFile) const;
 
   void         makeTrendZone(const float   * trend,
@@ -202,7 +203,8 @@ private:
   void         makeKrigedZone(const std::vector<KrigingData2D> & krigingData,
                               const float                      * trend,
                               StormContGrid                    & kriged_zone,
-                              const CovGrid2D                  & covGrid2D) const;
+                              const CovGrid2D                  & covGrid2D,
+                              int                                n_threads) const;
 
   void         MakeMultizoneBackground(FFTGrid                         *& bgAlpha,
                                        FFTGrid                         *& bgBeta,
@@ -225,11 +227,13 @@ private:
                                            float                 * avgDevAlpha,
                                            int                     outputFlag,
                                            int                     nWells);
+
   void         resampleParameter(FFTGrid *& parameterNew,
                                  FFTGrid  * parameterOld,
                                  const Simbox   * simboxNew,
                                  const Simbox   * simboxOld,
                                  bool       isFile);
+
   void         calculateVerticalTrend(std::vector<float *> wellTrend,
                                       float              * trend,
                                       float                logMin,
@@ -243,6 +247,7 @@ private:
                                   float        dz,
                                   int          nz,
                                   std::string  name);
+
   void         calculateDeviationFromVerticalTrend(std::vector<float *>  wellTrend,
                                                    const float         * trend,
                                                    float               * avg_dev,
@@ -268,8 +273,10 @@ private:
                                                     std::string  parName);
   void         fillInVerticalTrend(FFTGrid     * bgTrend,
                                    const float * trend);
+
   void         findMeanVsVp(FFTGrid * Vp,
                             FFTGrid * Vs);
+
   FFTGrid    * copyFFTGrid(FFTGrid   * origGrid,
                            const bool  expTrans,
                            const bool  fileGrid) const;
