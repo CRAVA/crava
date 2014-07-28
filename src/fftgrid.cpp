@@ -2272,15 +2272,10 @@ FFTGrid::writeFile(const std::string       & fName,
   if(formatFlag_ > 0) //Output format specified.
   {
     if((domainFlag_ & IO::TIMEDOMAIN) > 0) {
-      //if(timeMap == NULL) { //No resampling of storm
-        if((formatFlag_ & IO::STORM) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, false, padding); //H Must writeStormFile be changed to take in timeMap effects?
-        if((formatFlag_ & IO::ASCII) > 0)
-          FFTGrid::writeStormFile(fileName, simbox, true, padding);
-      //}
-      //else {
-      //  FFTGrid::writeResampledStormCube(timeMap, fileName, simbox, formatFlag_);
-      //}
+      if((formatFlag_ & IO::STORM) > 0)
+        FFTGrid::writeStormFile(fileName, simbox, false, padding);
+      if((formatFlag_ & IO::ASCII) > 0)
+        FFTGrid::writeStormFile(fileName, simbox, true, padding);
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if((formatFlag_ & IO::SEGY) >0)

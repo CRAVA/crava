@@ -182,6 +182,8 @@ public:
                                                    const Simbox           & estimation_simbox,
                                                    std::string            & err_text);
 
+  static int                FindClosestFactorableNumber(int leastint);
+
 private:
 
   void               LoadWellMoveInterval(const InputFiles             * input_files,
@@ -630,7 +632,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   int                GetFillNumber(int i, int n, int np) const;
 
-  int                FindClosestFactorableNumber(int leastint) const;
+  //int                FindClosestFactorableNumber(int leastint) const;
 
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,

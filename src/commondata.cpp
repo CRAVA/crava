@@ -591,16 +591,18 @@ void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
 
-  output_simbox = Simbox(full_inversion_simbox_);
-  output_simbox.SetSurfaces(full_inversion_simbox_.GetTopErodedSurface(), full_inversion_simbox_.GetBaseErodedSurface());
-  int n_intervals = multi_interval_grid->GetNIntervals();
+  output_simbox = Simbox(full_inversion_simbox);
+  output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
+  //int n_intervals = multi_interval_grid->GetNIntervals();
 
   int index_i = 0;
   int index_j = 0;
 
   double dz_min    = FindDzMin(multi_interval_grid, index_i, index_j);
-  double top_value = multi_interval_grid->GetIntervalSimbox(0)->getTop(index_i, index_j);
-  double bot_value = multi_interval_grid->GetIntervalSimbox(n_intervals-1)->getBot(index_i, index_j);
+  //double top_value = multi_interval_grid->GetIntervalSimbox(0)->getTop(index_i, index_j);
+  //double bot_value = multi_interval_grid->GetIntervalSimbox(n_intervals-1)->getBot(index_i, index_j);
+  double top_value = output_simbox.getTop(index_i, index_j);
+  double bot_value = output_simbox.getBot(index_i, index_j);
 
   int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
 
@@ -6363,7 +6365,7 @@ int CommonData::GetFillNumber(int i, int n, int np) const{
   return(refi);
 }
 
-int CommonData::FindClosestFactorableNumber(int leastint) const
+int CommonData::FindClosestFactorableNumber(int leastint)
 {
   int i,j,k,l,m,n;
   int factor   =       1;
@@ -8288,6 +8290,7 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
   //Set up timeline.
   time_line            = new TimeLine();
   std::string err_text = "";
+
   //Activate below when gravity data are ready.
   //Do gravity first.
   //for (int i=0;i<modelSettings->getNumberOfGravityData();i++) {
@@ -8310,7 +8313,7 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
             // Do not save first gravity event in timeline
             first_gravimetric_event = false;
           }
-          else{
+          else {
             time_line->AddEvent(time, TimeLine::GRAVITY, i);
           }
       }
@@ -8329,8 +8332,6 @@ bool CommonData::SetupTimeLine(ModelSettings * model_settings,
     }
 
   }
-
-  //H 4D-part set ut later (3 b) 10)
 
   if (err_text != "") {
     err_text_common += err_text;

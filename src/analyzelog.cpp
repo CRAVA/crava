@@ -865,7 +865,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             // Loop over all blocks
             for (int k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
               if(vp_blocked[k] != RMISSING && rho_blocked[k] != RMISSING && vs_blocked[k] != RMISSING){
-                residual = (regression_coef(0)*vp_blocked[k] + regression_coef(1)*rho_blocked[k] - vs[k]);
+                residual = (regression_coef(0)*vp_blocked[k] + regression_coef(1)*rho_blocked[k] - vs_blocked[k]);
                 sum_resid_square += residual*residual;
               }
             }

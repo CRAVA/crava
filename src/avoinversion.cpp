@@ -52,7 +52,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
                            SeismicParametersHolder & seismicParameters)
 {
 
-
   if(modelAVOstatic->GetForwardModeling())
     LogKit::LogFormatted(LogKit::Low,"\nBuilding model ...\n");
 
@@ -69,7 +68,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   modelAVOstatic_    = modelAVOstatic;
   modelAVOdynamic_   = modelAVOdynamic;
 
-  simbox_            = modelGeneral_->GetTimeSimbox();
+  simbox_            = modelGeneral_->GetSimbox();
   nx_                = seismicParameters.GetMeanVp()->getNx();
   ny_                = seismicParameters.GetMeanVp()->getNy();
   nz_                = seismicParameters.GetMeanVp()->getNz();

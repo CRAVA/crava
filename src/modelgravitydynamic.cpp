@@ -13,22 +13,20 @@
 #include <cmath>
 
 #include "src/definitions.h"
-#include "src/modelgeneral.h"
 #include "src/modelgravitystatic.h"
 #include "src/modelgravitydynamic.h"
 #include "src/gravimetricinversion.h"
 #include "src/xmlmodelfile.h"
 #include "src/modelsettings.h"
 #include "src/simbox.h"
-//#include "src/background.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
-#include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
 #include "src/tasklist.h"
 #include "src/seismicparametersholder.h"
+//#include "src/commondata.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -40,89 +38,19 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/volume/volume.hpp"
 
-//ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
-//                                         const ModelGeneral           * modelGeneral,
-//                                         ModelGravityStatic           * modelGravityStatic,
-//                                         const InputFiles             * inputFiles,
-//                                         int                            t,
-//                                         SeismicParametersHolder      & seismicParameters)
-//
-//{
-//  modelGeneral_ = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
-//
-//  debug_                  = true;
-//  failed_                 = false;
-//  thisTimeLapse_          = t;
-//
-//  bool failedLoadingModel = false;
-//  bool failedReadingFile  = false;
-//  std::string errText("");
-//
-//  int nObs = 30;     // should this be given in input file
-//  int nColumns = 5;  // We require data files to have five columns
-//
-//  // Check that timeLapse is ok
-//  if(thisTimeLapse_ < 1 && thisTimeLapse_ >modelSettings->getNumberOfVintages()){
-//    errText += "Not valid time lapse";
-//    failedLoadingModel = true;
-//  }
-//
-//  if(failedLoadingModel == false) {
-//    LogKit::WriteHeader("Setting up gravimetric time lapse");
-//
-//    // Find first gravity data file
-//    std::string fileName = inputFiles->getGravimetricData(thisTimeLapse_);
-//
-//    observation_location_utmx_ .resize(nObs);
-//    observation_location_utmy_ .resize(nObs);
-//    observation_location_depth_.resize(nObs);
-//    gravity_response_.resize(nObs);
-//    gravity_std_dev_ .resize(nObs);
-//
-//    ModelGravityStatic::ReadGravityDataFile(fileName,
-//                                            "gravimetric survey ", // +thisTimeLapse_,
-//                                            nObs, nColumns,
-//                                            observation_location_utmx_,
-//                                            observation_location_utmy_,
-//                                            observation_location_depth_,
-//                                            gravity_response_,
-//                                            gravity_std_dev_,
-//                                            failedReadingFile,
-//                                            errText);
-//    failedLoadingModel = failedReadingFile;
-//
-//    LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
-//    BuildGMatrix(modelGravityStatic, seismicParameters);
-//    LogKit::LogFormatted(LogKit::Low, "ok.\n");
-//  }
-//
-//  if (failedLoadingModel) {
-//    LogKit::WriteHeader("Error(s) with gravimetric surveys.");
-//    LogKit::LogFormatted(LogKit::Error,"\n"+errText);
-//    LogKit::LogFormatted(LogKit::Error,"\nAborting\n");
-//  }
-//
-//  failed_ = failedLoadingModel || failedReadingFile;
-//  failed_details_.push_back(failedReadingFile);
-//
-//}
-
 ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSettings,
-                                         const ModelGeneral           * modelGeneral,
                                          ModelGravityStatic           * modelGravityStatic,
+                                         const Simbox                 * simbox,
                                          CommonData                   * commonData,
-                                         //const InputFiles             * inputFiles,
                                          int                            t,
                                          SeismicParametersHolder      & seismicParameters)
 
 {
-  //H Set up for intervals?
-  // BuildGMatrix uses simbox from modelGeneral and expMeanVp from sesismicParameters, both set up for only this interval.
-
   // BuildGMatrix: For each obs (=30). Create x,y,z based on simbox, and create localDistanceSquared = distance x and x0(1 of 30 obs from file).
   // Change observation_location_depth_ to be per interval? Only use the x0, y0, z0 which are inside simbox?
 
-  modelGeneral_           = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
+  //H Changes to multiple intervals: Removed modelGeneral, only use the new interval simbox
+  //modelGeneral_           = modelGeneral;    // For å bruke full size time simbox. Løse dette bedre...
 
   debug_                  = true;
   failed_                 = false;
@@ -152,7 +80,7 @@ ModelGravityDynamic::ModelGravityDynamic(const ModelSettings          * modelSet
 
 
     LogKit::LogFormatted(LogKit::Low, "Setting up forward model matrix ...");
-    BuildGMatrix(modelGravityStatic, seismicParameters);
+    BuildGMatrix(modelGravityStatic, seismicParameters, simbox);
     LogKit::LogFormatted(LogKit::Low, "ok.\n");
   }
 
@@ -164,27 +92,27 @@ ModelGravityDynamic::~ModelGravityDynamic(void)
 
 void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravityStatic,
                                        SeismicParametersHolder & seismicParameters,
-                                       Simbox                  * simbox)
+                                       const Simbox            * simbox)
 {
   // Building gravity matrix for each time vintage, using updated mean Vp in generating the grid.
   double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
 
-  const Simbox * fullSizeTimeSimbox = NULL;
-  if(simbox == NULL)
-    fullSizeTimeSimbox = modelGeneral_->GetTimeSimbox();
-  else
-    fullSizeTimeSimbox = simbox;
+  //const Simbox * fullSizeTimeSimbox = NULL;
+  //if(simbox == NULL)
+  //  fullSizeTimeSimbox = modelGeneral_->GetTimeSimbox();
+  //else
+  //  fullSizeTimeSimbox = simbox;
 
     // Use vp_current, found in Seismic parameters holder here.
   FFTGrid * expMeanVp      = new FFTGrid(seismicParameters.GetMeanVp());  // for upscaling
   FFTGrid * meanVpFullSize = new FFTGrid(expMeanVp);                    // for full size matrix
 
-  int nx = fullSizeTimeSimbox->getnx();
-  int ny = fullSizeTimeSimbox->getny();
-  int nz = fullSizeTimeSimbox->getnz();
+  int nx = simbox->getnx();
+  int ny = simbox->getny();
+  int nz = simbox->getnz();
 
-  double dx = fullSizeTimeSimbox->getdx();
-  double dy = fullSizeTimeSimbox->getdy();
+  double dx = simbox->getdx();
+  double dy = simbox->getdy();
   //double dz = fullSizeTimeSimbox->getdz();  //Tvilsomt?
 
   int nxp = expMeanVp->getNxp();
@@ -285,12 +213,12 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
           for(int iii=istart; iii<istop; iii++){
             for(int jjj=jstart; jjj<jstop; jjj++){
               for(int kkk=kstart; kkk<kstop; kkk++){
-                fullSizeTimeSimbox->getCoord(iii, jjj, kkk, x, y, z);
+                simbox->getCoord(iii, jjj, kkk, x, y, z);
                 x_local += x;
                 y_local += y;
                 z_local += z;   // NB NB Need time depth mapping!!
 
-                dt_local += fullSizeTimeSimbox->getdz(iii, jjj); // also average dt?
+                dt_local += simbox->getdz(iii, jjj); // also average dt?
               }
             }
           }
@@ -345,9 +273,9 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
       for(int jj = 0; jj < ny; jj++){
         for(int kk = 0; kk < nz; kk++){
           double x, y, z;
-          fullSizeTimeSimbox->getCoord(ii, jj, kk, x, y, z); // assuming these are center positions...
+          simbox->getCoord(ii, jj, kk, x, y, z); // assuming these are center positions...
           vp = meanVpFullSize->getRealValue(ii, jj, kk);
-          dt = fullSizeTimeSimbox->getdz(ii, jj);
+          dt = simbox->getdz(ii, jj);
           if(debug_){
             dt = 1;  // such that vp*dt = 80
             vp= 160; // = 2*80, dz i matlab er 80   //

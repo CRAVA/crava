@@ -277,7 +277,7 @@ int main(int argc, char** argv)
       LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
       setupStaticModels(modelGeneral,
                         modelAVOstatic,
-                        //modelGravityStatic,
+                        modelGravityStatic,
                         modelSettings,
                         inputFiles,
                         seismicParametersIntervals[i_interval],
@@ -333,7 +333,6 @@ int main(int argc, char** argv)
                                                      modelGeneral,
                                                      modelGravityStatic,
                                                      common_data,
-                                                     //inputFiles,
                                                      eventIndex,
                                                      seismicParametersIntervals[i_interval]);
             break;

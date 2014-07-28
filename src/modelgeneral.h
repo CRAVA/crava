@@ -48,7 +48,7 @@ public:
 
   ~ModelGeneral();
 
-  const Simbox                               * GetTimeSimbox()            const { return simbox_                  ;}
+  const Simbox                               * GetSimbox()                const { return simbox_                  ;}
   RandomGen                                  * GetRandomGen()             const { return random_gen_              ;}
   GridMapping                                * GetTimeDepthMapping()      const { return time_depth_mapping_      ;}
   CravaTrend                                 & GetTrendCubes()                  { return trend_cubes_             ;}

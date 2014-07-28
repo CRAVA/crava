@@ -49,7 +49,8 @@ public:
                                const Simbox             & interval_simbox,
                                const double             & global_x,
                                const double             & global_y,
-                               const double             & global_z);
+                               const double             & global_z,
+                               const double             & dz_final);
 
   void WriteResults(ModelSettings * model_settings,
                     CommonData    * common_data);

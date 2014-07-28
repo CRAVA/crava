@@ -190,6 +190,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //Combine interval grids to one stormgrid
   //Compaction: Use the finest dz between intervals
 
+  //Final grids are stored as StormContGrids
+  // Results in seismic_parameters are stored as fftgrid
+
+  //H CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
+
   //H-TODO: CombineResult is not done
   //  There is no smoothing between intervals
 
@@ -203,306 +208,226 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int nz_output    = output_simbox.getnz();
   double dz_output = output_simbox.getdz();
 
-  //if (n_intervals_ > 0) {
+  //H-TODO Written wells for multiple intervals.
+  blocked_logs_ = blocked_logs_intervals_[0]; //Temp fix for one interval
 
-   //H-TODO Written wells for multiple intervals.
-   blocked_logs_ = blocked_logs_intervals_[0]; //Temp fix for one interval
+  if (model_settings->getWritePrediction()) {
 
-    if (model_settings->getWritePrediction()) {
+    //Post vp, vs and rho from avoinversion computePostMeanResidAndFFTCov()
+    post_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+    post_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+    post_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-      //Post vp, vs and rho from avoinversion computePostMeanResidAndFFTCov()
-      post_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-      post_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-      post_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
+    std::vector<FFTGrid *> post_vp_intervals(n_intervals_);
+    std::vector<FFTGrid *> post_vs_intervals(n_intervals_);
+    std::vector<FFTGrid *> post_rho_intervals(n_intervals_);
 
-      std::vector<FFTGrid *> post_vp_intervals(n_intervals_);
-      std::vector<FFTGrid *> post_vs_intervals(n_intervals_);
-      std::vector<FFTGrid *> post_rho_intervals(n_intervals_);
-
-      // Erik N: Should these two cases be treated differently? I leave
-      // the conditional statement
-      if (model_settings->getForwardModeling()) {
-        for (int i = 0; i < n_intervals_; i++) {
-          post_vp_intervals[i]  = seismic_parameters_intervals[i].GetMeanVp();
-          post_vs_intervals[i]  = seismic_parameters_intervals[i].GetMeanVs();
-          post_rho_intervals[i] = seismic_parameters_intervals[i].GetMeanRho();
-        }
-      }
-      else {
-        for (int i = 0; i < n_intervals_; i++) {
-          post_vp_intervals[i]  = seismic_parameters_intervals[i].GetPostVp();
-          post_vs_intervals[i]  = seismic_parameters_intervals[i].GetPostVs();
-          post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
-        }
-      }
-      CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
-
-      //Post vp, vs and rho from avoinversion doPredictionKriging()
-      if (model_settings->getKrigingParameter() > 0) {
-        post_vp_kriged_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-        post_vs_kriged_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-        post_rho_kriged_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-        std::vector<FFTGrid *> post_vp_kriged_intervals(n_intervals_);
-        std::vector<FFTGrid *> post_vs_kriged_intervals(n_intervals_);
-        std::vector<FFTGrid *> post_rho_kriged_intervals(n_intervals_);
-        for (int i = 0; i < n_intervals_; i++) {
-          post_vp_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVpKriged();
-          post_vs_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVsKriged();
-          post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
-        }
-        CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-        CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-        CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, erosion_priorities, dz_output);
-      }
-    }
-
-    //Background models
-    if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-      background_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-      background_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-      background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-      CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, erosion_priorities, dz_output);
-    }
-
-    //Covariance grids
-    if (!model_settings->getForwardModeling()) {
-      cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
-      cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
-      cov_rho_       = new StormContGrid(output_simbox, nx, ny, nz_output);
-      cr_cov_vp_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
-      cr_cov_vp_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-      cr_cov_vs_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-      std::vector<FFTGrid *> cov_vp_intervals(n_intervals_);
-      std::vector<FFTGrid *> cov_vs_intervals(n_intervals_);
-      std::vector<FFTGrid *> cov_rho_intervals(n_intervals_);
-      std::vector<FFTGrid *> cr_cov_vp_vs_intervals(n_intervals_);
-      std::vector<FFTGrid *> cr_cov_vp_rho_intervals(n_intervals_);
-      std::vector<FFTGrid *> cr_cov_vs_rho_intervals(n_intervals_);
+    // Erik N: Should these two cases be treated differently? I leave
+    // the conditional statement
+    if (model_settings->getForwardModeling()) {
       for (int i = 0; i < n_intervals_; i++) {
-        cov_vp_intervals[i]        = seismic_parameters_intervals[i].GetCovVp();
-        cov_vs_intervals[i]        = seismic_parameters_intervals[i].GetCovVs();
-        cov_rho_intervals[i]       = seismic_parameters_intervals[i].GetCovRho();
-        cr_cov_vp_vs_intervals[i]  = seismic_parameters_intervals[i].GetCrCovVpVs();
-        cr_cov_vp_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVpRho();
-        cr_cov_vs_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVsRho();
+        post_vp_intervals[i]  = seismic_parameters_intervals[i].GetMeanVp();
+        post_vs_intervals[i]  = seismic_parameters_intervals[i].GetMeanVs();
+        post_rho_intervals[i] = seismic_parameters_intervals[i].GetMeanRho();
       }
-      CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
     }
-
-    //Facies prob
-    if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
-      int n_facies = seismic_parameters_intervals[0].GetFaciesProb().size();
-      facies_prob_.resize(n_facies);
-
-      for (int j = 0; j < n_facies; j++) {
-        facies_prob_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-        std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
-        for (int i = 0; i < n_intervals_; i++) {
-          facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
-        }
-        CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      }
-
-      //Undef
-      facies_prob_undef_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-      std::vector<FFTGrid *> facies_prob_intervals_undef(n_intervals_);
+    else {
       for (int i = 0; i < n_intervals_; i++) {
-        facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
-      }
-      CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, erosion_priorities, dz_output);
-
-    }
-    if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
-      int n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
-      facies_prob_.resize(n_facies);
-
-      for (int j = 0; j < n_facies; j++) {
-        facies_prob_geo_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-        std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
-        for (int i = 0; i < n_intervals_; i++) {
-          facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
-        }
-        CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+        post_vp_intervals[i]  = seismic_parameters_intervals[i].GetPostVp();
+        post_vs_intervals[i]  = seismic_parameters_intervals[i].GetPostVs();
+        post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
       }
     }
+    CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output); //H-TEST
+    CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_output); //H-TEST
 
-    //LH Cube
-    if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
-      int n_facies = seismic_parameters_intervals[0].GetLHCube().size();
-      lh_cubes_.resize(n_facies);
 
-      for (int j = 0; j < n_facies; j++) {
-        lh_cubes_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
+    //H-TEST Out of memory: write here:
+  //int output_grids_elastic = model_settings->getOutputGridsElastic();
+  //GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
+  //      ParameterOutput::WriteParameters(&output_simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
+  //                                       output_grids_elastic, -1, false);
 
-        std::vector<FFTGrid *> lh_cubes_intervals(n_intervals_);
-        for (int i = 0; i < n_intervals_; i++) {
-          lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
-        }
-        CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    //Post vp, vs and rho from avoinversion doPredictionKriging()
+    if (model_settings->getKrigingParameter() > 0) {
+      post_vp_kriged_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+      post_vs_kriged_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+      post_rho_kriged_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-      }
-    }
-
-    //Quality grid
-    if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
-      quality_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-      std::vector<FFTGrid *> quality_grid_intervals(n_intervals_);
+      std::vector<FFTGrid *> post_vp_kriged_intervals(n_intervals_);
+      std::vector<FFTGrid *> post_vs_kriged_intervals(n_intervals_);
+      std::vector<FFTGrid *> post_rho_kriged_intervals(n_intervals_);
       for (int i = 0; i < n_intervals_; i++) {
-        quality_grid_intervals[i] = seismic_parameters_intervals[i].GetQualityGrid();
+        post_vp_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVpKriged();
+        post_vs_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVsKriged();
+        post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
       }
-      CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, erosion_priorities, dz_output);
     }
+  }
 
-    //Simulation grids
-    if (model_settings->getNumberOfSimulations() > 0) {
-      int n_simulations = seismic_parameters_intervals[0].GetSimulationsSeed0().size();
-      simulations_seed0_.resize(n_simulations);
-      simulations_seed1_.resize(n_simulations);
-      simulations_seed2_.resize(n_simulations);
+  //Background models
+  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
+    background_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+    background_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+    background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-      for (int j = 0; j < n_simulations; j++) {
-        simulations_seed0_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
-        simulations_seed1_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
-        simulations_seed2_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, erosion_priorities, dz_output);
+  }
 
-        std::vector<FFTGrid *> simulations_seed0_intervals(n_intervals_);
-        std::vector<FFTGrid *> simulations_seed1_intervals(n_intervals_);
-        std::vector<FFTGrid *> simulations_seed2_intervals(n_intervals_);
-        for (int i = 0; i < n_intervals_; i++) {
-          simulations_seed0_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed0(j);
-          simulations_seed1_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed1(j);
-          simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
-        }
-
-        CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, erosion_priorities, dz_output);
-        CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, erosion_priorities, dz_output);
-        CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, erosion_priorities, dz_output);
-
-      }
-    }
-
-    //Block grid
-    if (model_settings->getWritePrediction() && model_settings->getDebugFlag()) {
-      block_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
-
-      std::vector<FFTGrid *> block_grid_intervals(n_intervals_);
-      for (int i = 0; i < n_intervals_; i++) {
-        block_grid_intervals[i] = seismic_parameters_intervals[i].GetBlockGrid();
-      }
-      CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
-    }
-
-    //Correlations and post variances
-    //Do not combine, store and write per interval
+  //Covariance grids
+  if (!model_settings->getForwardModeling()) {
+    cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
+    cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
+    cov_rho_       = new StormContGrid(output_simbox, nx, ny, nz_output);
+    cr_cov_vp_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+    cr_cov_vp_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
+    cr_cov_vs_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
+    std::vector<FFTGrid *> cov_vp_intervals(n_intervals_);
+    std::vector<FFTGrid *> cov_vs_intervals(n_intervals_);
+    std::vector<FFTGrid *> cov_rho_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vp_vs_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vp_rho_intervals(n_intervals_);
+    std::vector<FFTGrid *> cr_cov_vs_rho_intervals(n_intervals_);
     for (int i = 0; i < n_intervals_; i++) {
-      corr_T_.push_back(seismic_parameters_intervals[i].GetCorrT());
-      if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-        corr_T_filtered_.push_back(seismic_parameters_intervals[i].GetCorrTFiltered());
+      cov_vp_intervals[i]        = seismic_parameters_intervals[i].GetCovVp();
+      cov_vs_intervals[i]        = seismic_parameters_intervals[i].GetCovVs();
+      cov_rho_intervals[i]       = seismic_parameters_intervals[i].GetCovRho();
+      cr_cov_vp_vs_intervals[i]  = seismic_parameters_intervals[i].GetCrCovVpVs();
+      cr_cov_vp_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVpRho();
+      cr_cov_vs_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVsRho();
+    }
+    CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+  }
 
-      post_var0_.push_back(seismic_parameters_intervals[i].GetPostVar0());
-      post_cov_vp00_.push_back(seismic_parameters_intervals[i].GetPostCovVp00());
-      post_cov_vs00_.push_back(seismic_parameters_intervals[i].GetPostCovVs00());
-      post_cov_rho00_.push_back(seismic_parameters_intervals[i].GetPostCovRho00());
+  //Facies prob
+  if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
+    int n_facies = seismic_parameters_intervals[0].GetFaciesProb().size();
+    facies_prob_.resize(n_facies);
+
+    for (int j = 0; j < n_facies; j++) {
+      facies_prob_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
+
+      std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
+        facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
+      }
+      CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     }
 
-  //}
-  //else {
+    //Undef
+    facies_prob_undef_ = new StormContGrid(output_simbox, nx, ny, nz_output);
+    std::vector<FFTGrid *> facies_prob_intervals_undef(n_intervals_);
+    for (int i = 0; i < n_intervals_; i++) {
+      facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
+    }
+    CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, erosion_priorities, dz_output);
 
-  //  //Final grids are stored as StormContGrids
-  //  // Results in seismic_parameters are stored as fftgrid
+  }
+  if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
+    int n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
+    facies_prob_.resize(n_facies);
 
-  //  //CreateStormGrid() creates a storm grid from fft grid, and deletes the fft_grid
+    for (int j = 0; j < n_facies; j++) {
+      facies_prob_geo_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-  //  std::string interval_name = multi_interval_grid->GetIntervalName(0);
+      std::vector<FFTGrid *> facies_prob_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
+        facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
+      }
+      CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    }
+  }
 
-  //  // Erik N: Should these two cases be treated differently? I leave
-  //  // the conditional statement
-  //  if (model_settings->getForwardModeling()) {
-  //    post_vp_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetMeanVp());
-  //    post_vs_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetMeanVs());
-  //    post_rho_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetMeanRho());
-  //  } else {
-  //    post_vp_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostVp());
-  //    post_vs_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostVs());
-  //    post_rho_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostRho());
-  //  }
+  //LH Cube
+  if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
+    int n_facies = seismic_parameters_intervals[0].GetLHCube().size();
+    lh_cubes_.resize(n_facies);
 
-  //  post_vp_kriged_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostVpKriged());
-  //  post_vs_kriged_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostVsKriged());
-  //  post_rho_kriged_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetPostRhoKriged());
+    for (int j = 0; j < n_facies; j++) {
+      lh_cubes_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-  //  background_vp_  = CreateStormGrid(output_simbox, background_vp_intervals_[0]);
-  //  background_vs_  = CreateStormGrid(output_simbox, background_vs_intervals_[0]);
-  //  background_rho_ = CreateStormGrid(output_simbox, background_rho_intervals_[0]);
+      std::vector<FFTGrid *> lh_cubes_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
+        lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
+      }
+      CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, erosion_priorities, dz_output);
 
-  //  blocked_logs_ = blocked_logs_intervals_[0];
+    }
+  }
 
-  //  corr_T_.push_back(seismic_parameters_intervals[0].GetCorrT());
-  //  if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-  //    corr_T_filtered_.push_back(seismic_parameters_intervals[0].GetCorrTFiltered());
+  //Quality grid
+  if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
+    quality_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-  //  post_var0_.push_back(seismic_parameters_intervals[0].GetPostVar0());
-  //  post_cov_vp00_.push_back(seismic_parameters_intervals[0].GetPostCovVp00());
-  //  post_cov_vs00_.push_back(seismic_parameters_intervals[0].GetPostCovVs00());
-  //  post_cov_rho00_.push_back(seismic_parameters_intervals[0].GetPostCovRho00());
+    std::vector<FFTGrid *> quality_grid_intervals(n_intervals_);
+    for (int i = 0; i < n_intervals_; i++) {
+      quality_grid_intervals[i] = seismic_parameters_intervals[i].GetQualityGrid();
+    }
+    CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
+  }
 
-  //  cov_vp_        = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCovVp());
-  //  cov_vs_        = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCovVs());
-  //  cov_rho_       = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCovRho());
-  //  cr_cov_vp_vs_  = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCrCovVpVs());
-  //  cr_cov_vp_rho_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCrCovVpRho());
-  //  cr_cov_vs_rho_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetCrCovVsRho());
+  //Simulation grids
+  if (model_settings->getNumberOfSimulations() > 0) {
+    int n_simulations = seismic_parameters_intervals[0].GetSimulationsSeed0().size();
+    simulations_seed0_.resize(n_simulations);
+    simulations_seed1_.resize(n_simulations);
+    simulations_seed2_.resize(n_simulations);
 
-  //  int n_simulations = seismic_parameters_intervals[0].GetSimulationsSeed0().size();
-  //  simulations_seed0_.resize(n_simulations);
-  //  simulations_seed1_.resize(n_simulations);
-  //  simulations_seed2_.resize(n_simulations);
-  //  for (int i = 0; i < n_simulations; i++) {
-  //    simulations_seed0_[i] = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetSimulationsSeed0()[i]);
-  //    simulations_seed1_[i] = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetSimulationsSeed1()[i]);
-  //    simulations_seed2_[i] = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetSimulationsSeed2()[i]);
-  //  }
+    for (int j = 0; j < n_simulations; j++) {
+      simulations_seed0_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
+      simulations_seed1_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
+      simulations_seed2_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-  //  block_grid_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetBlockGrid());
+      std::vector<FFTGrid *> simulations_seed0_intervals(n_intervals_);
+      std::vector<FFTGrid *> simulations_seed1_intervals(n_intervals_);
+      std::vector<FFTGrid *> simulations_seed2_intervals(n_intervals_);
+      for (int i = 0; i < n_intervals_; i++) {
+        simulations_seed0_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed0(j);
+        simulations_seed1_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed1(j);
+        simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
+      }
 
-  //  int n_facies = seismic_parameters_intervals[0].GetFaciesProb().size();
-  //  facies_prob_.resize(n_facies);
-  //  for (int i = 0; i < n_facies; i++) {
-  //    facies_prob_[i]    = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetFaciesProb()[i]);
-  //  }
-  //  facies_prob_undef_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetFaciesProbUndefined());
+      CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, erosion_priorities, dz_output);
 
-  //  n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
-  //  facies_prob_geo_.resize(n_facies);
-  //  for (int i = 0; i < n_facies; i++) {
-  //    facies_prob_geo_[i] = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetFaciesProbGeomodel()[i]);
-  //  }
+    }
+  }
 
+  //Block grid
+  if (model_settings->getWritePrediction() && model_settings->getDebugFlag()) {
+    block_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-  //  int n_lh_cubes = seismic_parameters_intervals[0].GetLHCube().size();
-  //  lh_cubes_.resize(n_lh_cubes);
-  //  for (int i = 0; i < n_lh_cubes; i++) {
-  //    lh_cubes_[i] = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetLHCube()[i]);
-  //  }
+    std::vector<FFTGrid *> block_grid_intervals(n_intervals_);
+    for (int i = 0; i < n_intervals_; i++) {
+      block_grid_intervals[i] = seismic_parameters_intervals[i].GetBlockGrid();
+    }
+    CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
+  }
 
-  //  quality_grid_ = CreateStormGrid(output_simbox, seismic_parameters_intervals[0].GetQualityGrid());
+  //Correlations and post variances
+  //Do not combine, store and write per interval
+  for (int i = 0; i < n_intervals_; i++) {
+    corr_T_.push_back(seismic_parameters_intervals[i].GetCorrT());
+    if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+      corr_T_filtered_.push_back(seismic_parameters_intervals[i].GetCorrTFiltered());
 
-  //}
-
+    post_var0_.push_back(seismic_parameters_intervals[i].GetPostVar0());
+    post_cov_vp00_.push_back(seismic_parameters_intervals[i].GetPostCovVp00());
+    post_cov_vs00_.push_back(seismic_parameters_intervals[i].GetPostCovVs00());
+    post_cov_rho00_.push_back(seismic_parameters_intervals[i].GetPostCovRho00());
+  }
 
   //ComputeSeismicImpedance from avoinversion.cpp
   reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
@@ -515,12 +440,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       ComputeSyntSeismic(model_settings, &output_simbox, post_vp_, post_vs_, post_rho_);
   }
 
-
   //From CommonData::WaveletHandling
   GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
-
-  //From wavelet1D.cpp
-  //SetWellSyntheticSeismic(wavelets_, blocked_logs_, common_data->GetSyntSeis(0), simbox_final, model_settings->getEstimateWavelet(0));
 
   //We need synt_seis from well wavelets, but it needs to be based on simbox_final/blocked_logs_final
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -529,7 +450,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     if (model_settings->getEstimateWavelet(0)[i] == true)
       wavelet_estimated = true;
   }
-
   if (wavelet_estimated == true)
     GenerateWellOptSyntSeis(model_settings, common_data, blocked_logs_, output_simbox, reflection_matrix_);
 
@@ -546,8 +466,10 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
   int ny = final_grid->GetNJ();
   int nz = final_grid->GetNK();
 
-  bool writing = false; //debugging
+  bool writing  = false; //debugging
+  float res_fac = 10.0; //Degree of refinement, must be integer.
 
+  //H-TODO Check against full_inversion_simbox?
   //If output simbox has the same size as the result grid there is no need to resample
   if (n_intervals_ == 1 && static_cast<int>(final_grid->GetNK()) == multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
     CreateStormGrid(*final_grid, interval_grids[0]);
@@ -563,8 +485,8 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
       //Resample each trace to new nz
       for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
 
-        Simbox * interval_simbox       = multi_interval_grid->GetIntervalSimbox(i_interval);
-        FFTGrid * interval_grid        = interval_grids[i_interval];
+        Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+        FFTGrid * interval_grid  = interval_grids[i_interval];
 
         std::vector<float> old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
 
@@ -573,7 +495,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         int nz_old       = interval_simbox->getnz();
 
         //Resample to new nz based on minimum dz from all traces and intervals
-        int nz_new = static_cast<int>((bot_value - top_value) / dz_min) * 10; //H 10
+        int nz_new = static_cast<int>( ((bot_value - top_value) / dz_min) * res_fac);
 
         new_traces[i_interval].resize(nz_new);
 
@@ -589,9 +511,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
           file.close();
         }
 
-        //Resampling
         //FFT(trace) -> pad with zeros until new nz -> IFFT back
-        //std::vector<float> trace_new_simple(nz_new);
         //ResampleSimple(trace_new_simple, old_trace); //H Not working properly. Oscillates at the beginning and end.
 
         //Alternative: Resampling of traces from CommonData::FillInData
@@ -606,9 +526,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
           old_trace[k_trace] -= trend_first + k_trace * trend_inc;
         }
 
-        //int nt = CommonData::FindClosestFactorableNumber(nz_new);
-        //int mt = 4*nt;
-
+        //int nt = CommonData::FindClosestFactorableNumber(nz_old);
         int nt = nz_old;
         int mt = nz_new;
 
@@ -634,39 +552,31 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
                                   rmt);
 
         //Add trend
-        trend_inc = (trend_last - trend_first) / (nz_new - 1);
+        trend_inc = (trend_last - trend_first) / (res_fac * (nz_old - 1));
         for (int k = 0; k < nz_new; k++) {
           new_traces[i_interval][k] = rAmpFine[k] + (trend_first + k*trend_inc);
         }
 
         //H-Writing REMOVE
         if (writing) {
-          //file_name = "combine/new_trace_simple";
-          //NRLib::OpenWrite(file, file_name);
-          //file << std::fixed
-          //      << std::setprecision(6);
-          //for (size_t k = 0; k < trace_new_simple.size(); k++)
-          //  file << trace_new_simple[k] << " ";
-          //file.close();
 
-          std::string file_name = "combine/old_trace_without_trend";
+        //  NRLib::OpenWrite(file, file_name);
+        //  file << std::fixed
+        //        << std::setprecision(6);
+        //  for (size_t k = 0; k < old_trace.size(); k++)
+        //    file << old_trace[k] << " ";
+        //  file.close();
+
+        //  file_name = "combine/rAmpFine";
+        //  NRLib::OpenWrite(file, file_name);
+        //  file << std::fixed
+        //        << std::setprecision(6);
+        //  for (int k = 0; k < rmt; k++)
+        //    file << rAmpFine[k] << " ";
+        //  file.close();
+
+          std::string file_name = "combine/new_trace_resampled_long";
           std::ofstream file;
-          NRLib::OpenWrite(file, file_name);
-          file << std::fixed
-                << std::setprecision(6);
-          for (size_t k = 0; k < old_trace.size(); k++)
-            file << old_trace[k] << " ";
-          file.close();
-
-          file_name = "combine/rAmpFine";
-          NRLib::OpenWrite(file, file_name);
-          file << std::fixed
-                << std::setprecision(6);
-          for (int k = 0; k < rmt; k++)
-            file << rAmpFine[k] << " ";
-          file.close();
-
-          file_name = "combine/new_trace_resampled";
           NRLib::OpenWrite(file, file_name);
           file << std::fixed
                 << std::setprecision(6);
@@ -675,12 +585,9 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
           file.close();
         }
 
-
       } //n_intervals
 
       //Combine vectors for each interval to one trace in stormgrid
-      //std::vector<int> interval_indexes(n_intervals_, 0);
-
       for (int k = 0; k < nz; k++) {
 
         bool two_intervals = false;
@@ -690,6 +597,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         double global_z = 0.0;
 
         final_grid->FindCenterOfCell(i, j, k, global_x, global_y, global_z);
+        double dz_final = (final_grid->GetBotSurface().GetZ(global_x, global_y) - final_grid->GetTopSurface().GetZ(global_x, global_y)) / final_grid->GetNK();
 
         int i_interval = 0;
         for (i_interval = 0; i_interval < n_intervals_; i_interval++) {
@@ -706,35 +614,38 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         }
 
         float value = 0.0f;
-        //int index   = 0;
         if (two_intervals == true) {
-          //Use erorsion priorities to select between the two intervals
 
+          //Use erorsion priorities to select between the two intervals
           if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
-            //index = interval_indexes[i_interval];
-            //value = new_traces[i_interval][index];
-            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z);
+            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
           }
           else {
-            //index = interval_indexes[i_interval+1];
-            //value = new_traces[i_interval+1][index];
-            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z);
+            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
           }
-
-          //interval_indexes[i_interval]++;
-          //interval_indexes[i_interval+1]++;
         }
         else {
-
-          //int index = interval_indexes[i_interval];
-
-          value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z);
-
-          //value = new_traces[i_interval][index];
-          //interval_indexes[i_interval]++;
+          value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
         }
 
         final_grid->SetValue(i, j, k, value);
+      }
+
+      if (writing) {
+        std::vector<float> new_trace_resampled(nz);
+
+        for (int k = 0; k < nz; k++) {
+          new_trace_resampled[k] = final_grid->GetValue(i, j, k);
+        }
+
+        std::string file_name = "combine/new_trace_resampled";
+        std::ofstream file;
+        NRLib::OpenWrite(file, file_name);
+        file << std::fixed
+              << std::setprecision(6);
+        for (size_t k = 0; k < new_trace_resampled.size(); k++)
+          file << new_trace_resampled[k] << " ";
+        file.close();
       }
 
     } //ny
@@ -751,19 +662,21 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
                                           const Simbox             & interval_simbox,
                                           const double             & global_x,
                                           const double             & global_y,
-                                          const double             & global_z)
+                                          const double             & global_z, //center of cell
+                                          const double             & dz_final)
 {
   double top = interval_simbox.getTop(global_x, global_y);
   double bot = interval_simbox.getBot(global_x, global_y);
 
-  int nz_resampled = resampled_trace.size();
+  int nz_resampled    = resampled_trace.size();
   double dz_resampled = (bot - top) / nz_resampled;
 
+  double global_z_top = global_z - 0.5*dz_final;
+
   double trace_z = top;
-  int index = 0;
-  //for (index = 0; index < nz_resampled; index++) {
-  while (index < nz_resampled) {
-    if (trace_z > global_z && trace_z <= (global_z + dz_resampled))
+  int index      = 0;
+  while (index < (nz_resampled-1)) {
+    if (trace_z >= global_z_top && trace_z <= (global_z_top + dz_resampled))
       break;
     else {
       trace_z += dz_resampled;
