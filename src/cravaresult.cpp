@@ -244,10 +244,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
 
     //H-TEST Out of memory: write here:
-  //int output_grids_elastic = model_settings->getOutputGridsElastic();
-  //GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
-  //      ParameterOutput::WriteParameters(&output_simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
-  //                                       output_grids_elastic, -1, false);
+  int output_grids_elastic = model_settings->getOutputGridsElastic();
+  GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
+        ParameterOutput::WriteParameters(&output_simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
+                                         output_grids_elastic, -1, false);
 
     //Post vp, vs and rho from avoinversion doPredictionKriging()
     if (model_settings->getKrigingParameter() > 0) {
@@ -472,7 +472,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
   //H-TODO Check against full_inversion_simbox?
   //If output simbox has the same size as the result grid there is no need to resample
   if (n_intervals_ == 1 && static_cast<int>(final_grid->GetNK()) == multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
-    CreateStormGrid(*final_grid, interval_grids[0]);
+    CreateStormGrid(*final_grid, interval_grids[0]); //deletes interval_grids[0]
     return;
   }
 
@@ -556,6 +556,11 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         for (int k = 0; k < nz_new; k++) {
           new_traces[i_interval][k] = rAmpFine[k] + (trend_first + k*trend_inc);
         }
+
+        fftw_free(rAmpData);
+        fftw_free(rAmpFine);
+        fftwnd_destroy_plan(fftplan1);
+        fftwnd_destroy_plan(fftplan2);
 
         //H-Writing REMOVE
         if (writing) {
@@ -1488,7 +1493,7 @@ CravaResult::ComputeSeismicImpedance(StormContGrid       * vp,
   return(impedance);
 }
 
-void CravaResult::AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs)
+void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & blocked_logs)
 {
   std::map<std::string, BlockedLogsCommon *> new_blocked_logs;
 

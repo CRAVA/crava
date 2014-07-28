@@ -59,6 +59,7 @@ public:
   const NRLib::Grid<float>                                           * GetPriorFaciesProbCube(int interval, int facies) const { return prior_facies_prob_cubes_[interval][facies]     ;}
 
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogs()                                 const { return mapped_blocked_logs_                           ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsOutput()                           const { return mapped_blocked_logs_output_                    ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsForCorr()                          const { return mapped_blocked_logs_for_correlation_           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsInterval(int i)                    const { return mapped_blocked_logs_intervals_.find(i)->second ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBgBlockedLogs()                               const { return mapped_bg_blocked_logs_                        ;}
@@ -884,6 +885,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   bool read_seismic_;
   bool read_wells_;
   bool block_wells_;
+  bool block_wells_output_;
   bool inversion_wells_;
   bool correlation_wells_;
   bool setup_reflection_matrix_;
@@ -916,6 +918,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   // Blocked well logs
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_output_;          ///< Blocked logs with output simbox
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
   std::map<int, std::map<std::string, BlockedLogsCommon *> >   mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
   std::map<std::string, BlockedLogsCommon *>                   mapped_bg_blocked_logs_;              ///< Blocked logs for extended background simbox

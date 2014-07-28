@@ -141,7 +141,7 @@ public:
   void AddBackgroundVs(FFTGrid * vs)   { background_vs_intervals_.push_back(new FFTGrid(vs))   ;}
   void AddBackgroundRho(FFTGrid * rho) { background_rho_intervals_.push_back(new FFTGrid(rho)) ;}
 
-  void AddBlockedLogs(std::map<std::string, BlockedLogsCommon *> & blocked_logs);
+  void AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & blocked_logs);
 
   void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
 

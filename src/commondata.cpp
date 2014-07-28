@@ -88,6 +88,11 @@ CommonData::CommonData(ModelSettings * model_settings,
     if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
       block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                              discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
+
+      //Block wells to output_simbox, used in CravaResult
+      block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
+
   }
   else
     block_wells_ = true;
@@ -7651,7 +7656,7 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   else
     top_tmp_surf.Add(avg_top); // This situation is not very likely, but ...
 
-  Surface bot_tmp_surf(*top_corr_surf);
+  Surface bot_tmp_surf(*bot_corr_surf);
   double avg_bot = bot_tmp_surf.Avg();
   if (avg_bot > 0)
     bot_tmp_surf.Subtract(avg_bot);

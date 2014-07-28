@@ -348,7 +348,8 @@ int main(int argc, char** argv)
         }
       }
 
-      crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+      //crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+      crava_result->AddBlockedLogs(common_data->GetBlockedLogsOutput());
 
       if (n_intervals == 1)
         crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
