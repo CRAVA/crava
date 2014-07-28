@@ -747,6 +747,15 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                    int            other_output,
                                                    std::string    interval_name) const;
 
+  void               SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                                   Surface      * top_corr_surf,
+                                                   Surface      * bot_corr_surf,
+                                                   Simbox      *& bg_simbox,
+                                                   int            output_format,
+                                                   int            output_domain,
+                                                   int            other_output,
+                                                   std::string    interval_name) const;
+
   bool               SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                            const InputFiles                                            * input_files,
                                            const std::vector<NRLib::Well>                              & wells,

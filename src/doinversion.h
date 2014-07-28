@@ -15,7 +15,7 @@ class SeismicParametersHolder;
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
-                       ModelGravityStatic      *& modelGravityStatic,
+                       //ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,

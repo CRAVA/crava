@@ -6960,11 +6960,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += err_text_tmp;
             }
           }
-          else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()
-                  || model_settings->getCorrDirBaseConform(interval_name)) {
-            //Similiar to MultiIntervalGrid::SetupIntervalSimbox
+          else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end() || model_settings->getCorrDirBaseConform(interval_name)) {
 
-            //SetupExtendedBackgroundSimbox(simbox, two correlations surfaces, bg_simbox);
+            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+            Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
+
+            //H-TODO //Similiar to MultiIntervalGrid::SetupIntervalSimbox
+            SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
 
           }
 
@@ -7590,6 +7593,100 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   // Calculate number of layers of background simbox
   //
   tmp_surf.Assign(0.0);
+  tmp_surf.AddNonConform(&bot_surf);
+  tmp_surf.SubtractNonConform(&top_surf);
+  double d_max = tmp_surf.Max();
+  double dt = simbox->getdz();
+  int nz;
+  //
+  // NBNB-PAL: I think it is a good idea to use a maximum dt of 10ms.
+  //
+  //if (dt < 10.0) {
+  //  LogKit::LogFormatted(LogKit::High,"\nReducing sampling density for background",dt);
+  //  LogKit::LogFormatted(LogKit::High," modelling from %.2fms to 10.0ms\n");
+  //  dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
+  // }
+  nz = static_cast<int>(ceil(d_max/dt));
+
+  //
+  // Make new simbox
+  //
+  bg_simbox = new Simbox(*simbox);
+  bg_simbox->setDepth(top_surf, bot_surf, nz);
+
+  std::string interval_name_out = "";
+  if (interval_name != "")
+    interval_name_out = "_" + interval_name;
+
+  if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG" + interval_name_out;
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG" + interval_name_out;
+    bg_simbox->WriteTopBaseSurfaceGrids(top_surf_name,
+                                        base_surf_name,
+                                        IO::PathToBackground(),
+                                        output_format);
+  }
+}
+
+void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                               Surface      * top_corr_surf,
+                                               Surface      * bot_corr_surf,
+                                               Simbox      *& bg_simbox,
+                                               int            output_format,
+                                               int            output_domain,
+                                               int            other_output,
+                                               std::string    interval_name) const
+{
+  assert (bg_simbox == NULL); //avoid memory leaks
+  //
+  // Move correlation surface for easier handling.
+  //
+
+  //Extend to two correlation surfaces
+
+  Surface top_tmp_surf(*top_corr_surf);
+  double avg_top = top_tmp_surf.Avg();
+  if (avg_top > 0)
+    top_tmp_surf.Subtract(avg_top);
+  else
+    top_tmp_surf.Add(avg_top); // This situation is not very likely, but ...
+
+  Surface bot_tmp_surf(*top_corr_surf);
+  double avg_bot = bot_tmp_surf.Avg();
+  if (avg_bot > 0)
+    bot_tmp_surf.Subtract(avg_bot);
+  else
+    bot_tmp_surf.Add(avg_bot); // This situation is not very likely, but ...
+
+  //
+  // Find top surface of background simbox.
+  //
+  // The funny/strange dTop->Multiply(-1.0) is due to NRLIB's current
+  // inability to set dTop equal to Simbox top surface.
+  //
+  Surface d_top(top_tmp_surf);
+  d_top.SubtractNonConform(&(simbox->GetTopSurface()));
+  d_top.Multiply(-1.0);
+  double shift_top = d_top.Min();
+  Surface top_surf(top_tmp_surf);
+  top_surf.Add(shift_top);
+
+  //
+  // Find base surface of background simbox
+  //
+  Surface d_bot(bot_tmp_surf);
+  d_bot.SubtractNonConform(&(simbox->GetBotSurface()));
+  d_bot.Multiply(-1.0);
+  double shift_bot = d_bot.Max();
+  Surface bot_surf(bot_tmp_surf);
+  bot_surf.Add(shift_bot);
+
+  //
+  // Calculate number of layers of background simbox
+  //
+  Surface tmp_surf(*top_corr_surf);
+  tmp_surf.Assign(0.0);
+
   tmp_surf.AddNonConform(&bot_surf);
   tmp_surf.SubtractNonConform(&top_surf);
   double d_max = tmp_surf.Max();
