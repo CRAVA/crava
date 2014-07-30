@@ -2402,7 +2402,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
   int nx              = estimation_simbox->getnx();
   int ny              = estimation_simbox->getny();
   int nz              = estimation_simbox->getnz();
-  int nzp             = 2.0*nz; //Should not hurt, only single traces here.
+  int nzp             = 2*nz; //Should not hurt, only single traces here.
   int cnzp            = nzp/2+1;
   int rnzp            = 2*cnzp;
   int i_tot_offset    = 2*i_max_offset+1;
