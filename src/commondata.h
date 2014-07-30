@@ -118,6 +118,16 @@ public:
                                     int                        cmt,
                                     int                        rmt);
 
+  static void        ResampleTrace(const std::vector<double> & data_trace,
+                                   const rfftwnd_plan        & fftplan1,
+                                   const rfftwnd_plan        & fftplan2,
+                                   fftw_real                 * rAmpData,
+                                   fftw_real                 * rAmpFine,
+                                   int                         cnt,
+                                   int                         rnt,
+                                   int                         cmt,
+                                   int                         rmt);
+
   static FFTGrid *   CreateFFTGrid(int nx,
                                    int ny,
                                    int nz,

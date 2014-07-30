@@ -117,6 +117,11 @@ public:
   const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
   std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
   std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
+
+  bool                                   GotRealSeismicData()                { return real_seismic_data_.size() > 0                                   ;}
+
+  int                                    GetNAngles()                        { return n_angles_                                                       ;}
+
   //const std::vector<double>            & GetActualSyntSeismicData(int angle) const { return actual_synt_seismic_data_.find(angle)->second ;}
   //const std::vector<double>            & GetWellSyntSeismicData(int angle) const { return well_synt_seismic_data_.find(angle)->second ;}
 
@@ -128,6 +133,9 @@ public:
   bool                                   GetUseForBackgroundTrend(void)     const { return (use_for_background_trend_ > 0)                            ;}
 
   double                                 GetDz(void)                        const { return dz_                                                        ;}
+
+  int                                    GetFirstB(void)                    const { return first_B_                                                   ;}
+  int                                    GetLastB(void)                     const { return last_B_                                                    ;}
 
   bool                                   HasSyntheticVsLog(void)            const { return (real_vs_log_ == 0)                                        ;}
   bool                                   HasContLog(std::string s)     { return (continuous_logs_blocked_.find(s) != continuous_logs_blocked_.end())  ;}
@@ -172,6 +180,11 @@ public:
 
   void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
 
+  void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
+
+  void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log)) ;}
+  void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log)) ;}
+  void                                   SetRhoPredicted(std::vector<double> log)                       { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", log)) ;}
 
   // OTHER FUNCTIONS -----------------------------------
 
@@ -596,31 +609,31 @@ private:
 
   // CLASS VARIABLES -----------------------------
 
-  std::map<std::string, int>  n_layers_adjusted_per_interval_;   // Number of layers per interval using dz from the first interval everywhere
-  std::map<std::string, int>  n_blocks_with_data_;               // Number of blocks with data per interval
-  int                         n_blocks_with_data_tot_;           // Total number of blocks with data
-  unsigned int                n_blocks_;                         // Number of blocks
-  unsigned int                n_data_;                           // Number of non-missing
-  std::string                 well_name_;
+  std::map<std::string, int>                  n_layers_adjusted_per_interval_;   // Number of layers per interval using dz from the first interval everywhere
+  std::map<std::string, int>                  n_blocks_with_data_;               // Number of blocks with data per interval
+  int                                         n_blocks_with_data_tot_;           // Total number of blocks with data
+  unsigned int                                n_blocks_;                         // Number of blocks
+  unsigned int                                n_data_;                           // Number of non-missing
+  std::string                                 well_name_;
 
-  std::map<int, std::string>  facies_map_;
-  bool                        facies_log_defined_;
+  std::map<int, std::string>                  facies_map_;
+  bool                                        facies_log_defined_;
   //std::vector<int>   facies_numbers_;
   //std::vector<int>   facies_;
 
   // Blocked values
-  std::vector<double> x_pos_blocked_;  // Blocked x position
-  std::vector<double> y_pos_blocked_;  // Blocked y position
-  std::vector<double> z_pos_blocked_;  // Blocked z position
-  std::vector<int>    facies_blocked_; // Blocked facies log
+  std::vector<double>                         x_pos_blocked_;  // Blocked x position
+  std::vector<double>                         y_pos_blocked_;  // Blocked y position
+  std::vector<double>                         z_pos_blocked_;  // Blocked z position
+  std::vector<int>                            facies_blocked_; // Blocked facies log
 
-  std::vector<int>    s_pos_;    // Simbox number for block
-  std::vector<int>    i_pos_;    // Simbox i position for block
-  std::vector<int>    j_pos_;    // Simbox j position for block
-  std::vector<int>    k_pos_;    // Simbox k position for block
+  std::vector<int>                            s_pos_;    // Simbox number for block
+  std::vector<int>                            i_pos_;    // Simbox i position for block
+  std::vector<int>                            j_pos_;    // Simbox j position for block
+  std::vector<int>                            k_pos_;    // Simbox k position for block
 
-  int                 n_continuous_logs_;     // Number of continuous logs
-  int                 n_discrete_logs_;       // Number of discrete logs
+  int                                         n_continuous_logs_;     // Number of continuous logs
+  int                                         n_discrete_logs_;       // Number of discrete logs
 
   std::map<std::string, std::vector<double> > continuous_logs_blocked_;         // Map between variable name and blocked continuous log
   std::map<std::string, std::vector<int> >    discrete_logs_blocked_;           // Map between variable name and blocked discrete log
@@ -636,10 +649,10 @@ private:
   float sigma_m_; //Smoothing factor for the gradients
 
   // Logs from well, not blocked
-  std::vector<double> x_pos_raw_logs_;
-  std::vector<double> y_pos_raw_logs_;
-  std::vector<double> z_pos_raw_logs_;
-  std::vector<int>    facies_raw_logs_;
+  std::vector<double>                         x_pos_raw_logs_;
+  std::vector<double>                         y_pos_raw_logs_;
+  std::vector<double>                         z_pos_raw_logs_;
+  std::vector<int>                            facies_raw_logs_;
 
   std::map<std::string, std::vector<double> > continuous_raw_logs_;  // Map between variable name and raw continuous logs
   std::map<std::string, std::vector<int> >    discrete_raw_logs_;    // Map between variable name and raw discrete logs
@@ -650,36 +663,36 @@ private:
   std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
   std::map<int, std::vector<double> >         facies_prob_;                ///< Map between angle and facies prob
 
-  std::vector<double> vp_for_facies_;
-  std::vector<double> rho_for_facies_;
+  std::vector<double>                         vp_for_facies_;
+  std::vector<double>                         rho_for_facies_;
 
-  int                       n_angles_;                  ///< Number of AVA stacks
+  int                                         n_angles_;                  ///< Number of AVA stacks
 
-  bool                      interpolate_;              ///<
+  bool                                        interpolate_;              ///<
 
-  int                       n_layers_;                 ///< Number of layers in estimation_simbox
-  double                    dz_;                       ///< Simbox dz value for block
+  int                                         n_layers_;                 ///< Number of layers in estimation_simbox
+  double                                      dz_;                       ///< Simbox dz value for block
 
-  int                       first_S_;                   ///< First simbox that the well log appears in
-  int                       last_S_;                    ///< Last simbox that the well log appears in
+  int                                         first_S_;                   ///< First simbox that the well log appears in
+  int                                         last_S_;                    ///< Last simbox that the well log appears in
 
-  int                       first_M_;                   ///< First well log entry contributing to blocked well
-  int                       last_M_;                    ///< Last well log entry contributing to blocked well
+  int                                         first_M_;                   ///< First well log entry contributing to blocked well
+  int                                         last_M_;                    ///< Last well log entry contributing to blocked well
 
-  int                       first_B_;                   ///< First block with contribution from well log
-  int                       last_B_;                    ///< Last block with contribution from well log
+  int                                         first_B_;                   ///< First block with contribution from well log
+  int                                         last_B_;                    ///< Last block with contribution from well log
 
-  std::vector<int>          n_well_log_obs_in_interval_;      ///< Number of well log observations in each interval
+  std::vector<int>                            n_well_log_obs_in_interval_;      ///< Number of well log observations in each interval
 
-  bool                      is_deviated_;
+  bool                                        is_deviated_;
 
   //Used in logging in crava.cpp. Copied from well
-  int                       real_vs_log_;                    //Uses the indicator enum from Modelsettings
-  int                       use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
+  int                                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
+  int                                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
 
-  int                       use_for_background_trend_;       //Uses the indicator enum from Modelsettings
-  int                       use_for_filtering_;              //Uses the indicator enum from Modelsettings
-  int                       use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
+  int                                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
+  int                                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
+  int                                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
 
 };
 #endif

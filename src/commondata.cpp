@@ -89,10 +89,8 @@ CommonData::CommonData(ModelSettings * model_settings,
       block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                              discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
-      //Block wells to output_simbox, used in CravaResult
       block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                     discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
-
   }
   else
     block_wells_ = true;
@@ -6501,6 +6499,64 @@ void CommonData::ResampleTrace(const std::vector<float> & data_trace,
   }
 }
 
+void CommonData::ResampleTrace(const std::vector<double> & data_trace,
+                               const rfftwnd_plan        & fftplan1,
+                               const rfftwnd_plan        & fftplan2,
+                               fftw_real                 * rAmpData,
+                               fftw_real                 * rAmpFine,
+                               int                         cnt,
+                               int                         rnt,
+                               int                         cmt,
+                               int                         rmt)
+{
+  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
+
+  //
+  // Fill vector to be FFT'ed
+  //
+  int n_data = static_cast<int>(data_trace.size());
+
+  for (int i = 0; i < n_data; i++) {
+    rAmpData[i] = data_trace[i];
+  }
+  // Pad with zeros
+  for (int i = n_data; i < rnt; i++) {
+    rAmpData[i] = 0.0f;
+  }
+
+  //
+  // Transform to Fourier domain
+  //
+  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+
+  //
+  // Fill fine-sampled grid
+  //
+  for (int i = 0; i < cnt; i++) {
+    cAmpFine[i].re = cAmpData[i].re;
+    cAmpFine[i].im = cAmpData[i].im;
+  }
+  // Pad with zeros (cmt is always greater than cnt)
+  for (int i = cnt; i < cmt; i++) {
+    cAmpFine[i].re = 0.0f;
+    cAmpFine[i].im = 0.0f;
+  }
+
+  //
+  // Fine-sampled grid: Fourier --> Time
+  //
+  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+
+  //
+  // Scale and fill grid_trace
+  //
+  float scale = 1/static_cast<float>(rnt);
+  for (int i = 0; i < rmt; i++) {
+    rAmpFine[i] = scale*rAmpFine[i];
+  }
+}
+
 void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
                                        float                z0_grid,
                                        float                dz_grid,
@@ -6965,9 +7021,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += err_text_tmp;
             }
           }
-          else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end() || model_settings->getCorrDirBaseConform(interval_name)) {
+          else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()
+                || ((model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end()) && model_settings->getCorrDirBaseConform(interval_name) == true)) {
 
-            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name)); //H-TODO Add in top_conform/base_conform option
             Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
 
             //H-TODO //Similiar to MultiIntervalGrid::SetupIntervalSimbox

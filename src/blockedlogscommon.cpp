@@ -508,9 +508,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       (void) discrete_raw_logs;
       (void) discrete_logs_blocked;
 
-      if(interpolate){
-        for(unsigned int i=1;i<n_data;i++) {
-          if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+      if (interpolate) {
+        for (unsigned int i=1;i<n_data;i++) {
+          if (abs(b_ind[i]-b_ind[i-1]) > 1) {
             int start, end;
             if(b_ind[i] > b_ind[i-1]) {
               start = b_ind[i-1];
@@ -849,12 +849,12 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
   n_blocks = 0;
   for (int i=0; i<first_S_; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                      // 1. Add number of blocks from intervals above the first well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                   // 1. Add number of blocks from intervals above the first well obs
   for (int i=last_S_+1; i<n_intervals; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
-  n_blocks += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
-  n_blocks += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                  // 2. Add number of blocks from intervals below the last well obs
+  n_blocks += first_K;                                                                                                  // 3. Add number of layers above the first well observation in the simbox with the first well obs
+  n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;      // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks += n_defined_blocks;                                                                                         // 5. Add number of defined blocks between first_K and last_K
 
 
   bool debug = false;

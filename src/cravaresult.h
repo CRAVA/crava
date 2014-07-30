@@ -52,6 +52,42 @@ public:
                                const double             & global_z,
                                const double             & dz_final);
 
+  double GetResampledTraceValue(const std::vector<double> & resampled_trace,
+                                const Simbox              & interval_simbox,
+                                const double              & global_x,
+                                const double              & global_y,
+                                const double              & global_z, //center of cell
+                                const double              & dz_final);
+
+  void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
+                          const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                          MultiIntervalGrid                                              * multi_interval_grid,
+                          const Simbox                                                   * output_simbox);
+
+  void GetWellLogContributed(std::vector<double>       & log_out,
+                             const std::vector<double> & log_old,
+                             int                         first_B,
+                             int                         last_B);
+
+  void InterpolateMissing(std::vector<double> & well_log);
+
+  void ResampleLog(std::vector<double>                                            & final_log,
+                   std::vector<std::vector<double> >                              & old_log_interval, //vector interval
+                   const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                   MultiIntervalGrid                                              * multi_interval_grid,
+                   const BlockedLogsCommon                                        * blocked_log_final,
+                   std::string                                                      well_name,
+                   float                                                            res_fac);
+
+  void ResampleTrace(std::vector<double> & old_trace,
+                     std::vector<double> & new_trace,
+                     const float           res_fac);
+
+  void CombineTraces(std::vector<double>                     & final_log,
+                     const BlockedLogsCommon                 * blocked_log_final,
+                     MultiIntervalGrid                       * multiple_interval_grid,
+                     const std::vector<std::vector<double> > & resampled_logs);
+
   void WriteResults(ModelSettings * model_settings,
                     CommonData    * common_data);
 
@@ -148,67 +184,65 @@ public:
 private:
 
   //Resuls per interval
-  std::vector<FFTGrid *> background_vp_intervals_;
-  std::vector<FFTGrid *> background_vs_intervals_;
-  std::vector<FFTGrid *> background_rho_intervals_;
+  std::vector<FFTGrid *>                                   background_vp_intervals_;
+  std::vector<FFTGrid *>                                   background_vs_intervals_;
+  std::vector<FFTGrid *>                                   background_rho_intervals_;
 
   std::vector<std::map<std::string, BlockedLogsCommon *> > blocked_logs_intervals_;
 
-  std::vector<fftw_real *>         corr_T_;
-  std::vector<float *>             corr_T_filtered_;
+  std::vector<fftw_real *>                                 corr_T_;
+  std::vector<float *>                                     corr_T_filtered_;
 
-  std::vector<NRLib::Matrix>       post_var0_;
-  std::vector<std::vector<float> > post_cov_vp00_;        // Posterior covariance in (i,j) = (0,0)
-  std::vector<std::vector<float> > post_cov_vs00_;
-  std::vector<std::vector<float> > post_cov_rho00_;
-
-  //std::vector<std::vector<Wavelet *> > wavelets_intervals_; //Wavelets resampled to simbox
+  std::vector<NRLib::Matrix>                               post_var0_;
+  std::vector<std::vector<float> >                         post_cov_vp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<std::vector<float> >                         post_cov_vs00_;
+  std::vector<std::vector<float> >                         post_cov_rho00_;
 
   //Results combined
-  StormContGrid                  * cov_vp_;
-  StormContGrid                  * cov_vs_;
-  StormContGrid                  * cov_rho_;
-  StormContGrid                  * cr_cov_vp_vs_;
-  StormContGrid                  * cr_cov_vp_rho_;
-  StormContGrid                  * cr_cov_vs_rho_;
+  StormContGrid                            * cov_vp_;
+  StormContGrid                            * cov_vs_;
+  StormContGrid                            * cov_rho_;
+  StormContGrid                            * cr_cov_vp_vs_;
+  StormContGrid                            * cr_cov_vp_rho_;
+  StormContGrid                            * cr_cov_vs_rho_;
 
-  StormContGrid                  * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
-  StormContGrid                  * post_vs_;
-  StormContGrid                  * post_rho_;
+  StormContGrid                            * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
+  StormContGrid                            * post_vs_;
+  StormContGrid                            * post_rho_;
 
-  StormContGrid                  * post_vp_kriged_; //From avoinversion doPredictionKriging()
-  StormContGrid                  * post_vs_kriged_;
-  StormContGrid                  * post_rho_kriged_;
+  StormContGrid                            * post_vp_kriged_; //From avoinversion doPredictionKriging()
+  StormContGrid                            * post_vs_kriged_;
+  StormContGrid                            * post_rho_kriged_;
 
-  StormContGrid                  * background_vp_;
-  StormContGrid                  * background_vs_;
-  StormContGrid                  * background_rho_;
+  StormContGrid                            * background_vp_;
+  StormContGrid                            * background_vs_;
+  StormContGrid                            * background_rho_;
 
   std::map<std::string, BlockedLogsCommon *> blocked_logs_;
   std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_;
 
-  std::vector<StormContGrid *>     simulations_seed0_; //Vector over number of simulations
-  std::vector<StormContGrid *>     simulations_seed1_;
-  std::vector<StormContGrid *>     simulations_seed2_;
+  std::vector<StormContGrid *>               simulations_seed0_; //Vector over number of simulations
+  std::vector<StormContGrid *>               simulations_seed1_;
+  std::vector<StormContGrid *>               simulations_seed2_;
 
-  std::vector<StormContGrid *>     synt_seismic_data_; //Vector angles
-  std::vector<StormContGrid *>     synt_residuals_;
+  std::vector<StormContGrid *>               synt_seismic_data_; //Vector angles
+  std::vector<StormContGrid *>               synt_residuals_;
 
-  StormContGrid                  * block_grid_;
+  StormContGrid                            * block_grid_;
 
-  std::vector<StormContGrid *>     facies_prob_;
-  StormContGrid                  * facies_prob_undef_;
+  std::vector<StormContGrid *>               facies_prob_;
+  StormContGrid                            * facies_prob_undef_;
 
-  std::vector<StormContGrid *>     facies_prob_geo_;
+  std::vector<StormContGrid *>               facies_prob_geo_;
 
-  std::vector<StormContGrid*>      lh_cubes_;
+  std::vector<StormContGrid*>                lh_cubes_;
 
-  StormContGrid                  * quality_grid_;
+  StormContGrid                            * quality_grid_;
 
-  std::vector<Wavelet *>           wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
-  NRLib::Matrix                    reflection_matrix_;
+  std::vector<Wavelet *>                     wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
+  NRLib::Matrix                              reflection_matrix_;
 
-  int                              n_intervals_;
+  int                                        n_intervals_;
 
 };
 
