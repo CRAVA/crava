@@ -1093,7 +1093,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // CRA-257, Erik N: Should this still be done?
   /************************************************************
   //
-  // 3) Scale corTT correlation to account for blocking effects
+  // x) Scale corTT correlation to account for blocking effects
   //
   for(i=0;i<n+1;i++)
     corTT[i]/=corTT[0];
@@ -1209,18 +1209,14 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // 4) Downscale correlations linearly
   //
 
-  // CRA-257 Erik N: Should this still be done?
-  /*****************************************************************
-    long int ntot=0;
-    for(i=1;i<nend+1;i++)
-      ntot+=nTT[i];
-    float b = static_cast<float>((2*ntot)/static_cast<float>(nend+1));  // counts the zero-element as well
-    float a = b/static_cast<float>(nend+1);
-    for(i=1;i<nend+1;i++)
-    {
-      CorrT[i] *= (b - a*i)/b;
+  for(int j=0 ; j<3; j++){
+    for(int k=j; k<3; k++){
+      for(int i=1; i < max_lag_with_data; i++){
+        auto_cov[i](j,k) *= 1 - static_cast<float>(i)/(max_lag_with_data);
+        auto_cov[i](k,j) = auto_cov[i](j,k);
+      }
     }
-  ********************************************************************/
+  }
 
   //
   // 5) Print to file autocov.dat

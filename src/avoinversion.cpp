@@ -1010,7 +1010,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   FFTGrid * postCrCovVpRho = seismicParameters.GetCrCovVpRho();
   FFTGrid * postCrCovVsRho = seismicParameters.GetCrCovVsRho();
 
-
   if (modelGeneral->GetIs4DActive() == true) {
     std::vector<FFTGrid *> sigma(6);
     sigma[0] = postCovVp;

@@ -263,9 +263,9 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     //
     // Erik N: CRA-709, temporary fix. The parameter autocorrelations are computed as an average over all 6 functions
     // start
-    fftw_real * circ_corr_t = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
-    for (int i = 0; i < 2*(nzp/2+1); i++)
-      circ_corr_t[i] = 0;
+    //fftw_real * circ_corr_t = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
+    //for (int i = 0; i < 2*(nzp/2+1); i++)
+    //  circ_corr_t[i] = 0;
     // end
 
     circ_auto_cov.resize(3);
@@ -274,7 +274,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
       for(int j = i; j < 3; j++){
         std::vector<double> corr_t(auto_cov.size());
         for (size_t k = 0; k < auto_cov.size(); k++){
-          if(auto_cov[0](i,j) > 0)
+          if(auto_cov[0](i,j) != 0.0)
             corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
           else 
             corr_t[k] = 0;
@@ -286,6 +286,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     //
     // Erik N: CRA-709, temporary fix.
     // start
+    /*
     int n_corr_vectors = 0;
     for (int i = 0; i < 3; i++){
       for (int j = i; j < 3; j++){
@@ -299,7 +300,6 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     for (int k = 0; k < 2*(nzp/2+1); k++)
       circ_corr_t[k] /= n_corr_vectors;
 
-    /*
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
     covRho_     ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
@@ -317,6 +317,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
     crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
+
 
     covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));
     covVs_      ->multiplyByScalar(static_cast<float>(auto_cov[0](1,1)));
@@ -982,6 +983,7 @@ SeismicParametersHolder::updatePriorVar()
   priorVar0_(0,2) = priorVar0_(2,0);
   priorVar0_(2,1) = getOrigin(crCovVsRho_);
   priorVar0_(1,2) = priorVar0_(2,1);
+
 }
 //--------------------------------------------------------------------
 float
