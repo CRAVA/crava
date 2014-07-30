@@ -260,18 +260,56 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   if (cov_estimated){
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
 
+    //
+    // Erik N: CRA-709, temporary fix. The parameter autocorrelations are computed as an average over all 6 functions
+    // start
+    //fftw_real * circ_corr_t = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
+    //for (int i = 0; i < 2*(nzp/2+1); i++)
+    //  circ_corr_t[i] = 0;
+    // end
 
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
-      for(int j = 0; j < 3; j++){
+      for(int j = i; j < 3; j++){
         std::vector<double> corr_t(auto_cov.size());
         for (size_t k = 0; k < auto_cov.size(); k++){
-          corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+          if(auto_cov[0](i,j) != 0.0)
+            corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+          else 
+            corr_t[k] = 0;
         }
         circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t, low_int_cut, nzp);
       }
     }
+
+    //
+    // Erik N: CRA-709, temporary fix.
+    // start
+    /*
+    int n_corr_vectors = 0;
+    for (int i = 0; i < 3; i++){
+      for (int j = i; j < 3; j++){
+        if (circ_auto_cov[i][j][0] > 0){
+          n_corr_vectors++;
+          for (int k = 0; k < 2*(nzp/2+1); k++)
+            circ_corr_t[k] += circ_auto_cov[i][j][k];
+        }
+      }
+    }
+    for (int k = 0; k < 2*(nzp/2+1); k++)
+      circ_corr_t[k] /= n_corr_vectors;
+
+    covVp_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    covVs_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    covRho_     ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
+    */
+
+    // end. The lines below should be uncommented
+
 
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
@@ -279,6 +317,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
     crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
+
 
     covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));
     covVs_      ->multiplyByScalar(static_cast<float>(auto_cov[0](1,1)));
@@ -630,6 +669,7 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
                                              const int & minIntFq,
                                              const int & nzp) const
 {
+  fftw_real      first_element = circCorrT[0];
   fftw_complex * fftCircCorrT;
   fftCircCorrT = FFTGrid::fft1DzInPlace(circCorrT, nzp);
 
@@ -647,13 +687,15 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
   // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
   //           do we avoid this, or how do we flag the problem?
   //
-  float scale;
-  if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-    scale = float( 1.0f/circCorrT[0] );
-  else  {
-    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
-    exit(1);
+  float scale = 0;
+  if (first_element > 0){ // Erik N: Since some cross correlations are set to 0 for synthetic logs
+    if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
+      scale = float( 1.0f/circCorrT[0] );
+    else  {
+      LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+      LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+      exit(1);
+    }
   }
 
   for(int k=0; k<nzp; k++)
@@ -941,6 +983,7 @@ SeismicParametersHolder::updatePriorVar()
   priorVar0_(0,2) = priorVar0_(2,0);
   priorVar0_(2,1) = getOrigin(crCovVsRho_);
   priorVar0_(1,2) = priorVar0_(2,1);
+
 }
 //--------------------------------------------------------------------
 float

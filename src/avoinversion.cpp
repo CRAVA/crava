@@ -279,7 +279,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   postRho_->fftInPlace();
 
   seismicParameters.setBackgroundParameters(postVp_, postVs_, postRho_);
-  seismicParameters.FFTCovGrids();
+  //seismicParameters.FFTCovGrids();
 
   seismicParameters.SetPostVar0(postVar0_);
   seismicParameters.SetPostCovVp00(postCovVp00_);
