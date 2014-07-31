@@ -275,7 +275,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
         std::vector<double> corr_t(auto_cov.size());
         for (size_t k = 0; k < auto_cov.size(); k++){
           if(auto_cov[0](i,j) != 0.0)
-            corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values
+            corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
           else 
             corr_t[k] = 0;
         }
