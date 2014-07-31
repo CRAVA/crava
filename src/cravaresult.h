@@ -71,6 +71,8 @@ public:
 
   void InterpolateMissing(std::vector<double> & well_log);
 
+  void ExtrapolateLog(std::vector<double> & well_log);
+
   void ResampleLog(std::vector<double>                                            & final_log,
                    std::vector<std::vector<double> >                              & old_log_interval, //vector interval
                    const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,

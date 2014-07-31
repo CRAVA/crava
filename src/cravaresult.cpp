@@ -899,6 +899,16 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       ResampleLog(vs_filtered_final,  vs_filtered_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
       ResampleLog(rho_filtered_final, rho_filtered_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
 
+      //If we vp and vp_bg are missing, seismic_resolution should also be missing. But missing values are interpolated over during the resampling, so we reset them as missing.
+      for (int i = 0; i < n_blocks; i++) {
+        if (blocked_log_final->GetVpBlocked()[i] == RMISSING && blocked_log_final->GetVpHighCutBackground()[i] == RMISSING)
+          vp_filtered_final[i] = RMISSING;
+        if (blocked_log_final->GetVsBlocked()[i] == RMISSING && blocked_log_final->GetVsHighCutBackground()[i] == RMISSING)
+          vs_filtered_final[i] = RMISSING;
+        if (blocked_log_final->GetRhoBlocked()[i] == RMISSING && blocked_log_final->GetRhoHighCutBackground()[i] == RMISSING)
+          rho_filtered_final[i] = RMISSING;
+      }
+
       blocked_log_final->SetVpPredicted(vp_filtered_final);
       blocked_log_final->SetVsPredicted(vs_filtered_final);
       blocked_log_final->SetRhoPredicted(rho_filtered_final);
@@ -925,9 +935,8 @@ void CravaResult::InterpolateMissing(std::vector<double> & well_log)
 {
   //Interpolate out missing values
 
-  //Assume first and last value ok.
-  assert(well_log[0] != RMISSING);
-  assert(well_log[well_log.size()-1] != RMISSING);
+  if (well_log[0] == RMISSING || well_log[well_log.size()-1] == RMISSING)
+    ExtrapolateLog(well_log);
 
   for (size_t i = 1; i < well_log.size()-1; i++) {
     if (well_log[i] == RMISSING) {
@@ -947,6 +956,26 @@ void CravaResult::InterpolateMissing(std::vector<double> & well_log)
       }
     }
   }
+}
+
+void CravaResult::ExtrapolateLog(std::vector<double> & well_log)
+{
+  if (well_log[0] == RMISSING) {
+    int i = 1;
+    while (well_log[i] == RMISSING)
+      i++;
+    for (int j = 0; j < i; j++)
+      well_log[j] = well_log[i];
+  }
+
+  if (well_log[well_log.size() - 1] == RMISSING) {
+    int i = well_log.size() - 2;
+    while (well_log[i] == RMISSING)
+      i--;
+    for (size_t j = i; j < well_log.size() - 1; j++)
+      well_log[j] = well_log[i];
+  }
+
 }
 
 void CravaResult::ResampleLog(std::vector<double>                                            & final_log,
@@ -1164,6 +1193,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
             NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
             FFTGrid * fft_grid_tmp          = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
+            fft_grid_tmp->createRealGrid();
 
             StormContGrid * storm_tmp  = NULL;
             int missing_traces_simbox  = 0;
@@ -1190,8 +1220,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               seismic_storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
 
-            if (fft_grid_tmp != NULL)
-              delete fft_grid_tmp;
             if (storm_tmp != NULL)
               delete storm_tmp;
             if (segy != NULL)
