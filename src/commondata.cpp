@@ -89,6 +89,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                              discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
+      //Block wells to output simbox
       block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                     discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
   }
@@ -596,14 +597,11 @@ void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
 
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
-  //int n_intervals = multi_interval_grid->GetNIntervals();
 
   int index_i = 0;
   int index_j = 0;
 
   double dz_min    = FindDzMin(multi_interval_grid, index_i, index_j);
-  //double top_value = multi_interval_grid->GetIntervalSimbox(0)->getTop(index_i, index_j);
-  //double bot_value = multi_interval_grid->GetIntervalSimbox(n_intervals-1)->getBot(index_i, index_j);
   double top_value = output_simbox.getTop(index_i, index_j);
   double bot_value = output_simbox.getBot(index_i, index_j);
 

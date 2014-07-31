@@ -118,13 +118,6 @@ public:
   void WriteWells(const std::vector<NRLib::Well> & wells,
                   const ModelSettings      * model_settings);
 
-  //void FindDzMin(const Simbox      & full_inversion_simbox,
-  //               MultiIntervalGrid * multi_interval_grid,
-  //               double            & dz);
-
-  //void ResampleSimple(std::vector<float>       & new_trace,
-  //                    const std::vector<float> & old_trace);
-
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid);
 

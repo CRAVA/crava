@@ -113,12 +113,14 @@ public:
   const std::vector<double>            & GetRhoForFacies(void) const { return rho_for_facies_                                                         ;}
 
   const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
-  const std::vector<double>            & GetFaciesProb(int angle)      const { return facies_prob_.find(angle)->second                                ;}
+  const std::vector<double>            & GetFaciesProb(int facies)     const { return facies_prob_.find(facies)->second                               ;}
   const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
   std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
   std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
 
-  bool                                   GotRealSeismicData()                { return real_seismic_data_.size() > 0                                   ;}
+  int                                    GetNRealSeismicData()               { return real_seismic_data_.size()                                       ;}
+  int                                    GetNCpp()                           { return cpp_.size()                                                     ;}
+  int                                    GetNFaciesProb()                    { return facies_prob_.size()                                             ;}
 
   int                                    GetNAngles()                        { return n_angles_                                                       ;}
 
@@ -181,26 +183,31 @@ public:
   void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
 
   void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
+  void                                   SetFaciesProb(int facies, std::vector<double> log)             { facies_prob_.insert(std::pair<int, std::vector<double> >(facies, log))      ;}
+  void                                   SetCpp(int angle, std::vector<double> log)                     { cpp_.insert(std::pair<int, std::vector<double> >(angle, log))               ;}
 
-  void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log)) ;}
-  void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log)) ;}
+  void                                   SetVpForFacies(std::vector<double> vp_for_facies)              { vp_for_facies_  = vp_for_facies                                             ;}
+  void                                   SetRhoForFacies(std::vector<double> rho_for_facies)            { rho_for_facies_ = rho_for_facies                                            ;}
+
+  void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log))  ;}
+  void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log))  ;}
   void                                   SetRhoPredicted(std::vector<double> log)                       { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", log)) ;}
 
   // OTHER FUNCTIONS -----------------------------------
 
-  void  FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
-                                const Simbox                  * estimation_simbox,
-                                const Simbox                  & inversion_simbox,
-                                const NRLib::Matrix           & refl_coef,
-                                int                             n_angles,
-                                const std::vector<float>      & angle_weight,
-                                float                           max_shift,
-                                int                             i_max_offset,
-                                int                             j_max_offset,
-                                const std::vector<Surface *>    limits,
-                                int                           & i_move,
-                                int                           & j_move,
-                                float                         & k_move) const;
+  void                                   FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+                                                                 const Simbox                  * estimation_simbox,
+                                                                 const Simbox                  & inversion_simbox,
+                                                                 const NRLib::Matrix           & refl_coef,
+                                                                 int                             n_angles,
+                                                                 const std::vector<float>      & angle_weight,
+                                                                 float                           max_shift,
+                                                                 int                             i_max_offset,
+                                                                 int                             j_max_offset,
+                                                                 const std::vector<Surface *>    limits,
+                                                                 int                           & i_move,
+                                                                 int                           & j_move,
+                                                                 float                         & k_move) const;
 
   void                                   EstimateCor(fftw_complex * var1_c,
                                                      fftw_complex * var2_c,
@@ -661,7 +668,7 @@ private:
   std::map<int, std::vector<double> >         cpp_;                        ///< Mapped reflection coefficients for angles
   std::map<std::string, std::vector<double> > continuous_logs_predicted_;  ///< Map between variable name and predicted continuous log
   std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
-  std::map<int, std::vector<double> >         facies_prob_;                ///< Map between angle and facies prob
+  std::map<int, std::vector<double> >         facies_prob_;                ///< Map between facies and facies prob
 
   std::vector<double>                         vp_for_facies_;
   std::vector<double>                         rho_for_facies_;
