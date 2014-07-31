@@ -33,11 +33,6 @@ class BlockedLogsCommon;
 class AVOInversion
 {
 public:
-  //AVOInversion(ModelSettings           * modelSettings,
-  //      ModelGeneral            * modelGeneral,
-  //      ModelAVOStatic          * modelAVOstatic,
-  //      ModelAVODynamic         * modelAVOdynamic,
-  //      SeismicParametersHolder & seismicParameters);
 
   AVOInversion(ModelSettings           * modelSettings,
                ModelGeneral            * modelGeneral,
@@ -48,7 +43,7 @@ public:
   ~AVOInversion();
 
   int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
-  int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);
+  //int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);
 
   FFTGrid              * getPostVp()  { return postVp_  ;}
   FFTGrid              * getPostVs()  { return postVs_  ;}
@@ -71,11 +66,6 @@ public:
                                        NRLib::SymmetricMatrix & posteriorCov) const;
 
 private:
-  //void                   computeDataVariance(void);
-  //void                   setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale);
-
-  //void                   computeVariances(fftw_real     * corrT,
-  //                                        ModelSettings * modelSettings);
 
   void                   writeBWPredicted(void);
   float                  getEmpSNRatio(int l)     const { return empSNRatio_[l]     ;}
@@ -83,15 +73,14 @@ private:
   float                  getSignalVariance(int l) const { return signalVariance_[l] ;}
   float                  getErrorVariance(int l)  const { return errorVariance_[l]  ;}
   float                  getDataVariance(int l)   const { return dataVariance_[l]   ;}
+
   int                simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
   int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
   void               printEnergyToScreen();
-  //void               computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters);
   void               computeFaciesProb(SpatialWellFilter       * filteredlogs,
                                        bool                      useFilter,
                                        SeismicParametersHolder & seismicParameters);
   void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
-  //void               filterLogs(Simbox * timeSimboxConstThick, FilterWellLogs *& filterlogs);
   void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
   void               computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
                                                            const float     * corrT,
@@ -122,8 +111,6 @@ private:
   FFTGrid              * createFFTGrid();
   FFTGrid              * copyFFTGrid(FFTGrid * fftGridOld);
   FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
-
-  //float                  computeWDCorrMVar (Wavelet1D* WD, fftw_real* corrT);
 
   void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
   void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);

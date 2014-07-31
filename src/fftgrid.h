@@ -32,36 +32,6 @@ public:
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
 
-  //int                  fillInFromSegY(const SegY              * segy,
-  //                                    const Simbox            * simbox,
-  //                                    const std::string       & parName,
-  //                                    bool                      nopadding = false ); // No mode
-  //void                 fillInSeismicDataFromSegY(const SegY   * segy,
-  //                                               const Simbox * timeSimbox,
-  //                                               float         smooth_length,
-  //                                               int          & missingTracesSimbox,
-  //                                               int          & missingTracesPadding,
-  //                                               int          & deadTracesSimbox,
-  //                                               std::string  & errTxt);
-
-  //void                 fillFromGridFillPadding(const NRLib::Grid<double> & grid);
-
-  //void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
-  //                                            float                z0_data,
-  //                                            float                zn_data,
-  //                                            float                dz_data,
-  //                                            float                smooth_length,
-  //                                            std::string        & errTxt);
-  //void                 resampleTrace(const std::vector<float> & data_trace,
-  //                                   const rfftwnd_plan       & fftplan1,
-  //                                   const rfftwnd_plan       & fftplan2,
-  //                                   fftw_real                * rAmpData,
-  //                                   fftw_real                * rAmpFine,
-  //                                   int                        cnt,
-  //                                   int                        rnt,
-  //                                   int                        cmt,
-  //                                   int                        rmt);
-
   double               InterpolateTrilinear(double  x_min,
                                    double           x_max,
                                    double           y_min,
@@ -88,11 +58,7 @@ public:
                                              int                  n_fine);
   void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
   void                 setTrace(float value, size_t i, size_t j);
-  //int                  fillInFromStorm(const Simbox      * actSimBox,
-  //                                     StormContGrid     * grid,
-  //                                     const std::string & parName,
-  //                                     bool                scale = false,
-  //                                     bool                nopadding = false);    // No mode
+
   void                 fillInConstant(float value, bool add = true);              // No mode
 
   void                 fillInErrCorr(const Surface * priorCorrXY,

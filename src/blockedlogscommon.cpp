@@ -9,9 +9,6 @@
 #include "src/multiintervalgrid.h"
 #include "src/wavelet1D.h"
 
-//#include "fftw.h"
-//#include "rfftw.h"
-
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
@@ -319,7 +316,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   }
 
 }
-
 
 BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)
 {
@@ -3088,9 +3084,9 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
     SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
                             vertical_trend, z0, dz, nz);
 
-    if (type == "ALPHA_SEISMIC_RESOLUTION")
+    if (type == "VP_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-    else if (type == "BETA_SEISMIC_RESOLUTION")
+    else if (type == "VS_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
     else if (type == "RHO_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
@@ -3179,10 +3175,10 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
   else if (type == "FACIES_PROB") {
     facies_prob_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
-  else if (type == "ALPHA_PREDICTED") {
+  else if (type == "VP_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
   }
-  else if (type == "BETA_PREDICTED") {
+  else if (type == "VS_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
   }
   else if (type == "RHO_PREDICTED") {
@@ -3696,13 +3692,13 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
   for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 
-  if (type == "ALPHA_SEISMIC_RESOLUTION")
+  if (type == "VP_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-  else if (type == "BETA_SEISMIC_RESOLUTION")
+  else if (type == "VS_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
   else if (type == "RHO_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
-  else if (type == "ALPHA_FOR_FACIES")
+  else if (type == "VP_FOR_FACIES")
     vp_for_facies_ = blocked_log;
   else if (type == "RHO_FOR_FACIES")
     rho_for_facies_ = blocked_log;

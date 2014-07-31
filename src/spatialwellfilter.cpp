@@ -984,12 +984,12 @@ void SpatialWellFilter::calculateFilteredLogs(const NRLib::Matrix & Aw,
   }
 
   if(useVs == true) {
-    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "ALPHA_SEISMIC_RESOLUTION", bg_vp);
-    blockedlogs->SetSpatialFilteredLogs(vsFiltered,  n, "BETA_SEISMIC_RESOLUTION",  bg_vs);
+    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "VP_SEISMIC_RESOLUTION", bg_vp);
+    blockedlogs->SetSpatialFilteredLogs(vsFiltered,  n, "VS_SEISMIC_RESOLUTION",  bg_vs);
     blockedlogs->SetSpatialFilteredLogs(rhoFiltered, n, "RHO_SEISMIC_RESOLUTION",   bg_rho);
   }
   else {
-    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "ALPHA_FOR_FACIES", bg_vp);
+    blockedlogs->SetSpatialFilteredLogs(vpFiltered,  n, "VP_FOR_FACIES", bg_vp);
     blockedlogs->SetSpatialFilteredLogs(rhoFiltered, n, "RHO_FOR_FACIES"  , bg_rho);
   }
 

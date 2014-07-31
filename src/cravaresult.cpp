@@ -1643,7 +1643,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
 
   int nxp = simbox->GetNXpad();
   int nyp = simbox->GetNYpad();
-  int nzp = simbox->GetNZpad(); //H A new nz is created in combine-grid. nzp > nz?
+  int nzp = simbox->GetNZpad();
 
   std::vector<float> angles = model_settings->getAngle(0); //Synt seismic only for first vintage
   int n_theta = angles.size();

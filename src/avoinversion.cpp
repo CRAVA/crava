@@ -267,7 +267,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     //  LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
     //}
   }
-  else{
+  else {
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
 
     //computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
@@ -325,164 +325,6 @@ AVOInversion::~AVOInversion()
 
   }
 }
-
-//void
-//AVOInversion::computeDataVariance(void)
-//{
-//  //
-//  // Compute variation in raw seismic
-//  //
-//  int rnxp = 2*(nxp_/2+1);
-//  for (int l=0 ; l < ntheta_ ; l++)
-//  {
-//    double  totvar = 0;
-//    long int ndata = 0;
-//    dataVariance_[l]=0.0;
-//    seisData_[l]->setAccessMode(FFTGrid::READ);
-//    for (int k=0 ; k<nzp_ ; k++)
-//    {
-//      double tmpvar1 = 0;
-//      for (int j=0;j<nyp_;j++)
-//      {
-//        double tmpvar2 = 0;
-//        for (int i=0; i <rnxp; i++)
-//        {
-//          float tmp=seisData_[l]->getNextReal();
-//          if(k < nz_ && j < ny_ &&  i < nx_ && tmp != 0.0)
-//          {
-//            tmpvar2 += double(tmp*tmp);
-//            ndata++;
-//          }
-//        }
-//        tmpvar1 += tmpvar2;
-//      }
-//      totvar += tmpvar1;
-//    }
-//    seisData_[l]->endAccess();
-//    if (ndata == 0) {
-//      dataVariance_[l] = 0.0;
-//      LogKit::LogFormatted(LogKit::Low,"\nWARNING: All seismic data in stack "+NRLib::ToString(l)+" have zero amplitude.\n");
-//      TaskList::addTask("Check the seismic data for stack"+NRLib::ToString(l)+". All data have zero amplitude.");
-//    }
-//    else {
-//      dataVariance_[l] = static_cast<float>(totvar/static_cast<double>(ndata));
-//    }
-//  }
-//}
-
-//void
-//AVOInversion::setupErrorCorrelation(const std::vector<Grid2D *> & noiseScale)
-//{
-//  //
-//  //  Setup error correlation matrix
-//  //
-//  for (int l=0 ; l < ntheta_ ; l++)
-//  {
-//    empSNRatio_[l] = modelAVOdynamic_->getSNRatio(l);
-//    if(modelAVOdynamic_->getUseLocalNoise() == true) {
-//      double minScale = noiseScale[l]->FindMin(RMISSING);
-//      errorVariance_[l] = float(dataVariance_[l]*minScale/empSNRatio_[l]);
-//    }
-//    else
-//      errorVariance_[l] = dataVariance_[l]/empSNRatio_[l];
-//
-//    if (empSNRatio_[l] < 1.1f)
-//    {
-//      LogKit::LogFormatted(LogKit::Low,"\nThe empirical signal-to-noise ratio for angle stack %d is %7.1e. Ratios smaller than\n",l+1,empSNRatio_[l]);
-//      LogKit::LogFormatted(LogKit::Low," 1 are illegal and CRAVA has to stop. CRAVA was for some reason not able to estimate\n");
-//      LogKit::LogFormatted(LogKit::Low," this ratio reliably, and you must give it as input to the model file\n\n");
-//      exit(1);
-//    }
-//  }
-//
-//  //Vario * angularCorr = modelAVOdynamic_->getAngularCorr();
-//  const std::vector<std::vector<float> > & angularCorr = modelAVOdynamic_->getAngularCorr();
-//
-//  for (int i = 0; i < ntheta_; i++)
-//    for (int j = 0; j < ntheta_; j++)
-//      {
-//        errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
-//                                                *sqrt(errorVariance_[j])
-//                                                *angularCorr[i][j]);
-//        //float dTheta = modelAVOdynamic_->getAngle(i) - modelAVOdynamic_->getAngle(j);
-//        //errThetaCov_[i][j] = static_cast<float>(sqrt(errorVariance_[i])
-//        //                                        *sqrt(errorVariance_[j])
-//        //                                        *angularCorr->corr(dTheta,0));
-//      }
-//
-//}
-
-//void
-//AVOInversion::computeVariances(fftw_real     * corrT,
-//                               ModelSettings * modelSettings)
-//{
-//  computeDataVariance();
-//
-//  setupErrorCorrelation(modelAVOdynamic_->getLocalNoiseScales());
-//
-//  Wavelet1D ** errorSmooth = new Wavelet1D*[ntheta_];
-//  float      * paramVar    = new float[ntheta_] ;
-//  float      * WDCorrMVar  = new float[ntheta_];
-//
-//  for (int i=0 ; i < ntheta_ ; i++)
-//  {
-//    Wavelet1D * wavelet1D = seisWavelet_[i]->createWavelet1DForErrorNorm();
-//    errorSmooth[i] = new Wavelet1D(wavelet1D,Wavelet::FIRSTORDERFORWARDDIFF);
-//    delete wavelet1D;
-//
-//    std::string angle    = NRLib::ToString(thetaDeg_[i], 1);
-//    std::string fileName = IO::PrefixWavelet() + std::string("Diff_") + angle + IO::SuffixGeneralData();
-//    errorSmooth[i]->printToFile(fileName);
-//  }
-//
-//  // Compute variation in parameters
-//  for (int i=0 ; i < ntheta_ ; i++)
-//  {
-//    paramVar[i]=0.0;
-//    for (int l=0; l<3 ; l++)
-//      for (int m=0 ; m<3 ; m++)
-//        paramVar[i] += static_cast<float>(priorVar0_(l,m))*A_[i][l]*A_[i][m];
-//  }
-//
-//  // Compute variation in wavelet
-//  for (int l=0 ; l < ntheta_ ; l++)
-//  {
-//    WDCorrMVar[l] = computeWDCorrMVar(errorSmooth[l],corrT);
-//  }
-//
-//  // Compute signal and model variance and theoretical signal-to-noise-ratio
-//  for (int l=0 ; l < ntheta_ ; l++)
-//  {
-//    modelVariance_[l]  = WDCorrMVar[l]*paramVar[l];
-//    signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
-//  }
-//
-//  for (int l=0 ; l < ntheta_ ; l++)
-//  {
-//    if (modelAVOdynamic_->getMatchEnergies(l))
-//    {
-//      LogKit::LogFormatted(LogKit::Low,"Matching syntethic and empirical energies:\n");
-//      float gain = sqrt((errorVariance_[l]/modelVariance_[l])*(empSNRatio_[l] - 1.0f));
-//      seisWavelet_[l]->scale(gain);
-//      if((modelSettings->getWaveletOutputFlag() & IO::GLOBAL_WAVELETS) > 0)// ||
-//          //(modelSettings->getEstimationMode() && modelAVOdynamic_->getEstimateWavelet(l))) //H Estimationmode true not possible in avoinversion?
-//      {
-//        std::string angle    = NRLib::ToString(thetaDeg_[l], 1);
-//        std::string fileName = IO::PrefixWavelet() + std::string("EnergyMatched_") + angle;
-//        seisWavelet_[l]->writeWaveletToFile(fileName, 1.0,false); // dt_max = 1.0;
-//      }
-//      modelVariance_[l] *= gain*gain;
-//      signalVariance_[l] = errorVariance_[l] + modelVariance_[l];
-//    }
-//    theoSNRatio_[l] = signalVariance_[l]/errorVariance_[l];
-//  }
-//
-//  delete [] paramVar ;
-//  delete [] WDCorrMVar;
-//  for (int i=0;i<ntheta_;i++)
-//    delete errorSmooth[i];
-//  delete [] errorSmooth;
-//}
 
 void
 AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
@@ -1732,128 +1574,6 @@ AVOInversion::computeSeismicImpedance(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho,
   return(impedance);
 }
 
-
-//void
-//AVOInversion::computeSyntSeismic(FFTGrid * vp, FFTGrid * vs, FFTGrid * rho, SeismicParametersHolder & seismicParameters)
-//{
-//  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
-//
-//  bool fftDomain = vp->getIsTransformed();
-//  if(fftDomain == true) {
-//    vp->invFFTInPlace();
-//    vs->invFFTInPlace();
-//    rho->invFFTInPlace();
-//  }
-//
-//  for (int l=0;l<ntheta_;l++) {
-//    FFTGrid * imp = computeSeismicImpedance(vp, vs, rho, l);
-//    imp->setAccessMode(FFTGrid::RANDOMACCESS);
-//    for (int i=0;i<nx_; i++) {
-//      for (int j=0;j<ny_;j++) {
-//        Wavelet1D impVec(0,nz_, nzp_);
-//        //impVec.setupAsVector();
-//        int k;
-//        for (k=0;k<nz_;k++){
-//          float value = imp->getRealValue(i, j, k, true);
-//          impVec.setRAmp(value, k);
-//        }
-//        //Tapering:
-//        float fac = 1.0f/static_cast<float>(nzp_-nz_-1);
-//        for (;k<nzp_;k++) {
-//          float value = fac*((k-nz_)*impVec.getRAmp(0)+(nzp_-k-1)*impVec.getRAmp(nz_-1));
-//          impVec.setRAmp(value, k);
-//        }
-//        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
-//        resultVec.fft1DInPlace();
-//
-//        Wavelet1D * localWavelet = seisWavelet_[l]->createLocalWavelet1D(i,j);
-//
-//        float sf = static_cast<float>(simbox_->getRelThick(i, j))*seisWavelet_[l]->getLocalStretch(i,j);
-//
-//        for (int k=0;k<(nzp_/2 +1);k++) {
-//          fftw_complex r = resultVec.getCAmp(k);
-//          fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
-//          fftw_complex s;
-//          s.re = r.re*w.re+r.im*w.im; //Use complex conjugate of w
-//          s.im = -r.re*w.im+r.im*w.re;
-//          resultVec.setCAmp(s,k);
-//        }
-//        delete localWavelet;
-//
-//        resultVec.invFFT1DInPlace();
-//        for (int k=0;k<nzp_;k++){
-//          float value = resultVec.getRAmp(k);
-//          imp->setRealValue(i, j, k, value, true);
-//        }
-//      }
-//    }
-//
-//    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-//    std::string sgriLabel = " Synthetic seismic for incidence angle "+angle;
-//    std::string fileName  = IO::PrefixSyntheticSeismicData() + angle;
-//    if(((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-//      (modelSettings_->getForwardModeling() == true))
-//      //seismicParameters.AddSyntSeismicData(imp);
-//
-//    // H-Writing
-//      //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-//
-//    if((modelSettings_->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-//      FFTGrid * imp_residual = new FFTGrid(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-//
-//      FFTGrid seis(nx_, ny_, nz_, nxp_, nyp_, nzp_);
-//
-//      std::string fileName = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
-//      std::string errText;
-//      seis.readCravaFile(fileName, errText);
-//      if(errText == "") {
-//        seis.setAccessMode(FFTGrid::RANDOMACCESS);
-//        for (int k=0;k<nz_;k++) {
-//          for (int j=0;j<ny_;j++) {
-//            for (int i=0;i<nx_;i++) {
-//              float residual = seis.getRealValue(i, j, k) - imp->getRealValue(i,j,k);
-//              imp_residual->setRealValue(i, j, k, residual);
-//            }
-//          }
-//        }
-//        sgriLabel = "Residual computed from synthetic seismic for incidence angle "+angle;
-//        fileName = IO::PrefixSyntheticResiduals() + angle;
-//        //H-Writing
-//        //imp->writeFile(fileName, IO::PathToSeismicData(), simbox_,sgriLabel);
-//        //seismicParameters.AddSyntResiduals(imp_residual);
-//      }
-//      else {
-//        errText += "\nFailed to read temporary stored seismic data.\n";
-//        LogKit::LogMessage(LogKit::Error,errText);
-//      }
-//    }
-//    //delete imp;
-//  }
-//
-//  if(fftDomain == true) {
-//    vp->fftInPlace();
-//    vs->fftInPlace();
-//    rho->fftInPlace();
-//  }
-//}
-
-
-//float
-//AVOInversion::computeWDCorrMVar (Wavelet1D* WD ,fftw_real* corrT)
-//{
-//  float var = 0.0;
-//  int i,j,corrInd;
-//
-//  for (i=0;i<nzp_;i++)
-//    for (j=0;j<nzp_;j++)
-//    {
-//      corrInd = std::max(i-j,j-i);
-//      var += WD->getRAmp(i)*corrT[corrInd]*WD->getRAmp(j);
-//    }
-//    return var;
-//}
-
-
 void
 AVOInversion::fillkW_flens(int                     k,
                            NRLib::ComplexVector  & kW,
@@ -2596,11 +2316,11 @@ void AVOInversion::writeBWPredicted(void)
     BlockedLogsCommon * blocked_log = iter->second;
 
     postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
-    blocked_log->SetLogFromGrid(postVp_,0,1,"ALPHA_PREDICTED");
+    blocked_log->SetLogFromGrid(postVp_,0,1,"VP_PREDICTED");
     postVp_->endAccess();
 
     postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
-    blocked_log->SetLogFromGrid(postVs_,0,1,"BETA_PREDICTED");
+    blocked_log->SetLogFromGrid(postVs_,0,1,"VS_PREDICTED");
     postVs_->endAccess();
 
     postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
