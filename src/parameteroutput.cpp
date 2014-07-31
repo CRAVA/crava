@@ -526,6 +526,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
 
     if (depth_map != NULL && (domain_flag & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
       std::string depth_name = file_name+"_Depth";
+
       if (depth_map->getMapping() == NULL) {
         if (depth_map->getSimbox() == NULL) {
           LogKit::LogFormatted(LogKit::Warning,
@@ -533,12 +534,14 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         if ((format_flag & IO::STORM) > 0) {
+          std::string file_name_storm = depth_name + IO::SuffixStormBinary();
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, false);
-          storm_grid->WriteToFile(file_name, header, false);
+          storm_grid->WriteToFile(file_name_storm, header, false);
         }
         if ((format_flag & IO::ASCII) > 0) {
+          std::string file_name_ascii = depth_name + IO::SuffixGeneralData();
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, true);
-          storm_grid->WriteToFile(file_name, header, true);
+          storm_grid->WriteToFile(file_name_ascii, header, true);
         }
         if ((format_flag & IO::SEGY) >0) {
           //makeDepthCubeForSegy(depth_map->getSimbox(),depth_name);

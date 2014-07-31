@@ -199,7 +199,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     }
     if (all_Vs_logs_synthetic)
     {
-      LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Corr(Vp,Vs) and Corr(Vs,Rho) are set to 0.7.\n");
+      LogKit::LogFormatted(LogKit::Low,"\nThere are no nonsynthetic Vs logs available. Corr(Vp,Vs) is set to 0.7 and Corr(Vs,Rho) is set to 0.\n");
     }
 
     //
@@ -838,12 +838,24 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         }
       }
     }
+    double vp_mean  = 0.0;
+    double vs_mean  = 0.0;
+    double rho_mean = 0.0;
+    for (size_t i = 0; i < vp.size(); i++){
+      vp_mean   += vp[i];
+      vs_mean   += vs[i];
+      rho_mean  += rho[i];
+    }
+    vp_mean   /= vp.size();
+    vs_mean   /= vp.size();
+    rho_mean  /= vp.size();
+
     A.resize(n_data, 2);
     b.resize(n_data);
     for(size_t j = 0; j < vp.size(); j++){
-      A(j, 0) = vp[j];
-      A(j, 1) = rho[j];
-      b(j)    = vs[j];
+      A(j, 0) = vp[j] - vp_mean;    // Mean normalization
+      A(j, 1) = rho[j] - vs_mean;
+      b(j)    = vs[j] - rho_mean;
     }
     if (n_data > 0){
       regression_coef = Regress(A, b);
@@ -853,24 +865,9 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       //
       double sum_resid_square = 0.0;
       double residual;
-      for (size_t i = 0; i < well_names.size(); i++){
-        if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
-          //int n_lags;
-          for (size_t j = 0; j < interval_simboxes.size(); j++){
-            const std::string interval_name         = interval_simboxes[j]->GetIntervalName();
-            const std::vector<double> vp_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVpBlocked();
-            const std::vector<double> rho_blocked   = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetRhoBlocked();
-            const std::vector<double> vs_blocked    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVsBlocked();
-            const std::vector<double> z_pos         = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
-            // Loop over all blocks
-            for (int k = 0; k < mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name); k++){
-              if(vp_blocked[k] != RMISSING && rho_blocked[k] != RMISSING && vs_blocked[k] != RMISSING){
-                residual = (regression_coef(0)*vp_blocked[k] + regression_coef(1)*rho_blocked[k] - vs_blocked[k]);
-                sum_resid_square += residual*residual;
-              }
-            }
-          }
-        }
+      for (size_t i = 0; i < vp.size(); i++){
+        residual = regression_coef(0)*A(i,0) + regression_coef(1)*A(i,1) - b(i);
+        sum_resid_square += residual*residual;
       }
       var_vs_resid = sum_resid_square / (n_data - 2);
     }
@@ -937,9 +934,10 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
           if(!all_Vs_logs_synthetic && mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == true){
             // Use the relation Vs = a*Vp + b*Rho + e, where e is iid
             // cov[t](vs_i, vs_j) = cov[t](a*vp_k + b*rho_k + e_k, a*vp_l + b*rho_l + e_l) = a*a*cov(vp_k,vp_l) + a*b*cov(vp_k, rho_l) + a*b*cov(vp_l, rho_k) + b*b*cov(rho_k, rho_l) + I(k = l) var(e)
-            if(log_vp[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING && log_rho[k] != RMISSING){
-              temp_auto_cov[lag](1,1) += regression_coef(0)*regression_coef(0)*log_vp[k]*log_vp[k] + regression_coef(1)*regression_coef(1)*log_rho[l]*log_rho[l]
-                                    + regression_coef(0)*regression_coef(1)*(log_vp[k]*log_rho[l] + log_vp[l]*log_rho[k]);
+            if(log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING){
+              double vs_k = regression_coef(0)*log_vp[k] + regression_coef(1)*log_rho[k];
+              double vs_l = regression_coef(0)*log_vp[l] + regression_coef(1)*log_rho[l];
+              temp_auto_cov[lag](1,1) += vs_k*vs_l;
               if (k == l)
                 temp_auto_cov[lag](1,1) += var_vs_resid;
               count[lag](1,1) += 1;
@@ -999,7 +997,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // Calculate autocovariances
   //
   if(all_Vs_logs_synthetic){
-    LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance and corr(Vp, Vs) and corr(Vs, Rho) are set to 0.7.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance, corr(Vp, Vs) = 0.7 and corr(Vs, Rho) = 0.\n");
   }
   for (int i = 0; i < max_lag_with_data; i++){
     // If there is not enough data to estimate autocovariance within the first ~50 lags, return an error
@@ -1067,23 +1065,22 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         temp_auto_cov[i](0,1) = temp_auto_cov[i](0,1)/(count[i](0,1) - 1);
       }
       else{
-        temp_auto_cov[i](0,1)  = std::sqrt(temp_auto_cov[i](0,0))*std::sqrt(temp_auto_cov[i](1,1))*0.70;
+        temp_auto_cov[i](0,1) = std::sqrt(2.0)*temp_auto_cov[i](0,0)*0.7;
       }
+
       if(count[i](0,2) > 1){
         temp_auto_cov[i](0,2) = temp_auto_cov[i](0,2)/(count[i](0,2) - 1);
       }
       else{
         temp_auto_cov[i](0,2)  = 0.0;
       }
+
       if(count[i](1,2) > 1){
         temp_auto_cov[i](1,2) = temp_auto_cov[i](1,2)/(count[i](1,2) - 1);
       }
       else{
         temp_auto_cov[i](1,2)  = 0.0;
       }
-      temp_auto_cov[i](1,0) = temp_auto_cov[i](0,1);
-      temp_auto_cov[i](2,0) = temp_auto_cov[i](2,0);
-      temp_auto_cov[i](2,1) = temp_auto_cov[i](1,2);
     }
 
   }
@@ -1092,7 +1089,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // CRA-257, Erik N: Should this still be done?
   /************************************************************
   //
-  // 3) Scale corTT correlation to account for blocking effects
+  // x) Scale corTT correlation to account for blocking effects
   //
   for(i=0;i<n+1;i++)
     corTT[i]/=corTT[0];
@@ -1139,25 +1136,51 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   for(int i=1; i<max_lag_with_data; i++){
     for(int j=0 ; j<3; j++){
       for(int k=j; k<3; k++){
-        if(count[i-1](j,k)>0)                 // Find previous estimated autocov with data
-          i_prev[j][k]=i-1;
-        if(i_next[j][k]<i+1){
-          i_next[j][k]++;
-        while(count[i_next[j][k]](j,k) == 0 && i_next[j][k]<max_lag_with_data)   // Find next estimated autocov with data
-          i_next[j][k]++;
-      }
-      c_prev[j][k]    = temp_auto_cov[i_prev[j][k]](j,k);
-      c_next[j][k]    = temp_auto_cov[i_next[j][k]](j,k);
-      nipol    = std::min(count[i_prev[j][k]](j,k),count[i_next[j][k]](j,k));
-      cipol    = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
-      auto_cov[i](j,k) = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
-      auto_cov[i](k,j) = auto_cov[i](j,k);
+        //
+        // Vp-Vp, Vp-Rho, Rho-Rho or non-synthetic logs
+        //
+        if ((j == 0 && k == 0) || (j == 0 && k ==2) || (j ==2 && k == 2) || !all_Vs_logs_synthetic){
+          if(count[i-1](j,k)>0)                 // Find previous estimated autocov with data
+            i_prev[j][k]=i-1;
+          if(i_next[j][k]<i+1){
+            i_next[j][k]++;
+            while(count[i_next[j][k]](j,k) == 0 && i_next[j][k]<max_lag_with_data)   // Find next estimated autocov with data
+              i_next[j][k]++;
+          }
+          c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
+          c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
+          nipol             = std::min(count[i_prev[j][k]](j,k),count[i_next[j][k]](j,k));
+          cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
+          auto_cov[i](j,k)  = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
+          auto_cov[i](k,j)  = auto_cov[i](j,k);
 
-      //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
-      //                   i,nTT[i],corTT[i],iprev,cprev,inext,cnext,nipol,cipol);
+          //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
+          //                   i,nTT[i],corTT[i],iprev,cprev,inext,cnext,nipol,cipol);
+        }
+        //
+        // Vp-Vs, Vs-Vs and Vs-Rho if all Vs logs are synthetic
+        //
+        else {
+          if ((j==0 && k == 1) || (j == 1 && k == 1)){
+            // use same weights as for Vp correlations
+            i_prev[j][k]      = i_prev[0][0];
+            i_next[j][k]      = i_next[0][0];
+            c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
+            c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
+            nipol             = std::min(count[i_prev[j][k]](0,0),count[i_next[j][k]](0,0));
+            cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
+            auto_cov[i](j,k)  = (count[i](0,0)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](0,0)+nipol);
+            auto_cov[i](k,j)  = auto_cov[i](j,k);
+          }
+          else if(j == 1 && k ==2){
+            i_prev[j][k]      = i-1;
+            i_next[j][k]      = i;
+            auto_cov[i](j,k)  = 0.0;
+            auto_cov[i](k,j)  = 0.0;
+          }
+        }
       }
     }
-
   }
 
   // Last time step with data
@@ -1182,18 +1205,14 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // 4) Downscale correlations linearly
   //
 
-  // CRA-257 Erik N: Should this still be done?
-  /*****************************************************************
-    long int ntot=0;
-    for(i=1;i<nend+1;i++)
-      ntot+=nTT[i];
-    float b = static_cast<float>((2*ntot)/static_cast<float>(nend+1));  // counts the zero-element as well
-    float a = b/static_cast<float>(nend+1);
-    for(i=1;i<nend+1;i++)
-    {
-      CorrT[i] *= (b - a*i)/b;
+  for(int j=0 ; j<3; j++){
+    for(int k=j; k<3; k++){
+      for(int i=1; i < max_lag_with_data; i++){
+        auto_cov[i](j,k) *= 1 - static_cast<float>(i)/(max_lag_with_data);
+        auto_cov[i](k,j) = auto_cov[i](j,k);
+      }
     }
-  ********************************************************************/
+  }
 
   //
   // 5) Print to file autocov.dat
@@ -1205,7 +1224,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     file << " Time increment is: " << min_dz << "\n"
          << "   i      n_VpVp    cov(Vp_0,Vp_i)      n_VsVs    cov(Vs_0,Vs_i)      nRR    cov(R_0,R_i)  \n"
          << "----------------------------------------------------------------------------------------\n";
-    for(int i=0; i<max_nd+1; i++){
+    for(int i=0; i<max_nd; i++){
       file << std::fixed
            << std::right
            << std::setprecision(3)

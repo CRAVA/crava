@@ -288,12 +288,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     std::vector<FFTGrid *> cr_cov_vp_rho_intervals(n_intervals_);
     std::vector<FFTGrid *> cr_cov_vs_rho_intervals(n_intervals_);
     for (int i = 0; i < n_intervals_; i++) {
+      //if (!model_settings->getForwardModeling())
+      //  seismic_parameters_intervals[i].invFFTCovGrids();
       cov_vp_intervals[i]        = seismic_parameters_intervals[i].GetCovVp();
       cov_vs_intervals[i]        = seismic_parameters_intervals[i].GetCovVs();
       cov_rho_intervals[i]       = seismic_parameters_intervals[i].GetCovRho();
       cr_cov_vp_vs_intervals[i]  = seismic_parameters_intervals[i].GetCrCovVpVs();
       cr_cov_vp_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVpRho();
       cr_cov_vs_rho_intervals[i] = seismic_parameters_intervals[i].GetCrCovVsRho();
+      //if (!model_settings->getForwardModeling())
+      //  seismic_parameters_intervals[i].FFTCovGrids();
     }
     CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, erosion_priorities, dz_output);
@@ -1142,7 +1146,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
         for (int j = 0; j < n_angles; j++) {
-          std::string angle           = NRLib::ToString(angles[i]*(180/M_PI), 1);
+          std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
           std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
           std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
           if (offset[j] < 0)
@@ -1181,7 +1185,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
             StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_tmp);
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label);// sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
 
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               seismic_storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
@@ -1200,7 +1204,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
             StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j].GetStorm();
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label);// sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
 
