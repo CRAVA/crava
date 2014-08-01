@@ -192,8 +192,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Final grids are stored as StormContGrids
   // Results in seismic_parameters are stored as fftgrid
-
-  //H CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
+  //CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
 
   //H-TODO: CombineResult is not done
   //  There is no smoothing between intervals
@@ -210,6 +209,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs create during inversion
+
+  //H-DEBUGGING
+  //return;
 
   if (model_settings->getWritePrediction()) {
 
@@ -507,10 +509,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
           file.close();
         }
 
-        //FFT(trace) -> pad with zeros until new nz -> IFFT back
-        //ResampleSimple(trace_new_simple, old_trace); //H Not working properly. Oscillates at the beginning and end.
-
-        //Alternative: Resampling of traces from CommonData::FillInData
+        //Resampling of traces from CommonData::FillInData
         //Remove trend -> fft -> pad with zeroes -> resample -> ifft -> add trend
 
         //Remove trend from trace
@@ -733,7 +732,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //Need to resampled blocked logs that are added after commondata
 
   int n_intervals = blocked_logs_intervals.size();
-  //int nz          = output_simbox->getnz();
   float res_fac   = 10.0; //Degree of refinement, must be integer.
 
   //Do not resample if there is only one interval, and if output_simbox and has the same resolution as the interval_simbox
@@ -909,9 +907,9 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
           rho_filtered_final[i] = RMISSING;
       }
 
-      blocked_log_final->SetVpPredicted(vp_filtered_final);
-      blocked_log_final->SetVsPredicted(vs_filtered_final);
-      blocked_log_final->SetRhoPredicted(rho_filtered_final);
+      blocked_log_final->SetVpSeismicResolution(vp_filtered_final);
+      blocked_log_final->SetVsSeismicResolution(vs_filtered_final);
+      blocked_log_final->SetRhoSeismicResolution(rho_filtered_final);
     }
 
     blocked_logs_output.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, blocked_log_final));
@@ -972,7 +970,7 @@ void CravaResult::ExtrapolateLog(std::vector<double> & well_log)
     int i = well_log.size() - 2;
     while (well_log[i] == RMISSING)
       i--;
-    for (size_t j = i; j < well_log.size() - 1; j++)
+    for (size_t j = i + 1; j < well_log.size(); j++)
       well_log[j] = well_log[i];
   }
 
@@ -1127,7 +1125,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
-    WriteWells(common_data->GetWells(), model_settings);
+    //WriteWells(common_data->GetWells(), model_settings);
 
     WriteBackgrounds(model_settings,
                       &simbox,
@@ -1140,6 +1138,16 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
   }
   else {
+
+    //Write blocked wells
+    if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
+      WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+
+      //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
+      //Do not write if multiple intervals is used
+      if (n_intervals_ == 1)
+        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    }
 
     if (model_settings->getWritePrediction()) {
 
@@ -1284,16 +1292,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
         WriteFilePostCovGrids(model_settings, simbox, interval_name);
       }
-    }
-
-    //Write blocked wells
-    if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-      WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
-
-      //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
-      //Do not write if multiple intervals is used
-      if (n_intervals_ == 1)
-        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
     //if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
@@ -1514,7 +1512,7 @@ void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommo
 
 
 void CravaResult::WriteWells(const std::vector<NRLib::Well> & wells,
-                             const ModelSettings      * model_settings)
+                             const ModelSettings            * model_settings)
 {
   assert(wells.size() >= 0);        //Placeholder code. Do these wells have any function anymore?
   assert(model_settings != NULL);
@@ -1733,7 +1731,6 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
       //imp->writeFile(file_name, IO::PathToSeismicData(), simbox, sgri_label);
 
     if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-      //FFTGrid * imp_residual = new FFTGrid(nx, ny, nz, nxp, nyp, nzp);
       StormContGrid * imp_residual = new StormContGrid(nx, ny, nz);
 
       FFTGrid seis(nx, ny, nz, nxp, nyp, nzp);

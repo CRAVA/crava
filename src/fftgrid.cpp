@@ -909,7 +909,7 @@ FFTGrid::createComplexGrid()
 
 void FFTGrid::createGrid()
 {
-  rvalue_         = new fftw_real[rsize_]; //static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real))); //H-MEMORY
+  rvalue_         = new fftw_real[rsize_]; //static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
   cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
 
   counterForGet_  = 0;

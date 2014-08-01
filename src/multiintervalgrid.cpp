@@ -280,7 +280,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 const Simbox                              * estimation_simbox,
                                                 const std::vector<std::string>            & interval_names,
                                                 const std::vector<Surface>                & eroded_surfaces,
-                                                std::vector<Simbox *>                       & interval_simboxes,
+                                                std::vector<Simbox *>                     & interval_simboxes,
                                                 const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                                                 const std::map<std::string, std::string>  & corr_dir_top_surfaces,
                                                 const std::map<std::string, std::string>  & corr_dir_base_surfaces,

@@ -65,7 +65,7 @@ SeismicParametersHolder::~SeismicParametersHolder(void)
   //if (meanRho_ != NULL)
   //  delete meanRho_;
 
-  //if (postVp_ != NULL) //H Failes if they are deleted under CreateStormGrid
+  //if (postVp_ != NULL)
   //  delete postVp_;
 
   //if (postVs_ != NULL)

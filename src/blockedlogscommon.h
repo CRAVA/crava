@@ -173,14 +173,13 @@ public:
 
   //SET FUNCTIONS --------------------------------
 
+  void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
   void                                   SetDeviated(bool deviated)                                     { is_deviated_ = deviated                                      ;}
   void                                   SetRealVsLog(int real_vs_log)                                  { real_vs_log_ = real_vs_log                                   ;}
   void                                   SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
   void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_ = use_for_background_trend         ;}
   void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_ = use_for_filtering                       ;}
   void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_ = use_for_wavelet_estimation     ;}
-
-  void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
 
   void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
   void                                   SetFaciesProb(int facies, std::vector<double> log)             { facies_prob_.insert(std::pair<int, std::vector<double> >(facies, log))      ;}
@@ -189,9 +188,13 @@ public:
   void                                   SetVpForFacies(std::vector<double> vp_for_facies)              { vp_for_facies_  = vp_for_facies                                             ;}
   void                                   SetRhoForFacies(std::vector<double> rho_for_facies)            { rho_for_facies_ = rho_for_facies                                            ;}
 
-  void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log))  ;}
-  void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log))  ;}
-  void                                   SetRhoPredicted(std::vector<double> log)                       { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", log)) ;}
+  void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log))     ;}
+  void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log))     ;}
+  void                                   SetRhoPredicted(std::vector<double> log)                       { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", log))    ;}
+
+  void                                   SetVpSeismicResolution(std::vector<double> log)                { cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vp", log))  ;}
+  void                                   SetVsSeismicResolution(std::vector<double> log)                { cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vs", log))  ;}
+  void                                   SetRhoSeismicResolution(std::vector<double> log)               { cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Rho", log)) ;}
 
   // OTHER FUNCTIONS -----------------------------------
 

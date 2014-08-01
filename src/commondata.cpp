@@ -3131,7 +3131,6 @@ bool CommonData::WaveletHandling(ModelSettings                              * mo
           failed = true;
         }
         if (!failed) {
-          //Correlation direction from ModelGeneral::makeTimeSimboxes
           Surface * correlation_direction = NULL;
 
           if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
@@ -5907,30 +5906,16 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
     float guard_zone = model_settings->getGuardZone();
 
-    //Check that data cover grid is done separatly in CommonData (for seismic data)
+    bool  only_volume      = true;
+    float padding          = 2*guard_zone;
+    bool  relative_padding = false;
 
-    //bool cover_ok = false;
-    //cover_ok = CheckThatDataCoverGrid(segy,
-    //                                  offset,
-    //                                  estimation_simbox.getTopZMin(),
-    //                                  estimation_simbox.getBotZMax(),
-    //                                  guard_zone,
-    //                                  err_text);
+    segy->ReadAllTraces(volume,
+                        padding,
+                        only_volume,
+                        relative_padding);
+    segy->CreateRegularGrid();
 
-    //if (cover_ok) {
-      bool  only_volume      = true;
-      float padding          = 2*guard_zone;
-      bool  relative_padding = false;
-
-      segy->ReadAllTraces(volume,
-                          padding,
-                          only_volume,
-                          relative_padding);
-      segy->CreateRegularGrid();
-    //}
-    //else {
-    //  failed = true;
-    //}
   }
   catch (NRLib::Exception & e) {
     err_text += e.what();
@@ -6882,10 +6867,10 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                           failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
       time_depth_mapping->makeTimeDepthMapping(velocity, &full_inversion_simbox);
 
-      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp. Add writing-functions to NRLib::Grid?
+      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp.
         std::string base_name  = IO::FileTimeToDepthVelocity();
         std::string sgri_label = std::string("Time-to-depth velocity");
-        float       offset    = model_settings->getSegyOffset(0);//Only allow one segy offset for time lapse data
+        float       offset     = model_settings->getSegyOffset(0); //Only allow one segy offset for time lapse data
 
         FFTGrid * velocity_fft = new FFTGrid(velocity, velocity->GetNI(), velocity->GetNJ(), velocity->GetNK());
         velocity_fft->writeFile(base_name,
@@ -7020,15 +7005,36 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             }
           }
           else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()
-                || ((model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end()) && model_settings->getCorrDirBaseConform(interval_name) == true)) {
-
-            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name)); //H-TODO Add in top_conform/base_conform option
-            Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
-
-            //H-TODO //Similiar to MultiIntervalGrid::SetupIntervalSimbox
-            SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
-
+                || ((model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end()) && model_settings->getCorrDirBaseConform(interval_name) == true))
+          {
+            //Top and base correlation surfaces
+            if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end() &&
+                input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
+            {
+              Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+              Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
+              //Extend both with top corr and bot corr surface
+              SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+            }
+            //Top conform and base correlation surface
+            else if (model_settings->getCorrDirTopConform(interval_name) == true &&
+                      input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
+            {
+              Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
+              //Extend only with bot corr surface
+              SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+            }
+            //Top correlation surface and base conform
+            else if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end() &&
+                      model_settings->getCorrDirBaseConform(interval_name) == true)
+            {
+              Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+              //Exted only with top corr surface
+              SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+            }
           }
 
           //Block logs to bg_simbox
@@ -7058,7 +7064,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                                      false,
                                                      err_text);
 
-              bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(), bg_blocked_log));
+              std::string bg_well_name = "bg_" + wells[j].GetWellName();
+
+              bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
             }
           }
 
@@ -7139,7 +7147,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         if (back_file.size() > 0) {
           const SegyGeometry      * dummy1 = NULL;
           const TraceHeaderFormat * dummy2 = NULL;
-          const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used. Create loop over timelapses?
+          const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used.
           std::string err_text_tmp = "";
 
           //ReadGridFromFile uses parameter vector(intervals)
@@ -7203,17 +7211,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             background_parameters[i][k] = new NRLib::Grid<float>(nx, ny, nz, log_value);
           }
 
-          //background_parameters[i][j]->Resize(nx, ny, nz, log_value);
-
-          //H Store constant value instead of log value
           grid_statistics[i][j].push_back(const_back_value); //avg
           grid_statistics[i][j].push_back(const_back_value); //min
           grid_statistics[i][j].push_back(const_back_value); //max
 
-          //back_model[i] = CreateFFTGrid(nx, ny, nz, nx_pad, ny_pad, nz_pad, model_settings->getFileGrid());
-          //back_model[i]->setType(FFTGrid::PARAMETER);
-          //back_model[i]->fillInConstant(float( log( const_back_value )));
-          //back_model[i]->calculateStatistics();
         }
       }
       else {
@@ -7242,19 +7243,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         if (model_settings->getUseAIBackground()) { // Vp = AI/Rho     ==> lnVp = lnAI - lnRho
           LogKit::LogMessage(LogKit::Low, "\nMaking Vp background from AI and Rho\n");
           SubtractGrid(background_parameters[i][0], background_parameters[i][2]);
-          //back_model[0]->subtract(back_model[2]);
         }
         if (model_settings->getUseSIBackground()) { // Vs = SI/Rho     ==> lnVs = lnSI - lnRho
           LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from SI and Rho\n");
           SubtractGrid(background_parameters[i][1], background_parameters[i][2]);
-          //back_model[1]->subtract(back_model[2]);
         }
         else if (model_settings->getUseVpVsBackground()) { // Vs = Vp/(Vp/Vs) ==> lnVs = lnVp - ln(Vp/Vs)
           LogKit::LogMessage(LogKit::Low, "\nMaking Vs background from Vp and Vp/Vs\n");
           SubtractGrid(background_parameters[i][1], background_parameters[i][0]);
           ChangeSignGrid(background_parameters[i][1]);
-          //back_model[1]->subtract(back_model[0]);
-          //back_model[1]->changeSign();
         }
       }
     }

@@ -142,10 +142,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
-    //H-Writing
-    //float dt = static_cast<float>(modelGeneral->GetTimeSimbox()->getdz());
-    //if((modelSettings_->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-    //  seismicParameters.writeFilePriorCorrT(corrT, nzp_, dt);
     seismicParameters.SetCorrT(corrT); //Need to store separatly because later CovVp is transformed
 
     errCorr_ = modelAVOstatic->GetErrCorr();
@@ -153,20 +149,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     for (int i=0 ; i< ntheta_ ; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-    //Moved to modelavodynamic
-    //computeVariances(corrT, modelSettings_);
-
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
-    //fftw_free(corrT);
 
-    //H-Writing
     if((modelSettings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
       float * corrTFiltered = seismicParameters.getPriorCorrTFiltered(nz_, nzp_);
-      //seismicParameters.writeFilePriorCorrT(corrTFiltered, nzp_, dt);     // No zeros in the middle
 
       seismicParameters.SetCorrTFiltered(corrTFiltered);
-
-      //delete [] corrTFiltered;
     }
 
     if(simbox_->getIsConstantThick() == false)
@@ -226,12 +214,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
-    //H-Writing
-    //if(modelSettings->getOutputGridsOther() & IO::CORRELATION){
-    //  seismicParameters.writeFilePostVariances(postVar0_, postCovVp00_, postCovVs00_, postCovRho00_);
-    //  seismicParameters.writeFilePostCovGrids(modelGeneral->GetTimeSimbox());
-    //}
-
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
@@ -250,27 +232,13 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       doPredictionKriging(seismicParameters);
 
     //Computation of SyntSeismic is moved until after intervalgrids are combined in CravaResult
-    //seismicParameters.AddReflectionMatrix(A_);
-
-    //if(modelSettings->getGenerateSeismicAfterInv())
-    //  computeSyntSeismic(postVp_, postVs_, postRho_, seismicParameters);
 
     //
     // Temporary placement.
     //
-
-    //H-Writing
-    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-    //  CommonData::WriteBlockedWells(modelGeneral->GetBlockedWells(), modelSettings, modelGeneral->GetFaciesNames(), modelGeneral->GetFaciesLabel());
-    //}
-    //if((modelSettings->getWellOutputFlag() & IO::BLOCKED_LOGS) > 0) {
-    //  LogKit::LogFormatted(LogKit::Low,"\nWARNING: Writing of BLOCKED_LOGS is not implemented yet.\n");
-    //}
   }
   else {
     LogKit::LogFormatted(LogKit::Low,"\n               ... model built\n");
-
-    //computeSyntSeismic(postVp_,postVs_,postRho_, seismicParameters);
   }
 
   postVp_ ->fftInPlace();
@@ -1127,22 +1095,13 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     correctVpVsRho(modelSettings_);
   }
 
-  if (doing4DInversion_==false)
-  {
-    //H-Writing
+  if (doing4DInversion_==false) {
+
     if(writePrediction_ == true ) {
       seismicParameters.SetPostVp(postVp_);
       seismicParameters.SetPostVs(postVs_);
       seismicParameters.SetPostRho(postRho_);
-
-    //H-Writing
-      //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-      //                                 outputGridsElastic_, fileGrid_, -1, false);
-
     }
-
-
-
 
     writeBWPredicted();
   }
@@ -1304,11 +1263,8 @@ AVOInversion::doPredictionKriging(SeismicParametersHolder & seismicParameters)
   if(writePrediction_ == true) { //No need to do this if output not requested.
     double wall2=0.0, cpu2=0.0;
     TimeKit::getTime(wall2,cpu2);
-    doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_); //H-Writing inside
+    doPostKriging(seismicParameters, *postVp_, *postVs_, *postRho_);
     Timings::setTimeKrigingPred(wall2,cpu2);
-    //H-Writing
-    //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postVp_, postVs_, postRho_,
-    //                                 outputGridsElastic_, fileGrid_, -1, true);
 
     seismicParameters.SetPostVpKriging(postVp_);
     seismicParameters.SetPostVsKriging(postVs_);
@@ -1478,18 +1434,13 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
           if(kriging == true) {
             double wall2=0.0, cpu2=0.0;
             TimeKit::getTime(wall2,cpu2);
-            doPostKriging(seismicParameters, *seed0, *seed1, *seed2);  //H-Writing inside
+            doPostKriging(seismicParameters, *seed0, *seed1, *seed2);
             Timings::addToTimeKrigingSim(wall2,cpu2);
           }
-
-          //H-Writing
-          //ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, seed0, seed1, seed2,
-          //                                 outputGridsElastic_, fileGrid_, simNr, kriging);
 
           seismicParameters.AddSimulationSeed0(seed0);
           seismicParameters.AddSimulationSeed1(seed1);
           seismicParameters.AddSimulationSeed2(seed2);
-
 
           // time(&timeend);
           // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
@@ -1527,18 +1478,13 @@ AVOInversion::doPostKriging(SeismicParametersHolder & seismicParameters,
 
   KrigingData3D kd(blocked_wells_, 1); // 1 = full resolution logs
 
-  //H-Writing moved to cravaResult (where kd is made from common_data->GetBlockedLogs())
-  //std::string baseName = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-  //std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
-  //kd.writeToFile(fileName);
-
   CKrigingAdmin pKriging(*simbox_,
                          kd.getData(), kd.getNumberOfData(),
                          covGridVp, covGridVs, covGridRho,
                          covGridCrVpVs, covGridCrVpRho, covGridCrVsRho,
                          krigingParameter_);
 
-  pKriging.KrigAll(postVp, postVs, postRho, seismicParameters, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging()); //H-Writing inside
+  pKriging.KrigAll(postVp, postVs, postRho, seismicParameters, false, modelSettings_->getDebugFlag(), modelSettings_->getDoSmoothKriging());
 }
 
 FFTGrid *
@@ -1761,7 +1707,7 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       std::vector<double> trend_min;
       std::vector<double> trend_max;
 
-      //float corrGradI, corrGradJ; //H Not used?
+      //float corrGradI, corrGradJ;
       //modelGeneral_->getCorrGradIJ(corrGradI, corrGradJ);
 
       FindSamplingMinMax(modelGeneral_->GetTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
@@ -1846,15 +1792,9 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        //std::string fileName = baseName +"With_Undef_"+ facies_names[i];
-        //H-Writing
-        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
         seismicParameters.AddFaciesProb(grid);
       }
       FFTGrid * grid = fprob_->getFaciesProbUndef();
-      //std::string fileName = baseName + "Undef";
-      //H-Writing
-      //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
       seismicParameters.AddFaciesProbUndef(grid);
     }
 
@@ -1865,9 +1805,6 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
       for (int i=0;i<nfac;i++)
       {
         FFTGrid * grid = fprob_->getFaciesProb(i);
-        //std::string fileName = baseName + facies_names[i];
-        //H-Writing
-        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid, fileName,"");
         seismicParameters.AddFaciesProbGeomodel(grid);
       }
     }
@@ -1885,9 +1822,8 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                                               modelGeneral_->GetPriorFacies(), modelGeneral_->GetPriorFaciesCubes());
         std::string fileName = IO::PrefixLikelihood() + facies_names[i];
 
-        //ParameterOutput::writeToFile(simbox_, modelGeneral_, modelSettings_, grid,fileName,"");
         seismicParameters.AddLHCube(grid);
-        //delete grid;
+
       }
     }
 
