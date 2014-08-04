@@ -224,7 +224,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
     err_text += "Error: Surface"+ botName_ +"does not cover volume.\n";
     failed  = true;
   }
-    // Set Eroded surfaces in the simbox
+  // Set Eroded surfaces in the simbox
   if(!failed){
     SetErodedSurfaces(top_surface, base_surface);
     // Set surfaces in the volume

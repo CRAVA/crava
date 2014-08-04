@@ -3294,7 +3294,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     std::exit(1);
   }
 
-  int n_facies = facies_blocked_.size();
+  int n_facies = facies_name.size();
 
   bool got_facies              = (n_facies > 0);
   bool got_facies_prob         = (facies_prob_.size() > 0);
