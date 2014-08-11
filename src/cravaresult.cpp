@@ -207,11 +207,12 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int nz_output    = output_simbox.getnz();
   double dz_output = output_simbox.getdz();
 
+  LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
+
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs create during inversion
 
-  //H-DEBUGGING
-  //return;
+  LogKit::LogFormatted(LogKit::Low,"ok\nCombine Prediction Grids...");
 
   if (model_settings->getWritePrediction()) {
 
@@ -263,6 +264,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, erosion_priorities, dz_output);
     }
   }
+
+  LogKit::LogFormatted(LogKit::Low,"ok\nCombine Background Model...");
 
   //Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
@@ -439,6 +442,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       ComputeSyntSeismic(model_settings, &output_simbox, post_vp_, post_vs_, post_rho_);
   }
 
+  LogKit::LogFormatted(LogKit::Low,"ok\nGenerate Synthetic Seismic Logs...");
+
   //From CommonData::WaveletHandling
   GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
 
@@ -451,6 +456,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
   if (wavelet_estimated == true)
     GenerateWellOptSyntSeis(model_settings, common_data, blocked_logs_, output_simbox, reflection_matrix_);
+
+  LogKit::LogFormatted(LogKit::Low,"ok");
 
 }
 
@@ -614,18 +621,25 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         }
 
         float value = 0.0f;
+        double dz_resampled = dz_min / res_fac;
         if (two_intervals == true) {
 
           //Use erorsion priorities to select between the two intervals
           if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
-            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+            //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+            double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+            value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
           }
           else {
-            value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
+            //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
+            double top = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getTop(global_x, global_y);
+            value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
           }
         }
         else {
-          value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+          //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+          double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+          value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
         }
 
         final_grid->SetValue(i, j, k, value);
@@ -658,23 +672,25 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
 
 }
 
-float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_trace,
-                                          const Simbox             & interval_simbox,
-                                          const double             & global_x,
-                                          const double             & global_y,
+float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_trace, //interval
+                                          const double             & dz_resampled,
+                                          const double             & top,
+                                          //const Simbox             & interval_simbox,
+                                          //const double             & global_x,
+                                          //const double             & global_y,
                                           const double             & global_z, //center of cell
                                           const double             & dz_final)
 {
   //double top = interval_simbox.getTop(global_x, global_y);
   //double bot = interval_simbox.getBot(global_x, global_y);
-  double top = interval_simbox.GetTopErodedSurface(global_x, global_y);
-  double bot = interval_simbox.GetBotErodedSurface(global_x, global_y);
+
+  //Find dz for the resampled trace. resampled_trace are based on this interval
+  //double dz_resampled = (bot - top) / nz_resampled;
 
   int nz_resampled    = resampled_trace.size();
-  double dz_resampled = (bot - top) / nz_resampled;
+  double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
-  double global_z_top = global_z - 0.5*dz_final;
-
+  //Start on top and pick the closest value in z
   double trace_z = top;
   int index      = 0;
   while (index < (nz_resampled-1)) {
@@ -691,20 +707,20 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
 }
 
 double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled_trace,
-                                           const Simbox              & interval_simbox,
-                                           const double              & global_x,
-                                           const double              & global_y,
+                                           const double              & dz_resampled,
+                                           const double              & top,
+                                           //const Simbox              & interval_simbox,
+                                           //const double              & global_x,
+                                           //const double              & global_y,
                                            const double              & global_z, //center of cell
                                            const double              & dz_final)
 {
   //double top = interval_simbox.getTop(global_x, global_y);
   //double bot = interval_simbox.getBot(global_x, global_y);
-  double top = interval_simbox.GetTopErodedSurface(global_x, global_y);
-  double bot = interval_simbox.GetBotErodedSurface(global_x, global_y);
+
+  //double dz_resampled = (bot - top) / nz_resampled;
 
   int nz_resampled    = resampled_trace.size();
-  double dz_resampled = (bot - top) / nz_resampled;
-
   double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
   double trace_z = top;
@@ -989,14 +1005,29 @@ void CravaResult::ResampleLog(std::vector<double>                               
   //Get logs per interval and resample to a fine resolution
   for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
 
-    BlockedLogsCommon * blocked_log = blocked_logs_intervals[i_interval].find(well_name)->second;
-    int nz_interval                 = blocked_log->GetNumberOfBlocks() * static_cast<int>(res_fac);
+    //BlockedLogsCommon * blocked_log = blocked_logs_intervals[i_interval].find(well_name)->second;
+    //int nz_interval                 = blocked_log->GetNumberOfBlocks() * static_cast<int>(res_fac);
+    int nz_interval = old_log_interval[i_interval].size() * res_fac;
 
     interval_logs_fine[i_interval].resize(nz_interval);
     ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval],  res_fac); //Interpolate missing
   }
 
   CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine);
+
+  //H-DEBUGGING
+  bool writing = true;
+  if (writing) {
+    std::string file_name = "test/final_trace_well";
+    std::ofstream file;
+    NRLib::OpenWrite(file, file_name);
+    file << std::fixed
+          << std::setprecision(6);
+    for (size_t k = 0; k < final_log.size(); k++)
+      file << exp(final_log[k]) << " ";
+    file.close();
+  }
+
 }
 
 void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it is changed
@@ -1006,6 +1037,19 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
 
   int nz_old = old_trace.size();
   int nz_new = new_trace.size();
+
+  //H-DEBUGGING
+  bool writing = true;
+  if (writing) {
+    std::string file_name = "test/old_trace_well";
+    std::ofstream file;
+    NRLib::OpenWrite(file, file_name);
+    file << std::fixed
+          << std::setprecision(6);
+    for (size_t k = 0; k < old_trace.size(); k++)
+      file << exp(old_trace[k]) << " ";
+    file.close();
+  }
 
   //Remove trend from trace
   size_t n_trace     = old_trace.size();
@@ -1044,6 +1088,17 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
   trend_inc = (trend_last - trend_first) / (res_fac * (nz_old - 1));
   for (int k = 0; k < nz_new; k++) {
     new_trace[k] = rAmpFine[k] + (trend_first + k*trend_inc);
+  }
+
+  if (writing) {
+    std::string file_name = "test/new_trace_well";
+    std::ofstream file;
+    NRLib::OpenWrite(file, file_name);
+    file << std::fixed
+          << std::setprecision(6);
+    for (size_t k = 0; k < new_trace.size(); k++)
+      file << exp(new_trace[k]) << " ";
+    file.close();
   }
 
   fftw_free(rAmpData);
@@ -1087,19 +1142,35 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
         two_intervals = true;
     }
 
-    double value = 0.0;
+    double value        = 0.0;
+    double nz_resampled = interval_logs_fine[i_interval].size();
     if (two_intervals == true) {
 
       //Use erorsion priorities to select between the two intervals
       if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
-        value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+        //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+        double top          = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+        double bot          = multi_interval_grid->GetIntervalSimbox(i_interval)->getBot(global_x, global_y);
+        double dz_resampled = (bot - top) / nz_resampled;
+
+        value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
       }
       else {
-        value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
+        //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
+        double top          = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getTop(global_x, global_y);
+        double bot          = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getBot(global_x, global_y);
+        double dz_resampled = (bot - top) / nz_resampled;
+
+        value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
       }
     }
     else {
-      value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+      //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
+      double top          = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+      double bot          = multi_interval_grid->GetIntervalSimbox(i_interval)->getBot(global_x, global_y);
+      double dz_resampled = (bot - top) / nz_resampled;
+
+      value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
     }
 
     final_log[k] = value;
@@ -1111,6 +1182,8 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
                                CommonData    * common_data)
 {
   //Move writing rutines from modelavodynamic and avoinversion here
+
+  LogKit::LogFormatted(LogKit::Low,"\n\nWrite Results");
 
   //Results are combined to one grid in CombineResults first
   //const Simbox & simbox = common_data->GetFullInversionSimbox();
@@ -1139,16 +1212,19 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
   }
   else {
 
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
     //Write blocked wells
     if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
       WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
       //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
       //Do not write if multiple intervals is used
-      if (n_intervals_ == 1)
-        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+      //H Writing of these wells crashes in release mode (test suite 7)
+      //if (n_intervals_ == 1) //H-TEMP
+      //  WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Prediction Grids...");
     if (model_settings->getWritePrediction()) {
 
       //From computePostMeanResidAndFFTCov()
@@ -1170,6 +1246,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     }
 
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Seismic Data...");
     //Write seismic data
     if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
         || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 ) {
@@ -1264,6 +1341,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       }
     }
 
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Backgroudn Grids...");
     //Write Background models
     if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
       WriteBackgrounds(model_settings,
@@ -1271,6 +1349,8 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
                        time_depth_mapping,
                        *model_settings->getTraceHeaderFormatOutput());
     }
+
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Correlations...");
 
     //Write correlations and post variances. Write per interval.
     for (int i = 0; i < n_intervals_; i++) {
@@ -1293,7 +1373,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
         WriteFilePostCovGrids(model_settings, simbox, interval_name);
       }
     }
-
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
     //if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
     //  WriteWells(common_data->GetWells(), model_settings);
     //}

@@ -214,7 +214,11 @@ Simbox::Simbox(const Simbox         * simbox,
 top_eroded_surface_(NULL),
 base_eroded_surface_(NULL)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface for interval \'%s\'.\n",interval_name.c_str());
+  std::string output_name = "";
+  if (interval_name != "")
+    output_name = " for interval \'" + interval_name + "\'";
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + " .\n");
+
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());
@@ -1232,9 +1236,9 @@ void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
                       const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck)
 {
   SetSurfaces(top_surf, bot_surf, skipCheck);
-  nz_ = nz;
+  nz_     = nz;
   nz_pad_ = nz;
-  dz_ = -1;
+  dz_     = -1;
   if(status_ == EMPTY)
     status_ = NOAREA;
   else if(status_ == NODEPTH)

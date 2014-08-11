@@ -611,7 +611,6 @@ void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
   std::string err_text_tmp = "";
   output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
-
 }
 
 double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j)
@@ -6146,7 +6145,11 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         }
         else if (is_storm) {
           size_t i_in, j_in, k_in;
+
           storm_grid->FindIndex(x, y, z0, i_in, j_in, k_in);
+          //H-TEST Find index does not work if simbox->top (=z0) is above storm->top value. But we do not use k_in
+          //storm_grid->FindXYIndex(x, y, i_in, j_in);
+
           double grid_x = 0.0;
           double grid_y = 0.0;
           double grid_z = 0.0;
@@ -7065,6 +7068,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                                      err_text);
 
               std::string bg_well_name = "bg_" + wells[j].GetWellName();
+              bg_blocked_log->SetWellName(bg_well_name);
 
               bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
             }
@@ -7075,6 +7079,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
           //Create background
           Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, err_text);
+
+          //H-DEBUGGING
+          //float a = exp(background_parameters[0][0]->GetValue(0,0,0));
+          //float c = exp(background_parameters[0][0]->GetValue(0,0,44));
+          //float b = exp(background_parameters[0][0]->GetValue(0,0,background_parameters[0][0]->GetNK() - 1));
 
           //These logs are written out in CravaResult if multiple interval isn't used
           if (n_intervals == 1)
@@ -9087,6 +9096,9 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
 {
   LogKit::WriteHeader("MODEL SETTINGS");
 
+  std::vector<std::string> interval_names = model_settings->getIntervalNames();
+  size_t n_intervals                      = interval_names.size();
+
   LogKit::LogFormatted(LogKit::Low,"\nGeneral settings:\n");
   if (model_settings->getForwardModeling()==true)
     LogKit::LogFormatted(LogKit::Low,"  Modelling mode                           : forward\n");
@@ -9247,9 +9259,14 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   if (input_files->getReflMatrFile() != "")
     LogKit::LogFormatted(LogKit::Medium, "  Take reflection matrix from file         : %10s\n", input_files->getReflMatrFile().c_str());
 
-  //if (model_settings->getVpVsRatio() != RMISSING)
-  if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end())
-    LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(""));
+  for (size_t i = 0; i < n_intervals; i++) {
+    if (interval_names[i] != "") {
+      LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+      LogKit::LogFormatted(LogKit::High ,"    Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(interval_names[i]));
+    }
+    else if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end())
+      LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(""));
+  }
 
   LogKit::LogFormatted(LogKit::High, "  RMS panel mode                           : %10s\n"  , (model_settings->getRunFromPanel() ? "yes" : "no"));
   LogKit::LogFormatted(LogKit::High ,"  Smallest allowed length increment (dxy)  : %10.2f\n", model_settings->getMinHorizontalRes());
@@ -9475,33 +9492,22 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     else
       LogKit::LogFormatted(LogKit::Low,"  Top surface                              : "+top_name+"\n");
 
-    if (model_settings->GetMultipleIntervalSetting() == false) {
 
-      const std::string & base_name = input_files->getBaseTimeSurface("");
+    for (size_t i = 0; i < n_intervals; i++) {
+
+      std::string buffer = "";
+      if (interval_names[i] != "") {
+        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+        buffer = "  ";
+      }
+
+      const std::string & base_name = input_files->getBaseTimeSurface(interval_names[i]);
 
       if (NRLib::IsNumber(base_name))
-        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n", atof(base_name.c_str()));
+        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Stop time                              : %10.2f\n", atof(base_name.c_str()));
       else
-        LogKit::LogFormatted(LogKit::Low,"  Base surface                             : "+base_name+"\n");
-      LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n", model_settings->getTimeNz(""));
-
-
-    }
-    else { //Multiple intervals
-      std::vector<std::string> interval_names = model_settings->getIntervalNames();
-
-      for (size_t i = 0; i < interval_names.size(); i++) {
-
-        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
-        const std::string & base_name = input_files->getBaseTimeSurface(interval_names[i]);
-
-        if (NRLib::IsNumber(base_name))
-          LogKit::LogFormatted(LogKit::Low,"    Stop time                              : %10.2f\n", atof(base_name.c_str()));
-        else
-          LogKit::LogFormatted(LogKit::Low,"    Base surface                           : "+base_name+"\n");
-        LogKit::LogFormatted(LogKit::Low,"    Number of layers                       : %10d\n", model_settings->getTimeNz(interval_names[i]));
-
-      }
+        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Base surface                           : "+base_name+"\n");
+      LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                       : %10d\n", model_settings->getTimeNz(interval_names[i]));
     }
 
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
@@ -9854,9 +9860,6 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         std::vector<float> SN_ratio         = model_settings->getSNRatio(i);
         std::vector<bool>  estimate_wavelet = model_settings->getEstimateWavelet(i);
         std::vector<bool>  match_energies   = model_settings->getMatchEnergies(i);
-
-
-
 
         for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
         {

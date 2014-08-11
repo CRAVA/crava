@@ -173,13 +173,14 @@ public:
 
   //SET FUNCTIONS --------------------------------
 
-  void                                   SetNAngles(int n_angles)                                       { n_angles_  = n_angles                                        ;}
-  void                                   SetDeviated(bool deviated)                                     { is_deviated_ = deviated                                      ;}
-  void                                   SetRealVsLog(int real_vs_log)                                  { real_vs_log_ = real_vs_log                                   ;}
+  void                                   SetNAngles(int n_angles)                                       { n_angles_                     = n_angles                     ;}
+  void                                   SetDeviated(bool deviated)                                     { is_deviated_                  = deviated                     ;}
+  void                                   SetRealVsLog(int real_vs_log)                                  { real_vs_log_                  = real_vs_log                  ;}
   void                                   SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
-  void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_ = use_for_background_trend         ;}
-  void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_ = use_for_filtering                       ;}
-  void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_ = use_for_wavelet_estimation     ;}
+  void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
+  void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_            = use_for_filtering            ;}
+  void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_   = use_for_wavelet_estimation   ;}
+  void                                   SetWellName(std::string & well_name)                           { well_name_                    = well_name                    ;}
 
   void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
   void                                   SetFaciesProb(int facies, std::vector<double> log)             { facies_prob_.insert(std::pair<int, std::vector<double> >(facies, log))      ;}
@@ -326,113 +327,113 @@ private:
 
   // FUNCTIONS------------------------------------
 
-  void                  SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                const std::vector<double>       & z_pos,
-                                                int                         n_blocks,
-                                                const std::vector<double> & vertical_trend,
-                                                double                      z0,
-                                                double                      dzVt,
-                                                int                         nz) const;
+  void                                   SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
+                                                                 const std::vector<double> & z_pos,
+                                                                 int                         n_blocks,
+                                                                 const std::vector<double> & vertical_trend,
+                                                                 double                      z0,
+                                                                 double                      dzVt,
+                                                                 int                         nz) const;
 
-  void         InterpolateTrend(const double                    * blocked_log,
-                                double                          * trend) const;
+  void                                   InterpolateTrend(const double                    * blocked_log,
+                                                          double                          * trend) const;
 
-  void         InterpolateTrend(const std::vector<double>       & blocked_log,
-                                double                          * trend) const;
+  void                                   InterpolateTrend(const std::vector<double>       & blocked_log,
+                                                          double                          * trend) const;
 
-  void         InterpolateTrend(const std::vector<double>       & blocked_log,
-                                std::vector<double>             & trend) const;
+  void                                   InterpolateTrend(const std::vector<double>       & blocked_log,
+                                                          std::vector<double>             & trend) const;
 
-  void         InterpolateTrend(const std::vector<double>       & blocked_log,
-                                 std::vector<double>            & trend,
-                                 const std::vector<Surface *>   & limits) const;
+  void                                   InterpolateTrend(const std::vector<double>       & blocked_log,
+                                                          std::vector<double>             & trend,
+                                                          const std::vector<Surface *>    & limits) const;
 
-  void         InterpolateTrend(const int                       * blocked_log,
-                                std::vector<int>                & trend) const;
+  void                                   InterpolateTrend(const int                       * blocked_log,
+                                                          std::vector<int>                & trend) const;
 
-  double ComputeElasticImpedance(double         vp,
-                                 float         vs,
-                                 float         rho,
-                                 const float * coeff) const;
+  double                                 ComputeElasticImpedance(double         vp,
+                                                                 float         vs,
+                                                                 float         rho,
+                                                                 const float * coeff) const;
 
-  void    RemoveMissingLogValues(const NRLib::Well                            * well_data,
-                                 std::vector<double>                          & x_pos_raw_logs,
-                                 std::vector<double>                          & y_pos_raw_logs,
-                                 std::vector<double>                          & z_pos_raw_logs,
-                                 std::vector<int>                             & facies_raw_logs,
-                                 std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
-                                 std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
-                                 const std::vector<std::string>               & cont_logs_to_be_blocked,
-                                 const std::vector<std::string>               & disc_logs_to_be_blocked,
-                                 unsigned int                                 & n_data,
-                                 bool                                         & failed,
-                                 std::string                                  & err_text) const;
+  void                                   RemoveMissingLogValues(const NRLib::Well                            * well_data,
+                                                                std::vector<double>                          & x_pos_raw_logs,
+                                                                std::vector<double>                          & y_pos_raw_logs,
+                                                                std::vector<double>                          & z_pos_raw_logs,
+                                                                std::vector<int>                             & facies_raw_logs,
+                                                                std::map<std::string, std::vector<double> >  & continuous_logs_raw_logs,
+                                                                std::map<std::string, std::vector<int> >     & discrete_logs_raw_logs,
+                                                                const std::vector<std::string>               & cont_logs_to_be_blocked,
+                                                                const std::vector<std::string>               & disc_logs_to_be_blocked,
+                                                                unsigned int                                 & n_data,
+                                                                bool                                         & failed,
+                                                                std::string                                  & err_text) const;
 
-  void    BlockWell(const Simbox                                        * estimation_simbox,
-                    const NRLib::Well                                   * well,
-                    const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
-                    const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
-                    const std::map<int, std::string>                    & facies_map,
-                    std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
-                    std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
-                    std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
-                    std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
-                    std::vector<double>                                 & x_pos_blocked,
-                    std::vector<double>                                 & y_pos_blocked,
-                    std::vector<double>                                 & z_pos_blocked,
-                    std::vector<int>                                    & facies_blocked,
-                    unsigned int                                          n_data,
-                    std::vector<int>                                    & i_pos,
-                    std::vector<int>                                    & j_pos,
-                    std::vector<int>                                    & k_pos,
-                    int                                                 & first_M,
-                    int                                                 & last_M,
-                    int                                                 & first_B,
-                    int                                                 & last_B,
-                    unsigned int                                        & n_blocks,
-                    std::map<std::string, int>                          & n_blocks_with_data,
-                    int                                                 & n_blocks_with_data_tot,
-                    bool                                                  facies_log_defined,
-                    bool                                                  interpolate,
-                    double                                              & dz,
-                    bool                                                & failed,
-                    std::string                                         & err_text) const;
+  void                                   BlockWell(const Simbox                                        * estimation_simbox,
+                                                   const NRLib::Well                                   * well,
+                                                   const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                                                   const std::map<std::string, std::vector<int> >      & discrete_logs_raw_logs,
+                                                   const std::map<int, std::string>                    & facies_map,
+                                                   std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                                   std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
+                                                   std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
+                                                   std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                                   std::vector<double>                                 & x_pos_blocked,
+                                                   std::vector<double>                                 & y_pos_blocked,
+                                                   std::vector<double>                                 & z_pos_blocked,
+                                                   std::vector<int>                                    & facies_blocked,
+                                                   unsigned int                                          n_data,
+                                                   std::vector<int>                                    & i_pos,
+                                                   std::vector<int>                                    & j_pos,
+                                                   std::vector<int>                                    & k_pos,
+                                                   int                                                 & first_M,
+                                                   int                                                 & last_M,
+                                                   int                                                 & first_B,
+                                                   int                                                 & last_B,
+                                                   unsigned int                                        & n_blocks,
+                                                   std::map<std::string, int>                          & n_blocks_with_data,
+                                                   int                                                 & n_blocks_with_data_tot,
+                                                   bool                                                  facies_log_defined,
+                                                   bool                                                  interpolate,
+                                                   double                                              & dz,
+                                                   bool                                                & failed,
+                                                   std::string                                         & err_text) const;
 
-  void    BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
-                                            const NRLib::Well                                   * well,
-                                            const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
-                                            const std::map<std::string, std::vector<int> >      & discrete_raw_logs,
-                                            const std::map<int, std::string>                    & facies_map,
-                                            std::vector<double>                                 & x_pos_blocked,
-                                            std::vector<double>                                 & y_pos_blocked,
-                                            std::vector<double>                                 & z_pos_blocked,
-                                            std::vector<int>                                    & facies_blocked,
-                                            std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
-                                            std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
-                                            std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
-                                            std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
-                                            unsigned int                                          n_data,
-                                            unsigned int                                        & n_blocks,
-                                            std::map<std::string, int>                          & n_blocks_with_data,
-                                            int                                                 & n_blocks_with_data_tot,
-                                            std::vector<int>                                    & n_well_log_obs_in_interval,
-                                            std::map<std::string, int>                          & n_layers_adjusted_per_interval,
-                                            std::vector<int>                                    & i_pos,
-                                            std::vector<int>                                    & j_pos,
-                                            std::vector<int>                                    & k_pos,
-                                            std::vector<int>                                    & s_pos,
-                                            int                                                 & first_M,
-                                            int                                                 & last_M,
-                                            int                                                 & first_S,
-                                            int                                                 & last_S,
-                                            int                                                 & first_B,
-                                            int                                                 & last_B,
-                                            bool                                                  facies_log_defined,
-                                            bool                                                  interpolate,
-                                            int                                                 & n_layers,
-                                            double                                              & dz,
-                                            bool                                                & failed,
-                                            std::string                                         & err_text) const;
+  void                                   BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
+                                                                           const NRLib::Well                                   * well,
+                                                                           const std::map<std::string, std::vector<double> >   & continuous_logs_raw_logs,
+                                                                           const std::map<std::string, std::vector<int> >      & discrete_raw_logs,
+                                                                           const std::map<int, std::string>                    & facies_map,
+                                                                           std::vector<double>                                 & x_pos_blocked,
+                                                                           std::vector<double>                                 & y_pos_blocked,
+                                                                           std::vector<double>                                 & z_pos_blocked,
+                                                                           std::vector<int>                                    & facies_blocked,
+                                                                           std::map<std::string, std::vector<double> >         & continuous_logs_blocked,
+                                                                           std::map<std::string, std::vector<double> >         & cont_logs_highcut_seismic,
+                                                                           std::map<std::string, std::vector<double> >         & cont_logs_highcut_background,
+                                                                           std::map<std::string, std::vector<int> >            & discrete_logs_blocked,
+                                                                           unsigned int                                          n_data,
+                                                                           unsigned int                                        & n_blocks,
+                                                                           std::map<std::string, int>                          & n_blocks_with_data,
+                                                                           int                                                 & n_blocks_with_data_tot,
+                                                                           std::vector<int>                                    & n_well_log_obs_in_interval,
+                                                                           std::map<std::string, int>                          & n_layers_adjusted_per_interval,
+                                                                           std::vector<int>                                    & i_pos,
+                                                                           std::vector<int>                                    & j_pos,
+                                                                           std::vector<int>                                    & k_pos,
+                                                                           std::vector<int>                                    & s_pos,
+                                                                           int                                                 & first_M,
+                                                                           int                                                 & last_M,
+                                                                           int                                                 & first_S,
+                                                                           int                                                 & last_S,
+                                                                           int                                                 & first_B,
+                                                                           int                                                 & last_B,
+                                                                           bool                                                  facies_log_defined,
+                                                                           bool                                                  interpolate,
+                                                                           int                                                 & n_layers,
+                                                                           double                                              & dz,
+                                                                           bool                                                & failed,
+                                                                           std::string                                         & err_text) const;
 
   void    FindSizeAndBlockPointers(const MultiIntervalGrid       * multiple_interval_grid,
                                    std::vector<int>              & b_ind,
@@ -655,8 +656,8 @@ private:
   std::vector<std::vector<double> >           actual_synt_seismic_data_;        ///< Forward modelled seismic data using local wavelet
   std::vector<std::vector<double> >           well_synt_seismic_data_;          ///< Forward modelled seismic data using wavelet estimated in well
 
-  float lateral_threshold_gradient_; //Minimum lateral distance where gradient lines must not cross
-  float sigma_m_; //Smoothing factor for the gradients
+  float                                       lateral_threshold_gradient_; //Minimum lateral distance where gradient lines must not cross
+  float                                       sigma_m_; //Smoothing factor for the gradients
 
   // Logs from well, not blocked
   std::vector<double>                         x_pos_raw_logs_;

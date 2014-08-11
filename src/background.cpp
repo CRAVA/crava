@@ -74,9 +74,24 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
                             model_settings,
                             err_text);
 
+    //H-DEBUGGING Write
+    //int nx = parameters[0]->GetNI();
+    //int ny = parameters[0]->GetNJ();
+    //int nz = parameters[0]->GetNK();
+    //FFTGrid * test_grid = new FFTGrid(parameters[0], nx, ny, nz);
+    //test_grid->writeFile("Ext_BG_Vp", IO::PathToBackground(), bg_simbox);
+
     ResampleBackgroundModel(parameters[0], parameters[1], parameters[2],
                             bg_simbox,
                             simbox);
+
+    //H-DEBUGGING Write
+    //nx = parameters[0]->GetNI();
+    //ny = parameters[0]->GetNJ();
+    //nz = parameters[0]->GetNK();
+    //FFTGrid * test_grid_2 = new FFTGrid(parameters[0], nx, ny, nz);
+    //test_grid_2->writeFile("Ext_BG_Vp_resampled", IO::PathToBackground(), simbox);
+
   }
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);

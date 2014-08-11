@@ -46,16 +46,20 @@ public:
                      double                   dz_min);
 
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
-                               const Simbox             & interval_simbox,
-                               const double             & global_x,
-                               const double             & global_y,
+                               const double             & dz_resampled,
+                               const double             & top,
+                               //const Simbox             & interval_simbox,
+                               //const double             & global_x,
+                               //const double             & global_y,
                                const double             & global_z,
                                const double             & dz_final);
 
   double GetResampledTraceValue(const std::vector<double> & resampled_trace,
-                                const Simbox              & interval_simbox,
-                                const double              & global_x,
-                                const double              & global_y,
+                                const double              & dz_resampled,
+                                const double              & top,
+                                //const Simbox              & interval_simbox,
+                                //const double              & global_x,
+                                //const double              & global_y,
                                 const double              & global_z, //center of cell
                                 const double              & dz_final);
 

@@ -3161,6 +3161,15 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
     blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);
   }
+
+  //H-TEST
+  //float value = blocked_log[0];
+  //for (int i = 1; i < blocked_log.size(); i++) {
+  //  if (blocked_log[i] > value)
+  //    value = blocked_log[i];
+  //}
+  //float exp_value = exp(value);
+
   grid->endAccess();
 
   if (n_angles_ == 0)
