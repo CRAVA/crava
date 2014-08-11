@@ -6147,8 +6147,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           size_t i_in, j_in, k_in;
 
           storm_grid->FindIndex(x, y, z0, i_in, j_in, k_in);
-          //H-TEST Find index does not work if simbox->top (=z0) is above storm->top value. But we do not use k_in
-          //storm_grid->FindXYIndex(x, y, i_in, j_in);
+          //H-TEST storm_grid->FindXYIndex(x, y, i_in, j_in);
 
           double grid_x = 0.0;
           double grid_y = 0.0;
@@ -7079,11 +7078,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
           //Create background
           Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, err_text);
-
-          //H-DEBUGGING
-          //float a = exp(background_parameters[0][0]->GetValue(0,0,0));
-          //float c = exp(background_parameters[0][0]->GetValue(0,0,44));
-          //float b = exp(background_parameters[0][0]->GetValue(0,0,background_parameters[0][0]->GetNK() - 1));
 
           //These logs are written out in CravaResult if multiple interval isn't used
           if (n_intervals == 1)

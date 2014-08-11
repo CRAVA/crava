@@ -620,27 +620,35 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
             two_intervals = true;
         }
 
-        float value = 0.0f;
+        float value         = 0.0f;
         double dz_resampled = dz_min / res_fac;
-        if (two_intervals == true) {
+        int interval_index  = i_interval;
 
+        if (two_intervals == true) {
           //Use erorsion priorities to select between the two intervals
-          if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
-            //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
-            double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
-            value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
-          }
-          else {
-            //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
-            double top = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getTop(global_x, global_y);
-            value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
-          }
+          if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
+            interval_index = i_interval;
+          else
+            interval_index = i_interval+1;
         }
-        else {
-          //value = GetResampledTraceValue(new_traces[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
-          double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
-          value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
-        }
+        double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+        value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
+        //if (two_intervals == true) {
+
+        //  //Use erorsion priorities to select between the two intervals
+        //  if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
+        //    double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+        //    value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
+        //  }
+        //  else {
+        //    double top = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getTop(global_x, global_y);
+        //    value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
+        //  }
+        //}
+        //else {
+        //  double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
+        //  value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
+        //}
 
         final_grid->SetValue(i, j, k, value);
       }
@@ -675,18 +683,9 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
 float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_trace, //interval
                                           const double             & dz_resampled,
                                           const double             & top,
-                                          //const Simbox             & interval_simbox,
-                                          //const double             & global_x,
-                                          //const double             & global_y,
                                           const double             & global_z, //center of cell
                                           const double             & dz_final)
 {
-  //double top = interval_simbox.getTop(global_x, global_y);
-  //double bot = interval_simbox.getBot(global_x, global_y);
-
-  //Find dz for the resampled trace. resampled_trace are based on this interval
-  //double dz_resampled = (bot - top) / nz_resampled;
-
   int nz_resampled    = resampled_trace.size();
   double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
@@ -709,17 +708,9 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
 double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled_trace,
                                            const double              & dz_resampled,
                                            const double              & top,
-                                           //const Simbox              & interval_simbox,
-                                           //const double              & global_x,
-                                           //const double              & global_y,
                                            const double              & global_z, //center of cell
                                            const double              & dz_final)
 {
-  //double top = interval_simbox.getTop(global_x, global_y);
-  //double bot = interval_simbox.getBot(global_x, global_y);
-
-  //double dz_resampled = (bot - top) / nz_resampled;
-
   int nz_resampled    = resampled_trace.size();
   double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
@@ -1005,18 +996,16 @@ void CravaResult::ResampleLog(std::vector<double>                               
   //Get logs per interval and resample to a fine resolution
   for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
 
-    //BlockedLogsCommon * blocked_log = blocked_logs_intervals[i_interval].find(well_name)->second;
-    //int nz_interval                 = blocked_log->GetNumberOfBlocks() * static_cast<int>(res_fac);
-    int nz_interval = old_log_interval[i_interval].size() * res_fac;
+    int nz_interval = static_cast<int>(old_log_interval[i_interval].size() * res_fac);
 
     interval_logs_fine[i_interval].resize(nz_interval);
     ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval],  res_fac); //Interpolate missing
   }
 
-  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine);
+  CombineTraces(final_log, blocked_log_final, blocked_logs_intervals, well_name, multi_interval_grid, interval_logs_fine);
 
   //H-DEBUGGING
-  bool writing = true;
+  bool writing = false;
   if (writing) {
     std::string file_name = "test/final_trace_well";
     std::ofstream file;
@@ -1039,7 +1028,7 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
   int nz_new = new_trace.size();
 
   //H-DEBUGGING
-  bool writing = true;
+  bool writing = false;
   if (writing) {
     std::string file_name = "test/old_trace_well";
     std::ofstream file;
@@ -1090,6 +1079,7 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
     new_trace[k] = rAmpFine[k] + (trend_first + k*trend_inc);
   }
 
+  //H-DEBUGGING
   if (writing) {
     std::string file_name = "test/new_trace_well";
     std::ofstream file;
@@ -1108,10 +1098,12 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
 
 }
 
-void CravaResult::CombineTraces(std::vector<double>                     & final_log,
-                                const BlockedLogsCommon                 * blocked_log_final,
-                                MultiIntervalGrid                       * multi_interval_grid,
-                                const std::vector<std::vector<double> > & interval_logs_fine)
+void CravaResult::CombineTraces(std::vector<double>                                            & final_log,
+                                const BlockedLogsCommon                                        * blocked_log_final,
+                                const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                                std::string                                                    & well_name,
+                                MultiIntervalGrid                                              * multi_interval_grid,
+                                const std::vector<std::vector<double> >                        & interval_logs_fine)
 {
   int nz          = final_log.size();
   int n_intervals = interval_logs_fine.size();
@@ -1144,34 +1136,59 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
 
     double value        = 0.0;
     double nz_resampled = interval_logs_fine[i_interval].size();
-    if (two_intervals == true) {
+    int interval_index  = i_interval;
 
+   if (two_intervals == true) {
       //Use erorsion priorities to select between the two intervals
-      if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
-        //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
-        double top          = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
-        double bot          = multi_interval_grid->GetIntervalSimbox(i_interval)->getBot(global_x, global_y);
-        double dz_resampled = (bot - top) / nz_resampled;
-
-        value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
-      }
-      else {
-        //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval+1), global_x, global_y, global_z, dz_final);
-        double top          = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getTop(global_x, global_y);
-        double bot          = multi_interval_grid->GetIntervalSimbox(i_interval+1)->getBot(global_x, global_y);
-        double dz_resampled = (bot - top) / nz_resampled;
-
-        value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
-      }
+      if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
+        interval_index = i_interval;
+      else
+        interval_index = i_interval+1;
     }
-    else {
-      //value = GetResampledTraceValue(interval_logs_fine[i_interval], *multi_interval_grid->GetIntervalSimbox(i_interval), global_x, global_y, global_z, dz_final);
-      double top          = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
-      double bot          = multi_interval_grid->GetIntervalSimbox(i_interval)->getBot(global_x, global_y);
-      double dz_resampled = (bot - top) / nz_resampled;
 
-      value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
-    }
+    int first_B = blocked_logs_intervals[interval_index].find(well_name)->second->GetFirstB();
+    int last_B  = blocked_logs_intervals[interval_index].find(well_name)->second->GetLastB();
+    double top  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[first_B];
+    double bot  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[last_B];
+
+    double dz_resampled = (bot - top) / nz_resampled;
+
+    value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
+
+    //if (two_intervals == true) {
+
+    //  //Use erorsion priorities to select between the two intervals
+    //  if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1]) {
+    //    double first_B = blocked_logs_intervals[i_interval].find(well_name)->second->GetFirstB();
+    //    double last_B  = blocked_logs_intervals[i_interval].find(well_name)->second->GetLastB();
+    //    double top     = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked()[first_B];
+    //    double bot     = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked()[last_B];
+
+    //    double dz_resampled = (bot - top) / nz_resampled;
+
+    //    value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
+    //  }
+    //  else {
+    //    double first_B = blocked_logs_intervals[i_interval+1].find(well_name)->second->GetFirstB();
+    //    double last_B  = blocked_logs_intervals[i_interval+1].find(well_name)->second->GetLastB();
+    //    double top     = blocked_logs_intervals[i_interval+1].find(well_name)->second->GetZposBlocked()[first_B];
+    //    double bot     = blocked_logs_intervals[i_interval+1].find(well_name)->second->GetZposBlocked()[last_B];
+
+    //    double dz_resampled = (bot - top) / nz_resampled;
+
+    //    value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
+    //  }
+    //}
+    //else {
+    //  double first_B = blocked_logs_intervals[i_interval].find(well_name)->second->GetFirstB();
+    //  double last_B  = blocked_logs_intervals[i_interval].find(well_name)->second->GetLastB();
+    //  double top     = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked()[first_B];
+    //  double bot     = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked()[last_B];
+
+    //  double dz_resampled = (bot - top) / nz_resampled;
+
+    //  value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
+    //}
 
     final_log[k] = value;
   }

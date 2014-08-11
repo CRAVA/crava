@@ -48,18 +48,12 @@ public:
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
                                const double             & dz_resampled,
                                const double             & top,
-                               //const Simbox             & interval_simbox,
-                               //const double             & global_x,
-                               //const double             & global_y,
                                const double             & global_z,
                                const double             & dz_final);
 
   double GetResampledTraceValue(const std::vector<double> & resampled_trace,
                                 const double              & dz_resampled,
                                 const double              & top,
-                                //const Simbox              & interval_simbox,
-                                //const double              & global_x,
-                                //const double              & global_y,
                                 const double              & global_z, //center of cell
                                 const double              & dz_final);
 
@@ -89,10 +83,12 @@ public:
                      std::vector<double> & new_trace,
                      const float           res_fac);
 
-  void CombineTraces(std::vector<double>                     & final_log,
-                     const BlockedLogsCommon                 * blocked_log_final,
-                     MultiIntervalGrid                       * multiple_interval_grid,
-                     const std::vector<std::vector<double> > & resampled_logs);
+  void CombineTraces(std::vector<double>                                            & final_log,
+                     const BlockedLogsCommon                                        * blocked_log_final,
+                     const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                     std::string                                                    & well_name,
+                     MultiIntervalGrid                                              * multiple_interval_grid,
+                     const std::vector<std::vector<double> >                        & resampled_logs);
 
   void WriteResults(ModelSettings * model_settings,
                     CommonData    * common_data);
