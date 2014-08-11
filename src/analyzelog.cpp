@@ -849,7 +849,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     vp_mean   /= vp.size();
     vs_mean   /= vp.size();
     rho_mean  /= vp.size();
-    
+
     A.resize(n_data, 2);
     b.resize(n_data);
     for(size_t j = 0; j < vp.size(); j++){

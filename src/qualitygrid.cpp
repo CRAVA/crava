@@ -36,14 +36,10 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
       wellValue_[i] = static_cast<float>((pValue[i] - 0.005) / 0.045);
     else
       wellValue_[i] = 0;
-
   }
 
   FFTGrid * grid;
-
   generateProbField(grid, blocked_wells, simbox, modelSettings);
-
-  std::string fileName = "Seismic_Quality_Grid";
 
   seismicParameters.SetQualityGrid(grid);
 }
@@ -53,9 +49,7 @@ void QualityGrid::generateProbField(FFTGrid                                   *&
                                     const Simbox                               * simbox,
                                     const ModelSettings                        * model_settings) const
 {
-
   const int nz = simbox->getnz();
-  //const int nWells = modelSettings->getNumberOfWells();
 
   std::vector<KrigingData2D> krigingData(nz);
 
@@ -69,7 +63,6 @@ void QualityGrid::generateProbField(FFTGrid                                   *&
   makeKrigedProbField(krigingData, grid, simbox, cov, isFile);
 
   delete &cov;
-
 }
 
 void QualityGrid::setupKrigingData2D(std::vector<KrigingData2D>                 & krigingData,

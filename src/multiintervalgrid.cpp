@@ -280,7 +280,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 const Simbox                              * estimation_simbox,
                                                 const std::vector<std::string>            & interval_names,
                                                 const std::vector<Surface>                & eroded_surfaces,
-                                                std::vector<Simbox *>                       & interval_simboxes,
+                                                std::vector<Simbox *>                     & interval_simboxes,
                                                 const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                                                 const std::map<std::string, std::string>  & corr_dir_top_surfaces,
                                                 const std::map<std::string, std::string>  & corr_dir_base_surfaces,
@@ -616,7 +616,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
-                                             ModelSettings   * model_settings) const {
+                                             ModelSettings   * model_settings) {
   int    nz             = simbox->getnz();
   double min_lz         = simbox->getlz()*simbox->getMinRelThick();
   double z_pad_fac      = model_settings->getZPadFac();

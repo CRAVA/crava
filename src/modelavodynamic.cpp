@@ -246,7 +246,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         int w = 0;
         std::map<std::string, BlockedLogsCommon *> mapped_blocked_logs;
         const Simbox & estimation_box = common_data->GetEstimationSimbox();
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
+        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = orig_blocked_logs.begin(); it != orig_blocked_logs.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = orig_blocked_logs.find(it->first);
           BlockedLogsCommon * blocked_log = new BlockedLogsCommon(*(iter->second));
           blocked_log->VolumeFocus(*simbox,

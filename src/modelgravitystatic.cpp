@@ -3,7 +3,6 @@
 ***************************************************************************/
 
 #include "src/definitions.h"
-#include "src/modelgeneral.h"
 #include "src/modelgravitystatic.h"
 #include "src/xmlmodelfile.h"
 #include "src/modelsettings.h"
@@ -12,17 +11,16 @@
 #include "src/analyzelog.h"
 #include "src/vario.h"
 #include "src/simbox.h"
-//#include "src/background.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
-#include "src/inputfiles.h"
 #include "src/timings.h"
 #include "src/io.h"
 #include "src/waveletfilter.h"
 #include "src/tasklist.h"
 #include "src/parameteroutput.h"
 #include "nrlib/surface/surface.hpp"
+#include "src/commondata.h"
 
 //ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
 //                                       ModelGeneral         *& modelGeneral,
@@ -122,7 +120,7 @@
 
 ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
                                        CommonData          * commonData,
-                                       const Simbox              * simbox,
+                                       const Simbox        * simbox,
                                        int                   i_interval)
 {
   (void) i_interval;
@@ -133,7 +131,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
   // Set up gravimetric baseline
   LogKit::WriteHeader("Setting up gravimetric baseline");
 
-  observation_location_utmx_  = commonData->GetGravityObservationUtmxTimeLapse(0); //H Not used?
+  observation_location_utmx_  = commonData->GetGravityObservationUtmxTimeLapse(0);
   observation_location_utmy_  = commonData->GetGravityObservationUtmyTimeLapse(0);
   observation_location_depth_ = commonData->GetGravityObservationDepthTimeLapse(0);
   gravity_response_           = commonData->GetGravityResponseTimeLapse(0);
@@ -152,7 +150,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings      *& modelSettings,
   dz_upscaled_ = simbox->GetLZ()/nz_upscaled_;
 
   LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
-  MakeUpscalingKernel(modelSettings, simbox);  // sjekk at er over nxp
+  MakeUpscalingKernel(modelSettings, simbox, commonData->GetTimeDepthMapping());  // sjekk at er over nxp
   LogKit::LogFormatted(LogKit::Low, "ok.\n");
 
   LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
@@ -168,73 +166,73 @@ ModelGravityStatic::~ModelGravityStatic(void)
 {
 }
 
+//void
+//ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
+//                                        const std::string   & readReason,
+//                                        int                   nObs,
+//                                        int                   nColumns,
+//                                        std::vector <float> & obs_loc_utmx,
+//                                        std::vector <float> & obs_loc_utmy,
+//                                        std::vector <float> & obs_loc_depth,
+//                                        std::vector <float> & gravity_response,
+//                                        std::vector <float> & gravity_std_dev,
+//                                        bool                  failed,
+//                                        std::string         & errText)
+//{
+//  float * tmpRes = new float[nObs*nColumns+1];
+//  std::ifstream inFile;
+//  NRLib::OpenRead(inFile,fileName);
+//  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
+//  LogKit::LogFormatted(LogKit::Low,text);
+//  std::string storage;
+//  int index = 0;
+//  failed = false;
+//
+//  while(failed == false && inFile >> storage) {
+//    if(index < nObs*nColumns) {
+//      try {
+//        tmpRes[index] = NRLib::ParseType<float>(storage);
+//      }
+//      catch (NRLib::Exception & e) {
+//        errText += "Error in "+fileName+"\n";
+//        errText += e.what();
+//        failed = true;
+//      }
+//    }
+//    index++;
+//  }
+//  if(failed == false) {
+//    if(index != nObs*nColumns) {
+//      failed = true;
+//      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(nObs*nColumns)+".\n";
+//    }
+//  }
+//
+//  if(failed == false) {
+//    LogKit::LogFormatted(LogKit::Low,"ok.\n");
+//    index = 0;
+//    for(int i=0;i<nObs;i++) {
+//      obs_loc_utmx[i] = tmpRes[index];
+//      index++;
+//      obs_loc_utmy[i] = tmpRes[index];
+//      index++;
+//      obs_loc_depth[i] = tmpRes[index];
+//      index++;
+//      gravity_response[i] = tmpRes[index];
+//      index++;
+//      gravity_std_dev[i] = tmpRes[index];
+//      index++;
+//    }
+//  }
+//  else{
+//    failed = true;
+//    LogKit::LogFormatted(LogKit::Low,"failed.\n");
+//  }
+//  delete [] tmpRes;
+//}
+
 void
-ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
-                                        const std::string   & readReason,
-                                        int                   nObs,
-                                        int                   nColumns,
-                                        std::vector <float> & obs_loc_utmx,
-                                        std::vector <float> & obs_loc_utmy,
-                                        std::vector <float> & obs_loc_depth,
-                                        std::vector <float> & gravity_response,
-                                        std::vector <float> & gravity_std_dev,
-                                        bool                  failed,
-                                        std::string         & errText)
-{
-  float * tmpRes = new float[nObs*nColumns+1];
-  std::ifstream inFile;
-  NRLib::OpenRead(inFile,fileName);
-  std::string text = "Reading "+readReason+" from file "+fileName+" ... ";
-  LogKit::LogFormatted(LogKit::Low,text);
-  std::string storage;
-  int index = 0;
-  failed = false;
-
-  while(failed == false && inFile >> storage) {
-    if(index < nObs*nColumns) {
-      try {
-        tmpRes[index] = NRLib::ParseType<float>(storage);
-      }
-      catch (NRLib::Exception & e) {
-        errText += "Error in "+fileName+"\n";
-        errText += e.what();
-        failed = true;
-      }
-    }
-    index++;
-  }
-  if(failed == false) {
-    if(index != nObs*nColumns) {
-      failed = true;
-      errText += "Found "+NRLib::ToString(index)+" in file "+fileName+", expected "+NRLib::ToString(nObs*nColumns)+".\n";
-    }
-  }
-
-  if(failed == false) {
-    LogKit::LogFormatted(LogKit::Low,"ok.\n");
-    index = 0;
-    for(int i=0;i<nObs;i++) {
-      obs_loc_utmx[i] = tmpRes[index];
-      index++;
-      obs_loc_utmy[i] = tmpRes[index];
-      index++;
-      obs_loc_depth[i] = tmpRes[index];
-      index++;
-      gravity_response[i] = tmpRes[index];
-      index++;
-      gravity_std_dev[i] = tmpRes[index];
-      index++;
-    }
-  }
-  else{
-    failed = true;
-    LogKit::LogFormatted(LogKit::Low,"failed.\n");
-  }
-  delete [] tmpRes;
-}
-
-void
-ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Simbox * fullTimeSimbox)
+ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Simbox * fullTimeSimbox, GridMapping * timeDepthMapping)
 {
   (void) modelSettings;
   int nx = fullTimeSimbox->getnx();
@@ -262,8 +260,9 @@ ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Sim
   upscaling_kernel_->multiplyByScalar(static_cast<float>(nxp_upscaled_*nyp_upscaled_*nzp_upscaled_)/static_cast<float>(nxp*nyp*nzp)); // Padded or non-padded values?
 
   // Dump upscaling kernel
-  //upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt"); //H ModelGeneral_ not included in CommonData, this will be removed.
-  //ParameterOutput::writeToFile(fullTimeSimbox, modelGeneral_, modelSettings, upscaling_kernel_ , "UpscalingKernel_2", "", true);
+  upscaling_kernel_->writeAsciiFile("UpcalingKernel.txt");
+  upscaling_kernel_->writeFile("UpscalingKernel_2", IO::PathToInversionResults(), fullTimeSimbox, "", 0.0, timeDepthMapping, *modelSettings->getTraceHeaderFormatOutput(), true);
+
 }
 
 void ModelGravityStatic::MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled)

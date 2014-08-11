@@ -48,6 +48,9 @@ public:
   // SET FUNCTIONS
   void SetDzRel(std::vector<double> & dz_rel)                                                           { dz_rel_ = dz_rel                    ;}
 
+  static   void  EstimateZPaddingSize(Simbox          * simbox,
+                                      ModelSettings   * model_settings);
+
 private:
 
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
@@ -107,8 +110,8 @@ private:
                                     double       & x_max,
                                     double       & y_max) const;
 
-  void  EstimateZPaddingSize(Simbox          * simbox,
-                             ModelSettings   * model_settings) const;
+  //void  EstimateZPaddingSize(Simbox          * simbox,
+  //                           ModelSettings   * model_settings) const;
 
   void  LogIntervalInformation(const Simbox         * simbox,
                                const std::string    & interval_name,

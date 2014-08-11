@@ -111,7 +111,7 @@ namespace NRLib {
 
     float GetValueInterpolated(const int   & i,
                                const int   & j,
-                               const float & k) const;
+                               const float & k_value) const;
 
     float  GetValueZInterpolated(double x, double y, double z)const;
     float  GetValueClosestInZ(double x, double y, double z)const;

@@ -74,9 +74,24 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
                             model_settings,
                             err_text);
 
+    //H-DEBUGGING Write
+    //int nx = parameters[0]->GetNI();
+    //int ny = parameters[0]->GetNJ();
+    //int nz = parameters[0]->GetNK();
+    //FFTGrid * test_grid = new FFTGrid(parameters[0], nx, ny, nz);
+    //test_grid->writeFile("Ext_BG_Vp", IO::PathToBackground(), bg_simbox);
+
     ResampleBackgroundModel(parameters[0], parameters[1], parameters[2],
                             bg_simbox,
                             simbox);
+
+    //H-DEBUGGING Write
+    //nx = parameters[0]->GetNI();
+    //ny = parameters[0]->GetNJ();
+    //nz = parameters[0]->GetNK();
+    //FFTGrid * test_grid_2 = new FFTGrid(parameters[0], nx, ny, nz);
+    //test_grid_2->writeFile("Ext_BG_Vp_resampled", IO::PathToBackground(), simbox);
+
   }
 
   //padAndSetBackgroundModel(bg_vp, bg_vs, bg_rho);
@@ -274,7 +289,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
 
       velocity->LogTransform(RMISSING);
 
-      delete bg_vp; //H
+      delete bg_vp;
       bg_vp = velocity;
       velocity->Resize(0, 0, 0, 0.0);
       WriteDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
@@ -433,7 +448,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
 //
 //      if (err_text_tmp != "") {
 //        err_text += err_text_tmp;
-//        break; //H exit or continue?
+//        break;
 //      }
 //      else {
 //
@@ -537,7 +552,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
 //    bool write3D = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
 //
 //    if (write3D) {
-//      writeMultizoneTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone, //H Not working
+//      writeMultizoneTrendsToFile(trend_vp_zone, trend_vs_zone, trend_rho_zone,
 //                                 vp_zones, vs_zones, rho_zones,
 //                                 simbox,
 //                                 erosion_priority,
@@ -1841,7 +1856,6 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
 //  //std::string file_name_vs = IO::PrefixBackground() + IO::PrefixTrend() + "Vs";
 //  //std::string file_name_rho = IO::PrefixBackground() + IO::PrefixTrend() + "Rho";
 //
-//  //H Writing?
 //  //exp_trend_vp->writeFile(file_name_vp, IO::PathToBackground(), simbox);
 //  //exp_trend_vs->writeFile(file_name_vs, IO::PathToBackground(), simbox);
 //  //exp_trend_rho->writeFile(file_name_rho, IO::PathToBackground(), simbox);

@@ -34,14 +34,14 @@ void setupStaticModels(ModelGeneral            *& modelGeneral,
   modelAVOstatic  = new ModelAVOStatic(modelSettings,
                                        inputFiles,
                                        commonData,
-                                       modelGeneral->GetTimeSimbox(),
+                                       modelGeneral->GetSimbox(),
                                        i_interval);
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
-  //H-DEBUGGING
+  //H-Debugging
   //modelGravityStatic = new ModelGravityStatic(modelSettings,
   //                                            commonData,
-  //                                            modelGeneral->getTimeSimbox(),
+  //                                            modelGeneral->GetSimbox(),
   //                                            i_interval);
 
   //Add in ModelTravelTimeStatic when ready
@@ -64,7 +64,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
                                         modelGeneral,
                                         commonData,
                                         seismicParameters,
-                                        modelGeneral->GetTimeSimbox(),
+                                        modelGeneral->GetSimbox(),
                                         vintage,
                                         i_interval);
 
@@ -108,17 +108,15 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                 ModelGeneral            * modelGeneral,
                                 ModelGravityStatic      * modelGravityStatic,
                                 CommonData              * commonData,
-                                //InputFiles              * inputFiles,
                                 int                     & vintage,
                                 SeismicParametersHolder & seismicParameters)
 {
   ModelGravityDynamic * modelGravityDynamic = NULL;
 
   modelGravityDynamic = new ModelGravityDynamic(modelSettings,
-                                                modelGeneral,
                                                 modelGravityStatic,
+                                                modelGeneral->GetSimbox(),
                                                 commonData,
-                                                //inputFiles,
                                                 vintage,
                                                 seismicParameters);
 

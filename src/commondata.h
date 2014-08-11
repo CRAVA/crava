@@ -39,6 +39,8 @@ public:
 
   const Simbox                                                       & GetEstimationSimbox()                            const { return estimation_simbox_                             ;}
   const Simbox                                                       & GetFullInversionSimbox()                         const { return full_inversion_simbox_                         ;}
+  const Simbox                                                       & GetOutputSimbox()                                const { return output_simbox_                                 ;}
+        Simbox                                                       & GetOutputSimbox()                                      { return output_simbox_                                 ;}
   const std::vector<NRLib::Well>                                     & GetWells()                                       const { return wells_                                         ;}
         std::vector<NRLib::Well>                                     & GetWells()                                             { return wells_                                         ;}
   const MultiIntervalGrid                                            * GetMultipleIntervalGrid()                        const { return multiple_interval_grid_                        ;}
@@ -57,6 +59,7 @@ public:
   const NRLib::Grid<float>                                           * GetPriorFaciesProbCube(int interval, int facies) const { return prior_facies_prob_cubes_[interval][facies]     ;}
 
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogs()                                 const { return mapped_blocked_logs_                           ;}
+  const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsOutput()                           const { return mapped_blocked_logs_output_                    ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsForCorr()                          const { return mapped_blocked_logs_for_correlation_           ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBlockedLogsInterval(int i)                    const { return mapped_blocked_logs_intervals_.find(i)->second ;}
   const std::map<std::string, BlockedLogsCommon *>                   & GetBgBlockedLogs()                               const { return mapped_bg_blocked_logs_                        ;}
@@ -114,6 +117,16 @@ public:
                                     int                        rnt,
                                     int                        cmt,
                                     int                        rmt);
+
+  static void        ResampleTrace(const std::vector<double> & data_trace,
+                                   const rfftwnd_plan        & fftplan1,
+                                   const rfftwnd_plan        & fftplan2,
+                                   fftw_real                 * rAmpData,
+                                   fftw_real                 * rAmpFine,
+                                   int                         cnt,
+                                   int                         rnt,
+                                   int                         cmt,
+                                   int                         rmt);
 
   static FFTGrid *   CreateFFTGrid(int nx,
                                    int ny,
@@ -180,6 +193,8 @@ public:
                                                    const Simbox           & estimation_simbox,
                                                    std::string            & err_text);
 
+  static int                FindClosestFactorableNumber(int leastint);
+
 private:
 
   void               LoadWellMoveInterval(const InputFiles             * input_files,
@@ -229,6 +244,13 @@ private:
                                                 InputFiles              * input_files,
                                                 Simbox                  & full_inversion_simbox,
                                                 std::string             & err_text) const;
+
+  void               SetupOutputSimbox(Simbox            & output_simbox,
+                                       const Simbox      & full_inversion_simbox,
+                                       ModelSettings     * model_settings,
+                                       MultiIntervalGrid * multi_interval_grid);
+
+  double             FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j);
 
   void               WriteAreas(const SegyGeometry  * area_params,
                                 Simbox              * time_simbox,
@@ -621,7 +643,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   int                GetFillNumber(int i, int n, int np) const;
 
-  int                FindClosestFactorableNumber(int leastint) const;
+  //int                FindClosestFactorableNumber(int leastint) const;
 
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,
@@ -730,6 +752,15 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   void               SetupExtendedBackgroundSimbox(const Simbox * simbox,
                                                    Surface      * corr_surf,
+                                                   Simbox      *& bg_simbox,
+                                                   int            output_format,
+                                                   int            output_domain,
+                                                   int            other_output,
+                                                   std::string    interval_name) const;
+
+  void               SetupExtendedBackgroundSimbox(const Simbox * simbox,
+                                                   Surface      * top_corr_surf,
+                                                   Surface      * bot_corr_surf,
                                                    Simbox      *& bg_simbox,
                                                    int            output_format,
                                                    int            output_domain,
@@ -864,6 +895,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   bool read_seismic_;
   bool read_wells_;
   bool block_wells_;
+  bool block_wells_output_;
   bool inversion_wells_;
   bool correlation_wells_;
   bool setup_reflection_matrix_;
@@ -883,8 +915,10 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   MultiIntervalGrid                                          * multiple_interval_grid_;
   Simbox                                                       estimation_simbox_;
+  Simbox                                                       output_simbox_;         //Output simbox for writing. Top and bot surfaces are the visible surfaces (eroded surfaces)
   Simbox                                                       full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
                                                                                        //Not to be used for any z-resolution purposes.
+
 
   std::vector<std::vector<SeismicStorage> >                    seismic_data_; //Map timelapse
 
@@ -894,6 +928,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   // Blocked well logs
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox
+  std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_output_;          ///< Blocked logs with output simbox
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_for_correlation_; ///< Blocked logs for estimation of vertical corr
   std::map<int, std::map<std::string, BlockedLogsCommon *> >   mapped_blocked_logs_intervals_;       ///< Blocked logs to interval simboxes
   std::map<std::string, BlockedLogsCommon *>                   mapped_bg_blocked_logs_;              ///< Blocked logs for extended background simbox

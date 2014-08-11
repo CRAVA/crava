@@ -48,7 +48,7 @@ GridMapping::makeTimeTimeMapping(const Simbox * timeCutSimbox)
   int ny   = timeCutSimbox->getny();
   int nz   = timeCutSimbox->getnz();
   mapping_ = new StormContGrid(*timeCutSimbox, nx, ny, nz);
-  simbox_  = new Simbox(timeCutSimbox);
+  simbox_  = new Simbox(*timeCutSimbox);
 
   for(int i=0;i<nx;i++)
   {
@@ -484,7 +484,7 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
                                  bool         & failed,
                                  std::string  & errText)
 {
-  simbox_ = new Simbox(timeSimbox);
+  simbox_ = new Simbox(*timeSimbox);
   simbox_->setDepth(*z0Grid_, *z1Grid_, nz);
 
   std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDepth();
