@@ -435,9 +435,28 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
   wavelets_          = common_data->GetWavelet(0);
 
+  //Resample wavelet to output simbox
+  if (!model_settings->getForwardModeling()) {
+    for (size_t i = 0; i < wavelets_.size(); i++) {
+
+      //H-DEBUGGING
+      //if (i == 0)
+      //  wavelets_[i]->printToFile("test/wavelet_pre_shift0", true);
+
+      //These wavelets are from CommonData, and should not be on FFTFormat
+      wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
+                              output_simbox.getnz(),
+                              output_simbox.GetNZpad());
+
+      //H-DEBUGGING
+      //if (i == 0)
+      //  wavelets_[i]->printToFile("test/wavelet_post_resample", true);
+    }
+  }
+
   if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
     if (model_settings->getKrigingParameter() > 0)
-      ComputeSyntSeismic(model_settings, &output_simbox, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_);
+      ComputeSyntSeismic(model_settings, &output_simbox, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_); //H-TODO add wavelets_
     else
       ComputeSyntSeismic(model_settings, &output_simbox, post_vp_, post_vs_, post_rho_);
   }
@@ -1236,9 +1255,9 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
       //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
       //Do not write if multiple intervals is used
-      //H Writing of these wells crashes in release mode (test suite 7)
+      //H Writing of these wells crashes in release mode (test case 7)
       //if (n_intervals_ == 1) //H-TEMP
-      //  WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+        //WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
     LogKit::LogFormatted(LogKit::Low,"ok\nWrite Prediction Grids...");
