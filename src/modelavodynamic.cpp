@@ -203,7 +203,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Wavelet: estimated -> reestimate scale and noise (with updated vp/vs for this interval, waveletshape is from estimation in commondata.).
   std::vector<bool> wavelet_estimated = model_settings->getEstimateWavelet(this_timelapse_); //vector over angles
-  wavelets_ = common_data->GetWavelet(this_timelapse_);
+
+  wavelets_.resize(number_of_angles_);
+  //wavelets_ = common_data->GetWavelet(this_timelapse_);
 
   //Stored in Commondata for wavelets (Per timelapse, per angle):
   //local_noise_scale  //Updated above (taken directly from commonData)
@@ -215,7 +217,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   for (int i = 0; i < number_of_angles_; i++) {
 
-    wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
+    //Copy wavelets, since they may be resampled in cravaresult
+    //wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
+    wavelets_[i] = new Wavelet1D(common_data->GetWavelet(this_timelapse_)[i]);
+    wavelets_[i]->scale(common_data->GetWavelet(this_timelapse_)[i]->getScale()); //Not copied in copy-constructor
+
     std::vector<SeismicStorage> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
     bool adjust_scale = (wavelet_estimated[i] == true || model_settings->getEstimateGlobalWaveletScale(this_timelapse_, i) == true);
@@ -241,6 +247,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
 
         est_wavelet->resample(static_cast<float>(estimation_simbox.getdz()), estimation_simbox.getnz(), estimation_simbox.GetNZpad()); //Puts wavelet on fftorder.
+
         est_wavelet->scale(1.0);
         std::vector<std::vector<double> > seis_logs(orig_blocked_logs.size());
         int w = 0;
@@ -301,12 +308,19 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       }
     }
     else {
-      wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
+      //wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
+    //H-DEBUGGING
+    //if (i == 0)
+    //  wavelets_[i]->printToFile("test/wavelet_pre_resample_modelavo_test", true);
+
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
 
+    //H-DEBUGGING
+    //if (i == 0)
+    //  wavelets_[i]->printToFile("test/wavelet_post_resample_modelavo", true);
   }
 
   //This is used in writing of wells and in faciesprob.

@@ -853,9 +853,9 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     A.resize(n_data, 2);
     b.resize(n_data);
     for(size_t j = 0; j < vp.size(); j++){
-      A(j, 0) = vp[j] - vp_mean;    // Mean normalization
-      A(j, 1) = rho[j] - vs_mean;
-      b(j)    = vs[j] - rho_mean;
+      A(j, 0) = vp[j]  - vp_mean;    // Mean normalization
+      A(j, 1) = rho[j] - rho_mean;
+      b(j)    = vs[j]  - vs_mean;
     }
     if (n_data > 0){
       regression_coef = Regress(A, b);
@@ -893,6 +893,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       // Calculate autocovariance
       //
       int lag = 0;
+
       for (size_t k = 0; k < nd; k++){
         for (size_t l = k; l < nd; l++){
 
@@ -937,6 +938,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             if(log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING){
               double vs_k = regression_coef(0)*log_vp[k] + regression_coef(1)*log_rho[k];
               double vs_l = regression_coef(0)*log_vp[l] + regression_coef(1)*log_rho[l];
+
               temp_auto_cov[lag](1,1) += vs_k*vs_l;
               if (k == l)
                 temp_auto_cov[lag](1,1) += var_vs_resid;
@@ -963,6 +965,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                 max_lag_with_data = lag;
               temp_auto_cov[lag](1,1) += log_vs[k]*log_vs[l];
               count[lag](1,1) += 1;
+
             }
             // cov[t](vp, vs)
             if(log_vp[k] != RMISSING && log_vs[l] != RMISSING){
@@ -987,7 +990,6 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
           }
         }
       }
-
     }
     time(&timeend);
     long int time = static_cast<long int>(timeend - timestart);
