@@ -117,7 +117,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
-  if(!modelAVOstatic->GetForwardModeling()) {
+  if (!modelAVOstatic->GetForwardModeling()) {
     priorVar0_      = seismicParameters.getPriorVar0();
     seisData_       = modelAVOdynamic_->GetSeisCubes();
     modelAVOdynamic_->ReleaseGrids();
@@ -437,9 +437,19 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
   {
     int dim=seisWavelet_[l]->getDim();
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
-    if(ModelSettings::getDebugLevel() > 0) {
+
+    bool debug = false;
+
+    //if(ModelSettings::getDebugLevel() > 0) {
+    if (debug) {
       std::string fileName = IO::PrefixOriginalSeismicData() + "With_Padding_" + angle;
       seisData_[l]->writeStormFile(fileName, simbox_, false, true, true);
+    }
+
+    //H-DEBUGGING
+    if (debug) {
+      std::string fileName = IO::PrefixOriginalSeismicData() + "Without_Padding_" + angle;
+      seisData_[l]->writeStormFile(fileName, simbox_, false, false, true);
     }
 
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -484,6 +494,12 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         localWavelet = seisWavelet_[l]->createLocalWavelet1D(iInd,jInd);  //
         double sfLoc =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
 
+        //H-DEBUGGING
+        //localWavelet->writeWaveletToFile("test/local_wavelet_individe", 1.0, false);
+
+        //H-DEBUGGING
+        //seisWavelet_[l]->writeWaveletToFile("test/seis_wavelet_individe", 1.0, false);
+
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
         std::vector<float> A(3);
@@ -518,29 +534,31 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         }
       }
 
-      if(ModelSettings::getDebugLevel() > 0)
+      //if(ModelSettings::getDebugLevel() > 0)
+      if (debug)
       {
-        /* NBNB How to handle
+        ///* NBNB How to handle
         std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
         std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
         seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
-        */
+        //*/
       }
 
       LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
       seisData_[l]->interpolateSeismic(energyTreshold_);
 
-      if(ModelSettings::getDebugLevel() > 0)
+      //if(ModelSettings::getDebugLevel() > 0)
+      if (debug)
       {
-        /*
+        ///*
         std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
         std::string fileName1 = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
         std::string fileName2 = IO::PrefixReflectionCoefficients()  + "Interpolated_With_Padding_" + angle;
         seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
         seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
-        */
+        //*/
       }
       seisData_[l]->endAccess();
   }

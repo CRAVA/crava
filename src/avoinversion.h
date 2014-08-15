@@ -160,10 +160,8 @@ private:
   FFTGrid          * meanVs2_;
   FFTGrid          * meanRho2_;
 
-  //Wavelet         ** seisWavelet_;      // wavelet operator that define the forward map.
-  //FFTGrid         ** seisData_;         // Data
-  std::vector<Wavelet *> seisWavelet_;
-  std::vector<FFTGrid *> seisData_;
+  std::vector<Wavelet *> seisWavelet_;    // wavelet operator that define the forward map.
+  std::vector<FFTGrid *> seisData_;       // Data
 
   double          ** errThetaCov_;      //
   float              wnc_ ;             // if wnc=0.01 1% of the error wariance is white this has largest effect on
@@ -171,8 +169,7 @@ private:
                                         // avoid ill posed problems.
   NRLib::Matrix      A_;                // coefficients in Aki-Richards 3 term reflection coefficients
 
-  //float            * empSNRatio_;       // signal noise ratio empirical
-  std::vector<float> empSNRatio_;
+  std::vector<float> empSNRatio_;       // signal noise ratio empirical
 
   float            * theoSNRatio_;      // signal noise ratio from model
   float            * modelVariance_;
