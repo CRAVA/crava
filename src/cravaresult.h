@@ -136,11 +136,12 @@ public:
 
   void ExpTransf(StormContGrid * grid);
 
-  void ComputeSyntSeismic(const ModelSettings * model_settings,
-                          const Simbox        * simbox,
-                          StormContGrid       * vp,
-                          StormContGrid       * vs,
-                          StormContGrid       * rho);
+  void ComputeSyntSeismic(const ModelSettings    * model_settings,
+                          const Simbox           * simbox,
+                          std::vector<Wavelet *> & wavelets,
+                          StormContGrid          * vp,
+                          StormContGrid          * vs,
+                          StormContGrid          * rho);
 
   StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
                                           StormContGrid       * vs,

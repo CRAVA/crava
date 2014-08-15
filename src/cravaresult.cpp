@@ -225,6 +225,26 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     std::vector<FFTGrid *> post_vs_intervals(n_intervals_);
     std::vector<FFTGrid *> post_rho_intervals(n_intervals_);
 
+    //H-DEBUGGING Write trace from predicted-vp
+    bool write = false;
+    if (write) {
+      int nz_tmp = seismic_parameters_intervals[0].GetPostVp()->getNz();
+      std::vector<float> predicted_vp_pre_resampling(nz_tmp);
+      for (int k = 0; k < nz_tmp; k++) {
+        float value = seismic_parameters_intervals[0].GetPostVp()->getRealValue(10, 10, k);
+        predicted_vp_pre_resampling[k] = value;
+      }
+      std::string file_name = "test/predicted_vp_pre_resampling";
+      std::ofstream file;
+      NRLib::OpenWrite(file, file_name);
+      file << std::fixed
+            << std::setprecision(6);
+      for (int k = 0; k < nz_tmp; k++)
+        file << predicted_vp_pre_resampling[k] << " ";
+      file.close();
+    }
+
+
     // Erik N: Should these two cases be treated differently? I leave
     // the conditional statement
     if (model_settings->getForwardModeling()) {
@@ -244,6 +264,25 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+
+    //H-DEBUGGING Write trace from predicted-vp
+    if (write) {
+      int nz_tmp = post_vp_->GetNK();
+      std::vector<float> predicted_vp_post_resampling(nz_tmp);
+      for (int k = 0; k < nz_tmp; k++) {
+        float value = post_vp_->GetValue(10, 10, k);
+        predicted_vp_post_resampling[k] = value;
+      }
+      std::string file_name = "test/predicted_vp_post_resampling";
+      std::ofstream file;
+      NRLib::OpenWrite(file, file_name);
+      file << std::fixed
+            << std::setprecision(6);
+      for (int k = 0; k < nz_tmp; k++)
+        file << predicted_vp_post_resampling[k] << " ";
+      file.close();
+    }
+
 
     //Post vp, vs and rho from avoinversion doPredictionKriging()
     if (model_settings->getKrigingParameter() > 0) {
@@ -435,11 +474,33 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
   wavelets_          = common_data->GetWavelet(0);
 
+  //Resample wavelet to output simbox
+  //H-TODO Check if forward. In test case 1 the wavelet is stored in fftorder from commondata
+  //Alternative is to run ShiftFromFFTOrder and resample again, but it created some differences in test case 1
+  //Temp solution is to use the correct wavelet from commondata if forward.
+  if (!model_settings->getForwardModeling()) {
+    for (size_t i = 0; i < wavelets_.size(); i++) {
+
+      //H-DEBUGGING
+      //if (i == 0)
+      //  wavelets_[i]->printToFile("test/wavelet_pre_shift0", true);
+
+      //These wavelets are from CommonData, and should not be on FFTFormat
+      wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
+                             output_simbox.getnz(),
+                             output_simbox.GetNZpad());
+
+      //H-DEBUGGING
+      //if (i == 0)
+      //  wavelets_[i]->printToFile("test/wavelet_post_resample", true);
+    }
+  }
+
   if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
     if (model_settings->getKrigingParameter() > 0)
-      ComputeSyntSeismic(model_settings, &output_simbox, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_);
+      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_);
     else
-      ComputeSyntSeismic(model_settings, &output_simbox, post_vp_, post_vs_, post_rho_);
+      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_, post_vs_, post_rho_);
   }
 
   LogKit::LogFormatted(LogKit::Low,"ok\nGenerate Synthetic Seismic Logs...");
@@ -447,7 +508,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //From CommonData::WaveletHandling
   GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
 
-  //We need synt_seis from well wavelets, but it needs to be based on simbox_final/blocked_logs_final
+  //We need synt_seis from well wavelets, but it needs to be based on output simbox
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
   bool wavelet_estimated = false;
   for (int i = 0; i < model_settings->getNumberOfAngles(0); i++) {
@@ -1236,9 +1297,9 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
       //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
       //Do not write if multiple intervals is used
-      //H Writing of these wells crashes in release mode (test suite 7)
+      //H Writing of these wells crashes in release mode (test case 7)
       //if (n_intervals_ == 1) //H-TEMP
-      //  WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+        //WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
     LogKit::LogFormatted(LogKit::Low,"ok\nWrite Prediction Grids...");
@@ -1756,11 +1817,12 @@ void CravaResult::ExpTransf(StormContGrid * grid)
   }
 }
 
-void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
-                                     const Simbox        * simbox,
-                                     StormContGrid       * vp,
-                                     StormContGrid       * vs,
-                                     StormContGrid       * rho)
+void CravaResult::ComputeSyntSeismic(const ModelSettings    * model_settings,
+                                     const Simbox           * simbox,
+                                     std::vector<Wavelet *> & wavelets,
+                                     StormContGrid          * vp,
+                                     StormContGrid          * vs,
+                                     StormContGrid          * rho)
 {
   LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
@@ -1796,9 +1858,9 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings * model_settings,
         Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
         resultVec.fft1DInPlace();
 
-        Wavelet1D * localWavelet = wavelets_[l]->createLocalWavelet1D(i,j);
+        Wavelet1D * localWavelet = wavelets[l]->createLocalWavelet1D(i,j);
 
-        float sf = static_cast<float>(simbox->getRelThick(i, j))*wavelets_[l]->getLocalStretch(i,j);
+        float sf = static_cast<float>(simbox->getRelThick(i, j))*wavelets[l]->getLocalStretch(i,j);
 
         for (int k = 0; k <(nzp/2 +1); k++) {
           fftw_complex r = resultVec.getCAmp(k);

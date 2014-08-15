@@ -3452,12 +3452,19 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       wavelet_pre_resampling = new Wavelet1D(wavelet);
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
 
+      //H-DEBUGGING
+      //if (j_angle == 0)
+      //  wavelet->printToFile("test/wavelet_pre_resample_commondata", true);
+
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
 
-    }
+      //H-DEBUGGING
+      //if (j_angle == 0)
+      //  wavelet->printToFile("test/wavelet_post_resample_commondata", true);
 
+    }
   }
 
   if (error == 0) {
@@ -3933,10 +3940,10 @@ CommonData::GetWaveletFileFormat(const std::string & file_name, std::string & er
 //static function
 //
 void
-CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                   & wavelet,
+CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
                                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                         const NRLib::Matrix                      & reflection_matrix,
-                                         const Simbox                             * simbox)
+                                         const NRLib::Matrix                        & reflection_matrix,
+                                         const Simbox                               * simbox)
 {
   int nzp = simbox->GetNZpad();
   int nz  = simbox->getnz();
@@ -3949,8 +3956,6 @@ CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                 
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, simbox);
   }
 }
-
-
 
 void
 CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
@@ -6147,7 +6152,6 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           size_t i_in, j_in, k_in;
 
           storm_grid->FindIndex(x, y, z0, i_in, j_in, k_in);
-          //H-TEST storm_grid->FindXYIndex(x, y, i_in, j_in);
 
           double grid_x = 0.0;
           double grid_y = 0.0;
