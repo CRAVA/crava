@@ -51,28 +51,28 @@ public:
 
 protected:
 
-  void SolveGEVProblem(double               ** sigmaPrior,       //Covariance matrix prior model
-                       double               ** sigmaPosterior,   //Covariance matrix posterior model
-                       std::vector<double>   & v1,              //Linear transformation 1
-                       std::vector<double>   & v2);             //Linear transformation 2
+  void SolveGEVProblem(NRLib::Matrix           & sigma_prior,       //Covariance matrix prior model
+                       NRLib::Matrix           & sigma_post,   //Covariance matrix posterior model
+                       std::vector<double>     & v1,              //Linear transformation 1
+                       std::vector<double>     & v2);             //Linear transformation 2
 
-  void CalculateVariance2D(double                    ** sigmaSmooth,  //the smoothing 3D covariance matrix
-                           double                    ** sigma2D,      //the resulting 2D covariance matrix
-                           const std::vector<double>    v1,      //linear transformation 1
-                           const std::vector<double>    v2);     //linear transformation 2
+  void CalculateVariance2D(NRLib::Matrix              & sigma_smooth,  //the smoothing 3D covariance matrix
+                           NRLib::Matrix              & sigma_2d,      //the resulting 2D covariance matrix
+                           const std::vector<double>  & v1_std,      //linear transformation 1
+                           const std::vector<double>  & v2_std);     //linear transformation 2
 
   void CalculateTransform2D(const std::vector<double>                & d1,
                             const std::vector<double>                & d2,
                             const std::vector<double>                & d3,
                             std::vector<std::vector<double> >        & x, // either 2 x 3 or 3 x 3
-                            const std::vector<std::vector<double> >  & v);
+                            const NRLib::Matrix                      & v);
 
-  void InvertSquareMatrix(double                     ** matrix,     //matrix to be inverted
-                          double                     ** invMatrix,  //inverted matrix
+  void InvertSquareMatrix(NRLib::Matrix               & matrix,     //matrix to be inverted
+                          NRLib::Matrix               & inv_matrix,  //inverted matrix
                           int                           n);         // size
 
   void SetupSmoothingGaussian2D(FFTGrid                   * smoother,
-                                const double   *const*const sigma_inv,
+                                const NRLib::Matrix       & sigma_inv,
                                 int                         n1,
                                 int                         n2,
                                 int                         n3,

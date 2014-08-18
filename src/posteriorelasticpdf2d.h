@@ -26,18 +26,18 @@ public:
                         const std::vector<double> & d3,    // third dimension of data points
                         int                         n1,    // resolution of density grid in dimension 1
                         int                         n2,    // resolution of density grid in dimension 2
-                        double                   ** smoothvar,  // Gaussian smoothing kernel in 3D
+                        NRLib::Matrix & smoothvar,  // Gaussian smoothing kernel in 3D
                         const std::vector<double> & v1,    // Linear combination 1 of d1, d2 and d3
                         const std::vector<double> & v2);     // Linear combination 2 of d1, d2 and d3
 
   // Constructor with automatic dimension reduction
   PosteriorElasticPDF2D(const std::vector<double> & d1,    // first dimension of data points
-                 const std::vector<double>        & d2,    // second dimension of data points
-                 const std::vector<double>        & d3,    // third dimension of data points
-                 int                                n1,    // resolution of density grid in dimension 1
-                 int                                n2,    // resolution of density grid in dimension 2
-                 double                          ** sigma_prior, //Covariance matrix, prior model
-                 double                          ** sigma_posterior);  // Covariance matrix, posterior model
+                       const std::vector<double>        & d2,    // second dimension of data points
+                       const std::vector<double>        & d3,    // third dimension of data points
+                       int                                n1,    // resolution of density grid in dimension 1
+                       int                                n2,    // resolution of density grid in dimension 2
+                       NRLib::Matrix                    & sigma_prior, //Covariance matrix, prior model
+                       NRLib::Matrix                    & sigma_posterior);  // Covariance matrix, posterior model
 
   PosteriorElasticPDF2D(int n1, int n2);
 
@@ -80,7 +80,7 @@ public:
 private:
 
   void SetupSmoothingGaussian2D(FFTGrid * smoother,      //2D Gaussian
-                                double ** smoothingVar,  //
+                                NRLib::Matrix & smoothingvar,  //
                                 int       n1,            //Grid size n1
                                 int       n2,
                                 double    dx,

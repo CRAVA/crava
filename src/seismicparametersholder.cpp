@@ -168,7 +168,7 @@ SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
 }
 
 void
-SeismicParametersHolder::setCorrelationParameters(bool                                  corr_estimated,
+SeismicParametersHolder::setCorrelationParameters(bool                                  cov_estimated,
                                                   const NRLib::Matrix                 & priorVar0,
                                                   const std::vector<NRLib::Matrix>    & auto_cov,
                                                   const std::vector<double>           & priorCorrT,
@@ -183,11 +183,12 @@ SeismicParametersHolder::setCorrelationParameters(bool                          
                                                   const int                           & nyPad,
                                                   const int                           & nzPad)
 {
-  priorVar0_ = priorVar0;
+  priorVar0_      = priorVar0;
+  cov_estimated_  = cov_estimated; 
 
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
-  InitializeCorrelations(corr_estimated,
+  InitializeCorrelations(cov_estimated,
                          priorCorrXY,
                          auto_cov,
                          priorCorrT,
@@ -260,14 +261,6 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   if (cov_estimated){
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
 
-    //
-    // Erik N: CRA-709, temporary fix. The parameter autocorrelations are computed as an average over all 6 functions
-    // start
-    //fftw_real * circ_corr_t = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
-    //for (int i = 0; i < 2*(nzp/2+1); i++)
-    //  circ_corr_t[i] = 0;
-    // end
-
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
@@ -282,33 +275,6 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
         circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t, low_int_cut, nzp);
       }
     }
-
-    //
-    // Erik N: CRA-709, temporary fix.
-    // start
-    /*
-    int n_corr_vectors = 0;
-    for (int i = 0; i < 3; i++){
-      for (int j = i; j < 3; j++){
-        if (circ_auto_cov[i][j][0] > 0){
-          n_corr_vectors++;
-          for (int k = 0; k < 2*(nzp/2+1); k++)
-            circ_corr_t[k] += circ_auto_cov[i][j][k];
-        }
-      }
-    }
-    for (int k = 0; k < 2*(nzp/2+1); k++)
-      circ_corr_t[k] /= n_corr_vectors;
-
-    covVp_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    covVs_      ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    covRho_     ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_corr_t, corr_grad_I, corr_grad_J);
-    */
-
-    // end. The lines below should be uncommented
 
 
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);

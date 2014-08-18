@@ -15,6 +15,8 @@
 #include <src/posteriorelasticpdf.h>
 #include <src/posteriorelasticpdf3d.h>
 #include <rplib/syntwelldata.h>
+#include "src/spatialsyntwellfilter.h"
+#include "src/spatialrealwellfilter.h"
 
 #include <map>
 
@@ -70,7 +72,8 @@ public:
              SeismicParametersHolder                            & seismicParameters,
              const std::vector<Grid2D *>                        & noiseScale,
              const ModelSettings                                * modelSettings,
-             SpatialWellFilter                                  * filteredlogs,
+             SpatialRealWellFilter                              * filteredRealLogs,
+             SpatialSyntWellFilter                              * filteredSyntLogs,
              std::map<std::string, BlockedLogsCommon *>           blocked_wells,
              CravaTrend                                         & trend_cubes,
              //int                                                  nWells = 0,
@@ -110,7 +113,8 @@ public:
 private:
 
   int                    MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<PosteriorElasticPDF *> >       & posteriorPdf,
-                                                            std::vector<Simbox*>                                   & volume,
+                                                            std::vector<Simbox *>                                  & volume,
+                                                            SpatialSyntWellFilter                                  * spatsyntwellfilter,
                                                             AVOInversion                                           * avoInversionResult,
                                                             SeismicParametersHolder                                & seismicParameters,
                                                             std::vector<FFTGrid *>                                 & priorFaciesCubes,
@@ -286,7 +290,7 @@ private:
 
   void    SolveGEVProblem(double                           ** sigma_prior,
                           double                           ** sigma_posterior,
-                          std::vector<std::vector<double> > & V);
+                          NRLib::Matrix                     & v);
 
   void CalculateTransform2D(const std::vector<double>  & d1,     //data vector 1
                             const std::vector<double>  & d2,     //data vector 2

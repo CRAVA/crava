@@ -127,7 +127,7 @@ public:
   virtual int          SetNextComplex(std::complex<double> & v);// Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false) const;  // Accessmode randomaccess
-  float                getRealValueCyclic(int i, int j, int k);
+  float                getRealValueCyclic(int i, int j, int k) const;
   float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
   virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess

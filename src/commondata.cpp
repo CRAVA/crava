@@ -78,7 +78,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, facies_nr_wells_,
                             facies_names_wells_, model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
-  // 5. block wells for estimation
+  // 5.1 block wells for estimation
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
@@ -101,9 +101,11 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (!model_settings->getOptimizeWellLocation())
     optimize_well_location_ = true;
 
-  //Block wells for inversion purposes, ok now that moving of wells is done.
-  inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+  // 5.2 Block wells for inversion purposes, ok now that moving of wells is done.
+  if (wells_.size() > 0 && read_wells_) {
+    inversion_wells_ = BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                  discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
+  }
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
@@ -162,9 +164,11 @@ CommonData::CommonData(ModelSettings * model_settings,
   bool run_prior_correlation = true;
   if(read_seismic_) {
     if(model_settings->getEstimateCorrelations() == true) {
-      //Block wells for inversion purposes
-      correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+      // 5.3 Block wells for inversion purposes
+      if (wells_.size() > 0 && read_wells_){
+        correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
+      }
       model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
       if(!read_wells_ || !setup_multigrid_ || !correlation_wells_) {
         run_prior_correlation = false;

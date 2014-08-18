@@ -1205,10 +1205,15 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // 4) Downscale correlations linearly
   //
 
+  int last_element = max_nd - 1;
+  if (max_lag_with_data < max_nd){
+    last_element = max_lag_with_data;
+  }
+
   for(int j=0 ; j<3; j++){
     for(int k=j; k<3; k++){
-      for(int i=1; i < max_lag_with_data; i++){
-        auto_cov[i](j,k) *= 1 - static_cast<float>(i)/(max_lag_with_data);
+      for(int i=0; i < last_element + 1; i++){
+        auto_cov[i](j,k) *= 1 - static_cast<float>(i)/(last_element);
         auto_cov[i](k,j) = auto_cov[i](j,k);
       }
     }

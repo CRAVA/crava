@@ -20,8 +20,7 @@ public:
 
   ~SeismicParametersHolder(void);
 
-  //void getMeanReferenceVector(std::vector<FFTGrid *> mu);
-  //void getCovReferenceVector(std::vector<FFTGrid *> sigma);
+  bool                          GetCovEstimated()            const {return cov_estimated_ ;}
 
   FFTGrid                     * GetMeanVp()                        { return meanVp_     ;}
   FFTGrid                     * GetMeanVs()                        { return meanVs_     ;}
@@ -236,7 +235,8 @@ private:
   FFTGrid * crCovVpRho_;
   FFTGrid * crCovVsRho_;
 
-  NRLib::Matrix priorVar0_;
+  bool            cov_estimated_;
+  NRLib::Matrix   priorVar0_;
 
   //Stored variables for writing:
 
