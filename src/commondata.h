@@ -467,10 +467,12 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                  std::vector<int>         & facies_nr,
                                                  std::vector<std::string> & facies_names) const;
 
-  void               SetFaciesNamesFromWells(const ModelSettings          * model_settings,
-                                             std::vector<int>             & facies_nr,
-                                             std::vector<std::string>     & facies_names,
-                                             std::string                  & err_text) const;
+  void               SetFaciesNamesFromWells(const ModelSettings                          * model_settings,
+                                             const std::vector<std::vector<int> >         & facies_log_wells,
+                                             const std::vector<std::vector<std::string> > & facies_names_wells,
+                                             std::vector<int>                             & facies_nr,
+                                             std::vector<std::string>                     & facies_names,
+                                             std::string                                  & err_text) const;
 
   void               GetMinMaxFnr(int            & min,
                                   int            & max,

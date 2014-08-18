@@ -1079,6 +1079,8 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     std::vector<std::string> well_names(n_wells);
     std::vector<bool> well_synthetic_vs_log(n_wells);
 
+    facies_log_wells.resize(n_wells);
+
     std::vector<std::vector<int> > facies_count(n_wells);
     for (int i = 0; i < n_wells; i++) {
       facies_count[i].resize(n_facies);
@@ -1193,9 +1195,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         wells.push_back(new_well);
 
         if (model_settings->getFaciesLogGiven())
-          facies_log_wells.push_back(true);
-        else
-          facies_log_wells.push_back(false);
+          facies_log_wells[i] = true;
       }
       else
         valid_index[i] = false;
@@ -1204,7 +1204,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
 
     //Combines facies information from wells
     if (model_settings->getFaciesLogGiven() && err_text == "")
-      SetFaciesNamesFromWells(model_settings, facies_nr, facies_names, err_text);
+      SetFaciesNamesFromWells(model_settings, facies_nr_wells, facies_names_wells, facies_nr, facies_names, err_text);
 
     //
     // Write summary.
@@ -2427,7 +2427,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     const std::vector<double> & vs_temp = new_well.GetContLog(log_names_from_user[3]);
     std::vector<double> vs(vs_temp.size());
     if (inverse_velocity[1]) {
-      for (unsigned int i = 0; i < vs_temp.size(); i++) {
+      for (size_t i = 0; i < vs_temp.size(); i++) {
         if (vs_temp[i] != WELLMISSING)
           vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
         else
@@ -2435,7 +2435,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
       }
     }
     else {
-      for (unsigned int i=0; i<vs_temp.size(); i++) {
+      for (size_t i = 0; i < vs_temp.size(); i++) {
         if (vs_temp[i] != WELLMISSING)
           vs[i] = static_cast<double>(vs_temp[i]);
         else
@@ -2451,7 +2451,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     const std::vector<double> & rho_temp = new_well.GetContLog(log_names_from_user[2]);
     std::vector<double> rho(rho_temp.size());
 
-    for (unsigned int i=0; i<rho_temp.size(); i++) {
+    for (size_t i = 0; i < rho_temp.size(); i++) {
       if (rho_temp[i] != WELLMISSING)
         rho[i] = static_cast<double>(rho_temp[i]);
       else
@@ -2465,8 +2465,20 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   // If defined, Facies is always entry 4 in the log name list
   if (facies_log_given) {
     if (new_well.HasDiscLog(log_names_from_user[4])) {
-      new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
+      const std::vector<int> & facies_tmp = new_well.GetDiscLog(log_names_from_user[4]);
+      std::vector<int> facies(facies_tmp.size());
+
+      for (size_t i = 0; i < facies_tmp.size(); i++) {
+        if (facies_tmp[i] != WELLMISSING)
+          facies[i] = facies_tmp[i];
+        else
+          facies[i] = IMISSING;
+      }
       new_well.RemoveDiscLog(log_names_from_user[4]);
+      new_well.AddDiscLog("Facies", facies);
+
+      //new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
+      //new_well.RemoveDiscLog(log_names_from_user[4]);
     }
   }
 }
@@ -2489,10 +2501,12 @@ CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
   }
 }
 
-void CommonData::SetFaciesNamesFromWells(const ModelSettings            * model_settings,
-                                         std::vector<int>               & facies_nr,
-                                         std::vector<std::string>       & facies_names,
-                                         std::string                    & err_text) const{
+void CommonData::SetFaciesNamesFromWells(const ModelSettings                          * model_settings,
+                                         const std::vector<std::vector<int> >         & facies_nr_wells,
+                                         const std::vector<std::vector<std::string> > & facies_names_wells,
+                                         std::vector<int>                             & facies_nr,
+                                         std::vector<std::string>                     & facies_names,
+                                         std::string                                  & err_text) const{
 
   int min, max;
   int globalmin = 0;
@@ -2501,8 +2515,9 @@ void CommonData::SetFaciesNamesFromWells(const ModelSettings            * model_
   std::vector<int> facies_nr_well;
   bool first = true;
   for (int w = 0; w < model_settings->getNumberOfWells(); w++) {
-    n_facies = facies_names_wells_[w].size();
-    facies_nr_well = facies_nr_wells_[w];
+    n_facies = facies_names_wells[w].size();
+
+    facies_nr_well = facies_nr_wells[w];
 
     if (facies_log_wells_[w] == true) {
       GetMinMaxFnr(min,max, n_facies, facies_nr_well);
@@ -2532,8 +2547,8 @@ void CommonData::SetFaciesNamesFromWells(const ModelSettings            * model_
 
       for (int i = 0; i < n_facies; i++) {
 
-        std::string name = facies_names_wells_[w][i];
-        int         fnr  = facies_nr_wells_[w][i] - globalmin;
+        std::string name = facies_names_wells[w][i];
+        int         fnr  = facies_nr_wells[w][i] - globalmin;
 
         if (names[fnr] == "") {
           names[fnr] = name;
@@ -6507,7 +6522,7 @@ void CommonData::ResampleTrace(const std::vector<double> & data_trace,
   int n_data = static_cast<int>(data_trace.size());
 
   for (int i = 0; i < n_data; i++) {
-    rAmpData[i] = data_trace[i];
+    rAmpData[i] = static_cast<fftw_real>(data_trace[i]);
   }
   // Pad with zeros
   for (int i = n_data; i < rnt; i++) {
