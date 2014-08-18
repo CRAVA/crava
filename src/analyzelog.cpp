@@ -944,14 +944,22 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                 temp_auto_cov[lag](1,1) += var_vs_resid;
               count[lag](1,1) += 1;
             }
-            // cov[t](vp, vs) = cov[t](vp, a*vp + b*rho + e) = a*autocov[t](vp)
-            if (log_vp[k] != RMISSING && log_vp[l] != RMISSING){
-              temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l];
+            // cov[l-k](vp, vs) = cov[l-k](vp_k, a*vp_l + b*rho_l + e_l) = a*autocov[l-k](vp) + b*autocov[t](vp, rho)
+            if (log_vp[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
+              temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[k]*log_rho[l];
               count[lag](0,1) += 1;
             }
-            // cov[t](rho, vs) = cov[t](rho, a*vp + b*rho + e) = b*autocov[t](rho)
-            if (log_rho[k] != RMISSING && log_rho[l] != RMISSING){
-              temp_auto_cov[lag](1,2) += regression_coef(1)*log_rho[k]*log_rho[l];
+            if (log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_vp[l] != RMISSING){
+              temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[l]*log_rho[k];
+              count[lag](0,1) += 1;
+            }
+            // cov[l-k](rho, vs) = cov[l-k](rho_k, a*vp_l + b*rho_l + e_l) = a*autocov[l-k](rho,vp) + b*autocov[t](rho, rho) 
+            if (log_rho[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
+              temp_auto_cov[lag](1,2) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+              count[lag](1,2) += 1;
+            }
+            if (log_rho[k] != RMISSING && log_vp[k] != RMISSING && log_rho[l] != RMISSING){
+              temp_auto_cov[lag](1,2) += regression_coef(0)*log_rho[k]*log_vp[k] + regression_coef(1)*log_rho[l]*log_rho[k];
               count[lag](1,2) += 1;
             }
           }
