@@ -20,6 +20,10 @@ class Simbox : public NRLib::Volume
 public:
   Simbox(void);
 
+  Simbox(const Simbox         & simbox);
+
+  //Simbox(const Simbox         * simbox);
+
   Simbox(double                 x0,
          double                 y0,
          const Surface        & z0,
@@ -57,10 +61,6 @@ public:
          int                    output_format,
          std::string          & err_text,
          bool                 & failed);
-
-  Simbox(const Simbox         & simbox);
-
-  Simbox(const Simbox         * simbox);
 
   Simbox(const Simbox         * estimation_simbox,
          const std::string    & interval_name,

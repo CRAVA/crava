@@ -270,7 +270,6 @@ int main(int argc, char** argv)
                                                                         simbox->GetNXpad(),
                                                                         simbox->GetNYpad(),
                                                                         simbox->GetNZpad());
-
       }
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
@@ -333,7 +332,6 @@ int main(int argc, char** argv)
                                                      modelGeneral,
                                                      modelGravityStatic,
                                                      common_data,
-                                                     //inputFiles,
                                                      eventIndex,
                                                      seismicParametersIntervals[i_interval]);
             break;

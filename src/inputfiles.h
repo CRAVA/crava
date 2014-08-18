@@ -31,16 +31,11 @@ public:
   const std::string              & getWaveletCorrFile(int i)     const { return waveletCorrFiles_[i]  ;}
   const std::string              & getWellMoveIntFile(int i)     const { return wellMoveIntFile_[i]   ;}
   const std::string              & getFaciesEstIntFile(int i)    const { return faciesEstIntFile_[i]  ;}
-  //const std::vector<std::string> & getTimeSurfFiles(void)        const { return timeSurfFiles_        ;}
   const std::string              & getTimeSurfTopFile()          const { return timeSurfTopFile_      ;}
   const std::string              & getDepthSurfTopFile()         const { return depthSurfTopFile_     ;}
-  //const std::vector<std::string> & getDepthSurfFiles(void)       const { return depthSurfFiles_       ;}
   const std::string              & getVelocityField(void)        const { return velocityField_        ;}
   const std::string              & getBackFile(int i)            const { return backFile_[i]          ;}
   const std::string              & getBackVelFile(void)          const { return backVelFile_          ;}
-  //const std::string              & getCorrDirFile(void)          const { return corrDirFile_          ;}
-  //const std::string              & getCorrDirTopFile(void)       const { return corrDirTopFile_       ;}
-  //const std::string              & getCorrDirBaseFile(void)      const { return corrDirBaseFile_      ;}
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCovFile(void)         const { return paramCovFile_         ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
@@ -90,9 +85,6 @@ public:
   void setBackFile(int i, const std::string & backFile)                   { backFile_[i]          = backFile          ;}
   void setBackVelFile(const std::string & backVelFile)                    { backVelFile_          = backVelFile       ;}
   void setReflMatrFile(const std::string & reflMatrFile)                  { reflMatrFile_         = reflMatrFile      ;}
-  //void setCorrDirFile(const std::string & corrDirFile)                    { corrDirFile_          = corrDirFile       ;}
-  //void setCorrDirTopSurfaceFile(const std::string & corrDirFile)          { corrDirTopFile_       = corrDirFile       ;}
-  //void setCorrDirBaseSurfaceFile(const std::string & corrDirFile)         { corrDirBaseFile_      = corrDirFile       ;}
   void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_         = paramCovFile      ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
@@ -147,9 +139,6 @@ private:
   std::vector<std::string>   backFile_;              ///< File names (temporarily stored).
   std::string                backVelFile_;           ///< File names Vp-velocity for background modelling
   std::string                reflMatrFile_;          ///< File name for reflection matrix file.
-  //std::string                corrDirFile_;           ///< File name for correlation direction
-  //std::string                corrDirTopFile_;        ///< File name for correlation direction for top-surface
-  //std::string                corrDirBaseFile_;       ///< File name for correlation direction for base-surface
   std::string                paramCovFile_;          ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
@@ -165,8 +154,6 @@ private:
   std::map<std::string, std::string> priorFaciesProb_;    ///< File names for locally varying prior facies probability
   std::string                        areaSurfaceFile_;
 
-  //std::map<std::string, std::string>    interval_base_time_surface_;     ///< File names: Map between interval name and base time surface file name/value.
-  //std::map<std::string, std::string>    interval_base_depth_surface_;    ///< File names: Map between interval name and base depth surface file name.
   std::map<std::string, std::string>     corrDirFiles_;                ///< File names: Map between interval name and correlation direction
   std::map<std::string, std::string>     corrDirTopFiles_;             ///< File names: Map between interval name and correlation direction for top-surface
   std::map<std::string, std::string>     corrDirBaseFiles_;            ///< File names: Map between interval name and correlation direction for base-surface

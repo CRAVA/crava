@@ -4,8 +4,10 @@
 #include <stdio.h>
 
 #include "src/modelsettings.h"
-#include "src/inputfiles.h"
 
+class FFTGrid;
+class CommonData;
+class GridMapping;
 
 class ModelGravityStatic
 {
@@ -43,18 +45,17 @@ public:
   double                        GetDz_upscaled()            const { return dz_upscaled_           ;}
 
   // To be used by ModelGravityDynamic as well
-  static void ReadGravityDataFile(const std::string   & fileName,
-                                  const std::string   & readReason,
-                                  int                   nObs,
-                                  int                   nColumns,
-                                  std::vector <float> & obs_loc_utmx,
-                                  std::vector <float> & obs_loc_utmy,
-                                  std::vector <float> & obs_loc_depth,
-                                  std::vector <float> & gravity_response,
-                                  std::vector <float> & gravity_std_dev,
-                                  bool                  failed,
-                                  std::string         & errText);
-
+  //static void ReadGravityDataFile(const std::string   & fileName,
+  //                                const std::string   & readReason,
+  //                                int                   nObs,
+  //                                int                   nColumns,
+  //                                std::vector <float> & obs_loc_utmx,
+  //                                std::vector <float> & obs_loc_utmy,
+  //                                std::vector <float> & obs_loc_depth,
+  //                                std::vector <float> & gravity_response,
+  //                                std::vector <float> & gravity_std_dev,
+  //                                bool                  failed,
+  //                                std::string         & errText);
 
   static int              SetPaddingSize(int original_nxp, int upscaling_factor);
   static std::vector<int> findClosestFactorableNumber(int leastint);
@@ -94,10 +95,11 @@ private:
   FFTGrid * upscaling_kernel_;
   std::vector<std::vector<std::vector<int> > > lag_index_;  // eller ha som klassevar i gravimetric inversion-klassen, hører vel mer hjemme der.
 
-  ModelGeneral * modelGeneral_;
+  //ModelGeneral * modelGeneral_;
 
   void MakeUpscalingKernel(ModelSettings * modelSettings,
-                           const Simbox        * fullTimeSimbox);
+                           const Simbox  * fullTimeSimbox,
+                           GridMapping   * time_depth_mapping);
 
   void MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled);
 

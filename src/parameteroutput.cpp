@@ -426,8 +426,8 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
                              bool                  padding)
 {
 
-  float         seismic_start_time = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-  TraceHeaderFormat * format       = model_settings->getTraceHeaderFormatOutput();
+  float seismic_start_time   = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
+  TraceHeaderFormat * format = model_settings->getTraceHeaderFormatOutput();
 
   WriteFile(model_settings,
             grid,

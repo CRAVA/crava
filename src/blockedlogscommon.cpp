@@ -9,9 +9,6 @@
 #include "src/multiintervalgrid.h"
 #include "src/wavelet1D.h"
 
-//#include "fftw.h"
-//#include "rfftw.h"
-
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_data,
                                      const std::vector<std::string>   & cont_logs_to_be_blocked,
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
@@ -320,7 +317,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
 
 }
 
-
 BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)
 {
   n_layers_adjusted_per_interval_ = logs.n_layers_adjusted_per_interval_;
@@ -508,9 +504,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       (void) discrete_raw_logs;
       (void) discrete_logs_blocked;
 
-      if(interpolate){
-        for(unsigned int i=1;i<n_data;i++) {
-          if(abs(b_ind[i]-b_ind[i-1]) > 1) {
+      if (interpolate) {
+        for (unsigned int i=1;i<n_data;i++) {
+          if (abs(b_ind[i]-b_ind[i-1]) > 1) {
             int start, end;
             if(b_ind[i] > b_ind[i-1]) {
               start = b_ind[i-1];
@@ -849,12 +845,12 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //n_blocks = first_K + n_defined_blocks + (n_layers_ - last_K - 1);
   n_blocks = 0;
   for (int i=0; i<first_S_; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                      // 1. Add number of blocks from intervals above the first well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                   // 1. Add number of blocks from intervals above the first well obs
   for (int i=last_S_+1; i<n_intervals; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                      // 2. Add number of blocks from intervals below the last well obs
-  n_blocks += first_K;                                                 // 3. Add number of layers above the first well observation in the simbox with the first well obs
-  n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;        // 4. Add remaining layers below the last well observation in the simbox with the last well obs
-  n_blocks += n_defined_blocks;                                        // 5. Add number of defined blocks between first_K and last_K
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                  // 2. Add number of blocks from intervals below the last well obs
+  n_blocks += first_K;                                                                                                  // 3. Add number of layers above the first well observation in the simbox with the first well obs
+  n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;      // 4. Add remaining layers below the last well observation in the simbox with the last well obs
+  n_blocks += n_defined_blocks;                                                                                         // 5. Add number of defined blocks between first_K and last_K
 
 
   bool debug = false;
@@ -3088,9 +3084,9 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
     SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
                             vertical_trend, z0, dz, nz);
 
-    if (type == "ALPHA_SEISMIC_RESOLUTION")
+    if (type == "VP_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-    else if (type == "BETA_SEISMIC_RESOLUTION")
+    else if (type == "VS_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
     else if (type == "RHO_SEISMIC_RESOLUTION")
       cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
@@ -3179,10 +3175,10 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
   else if (type == "FACIES_PROB") {
     facies_prob_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
-  else if (type == "ALPHA_PREDICTED") {
+  else if (type == "VP_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
   }
-  else if (type == "BETA_PREDICTED") {
+  else if (type == "VS_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
   }
   else if (type == "RHO_PREDICTED") {
@@ -3696,13 +3692,13 @@ void BlockedLogsCommon::SetSpatialFilteredLogs(std::vector<double>       & filte
   for (int i=0; i < n_data; i++)
     blocked_log[i] = filtered_log[i]+bg[i];
 
-  if (type == "ALPHA_SEISMIC_RESOLUTION")
+  if (type == "VP_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-  else if (type == "BETA_SEISMIC_RESOLUTION")
+  else if (type == "VS_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
   else if (type == "RHO_SEISMIC_RESOLUTION")
     cont_logs_seismic_resolution_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
-  else if (type == "ALPHA_FOR_FACIES")
+  else if (type == "VP_FOR_FACIES")
     vp_for_facies_ = blocked_log;
   else if (type == "RHO_FOR_FACIES")
     rho_for_facies_ = blocked_log;

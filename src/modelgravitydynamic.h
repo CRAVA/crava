@@ -7,35 +7,25 @@
 
 #include <stdio.h>
 
-//#include "src/definitions.h"
-//#include "src/background.h" //or move getAlpha & co to cpp-file.
 #include "src/modelsettings.h"
-#include "src/inputfiles.h"
+#include "src/commondata.h"
 
 class Simbox;
 class FFTGrid;
 class GridMapping;
-class InputFiles;
 class ModelGravityStatic;
-class ModelGeneral;
 class Simbox;
 class SeismicParametersHolder;
+//class CommonData;
 
 class ModelGravityDynamic
 {
 public:
-  ModelGravityDynamic(const ModelSettings          * modelSettings,
-                      const ModelGeneral           * modelGeneral,
-                      ModelGravityStatic           * modelGravityStatic,
-                      const InputFiles             * inputFiles,
-                      int                            t,
-                      SeismicParametersHolder      & seismicParameters);
 
   ModelGravityDynamic(const ModelSettings          * modelSettings,
-                      const ModelGeneral           * modelGeneral,
                       ModelGravityStatic           * modelGravityStatic,
+                      const Simbox                 * simbox,
                       CommonData                   * commonData,
-                      //const InputFiles             * inputFiles,
                       int                            t,
                       SeismicParametersHolder      & seismicParameters);
 
@@ -59,27 +49,27 @@ public:
 private:
   bool                      debug_;
 
-  bool                      failed_;              ///< Indicates whether errors occured during construction.
-  std::vector<bool>         failed_details_;      ///< Detailed failed information.
+  bool                      failed_;                     ///< Indicates whether errors occured during construction.
+  std::vector<bool>         failed_details_;             ///< Detailed failed information.
 
   int                       thisTimeLapse_;
 
-  std::vector<float> observation_location_utmx_;  ///< Vectors to store observation location coordinates
-  std::vector<float> observation_location_utmy_;
-  std::vector<float> observation_location_depth_;
-  std::vector<float> gravity_response_;           ///< Vector to store gravimetric response
-  std::vector<float> gravity_std_dev_;            ///< Vector to store standard deviation
+  std::vector<float>        observation_location_utmx_;  ///< Vectors to store observation location coordinates
+  std::vector<float>        observation_location_utmy_;
+  std::vector<float>        observation_location_depth_;
+  std::vector<float>        gravity_response_;           ///< Vector to store gravimetric response
+  std::vector<float>        gravity_std_dev_;            ///< Vector to store standard deviation
 
-  NRLib::Matrix G_;                               ///< Forward model gravity matrix to be used in inversion. Upscaled.
-  NRLib::Matrix G_fullsize_;                      ///< Forward model gravity matrix to be used for calculating synthetic response. Full size.
+  NRLib::Matrix             G_;                          ///< Forward model gravity matrix to be used in inversion. Upscaled.
+  NRLib::Matrix             G_fullsize_;                 ///< Forward model gravity matrix to be used for calculating synthetic response. Full size.
 
-  NRLib::Vector synthetic_data_;                  ///< Synthetic data response after inversion at this time vintage
+  NRLib::Vector             synthetic_data_;             ///< Synthetic data response after inversion at this time vintage
 
-  const ModelGeneral * modelGeneral_;
+  //const ModelGeneral * modelGeneral_;
 
   void BuildGMatrix(ModelGravityStatic      * modelGravityStatic,
                     SeismicParametersHolder & seismicParameters,
-                    Simbox                  * simbox = NULL);
+                    const Simbox            * simbox);
 };
 
 #endif
