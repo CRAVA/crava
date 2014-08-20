@@ -175,7 +175,7 @@ CommonData::CommonData(ModelSettings * model_settings,
         correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
       }
-      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
+      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as an estimate, the min number of blocks is set to 100; ref Ragnar Hauge
       if(!read_wells_ || !setup_multigrid_ || !correlation_wells_) {
         run_prior_correlation = false;
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";

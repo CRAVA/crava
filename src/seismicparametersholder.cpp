@@ -259,20 +259,26 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   // are now integrated in auto_cov
   //
   if (cov_estimated){
+    double eps = 0.00000001;
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
 
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
       for(int j = i; j < 3; j++){
-        std::vector<double> corr_t(auto_cov.size());
+        std::vector<double> corr_t_positive(auto_cov.size());
+        std::vector<double> corr_t_negative(auto_cov.size());
+        assert(auto_cov[0](i,j) == auto_cov[0](j,i)); // This condition must be true
         for (size_t k = 0; k < auto_cov.size(); k++){
-          if(auto_cov[0](i,j) != 0.0)
-            corr_t[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
-          else
-            corr_t[k] = 0;
+          if(abs(auto_cov[0](i,j)) > eps){
+            corr_t_positive[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
+            corr_t_negative[k] = auto_cov[k](j,i)/auto_cov[0](j,i);
+          }
+          else{
+            corr_t_positive[k] = 0;
+          }
         }
-        circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t, low_int_cut, nzp);
+        circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t_positive, corr_t_negative, low_int_cut, nzp);
       }
     }
 
@@ -527,28 +533,36 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 
 
 //--------------------------------------------------------------------
-fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<double>            & auto_cov,
+fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<double>            & corr_t_pos,
+                                                         const std::vector<double>            & corr_t_neg,
                                                          int                                  minIntFq,
                                                          int                                  nzp) const
 {
   //assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
 
-  size_t n = auto_cov.size();
+  size_t n = corr_t_pos.size();
 
   fftw_real * circ_auto_cov = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
-
+  bool positive;
   for(int k = 0; k < 2*(nzp/2+1); k++ ) {
     if(k < nzp) {
       size_t refk;
 
-      if(k < nzp/2+1)
-        refk = k;
-      else
-        refk = nzp - k;
+      if(k < nzp/2+1){
+        refk      = k;
+        positive  = true;
+      }
+      else{
+        refk      = nzp - k;
+        positive  = false;
+      }
 
       if(refk < n){
         //circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk](i,j));
-        circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk]);
+        if (positive)
+          circ_auto_cov[k] = static_cast<fftw_real>(corr_t_pos[refk]);
+        else 
+          circ_auto_cov[k] = static_cast<fftw_real>(corr_t_neg[refk]);
       }
       else
         circ_auto_cov[k] = 0.0;

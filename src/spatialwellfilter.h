@@ -83,12 +83,12 @@ protected:
   int                                                   nWells_;
   int                                                 * n_;
   double                                            *** priorSpatialCorr_;  // vector (one entry per blocked log) of spatial 2D corr matrices
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_vp_;      // vector (one entry per blocked log) of 2D covariance matrices
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_vs_;
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_rho_;
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_vpvs_;
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_vprho_;
-  std::vector<NRLib::Grid2D<double>>                    prior_cov_vsrho_;
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_vp_;      // vector (one entry per blocked log) of 2D covariance matrices
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_vs_;
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_rho_;
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_vpvs_;
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_vprho_;
+  std::vector<NRLib::Grid2D<double> >                    prior_cov_vsrho_;
 
   std::vector<double **>                                sigmaeVpRho_;
 

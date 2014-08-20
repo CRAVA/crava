@@ -144,7 +144,8 @@ public:
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov,
+  fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov_pos, // positive lags
+                                                   const std::vector<double>            & auto_cov_neg, // negative lags
                                                    int                                  minIntFq,
                                                    int                                  nzp) const;
 
