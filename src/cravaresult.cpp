@@ -170,16 +170,20 @@ CravaResult::~CravaResult()
     quality_grid_ = NULL;
   }
 
-  /*
-  for (size_t i = 0; i < wavelets_.size(); i++) {
-    if (wavelets_[i] != NULL) {
-      delete wavelets_[i];
-      wavelets_[i] = NULL;
+  //for (size_t i = 0; i < wavelets_.size(); i++) {
+  //  if (wavelets_[i] != NULL) {
+  //    delete wavelets_[i];
+  //    wavelets_[i] = NULL;
+  //  }
+  //}
+
+  for (int i = 0; i < n_intervals_; i++) {
+    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_intervals_[i].begin(); it != blocked_logs_intervals_[i].end(); it++) {
+      if (blocked_logs_intervals_[i].find(it->first)->second != NULL) {
+        delete blocked_logs_intervals_[i].find(it->first)->second;
+      }
     }
   }
-  */
-
-
 
 }
 
@@ -212,9 +216,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs create during inversion
 
-  LogKit::LogFormatted(LogKit::Low,"ok\nCombine Prediction Grids...");
-
-  if (model_settings->getWritePrediction()) {
+  if (model_settings->getWritePrediction() && !model_settings->getEstimationMode()) {
+    LogKit::LogFormatted(LogKit::Low,"ok\nCombine Prediction Grids...");
 
     //Post vp, vs and rho from avoinversion computePostMeanResidAndFFTCov()
     post_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -519,6 +522,55 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     GenerateWellOptSyntSeis(model_settings, common_data, blocked_logs_, output_simbox, reflection_matrix_);
 
   LogKit::LogFormatted(LogKit::Low,"ok");
+
+  //Set RealSeismicLog from seismic cubes to the final blocked_logs
+  if (!model_settings->getForwardModeling()) {
+
+    int n_angles = model_settings->getNumberOfAngles(0);
+
+    for (int j = 0; j < n_angles; j++) {
+
+      int seismic_type = common_data->GetSeismicDataTimeLapse(0)[j]->GetSeismicType();
+
+      if (seismic_type == 0) { //SEGY
+        SegY * segy = common_data->GetSeismicDataTimeLapse(0)[j]->GetSegY();
+
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+
+          blocked_log->SetLogFromGrid(segy, output_simbox, j, n_angles, "SEISMIC_DATA");
+        }
+      }
+      else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
+        StormContGrid * storm = common_data->GetSeismicDataTimeLapse(0)[j]->GetStorm();
+
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+
+          blocked_log->SetLogFromGrid(storm, j, n_angles, "SEISMIC_DATA");
+        }
+      }
+      else { //FFTGrid
+
+        FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(0)[j]->GetFFTGrid();
+
+        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+
+          blocked_log->SetLogFromGrid(fft_grid, j, n_angles, "SEISMIC_DATA");
+        }
+      }
+    }
+  }
+
+  //Delete grids from seismicparamtersholder
+  if (model_settings->getEstimationMode() || !model_settings->getForwardModeling()) {
+    for (int i = 0; i < n_intervals_; i++)
+      seismic_parameters_intervals[i].releaseExpGrids();
+  }
 
 }
 
@@ -845,29 +897,29 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetRhoPredicted(rho_predicted_final);
     }
 
-    //Real Seismic Data
-    bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
-    if (got_real_seismic_data) {
+    //Real Seismic Data: Set later
+    //bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
+    //if (got_real_seismic_data) {
 
-      int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
+    //  int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
 
-      for (int j = 0; j < n_angles; j++) {
+    //  for (int j = 0; j < n_angles; j++) {
 
-        std::vector<double> real_seismic_data_final(n_blocks);
-        std::vector<std::vector<double> > real_seismic_data_intervals(n_intervals_);
+    //    std::vector<double> real_seismic_data_final(n_blocks);
+    //    std::vector<std::vector<double> > real_seismic_data_intervals(n_intervals_);
 
-        //Get well logs, missing values are interpolated
-        for (int i = 0; i < n_intervals_; i++) {
-          int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-          int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-          GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
-        }
+    //    //Get well logs, missing values are interpolated
+    //    for (int i = 0; i < n_intervals_; i++) {
+    //      int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+    //      int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+    //      GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
+    //    }
 
-        ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
+    //    ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
 
-        blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
-      }
-    }
+    //    blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
+    //  }
+    //}
 
     //Facies prob
     bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
@@ -1264,7 +1316,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
   LogKit::LogFormatted(LogKit::Low,"\n\nWrite Results");
 
   //Results are combined to one grid in CombineResults first
-  //const Simbox & simbox = common_data->GetFullInversionSimbox();
   const Simbox & simbox = common_data->GetOutputSimbox();
 
   //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
@@ -1273,20 +1324,20 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
   if (model_settings->getEstimationMode()) { //Estimation model: All estimated parameters are written to file, regardless of output settings
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
 
     WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     //WriteWells(common_data->GetWells(), model_settings);
 
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Backgroudn Grids...");
     WriteBackgrounds(model_settings,
                       &simbox,
                       time_depth_mapping,
                       *model_settings->getTraceHeaderFormatOutput());
 
 
-    //H More?
-
-
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
   }
   else {
 
@@ -1298,8 +1349,8 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
       //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
       //Do not write if multiple intervals is used
       //H Writing of these wells crashes in release mode (test case 7)
-      //if (n_intervals_ == 1) //H-TEMP
-        //WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+      if (n_intervals_ == 1) //H-TEMP
+        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
     LogKit::LogFormatted(LogKit::Low,"ok\nWrite Prediction Grids...");
@@ -1347,12 +1398,12 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
           std::string angle_synt     = NRLib::ToString(j);
           std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
 
-          int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j].GetSeismicType();
+          int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
 
           if (seismic_type == 0) { //SEGY
 
             //Transforms segy to storm to use in ParamterOutput::WriteFile
-            SegY * segy = common_data->GetSeismicDataTimeLapse(i)[j].GetSegY();
+            SegY * segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
 
             NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
             FFTGrid * fft_grid_tmp          = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
@@ -1392,7 +1443,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
           }
           else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
-            StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j].GetStorm();
+            StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
               ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label);// sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
@@ -1404,7 +1455,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
           }
           else { //FFTGrid
 
-            FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(i)[j].GetFFTGrid();
+            FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
               fft_grid->writeFile(file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[i], time_depth_mapping, *model_settings->getTraceHeaderFormatOutput());
@@ -2048,7 +2099,7 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
 
       //Adds well_synt_seismic_data to blocked_logs
       Wavelet * wavelet_tmp = new Wavelet1D(&simbox,
-                                            &common_data->GetSeismicDataTimeLapse(0)[i],
+                                            common_data->GetSeismicDataTimeLapse(0)[i],
                                             blocked_wells,
                                             wavelet_estim_interval,
                                             model_settings,
@@ -2061,4 +2112,10 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
       delete wavelet_tmp;
     }
   }
+
+  for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
+    if (wavelet_estim_interval[i] != NULL)
+      delete wavelet_estim_interval[i];
+  }
+
 }

@@ -183,6 +183,8 @@ public:
 
   FFTGrid *                     copyFFTGrid(FFTGrid * fft_grid_old);
 
+  void                          releaseExpGrids() const;
+
 private:
   void                          createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
 
@@ -214,7 +216,7 @@ private:
                                                     const int & minIntFq,
                                                     const int & nzp) const;
 
-  void                         makeCorrXYPosDef(Surface         & priorCorrXY);
+  void                          makeCorrXYPosDef(Surface         & priorCorrXY);
 
   float                         getOrigin(FFTGrid * grid) const;
 

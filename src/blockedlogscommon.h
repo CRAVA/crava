@@ -199,7 +199,7 @@ public:
 
   // OTHER FUNCTIONS -----------------------------------
 
-  void                                   FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+  void                                   FindOptimalWellLocation(std::vector<SeismicStorage *> & seismic_data,
                                                                  const Simbox                  * estimation_simbox,
                                                                  const Simbox                  & inversion_simbox,
                                                                  const NRLib::Matrix           & refl_coef,
@@ -251,7 +251,7 @@ public:
   void                                   SetTimeGradientSettings(float          distance,
                                                                  float          sigma_m);
 
-  void                                   FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,
+  void                                   FindSeismicGradient(std::vector<SeismicStorage *>     & seismic_data,
                                                              const Simbox                      * const estimation_simbox,
                                                              int                                 n_angles,
                                                              std::vector<double>               & x_gradient,

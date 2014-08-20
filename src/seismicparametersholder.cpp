@@ -1107,3 +1107,13 @@ SeismicParametersHolder::copyFFTGrid(FFTGrid * fft_grid_old)
 
   return(fft_grid);
 }
+
+void SeismicParametersHolder::releaseExpGrids() const
+{
+  if (meanVp_ != NULL)
+    delete meanVp_;
+  if (meanVs_ != NULL)
+    delete meanVs_;
+  if (meanRho_ != NULL)
+    delete meanRho_;
+}
