@@ -523,8 +523,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   LogKit::LogFormatted(LogKit::Low,"ok");
 
-  //Set RealSeismicLog from seismic cubes to the final blocked_logs
-  if (!model_settings->getForwardModeling()) {
+  //Set RealSeismicLog from seismic cubes to the final blocked_logs, if estimation mode is active we do not run modelavodynamic
+  //Could also run this with multiple interval, instead of resample real seismic logs from each blocked log.
+  if (model_settings->getEstimationMode()) {
 
     int n_angles = model_settings->getNumberOfAngles(0);
 
@@ -532,37 +533,73 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
       int seismic_type = common_data->GetSeismicDataTimeLapse(0)[j]->GetSeismicType();
 
+      FFTGrid * fft_grid_output = new FFTGrid(output_simbox.getnx(), output_simbox.getny(), output_simbox.getnz(), output_simbox.getnx(), output_simbox.getny(), output_simbox.getnz());
+      NRLib::Grid<float> * nrlib_grid_tmp = new NRLib::Grid<float>();
+      fft_grid_output->createRealGrid();
+
       if (seismic_type == 0) { //SEGY
+
         SegY * segy = common_data->GetSeismicDataTimeLapse(0)[j]->GetSegY();
 
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
-          BlockedLogsCommon * blocked_log = iter->second;
+        StormContGrid * storm_tmp  = NULL;
+        int missing_traces_simbox  = 0;
+        int missing_traces_padding = 0;
+        int dead_traces_simbox     = 0;
 
-          blocked_log->SetLogFromGrid(segy, output_simbox, j, n_angles, "SEISMIC_DATA");
-        }
+        common_data->FillInData(nrlib_grid_tmp,
+                                fft_grid_output,
+                                &output_simbox,
+                                storm_tmp,
+                                segy,
+                                model_settings->getSmoothLength(),
+                                missing_traces_simbox,
+                                missing_traces_padding,
+                                dead_traces_simbox,
+                                FFTGrid::DATA);
+
+        //blocked_log->SetLogFromGrid(segy, output_simbox, j, n_angles, "SEISMIC_DATA"); //H Tried to set directly from segy-grid, but it didn't work
       }
       else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
         StormContGrid * storm = common_data->GetSeismicDataTimeLapse(0)[j]->GetStorm();
+        SegY * segy_tmp = NULL;
 
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
-          BlockedLogsCommon * blocked_log = iter->second;
+        int missing_traces_simbox  = 0;
+        int missing_traces_padding = 0;
+        int dead_traces_simbox     = 0;
 
-          blocked_log->SetLogFromGrid(storm, j, n_angles, "SEISMIC_DATA");
-        }
+        bool scale = false;
+        if (seismic_type == 2)
+          scale = true;
+
+        common_data->FillInData(nrlib_grid_tmp,
+                                fft_grid_output,
+                                &output_simbox,
+                                storm,
+                                segy_tmp,
+                                model_settings->getSmoothLength(),
+                                missing_traces_simbox,
+                                missing_traces_padding,
+                                dead_traces_simbox,
+                                FFTGrid::DATA,
+                                scale,
+                                false,
+                                true);
       }
       else { //FFTGrid
-
-        FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(0)[j]->GetFFTGrid();
-
-        for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
-          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
-          BlockedLogsCommon * blocked_log = iter->second;
-
-          blocked_log->SetLogFromGrid(fft_grid, j, n_angles, "SEISMIC_DATA");
-        }
+        fft_grid_output = common_data->GetSeismicDataTimeLapse(0)[j]->GetFFTGrid();
       }
+
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        blocked_log->SetLogFromGrid(fft_grid_output, j, n_angles, "SEISMIC_DATA");
+      }
+      if (nrlib_grid_tmp != NULL)
+        delete nrlib_grid_tmp;
+      if (fft_grid_output != NULL)
+        delete fft_grid_output;
+
     }
   }
 
@@ -897,29 +934,30 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetRhoPredicted(rho_predicted_final);
     }
 
-    //Real Seismic Data: Set later
-    //bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
-    //if (got_real_seismic_data) {
+    //In the end of CombineResult we set real seismic log from seismic data if we have estimation mode.
+    //An option is to skip this resampling and set these logs from seismic data in CombineResult if we have multiple intervals
+    bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
+    if (got_real_seismic_data) {
 
-    //  int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
+      int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
 
-    //  for (int j = 0; j < n_angles; j++) {
+      for (int j = 0; j < n_angles; j++) {
 
-    //    std::vector<double> real_seismic_data_final(n_blocks);
-    //    std::vector<std::vector<double> > real_seismic_data_intervals(n_intervals_);
+        std::vector<double> real_seismic_data_final(n_blocks);
+        std::vector<std::vector<double> > real_seismic_data_intervals(n_intervals_);
 
-    //    //Get well logs, missing values are interpolated
-    //    for (int i = 0; i < n_intervals_; i++) {
-    //      int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-    //      int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-    //      GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
-    //    }
+        //Get well logs, missing values are interpolated
+        for (int i = 0; i < n_intervals_; i++) {
+          int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+          int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+          GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
+        }
 
-    //    ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
+        ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
 
-    //    blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
-    //  }
-    //}
+        blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
+      }
+    }
 
     //Facies prob
     bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
