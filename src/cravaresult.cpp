@@ -549,7 +549,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
                                 dead_traces_simbox,
                                 FFTGrid::DATA);
 
-
       }
       else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
         StormContGrid * storm = common_data->GetSeismicDataTimeLapse(0)[j]->GetStorm();
