@@ -18,9 +18,6 @@
 
 SeismicStorage::SeismicStorage()
 {
-  //segy_       = NULL;
-  //storm_grid_ = NULL;
-  //fft_grid_   = NULL;
 }
 
 SeismicStorage::SeismicStorage(std::string   file_name,

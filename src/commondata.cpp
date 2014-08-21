@@ -3504,17 +3504,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       wavelet_pre_resampling = new Wavelet1D(wavelet);
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
 
-      //H-DEBUGGING
-      //if (j_angle == 0)
-      //  wavelet->printToFile("test/wavelet_pre_resample_commondata", true);
-
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
-
-      //H-DEBUGGING
-      //if (j_angle == 0)
-      //  wavelet->printToFile("test/wavelet_post_resample_commondata", true);
 
     }
   }
@@ -3624,6 +3616,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   delete [] reflection_coefs;
 
+  //H-TODO forward wavelet
   if (model_settings->getForwardModeling()) {
     if (wavelet_pre_resampling != NULL) {
       delete wavelet_pre_resampling;

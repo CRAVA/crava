@@ -3300,8 +3300,8 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   bool got_cpp                 = (cpp_.size() > 0);
   bool got_facies_prob         = (facies_prob_.size() > 0);
   bool got_real_seismic        = (real_seismic_data_.size() > 0);
-  bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0); //(cont_logs_seismic_resolution_.find("Vp") != cont_logs_seismic_resolution_.end());
-  bool got_predicted           = (continuous_logs_predicted_.size() > 0); //(continuous_logs_predicted_.find("Vp") != continuous_logs_predicted_.end());
+  bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0);
+  bool got_predicted           = (continuous_logs_predicted_.size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (got_filtered_log)

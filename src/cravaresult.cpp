@@ -247,7 +247,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       file.close();
     }
 
-
     // Erik N: Should these two cases be treated differently? I leave
     // the conditional statement
     if (model_settings->getForwardModeling()) {
@@ -484,18 +483,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   if (!model_settings->getForwardModeling()) {
     for (size_t i = 0; i < wavelets_.size(); i++) {
 
-      //H-DEBUGGING
-      //if (i == 0)
-      //  wavelets_[i]->printToFile("test/wavelet_pre_shift0", true);
-
       //These wavelets are from CommonData, and should not be on FFTFormat
       wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
                              output_simbox.getnz(),
                              output_simbox.GetNZpad());
-
-      //H-DEBUGGING
-      //if (i == 0)
-      //  wavelets_[i]->printToFile("test/wavelet_post_resample", true);
     }
   }
 
@@ -540,6 +531,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       if (seismic_type == 0) { //SEGY
 
         SegY * segy = common_data->GetSeismicDataTimeLapse(0)[j]->GetSegY();
+        //blocked_log->SetLogFromGrid(segy, output_simbox, j, n_angles, "SEISMIC_DATA");
 
         StormContGrid * storm_tmp  = NULL;
         int missing_traces_simbox  = 0;
@@ -557,7 +549,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
                                 dead_traces_simbox,
                                 FFTGrid::DATA);
 
-        //blocked_log->SetLogFromGrid(segy, output_simbox, j, n_angles, "SEISMIC_DATA"); //H Tried to set directly from segy-grid, but it didn't work
+
       }
       else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
         StormContGrid * storm = common_data->GetSeismicDataTimeLapse(0)[j]->GetStorm();
@@ -617,7 +609,6 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
                                 const std::vector<int> & erosion_priorities,
                                 double                   dz_min)
 {
-  //int n_intervals = multi_interval_grid->GetNIntervals();
   int nx = final_grid->GetNI();
   int ny = final_grid->GetNJ();
   int nz = final_grid->GetNK();
@@ -654,7 +645,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
 
         new_traces[i_interval].resize(nz_new);
 
-        //H-Writing
+        //H-Debugging
         if (writing) {
           std::string file_name = "combine/old_trace";
           std::ofstream file;
@@ -714,23 +705,8 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         fftwnd_destroy_plan(fftplan1);
         fftwnd_destroy_plan(fftplan2);
 
-        //H-Writing REMOVE
+        //H-Debugging
         if (writing) {
-
-        //  NRLib::OpenWrite(file, file_name);
-        //  file << std::fixed
-        //        << std::setprecision(6);
-        //  for (size_t k = 0; k < old_trace.size(); k++)
-        //    file << old_trace[k] << " ";
-        //  file.close();
-
-        //  file_name = "combine/rAmpFine";
-        //  NRLib::OpenWrite(file, file_name);
-        //  file << std::fixed
-        //        << std::setprecision(6);
-        //  for (int k = 0; k < rmt; k++)
-        //    file << rAmpFine[k] << " ";
-        //  file.close();
 
           std::string file_name = "combine/new_trace_resampled_long";
           std::ofstream file;
@@ -1386,8 +1362,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
       //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
       //Do not write if multiple intervals is used
-      //H Writing of these wells crashes in release mode (test case 7)
-      if (n_intervals_ == 1) //H-TEMP
+      if (n_intervals_ == 1)
         WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
     }
 
@@ -1612,7 +1587,6 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
       for (int i = 0; i < n_angles; i++) {
 
-        //float theta       = common_data->GetSeismicDataTimeLapse(0)[i].GetAngle();
         float theta       = angles[i];
         float theta_deg   = static_cast<float>((theta*180.0/NRLib::Pi));
         std::string angle = NRLib::ToString(theta_deg, 1);

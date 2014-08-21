@@ -317,15 +317,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
-    //H-DEBUGGING
-    //if (i == 0)
-    //  wavelets_[i]->printToFile("test/wavelet_pre_resample_modelavo_test", true);
-
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
-
-    //H-DEBUGGING
-    //if (i == 0)
-    //  wavelets_[i]->printToFile("test/wavelet_post_resample_modelavo", true);
   }
 
   //This is used in writing of wells and in faciesprob.
