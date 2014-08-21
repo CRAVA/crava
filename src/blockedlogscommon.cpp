@@ -3291,7 +3291,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     std::exit(1);
   }
 
-  int n_facies = facies_blocked_.size();
+  int n_facies                 = facies_map_.size();
   bool got_facies              = (n_facies > 0);
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() != 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);

@@ -127,9 +127,12 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     if (seismic_type == 3) { //FFTGrid: Seismic data on CRAVA format, which isn't allowed with multiple intervals, so no need for resampling
 
       //Make a copy, seis_cubes_ are deleted in avoinversion and we need common_datas seis_cubes in cravaresult.
-      common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->setAccessMode(FFTGrid::READ);
-      seis_cubes_[i] = new FFTGrid(common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid());
-      common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->endAccess();
+      //common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->setAccessMode(FFTGrid::READ);
+      //seis_cubes_[i] = new FFTGrid(common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid());
+      //common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->endAccess();
+
+      //H-Test: + remove deletion in avoinversion.cpp
+      seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid();
 
       seis_cubes_[i]->setType(FFTGrid::DATA);
     }
