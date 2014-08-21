@@ -379,7 +379,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
     int n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
-    facies_prob_.resize(n_facies);
+    facies_prob_geo_.resize(n_facies);
 
     for (int j = 0; j < n_facies; j++) {
       facies_prob_geo_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -477,17 +477,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   wavelets_          = common_data->GetWavelet(0);
 
   //Resample wavelet to output simbox
-  //H-TODO Check if forward. In test case 1 the wavelet is stored in fftorder from commondata
-  //Alternative is to run ShiftFromFFTOrder and resample again, but it created some differences in test case 1
-  //Temp solution is to use the correct wavelet from commondata if forward.
-  if (!model_settings->getForwardModeling()) {
-    for (size_t i = 0; i < wavelets_.size(); i++) {
-
-      //These wavelets are from CommonData, and should not be on FFTFormat
-      wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
-                             output_simbox.getnz(),
-                             output_simbox.GetNZpad());
-    }
+  for (size_t i = 0; i < wavelets_.size(); i++) {
+    //These wavelets are from CommonData, and should not be on FFTFormat
+    wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
+                           output_simbox.getnz(),
+                           output_simbox.GetNZpad());
   }
 
   if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
