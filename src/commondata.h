@@ -78,7 +78,7 @@ public:
   bool                                                                 GetUseLocalNoise()                                     { return use_local_noises_                              ;}
   std::map<int, std::vector<Grid2D *> >                              & GetLocalNoiseScale()                                   { return local_noise_scales_                            ;}
   std::vector<Grid2D *>                                              & GetLocalNoiseScaleTimeLapse(int time_lapse)            { return local_noise_scales_.find(time_lapse)->second   ;}
-  std::vector<SeismicStorage>                                        & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
+  std::vector<SeismicStorage *>                                      & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
 
@@ -208,7 +208,7 @@ private:
                                            const Simbox                                  & inversion_simbox,
                                            std::vector<NRLib::Well>                      & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
-                                           std::vector<std::vector<SeismicStorage> >     & seismic_data,
+                                           std::vector<std::vector<SeismicStorage *> >   & seismic_data,
                                            const std::vector<NRLib::Matrix>              & reflection_matrix,
                                            std::string                                   & err_text) const;
 
@@ -281,7 +281,7 @@ private:
                                      const Simbox                                & full_inversion_simbox,
                                      Simbox                                      & estimation_simbox,
                                      std::string                                 & err_text,
-                                     std::vector<std::vector<SeismicStorage> >   & seismic_data) const;
+                                     std::vector<std::vector<SeismicStorage *> > & seismic_data) const;
 
   bool               ReadWellData(ModelSettings                           * model_settings,
                                   Simbox                                  * full_inv_simbox,
@@ -409,7 +409,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
 
   bool               SetupTemporaryWavelet(ModelSettings                               * model_settings,
-                                           std::vector<std::vector<SeismicStorage> >   & seismic_data,
+                                           std::vector<std::vector<SeismicStorage *> > & seismic_data,
                                            std::vector<Wavelet*>                       & temporary_wavelets,
                                            const std::vector<NRLib::Matrix>            & refl_mat,
                                            std::string                                 & err_text) const;
@@ -419,7 +419,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                      const Simbox                               & estimation_simbox,
                                      const Simbox                               & full_inversion_simbox,
                                      std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
-                                     std::vector<std::vector<SeismicStorage> >  & seismic_data,
+                                     std::vector<std::vector<SeismicStorage *> >& seismic_data,
                                      std::map<int, std::vector<Wavelet *> >     & wavelets,
                                      std::map<int, std::vector<Grid2D *> >      & local_noise_scale,
                                      std::map<int, std::vector<Grid2D *> >      & local_shift,
@@ -437,7 +437,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                      std::string                                & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
-                                            std::vector<std::vector<SeismicStorage> >   & seismic_data,
+                                            std::vector<std::vector<SeismicStorage *> > & seismic_data,
                                             MultiIntervalGrid                           * multiple_interval_grid,
                                             std::string                                 & err_text) const;
 
@@ -467,10 +467,12 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                  std::vector<int>         & facies_nr,
                                                  std::vector<std::string> & facies_names) const;
 
-  void               SetFaciesNamesFromWells(const ModelSettings          * model_settings,
-                                             std::vector<int>             & facies_nr,
-                                             std::vector<std::string>     & facies_names,
-                                             std::string                  & err_text) const;
+  void               SetFaciesNamesFromWells(const ModelSettings                          * model_settings,
+                                             const std::vector<std::vector<int> >         & facies_log_wells,
+                                             const std::vector<std::vector<std::string> > & facies_names_wells,
+                                             std::vector<int>                             & facies_nr,
+                                             std::vector<std::string>                     & facies_names,
+                                             std::string                                  & err_text) const;
 
   void               GetMinMaxFnr(int            & min,
                                   int            & max,
@@ -919,8 +921,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   Simbox                                                       full_inversion_simbox_; //This simbox holds upper and lower surface, and xy-resolution.
                                                                                        //Not to be used for any z-resolution purposes.
 
-
-  std::vector<std::vector<SeismicStorage> >                    seismic_data_; //Map timelapse
+  std::vector<std::vector<SeismicStorage *> >                  seismic_data_; //Vector timelapse, vector angles
 
   // Well logs
   std::vector<std::string>                                     log_names_;

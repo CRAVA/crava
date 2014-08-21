@@ -139,7 +139,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox %s.\n",output_name.c_str());
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox %s\n",output_name.c_str());
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());
