@@ -245,7 +245,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
 
     double timeValue;
     try {
-      timeValue = NRLib::ParseType<double>(tokenLine[3]);
+      timeValue = NRLib::ParseType<double>(tokenLine[pos[0]-1]);
     }
     catch (NRLib::Exception & e) {
       std::string text;
