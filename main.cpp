@@ -366,9 +366,9 @@ int main(int argc, char** argv)
                                  common_data,
                                  seismicParametersIntervals);
 
-    //Write results
     crava_result->WriteResults(modelSettings,
-                               common_data);
+                               common_data,
+                               seismicParametersIntervals[0]);
 
     if(modelSettings->getDo4DInversion())
     {

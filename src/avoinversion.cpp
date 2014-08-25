@@ -1065,7 +1065,8 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     }
   }
 
-  //for (l=0;l<ntheta_;l++) //H-Test
+  //Seismic data may be used in CravaResult. If seis_data are on crava/fft format these are a reference to commondata and cannot be deleted.
+  //for (l=0;l<ntheta_;l++)
   //  delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 

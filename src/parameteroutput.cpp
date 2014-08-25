@@ -518,10 +518,17 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
       }
-      if ((format_flag & IO::CRAVA) > 0) {
-        std::string crava_file_name = file_name + IO::SuffixCrava();
-        storm_grid->WriteCravaFile(crava_file_name, simbox->getIL0(), simbox->getXL0(), simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY());
-      }
+      //All crava files are written out directly in CravaResult
+      //if ((format_flag & IO::CRAVA) > 0) {
+        //CRAVA format should be written with padding
+        //FFTGrid * grid_tmp = new FFTGrid(storm_grid, simbox->GetNXpad(), simbox->GetNYpad(), simbox->GetNZpad());
+        //grid_tmp->writeCravaFile(file_name, simbox);
+        //if (grid_tmp != NULL)
+        //  delete grid_tmp;
+
+        //std::string crava_file_name = file_name + IO::SuffixCrava();
+        //storm_grid->WriteCravaFile(crava_file_name, simbox->getIL0(), simbox->getXL0(), simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY());
+      //}
     }
 
     if (depth_map != NULL && (domain_flag & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
