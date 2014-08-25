@@ -3327,7 +3327,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   params[0] = "Vp";
   params[1] = "Vs";
   params[2] = "Rho";
-  LogKit::LogFormatted(LogKit::Low,"header\n");
   file << std::fixed
        << std::setprecision(2);
   //
@@ -3465,7 +3464,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
         file << std::setw(12) << (GetCpp(a)[i]==RMISSING               ? WELLMISSING : GetCpp(a)[i])                        << " ";
     file << "\n";
   }
-  LogKit::LogFormatted(LogKit::Low,"Done\n");
 
   file.close();
 }
