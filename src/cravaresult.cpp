@@ -1441,7 +1441,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
             StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled);
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label);// sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[j], time_depth_mapping);
 
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               seismic_storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
@@ -1458,7 +1458,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
             StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label);// sgri_label, &simbox, "NO_LABEL", offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[j], time_depth_mapping);
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
 
@@ -2091,7 +2091,6 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
     if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
       (model_settings->getForwardModeling() == true))
       synt_seismic_data.push_back(imp);
-      //imp->writeFile(file_name, IO::PathToSeismicData(), simbox, sgri_label);
 
     if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
       StormContGrid * imp_residual = new StormContGrid(nx, ny, nz);
@@ -2114,7 +2113,6 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
         sgri_label = "Residual computed from synthetic seismic for incidence angle " + angle;
         file_name = IO::PrefixSyntheticResiduals() + angle;
         synt_residuals.push_back(imp_residual);
-        //imp->writeFile(file_name, IO::PathToSeismicData(), simbox, sgri_label);
       }
       else {
         err_text += "\nFailed to read temporary stored seismic data.\n";
