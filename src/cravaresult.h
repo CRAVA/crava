@@ -90,8 +90,9 @@ public:
                      MultiIntervalGrid                                              * multiple_interval_grid,
                      const std::vector<std::vector<double> >                        & resampled_logs);
 
-  void WriteResults(ModelSettings * model_settings,
-                    CommonData    * common_data);
+  void WriteResults(ModelSettings           * model_settings,
+                    CommonData              * common_data,
+                    SeismicParametersHolder & seismic_parameters);
 
   void WriteFilePriorCorrT(fftw_real   * prior_corr_T,
                            const int   & nzp,
@@ -136,12 +137,18 @@ public:
 
   void ExpTransf(StormContGrid * grid);
 
-  void ComputeSyntSeismic(const ModelSettings    * model_settings,
-                          const Simbox           * simbox,
-                          std::vector<Wavelet *> & wavelets,
-                          StormContGrid          * vp,
-                          StormContGrid          * vs,
-                          StormContGrid          * rho);
+  void ExpTransf(FFTGrid * grid);
+
+  void LogTransf(FFTGrid * grid);
+
+  void ComputeSyntSeismic(const ModelSettings          * model_settings,
+                          const Simbox                 * simbox,
+                          std::vector<Wavelet *>       & wavelets,
+                          StormContGrid                * vp,
+                          StormContGrid                * vs,
+                          StormContGrid                * rho,
+                          std::vector<StormContGrid *> & synt_seis_data,
+                          std::vector<StormContGrid *> & synt_residuals);
 
   StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
                                           StormContGrid       * vs,
@@ -160,11 +167,10 @@ public:
                                const Simbox                               & simbox,
                                const NRLib::Matrix                        & reflection_matrix);
 
-  //void SetWellSyntheticSeismic(const std::vector<Wavelet *>                          & wavelet,
-  //                             std::map<std::string, BlockedLogsCommon *>            & blocked_wells,
-  //                             const std::vector<std::vector<std::vector<double> > > & synt_seis,
-  //                             const Simbox                                          & simbox,
-  //                             const std::vector<bool>                               & wavelet_estimated);
+  //void WriteCravaGrids(ModelSettings           * model_settings,
+  //                     CommonData              * common_data,
+  //                     const Simbox            & output_simbox,
+  //                     SeismicParametersHolder & seismic_parameters_intervals);
 
   //GET FUNCTIONS
 
@@ -195,51 +201,51 @@ private:
   std::vector<std::vector<float> >                         post_cov_rho00_;
 
   //Results combined
-  StormContGrid                            * cov_vp_;
-  StormContGrid                            * cov_vs_;
-  StormContGrid                            * cov_rho_;
-  StormContGrid                            * cr_cov_vp_vs_;
-  StormContGrid                            * cr_cov_vp_rho_;
-  StormContGrid                            * cr_cov_vs_rho_;
+  StormContGrid                                          * cov_vp_;
+  StormContGrid                                          * cov_vs_;
+  StormContGrid                                          * cov_rho_;
+  StormContGrid                                          * cr_cov_vp_vs_;
+  StormContGrid                                          * cr_cov_vp_rho_;
+  StormContGrid                                          * cr_cov_vs_rho_;
 
-  StormContGrid                            * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
-  StormContGrid                            * post_vs_;
-  StormContGrid                            * post_rho_;
+  StormContGrid                                          * post_vp_; //From avoinversion computePostMeanResidAndFFTCov()
+  StormContGrid                                          * post_vs_;
+  StormContGrid                                          * post_rho_;
 
-  StormContGrid                            * post_vp_kriged_; //From avoinversion doPredictionKriging()
-  StormContGrid                            * post_vs_kriged_;
-  StormContGrid                            * post_rho_kriged_;
+  StormContGrid                                          * post_vp_kriged_; //From avoinversion doPredictionKriging()
+  StormContGrid                                          * post_vs_kriged_;
+  StormContGrid                                          * post_rho_kriged_;
 
-  StormContGrid                            * background_vp_;
-  StormContGrid                            * background_vs_;
-  StormContGrid                            * background_rho_;
+  StormContGrid                                          * background_vp_;
+  StormContGrid                                          * background_vs_;
+  StormContGrid                                          * background_rho_;
 
-  std::map<std::string, BlockedLogsCommon *> blocked_logs_;
-  std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_;
+  std::map<std::string, BlockedLogsCommon *>               blocked_logs_;
+  std::map<std::string, BlockedLogsCommon *>               bg_blocked_logs_;
 
-  std::vector<StormContGrid *>               simulations_seed0_; //Vector over number of simulations
-  std::vector<StormContGrid *>               simulations_seed1_;
-  std::vector<StormContGrid *>               simulations_seed2_;
+  std::vector<StormContGrid *>                             simulations_seed0_; //Vector over number of simulations
+  std::vector<StormContGrid *>                             simulations_seed1_;
+  std::vector<StormContGrid *>                             simulations_seed2_;
 
-  std::vector<StormContGrid *>               synt_seismic_data_; //Vector angles
-  std::vector<StormContGrid *>               synt_residuals_;
+  std::vector<StormContGrid *>                             synt_seismic_data_; //Vector angles
+  std::vector<StormContGrid *>                             synt_residuals_;
 
-  StormContGrid                            * block_grid_;
+  StormContGrid                                          * block_grid_;
 
-  std::vector<StormContGrid *>               facies_prob_;
-  StormContGrid                            * facies_prob_undef_;
+  std::vector<StormContGrid *>                             facies_prob_;
+  StormContGrid                                          * facies_prob_undef_;
 
-  std::vector<StormContGrid *>               facies_prob_geo_;
+  std::vector<StormContGrid *>                             facies_prob_geo_;
 
-  std::vector<StormContGrid*>                lh_cubes_;
+  std::vector<StormContGrid*>                              lh_cubes_;
 
-  StormContGrid                            * quality_grid_;
+  StormContGrid                                          * quality_grid_;
 
-  std::vector<Wavelet *>                     wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
-  NRLib::Matrix                              reflection_matrix_;
+  std::vector<Wavelet *>                                   wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
+  NRLib::Matrix                                            reflection_matrix_;
 
-  int                                        n_intervals_;
-
+  bool                                                     write_crava_;
+  int                                                      n_intervals_;
 };
 
 #endif

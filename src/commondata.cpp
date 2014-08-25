@@ -96,18 +96,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   else
     block_wells_ = true;
 
-  //for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_.begin(); it != mapped_blocked_logs_.end(); it++) {
-  //  std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_.find(it->first);
-  //  BlockedLogsCommon * blocked_log = iter->second;
-
-  //  blocked_log->WriteWell(model_settings->getWellFormatFlag(),
-  //                         model_settings->getMaxHzBackground(),
-  //                         model_settings->getMaxHzSeismic(),
-  //                         GetFaciesNames(),
-  //                         GetFaciesNr());
-
-  //}
-
   // 6. Temporary reflection matrix and wavelet
   setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
   if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
@@ -9529,8 +9517,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       if (NRLib::IsNumber(base_name))
         LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Stop time                              : %10.2f\n", atof(base_name.c_str()));
       else
-        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Base surface                           : "+base_name+"\n");
-      LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                       : %10d\n", model_settings->getTimeNz(interval_names[i]));
+        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Base surface                             : "+base_name+"\n");
+      LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                         : %10d\n", model_settings->getTimeNz(interval_names[i]));
     }
 
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
