@@ -8,6 +8,7 @@
 #include "src/modelgeneral.h"
 #include "src/tasklist.h"
 #include "src/modelsettings.h"
+#include "nrlib/random/normal.hpp"
 
 SeismicParametersHolder::SeismicParametersHolder(void)
 {
@@ -181,7 +182,8 @@ SeismicParametersHolder::setCorrelationParameters(bool                          
                                                   const int                           & nz,
                                                   const int                           & nxPad,
                                                   const int                           & nyPad,
-                                                  const int                           & nzPad)
+                                                  const int                           & nzPad,
+                                                  double                                dz)
 {
   priorVar0_      = priorVar0;
   cov_estimated_  = cov_estimated; 
@@ -195,7 +197,8 @@ SeismicParametersHolder::setCorrelationParameters(bool                          
                          corrGradI,
                          corrGradJ,
                          minIntFq,
-                         nzPad);
+                         nzPad,
+                         dz);
 }
 //--------------------------------------------------------------------
 
@@ -252,7 +255,8 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
                                                 const float                         & corr_grad_I,
                                                 const float                         & corr_grad_J,
                                                 const int                           & low_int_cut,
-                                                const int                           & nzp)
+                                                const int                           & nzp,
+                                                double                                dz)
 {
   //
   // Erik N: If correlations are estimated, parameter covariance and temporal correlation
@@ -265,23 +269,35 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
-      for(int j = i; j < 3; j++){
+      for(int j = 0; j < 3; j++){
         std::vector<double> corr_t_positive(auto_cov.size());
         std::vector<double> corr_t_negative(auto_cov.size());
         assert(auto_cov[0](i,j) == auto_cov[0](j,i)); // This condition must be true
         for (size_t k = 0; k < auto_cov.size(); k++){
-          if(abs(auto_cov[0](i,j)) > eps){
-            corr_t_positive[k] = auto_cov[k](i,j)/auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
-            corr_t_negative[k] = auto_cov[k](j,i)/auto_cov[0](j,i);
+          if(abs(auto_cov[0](i,j)) > eps){ // If the autocovariance in lag 0 is 0 to floating point precision the algorithm fails
+            corr_t_positive[k] = auto_cov[k](i,j);//auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
+            corr_t_negative[k] = auto_cov[k](j,i);//auto_cov[0](j,i);
           }
           else{
             corr_t_positive[k] = 0;
           }
         }
-        circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t_positive, corr_t_negative, low_int_cut, nzp);
+        circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t_positive, corr_t_negative, nzp);
       }
     }
 
+    //
+    // Ensure that the covariance structure is positive definite by
+    // removing negative eigenvalues in the Fourier domain
+    //
+    LogKit::LogFormatted(LogKit::Low,"\nMaking estimated autocovariance positive definite..\n");
+    MakeCircAutoCovPosDef(circ_auto_cov, nzp);
+
+    //
+    // Taper the circular autocov vector
+    //
+    LogKit::LogFormatted(LogKit::Low,"\nTapering autocovariance estimates..\n");
+    TaperCircAutoCovFunction(circ_auto_cov, nzp, dz);
 
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
@@ -291,12 +307,14 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
 
 
+    /*
     covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));
     covVs_      ->multiplyByScalar(static_cast<float>(auto_cov[0](1,1)));
     covRho_     ->multiplyByScalar(static_cast<float>(auto_cov[0](2,2)));
     crCovVpVs_  ->multiplyByScalar(static_cast<float>(auto_cov[0](0,1)));
     crCovVpRho_ ->multiplyByScalar(static_cast<float>(auto_cov[0](0,2)));
     crCovVsRho_ ->multiplyByScalar(static_cast<float>(auto_cov[0](1,2)));
+    */
 
     for(int i = 0; i < 3; i++){
       for (int j = 0; j < 3; j++){
@@ -535,8 +553,7 @@ SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) con
 //--------------------------------------------------------------------
 fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<double>            & corr_t_pos,
                                                          const std::vector<double>            & corr_t_neg,
-                                                         int                                  minIntFq,
-                                                         int                                  nzp) const
+                                                         int                                    nzp) const
 {
   //assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
 
@@ -570,8 +587,6 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<doubl
     else
       circ_auto_cov[k] = RMISSING;
   }
-
-  makeCircCorrTPosDef(circ_auto_cov, minIntFq, nzp);
 
   return circ_auto_cov;
 }
@@ -612,44 +627,150 @@ SeismicParametersHolder::computeCircCorrT(const std::vector<double> & priorCorrT
 
 }
 
+
 //--------------------------------------------------------------------
-/*
-void  SeismicParametersHolder::MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
-                                                     int          min_int_fq,
-                                                     int          nzp) const
+
+void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fftw_real *> >   & circ_auto_cov,
+                                                     int                                        nzp) const
 {
-  fftw_complex * fft_circ_auto_cov = FFTGrid::fft1DzInPlace(circ_auto_cov, nzp);
+  const int vector_len = static_cast<size_t>(nzp/2) + 1;
 
-  for (int k = 0; k < nzp/2+1; k++){
-    if (k < min_int_fq)
-      fft_circ_auto_cov[k].re = 0.0;
-    else
-      fft_circ_auto_cov[k].re = float(sqrt(fft_circ_auto_cov[k].re*fft_circ_auto_cov[k].re
-                                        + fft_circ_auto_cov[k].im*fft_circ_auto_cov[k].im));
-    fft_circ_auto_cov[k].im = 0.0;
+  // FFT of each circular auto cov function
+
+  std::vector<std::vector<fftw_complex * > >  fft_circ_auto_cov(3); // should not be deleted
+  std::vector<std::vector<fftw_real *> >      circ_auto_cov_copy(3);
+  for(int i = 0; i < 3; i++){
+    fft_circ_auto_cov[i].resize(3, NULL);
+    circ_auto_cov_copy[i].resize(3, NULL);
+    for (int j = 0; j < 3; j++){
+      circ_auto_cov_copy[i][j] = new fftw_real[nzp];
+      //fft_circ_auto_cov[i][j] = new fftw_complex[nzp];
+      for (int k = 0; k < nzp; k++){
+        circ_auto_cov_copy[i][j][k] =       circ_auto_cov[i][j][k];
+      }
+      fft_circ_auto_cov[i][j] = FFTGrid::fft1DzInPlace(circ_auto_cov[i][j], nzp);
+    }
   }
 
-  circ_auto_cov = FFTGrid::invFFT1DzInPlace(fft_circ_auto_cov, nzp);
-  //
-  // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
-  //           do we avoid this, or how do we flag the problem?
-  //
-  if(circ_auto_cov[0] < 1.5e-5){
-    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular parameter autocovariance is undefined. You\n");
-    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+  // Scale by the variance of each parameter in lag 0
+  NRLib::ComplexMatrix     diag_std_var_inv(3, 3);
+  NRLib::ComplexMatrix     diag_std_var(3,3);
+  std::complex<double>     zero_complex(0.0,0.0);
+  NRLib::InitializeComplexMatrix(diag_std_var_inv, zero_complex);
+  NRLib::InitializeComplexMatrix(diag_std_var, zero_complex);
+
+  for (int i = 0; i < 3; i++){
+    diag_std_var_inv(i,i).real(1.0/std::sqrt(circ_auto_cov_copy[i][i][0]));
+    diag_std_var(i,i).real(std::sqrt(circ_auto_cov_copy[i][i][0]));
   }
 
+  NRLib::ComplexMatrix   eig_vectors(3,3);
+  NRLib::ComplexVector   eig_values(3);
+  std::vector<NRLib::ComplexMatrix>   cov_dens_adjusted(nzp);
+  NRLib::ComplexMatrix   eigen_values_mat(3,3);
+
+  std::complex<double> temp_complex_std;
+  NRLib::ComplexMatrix cov_dens_i(3,3);
+  NRLib::ComplexMatrix product_mat_1(3,3);
+  NRLib::ComplexMatrix product_mat_2(3,3);
+  NRLib::ComplexMatrix product_mat_3(3,3);
+  for (int i = 0; i < nzp; i++){
+    cov_dens_adjusted[i].resize(3,3);
+    NRLib::InitializeComplexMatrix(cov_dens_adjusted[i], zero_complex);
+  }
+  NRLib::InitializeComplexMatrix(cov_dens_i, zero_complex);
+  NRLib::InitializeComplexMatrix(product_mat_1, zero_complex);
+  NRLib::InitializeComplexMatrix(product_mat_2, zero_complex);
+  NRLib::InitializeComplexMatrix(eigen_values_mat, zero_complex);
+  for (int i = 0; i < vector_len; i++){
+    // need to convert fftw_complex to std::complex to use NRLib::ComplexMatrix
+    for (int j = 0; j < 3; j++){
+      for (int k = 0; k < 3; k++){
+        if (i < vector_len){
+          temp_complex_std.real(fft_circ_auto_cov[j][k][i].re);
+          temp_complex_std.imag(fft_circ_auto_cov[j][k][i].im);
+          cov_dens_i(j,k) =  temp_complex_std;
+        }
+      }
+    }
+    
+    product_mat_1     = diag_std_var_inv*cov_dens_i;      // temp variable
+    product_mat_2      = product_mat_1*diag_std_var_inv;  // temp variable
+    NRLib::ComputeEigenVectorsComplex(product_mat_2, eig_values, eig_vectors);
+    for(int j = 0; j < 3; j++){
+      std::complex<double> eig_val = eig_values(j);
+      std::vector<std::complex<double> > eig_vec(3);
+      eigen_values_mat(j,j) = abs(eig_values(j));         // Make negative eigenvalues positive
+    }
+
+    product_mat_1 = diag_std_var * eig_vectors;                               // temp variable
+    product_mat_2 = product_mat_1 * eigen_values_mat;                         // temp variable
+    product_mat_3 = product_mat_2 * NRLib::conjugateTranspose(eig_vectors);   // temp variable
+    cov_dens_adjusted[i] = product_mat_3 * diag_std_var; 
+  }
+
+  // convert from std::complex to fftw_complex
+  fftw_complex temp_complex_fftw;
+  for(int j = 0; j < 3; j++){
+    for(int k = 0; k < 3; k++){
+      for(int i = 0; i < vector_len; i++){
+        temp_complex_fftw.re = static_cast<fftw_real>(cov_dens_adjusted[i](j,k).real());
+        temp_complex_fftw.im = static_cast<fftw_real>(cov_dens_adjusted[i](j,k).imag());
+        fft_circ_auto_cov[j][k][i] = temp_complex_fftw;
+      }
+      circ_auto_cov[j][k] = FFTGrid::invFFT1DzInPlace(fft_circ_auto_cov[j][k], nzp);
+    }
+  }
+
+  // multiply by fft factor
+  float factor = static_cast<float>(1.0/static_cast<double>(nzp));
+  for(int j = 0; j < 3; j++){
+    for(int k = 0; k < 3; k++){
+      for(int i = 0; i < nzp; i++){
+        circ_auto_cov[j][k][i] *= factor;
+      }
+    }
+  }
+
+
+  for (int i = 0; i < 3; i++){
+    for (int j = 0; j < 3; j++){
+      delete [] circ_auto_cov_copy[i][j];
+    }
+  }
 }
-*/
 
-//--------------------------------------------------------------------
 
-void
-SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
-                                             const int & minIntFq,
-                                             const int & nzp) const
+void      SeismicParametersHolder::TaperCircAutoCovFunction(std::vector<std::vector<fftw_real *> >    & circ_auto_cov,
+                                                            int                                         nzp,
+                                                            double                                      dz) const
 {
-  fftw_real      first_element = circCorrT[0];
+  double std_dev                              = static_cast<double>(50)/dz;   // 50 ms is the standard deviation, ref Odd Kolbjørnsen
+  if (std_dev > static_cast<double>(nzp)/2.0)
+    std_dev                                   = static_cast<double>(nzp)/2.0; // If the interval is short, set std dev to nzp/2
+
+  fftw_real * taper                           = new fftw_real[nzp];
+  for (int i = 0; i < nzp; i++){
+    if (i < nzp/2 + 1)
+      taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)));
+    else
+      taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(nzp - i)/std_dev,2)));
+  }
+
+  for(int i = 0; i < 3; i++){
+    for (int j = 0; j < 3; j++){
+      for (int k = 0; k < nzp; k++){
+        circ_auto_cov[i][j][k] *= taper[k];
+      }
+    }
+  }
+  delete [] taper;
+}
+
+void      SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
+                                                       const int & minIntFq,
+                                                       const int & nzp) const
+{
   fftw_complex * fftCircCorrT;
   fftCircCorrT = FFTGrid::fft1DzInPlace(circCorrT, nzp);
 
@@ -667,19 +788,17 @@ SeismicParametersHolder::makeCircCorrTPosDef(fftw_real * circCorrT,
   // NBNB-PAL: If the number of layers is too small CircCorrT[0] = 0. How
   //           do we avoid this, or how do we flag the problem?
   //
-  float scale = 0;
-  if (first_element > 0){ // Erik N: Since some cross correlations are set to 0 for synthetic logs
-    if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
-      scale = float( 1.0f/circCorrT[0] );
-    else  {
-      LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
-      LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
-      exit(1);
-    }
+  double scale = 0;
+  if (circCorrT[0] > 1.e-5f) // NBNB-PAL: Temporary solution for above mentioned problem
+    scale = float( 1.0f/circCorrT[0] );
+  else  {
+    LogKit::LogFormatted(LogKit::Low,"\nERROR: The circular temporal correlation (CircCorrT) is undefined. You\n");
+    LogKit::LogFormatted(LogKit::Low,"       probably need to increase the number of layers...\n\nAborting\n");
+    exit(1);
   }
 
   for(int k=0; k<nzp; k++)
-    circCorrT[k] *= scale;
+    circCorrT[k] *= static_cast<float>(scale);
 }
 
 

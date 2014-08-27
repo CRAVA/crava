@@ -130,7 +130,8 @@ public:
                                                          const int                          & nz,
                                                          const int                          & nxPad,
                                                          const int                          & nyPad,
-                                                         const int                          & nzPad);
+                                                         const int                          & nzPad,
+                                                         double                               dz);
 
   void                          allocateGrids(const int nx,
                                               const int ny,
@@ -146,8 +147,7 @@ public:
 
   fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov_pos, // positive lags
                                                    const std::vector<double>            & auto_cov_neg, // negative lags
-                                                   int                                  minIntFq,
-                                                   int                                  nzp) const;
+                                                   int                                    nzp) const;
 
   fftw_real                   * computeCircCorrT(const std::vector<double> & priorCorrT,
                                                  const int                 & minIntFq,
@@ -193,7 +193,8 @@ private:
                                                        const float                         & corrGradI,
                                                        const float                         & corrGradJ,
                                                        const int                           & lowIntCut,
-                                                       const int                           & nzp);
+                                                       const int                           & nzp,
+                                                       double                                dz);
 
   void                          FillInLateralCorr(const Surface       * prior_corr_xy,
                                                   const fftw_real     * circ_auto_cov,
@@ -204,11 +205,12 @@ private:
                                               int nxp, int nyp, int nzp,
                                               bool fileGrid);
 
-  /*
-  void                          MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
-                                                     int          minIntFq,
-                                                     int          nzp) const;
-                                                     */
+  void                          TaperCircAutoCovFunction(std::vector<std::vector<fftw_real *> >     & circ_auto_cov,
+                                                         int                                          nzp,
+                                                         double                                       dz) const;
+
+  void                          MakeCircAutoCovPosDef(std::vector<std::vector<fftw_real *> >  & circ_auto_cov,
+                                                      int                                       nzp) const;
 
   void                          makeCircCorrTPosDef(fftw_real * circCorrT,
                                                     const int & minIntFq,

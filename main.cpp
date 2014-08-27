@@ -269,11 +269,9 @@ int main(int argc, char** argv)
                                                                         simbox->getnz(),
                                                                         simbox->GetNXpad(),
                                                                         simbox->GetNYpad(),
-                                                                        simbox->GetNZpad());
+                                                                        simbox->GetNZpad(),
+                                                                        simbox->getdz());
 
-        seismicParametersIntervals[i_interval].GetCrCovVpRho()->writeStormFile("prior_vprho", simbox, false);
-        //seismicParametersIntervals[i_interval].GetCrCovVpVs()->writeStormFile("prior_vpvs", simbox, false);
-        //seismicParametersIntervals[i_interval].GetCrCovVsRho()->writeStormFile("prior_vsrho", simbox, false);
       }
 
       //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
