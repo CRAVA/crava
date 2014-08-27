@@ -496,8 +496,10 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
 
   //
   // Subtract global mean from data.
+  // Erik N: This is left out as part of the new covariance estimation; ref Odd Kolbjørnsen
   //
 
+  /*
   if(count > 0){
     global_mean /= count;
     for(int i = 0 ; i < n_wells_ ; i++){
@@ -511,6 +513,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
   else{
     err_txt += std::string("Could not estimate global mean for log '" + log_name + "' because there are no data within the inversion interval.\n");
   }
+  */
 }
 
 bool   Analyzelog::CheckConsistencyBackground(const std::vector<double>                              & ln_data_blocked,
