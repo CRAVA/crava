@@ -483,12 +483,12 @@ Wavelet::shiftFromFFTOrder()
   float z;
   for (int i = nzp_/2; i < nzp_; i++) {
     z = static_cast<float> (dz_*i);
-    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_); //H nzp
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_);
     index++;
   }
   for (int i = 0; i < nzp_/2; i++) {
     z = static_cast<float> (dz_*i);
-    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_); //H nzp
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_);
     index++;
   }
 

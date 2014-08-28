@@ -112,8 +112,7 @@ base_eroded_surface_(NULL)
   grad_y_         = 0;
 
   std::string s   = "";
-  this->setArea(&simbox, static_cast<int>(simbox.getnx()),
-                  static_cast<int>(simbox.getny()), s);
+  this->setArea(&simbox, static_cast<int>(simbox.getnx()), static_cast<int>(simbox.getny()), s);
   this->CopyAllPadding(simbox, 0.0, s); //Second parameter is smallest legal ratio between thickest and thinnest; since this is a copy, allow anything.
   this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
 }
@@ -1244,7 +1243,7 @@ void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
   else if(status_ == NODEPTH)
     status_ = BOXOK;
 
-  constThick_ = false;
+  //constThick_ = false;
 }
 
 void
@@ -1259,7 +1258,7 @@ Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
   else if(status_ == NODEPTH)
     status_ = BOXOK;
 
-  constThick_ = false;
+  //constThick_ = false;
 }
 
 void

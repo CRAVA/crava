@@ -132,6 +132,9 @@ public:
 
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
+                        StormContGrid           * background_vp,
+                        StormContGrid           * background_vs,
+                        StormContGrid           * background_rho,
                         GridMapping             * depth_mapping,
                         const TraceHeaderFormat & thf);
 
@@ -237,9 +240,11 @@ private:
 
   std::vector<StormContGrid *>                             facies_prob_geo_;
 
-  std::vector<StormContGrid*>                              lh_cubes_;
+  std::vector<StormContGrid *>                              lh_cubes_;
 
   StormContGrid                                          * quality_grid_;
+
+  std::vector<StormContGrid *>                             trend_cubes_; //vector trend_parameters
 
   std::vector<Wavelet *>                                   wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
   NRLib::Matrix                                            reflection_matrix_;

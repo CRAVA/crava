@@ -376,6 +376,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
 
         seismic_simbox.SetErodedSurfaces(*top_grid, *bot_grid, true);
         seismic_simbox.setDepth(*top_grid, *bot_grid, storm_grid_->GetNK(), true);
+        seismic_simbox.SetIsConstantThick(false);
 
         delete top_grid;
         delete bot_grid;
@@ -391,6 +392,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                              static_cast<int>(full_inversion_simbox.getny()),
                              err_txt);
       seismic_simbox.CopyAllPadding(full_inversion_simbox, lz_limit, err_txt);
+      seismic_simbox.SetIsConstantThick(full_inversion_simbox.getIsConstantThick());
   }
 }
 

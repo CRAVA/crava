@@ -50,7 +50,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   try{
     // if multiple-intervals keyword is used in model settings
     if (multiple_interval_setting_){
-      top_surface_file_name_temp = input_files->getTimeSurfTopFile();//getTimeSurfFile(0);
+      top_surface_file_name_temp = input_files->getTimeSurfTopFile();
       erosion_priorities_[0] = erosion_priority_top_surface;
 
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
@@ -325,7 +325,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 1: Single correlation surface
     else if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()){
       corr_dir = true;
-      Surface * corr_surf     = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
+      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
         other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf;
@@ -333,8 +333,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 2: Top and base correlation surfaces
     else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()){
       corr_dir = true;
-      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  *estimation_simbox);
+      Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
                                           other_output_flag, other_output_domain, other_output_format,err_text, failed);
       delete corr_surf_top;
@@ -343,7 +343,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 3: Top conform and base correlation surface
     else if (it_top_conform->second == true && it_base != corr_dir_base_surfaces.end()){
       corr_dir = true;
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second,  *estimation_simbox);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
                                           other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf_base;
@@ -351,8 +351,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 4: Top correlation surface and base conform
     else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true){
       corr_dir = true;
-      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
+      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox);
+      interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
                                           other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf_top;
     }

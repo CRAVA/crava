@@ -157,12 +157,12 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                     multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
   }
 
+
   // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
   if (block_wells_ && optimize_well_location_)
     wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_, local_shifts_,
                                         local_scales_, global_noise_estimates_, sn_ratios_, use_local_noises_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                         reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, err_text);
-
 
   // 13. Setup of prior correlation
   if(read_seismic_) {
@@ -218,7 +218,6 @@ CommonData::CommonData(ModelSettings * model_settings,
   CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
 
   if (err_text != "") {
-    //LogKit::LogFormatted(LogKit::Error,"\n\nError when loading and processing data: \n\n");
     LogKit::WriteHeader("Loading and processing data failed:");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
@@ -248,7 +247,6 @@ CommonData::~CommonData() {
 
     }
   }
-
 
   if (multiple_interval_grid_ != NULL){
     delete multiple_interval_grid_;
@@ -311,7 +309,6 @@ CommonData::~CommonData() {
       reservoir_variables_.find(it->first)->second[j] = NULL;
     }
   }
-
 
   // temporary_wavelets_
   for (size_t i = 0; i < temporary_wavelets_.size(); i++) {
@@ -752,11 +749,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
           segy->GetGeometry()->WriteGeometry();
 
-          //SeismicStorage seismicdata = SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
-
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
-          //seismic_data_angles.push_back(seismicdata);
-
         } //SEGY
         else if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
@@ -770,21 +763,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             break;
           }
 
-          //SeismicStorage seismicdata;
-
-          //if (file_type == IO::STORM)
-          //  seismicdata = SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
-          //else
-          //  seismicdata = SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
-
-          //seismic_data[this_timelapse][i] = seismicdata;
-
           if (file_type == IO::STORM)
             seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
           else
             seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
 
-          //seismic_data_angles.push_back(seismicdata);
         } //STORM / SGRI
         else if (file_type == IO::CRAVA) {
 
@@ -811,20 +794,12 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
           grid->endAccess();
 
-          //SeismicStorage seismicdata(file_name, SeismicStorage::FFTGRID, angles[i], grid);
-          //seismic_data[this_timelapse][i] = seismicdata;
-
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
-
-          //seismic_data_angles.push_back(seismicdata);
-
         }
         else {
           err_text += "Error when reading file " + file_name +". File type not recognized.\n";
         }
       } //n_angles
-
-      //seismic_data.push_back(seismic_data_angles);
 
       //Logging if seismic data is on segy format
       bool segy_volumes_read = false;
@@ -956,10 +931,6 @@ CommonData::CheckThatDataCoverGrid(const SegY  * segy,
   float z0 = offset + 0.5f*dz;
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
-  // Top and base of interval of interest
-  //float top_grid = static_cast<float>(simbox.getTopZMin());
-  //float bot_grid = static_cast<float>(simbox.getBotZMax());
-
   // Find guard zone
   float top_guard = static_cast<float>(top_grid) - guard_zone;
   float bot_guard = static_cast<float>(bot_grid) + guard_zone;
@@ -1011,10 +982,6 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
     storm_top /= 0.001;
     storm_bot /= 0.001;
   }
-
-  // Top and base of interval of interest
-  //double top_grid = simbox.getTopZMin();
-  //double bot_grid = simbox.getBotZMax();
 
   // Find guard zone
   double top_guard = top_grid - static_cast<double>(guard_zone);
@@ -2497,8 +2464,6 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
       new_well.RemoveDiscLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", facies);
 
-      //new_well.AddDiscLog("Facies", new_well.GetDiscLog(log_names_from_user[4]));
-      //new_well.RemoveDiscLog(log_names_from_user[4]);
     }
   }
 }
@@ -4347,11 +4312,11 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
 }
 
 
-void CommonData::SetSurfaces(const ModelSettings             * const model_settings,
-                             Simbox                          & full_inversion_simbox,
-                             bool                              multi_surface,
-                             const InputFiles                * input_files,
-                             std::string                     & err_text) const
+void CommonData::SetSurfaces(const ModelSettings * const model_settings,
+                             Simbox              & full_inversion_simbox,
+                             bool                  multi_surface,
+                             const InputFiles    * input_files,
+                             std::string         & err_text) const
 {
   // Get interval surface data ------------------------------------------------------------------------------
 
@@ -4387,7 +4352,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
 
   if (!failed) {
     try{
-      if(multi_surface == false) {
+      if (multi_surface == false) {
         if (model_settings->getParallelTimeSurfaces() == true) { //Only one reference surface
           double d_top = model_settings->getTimeDTop();
           double lz    = model_settings->getTimeLz();
@@ -4397,7 +4362,7 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
         }
         else { //Two reference surfaces
-          const std::string & base_surface_file_name = input_files->getBaseTimeSurface(""); //surface_file_names[1];
+          const std::string & base_surface_file_name = input_files->getBaseTimeSurface("");
           if (NRLib::IsNumber(base_surface_file_name)) {
             LogKit::LogFormatted(LogKit::Low,"Base surface: Flat surface at depth %11.2f \n", atof(base_surface_file_name.c_str()));
             // Find the smallest surface that covers the simbox.
@@ -4449,6 +4414,9 @@ void CommonData::SetSurfaces(const ModelSettings             * const model_setti
       full_inversion_simbox.SetXPadFactor(0.0);
       full_inversion_simbox.SetYPadFactor(0.0);
       full_inversion_simbox.SetZPadFactor(0.0);
+
+      if (model_settings->getParallelTimeSurfaces() == false)
+        full_inversion_simbox.SetIsConstantThick(false);
 
       //Needed for writing
       int output_format = model_settings->getOutputGridFormat();
@@ -4957,9 +4925,6 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
       }
 
       trend_cubes[i] = CravaTrend(multiple_interval_grid->GetIntervalSimbox(i),
-                                  //model_settings,
-                                  //input_files,
-                                  //interval_names[i],
                                   trend_cube_type,
                                   trend_cube_parameters,
                                   trend_cubes_interval,
@@ -4971,9 +4936,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
 
     }
 
-    //n_trend_cubes_ = trend_cubes.size(); //Is this needed?
-
-  }catch(NRLib::Exception & e) {
+  } catch(NRLib::Exception & e) {
     err_text += e.what();
    }
 
@@ -5005,7 +4968,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   const std::vector<std::string>                    interval_names          = model_settings->getIntervalNames();
   const std::string                                 path                    = input_files->getInputDirectory();
   const std::vector<std::string>                    trend_cube_parameters   = model_settings->getTrendCubeParameters();
-  std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_intervals); //trend_cube_sampling(n_trend_cubes_);
+  std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_intervals);
   const std::vector<std::vector<float> >            dummy_blocked_logs;
   const std::map<std::string,
     std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
@@ -5015,9 +4978,8 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   //rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
-  //for (int i=0; i < n_trend_cubes; i++) { // the number of trend cubes is the same as the number of intervals
-  for (int i = 0; i < n_intervals; i++) {
-    trend_cube_sampling[i]                                                                     = trend_cubes[i].GetTrendCubeSampling();
+  for (int i = 0; i < n_intervals; i++) { // the number of trend cubes is the same as the number of intervals
+    trend_cube_sampling[i] = trend_cubes[i].GetTrendCubeSampling();
     for (std::map<std::string, std::vector<DistributionWithTrendStorage *> >::const_iterator it = reservoir_variable.begin(); it != reservoir_variable.end(); it++) {
 
       std::vector<DistributionWithTrendStorage *>   storage = it->second;
@@ -5027,10 +4989,9 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
         dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
       }
 
-      reservoir_variables[it->first]  = dist_vector; //H Removed intervals for reservoir_variables_ -> Still use trend_cube_sampling per interval/trend_cube?
+      reservoir_variables[it->first]  = dist_vector;
     }
   }
-
 
   if (err_text == "") {
 

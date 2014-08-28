@@ -157,7 +157,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       seismicParameters.SetCorrTFiltered(corrTFiltered);
     }
 
-    if(simbox_->getIsConstantThick() == false)
+    if(simbox_->getIsConstantThick() == false) //H
       divideDataByScaleWavelet(seismicParameters);
 
     for (int i = 0 ; i < ntheta_ ; i++){
@@ -252,7 +252,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   seismicParameters.SetPostCovVp00(postCovVp00_);
   seismicParameters.SetPostCovVs00(postCovVs00_);
   seismicParameters.SetPostCovRho00(postCovRho00_);
-
 
   delete spatwellfilter;
 

@@ -172,6 +172,7 @@ public:
   void           SetXPadFactor(double x_pad_fac)       { x_pad_fac_   = x_pad_fac                    ;}
   void           SetYPadFactor(double y_pad_fac)       { y_pad_fac_   = y_pad_fac                    ;}
   void           SetZPadFactor(double z_pad_fac)       { z_pad_fac_   = z_pad_fac                    ;}
+  void           SetIsConstantThick(bool const_thick)  { constThick_  = const_thick                  ;}
 
   void           SetNoPadding();
   // other public functions

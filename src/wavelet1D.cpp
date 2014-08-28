@@ -149,6 +149,17 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         errTxt  += "The seismic data in stack " + NRLib::ToString(iAngle) + " have zero amplitudes in well \'"+blocked_log->GetWellName()+"\'.\n";
       }
 
+      //H-DEBUGGING
+      //std::string file_name = "test/seislog";
+      //std::ofstream file;
+      //NRLib::OpenWrite(file, file_name);
+      //file << std::fixed
+      //      << std::setprecision(6);
+      //for (int k = 0; k < seisLog.size(); k++)
+      //  //if (seisLog[k] != RMISSING)
+      //    file << seisLog[k] << " ";
+      //file.close();
+
       //
       // Check seismic data outside estimation interval missing
       //
