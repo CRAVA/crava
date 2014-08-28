@@ -290,10 +290,9 @@ int main(int argc, char** argv)
       //ii.  Inversion
       //iii. Move model one time-step ahead
 
-      if(modelGeneral->GetTimeLine() == NULL) {//Forward modelling.
-
-      }
-      else {
+      //Do not run avoinversion if forward modelleing or estimationmode
+      //Syntetic seismic is generated in CravaResult
+      if (!modelSettings->getForwardModeling() && !modelSettings->getEstimationMode()) {
         int  eventType;
         int  eventIndex;
         modelGeneral->GetTimeLine()->ReSet();
@@ -362,9 +361,9 @@ int main(int argc, char** argv)
                                  common_data,
                                  seismicParametersIntervals);
 
-    //Write results
     crava_result->WriteResults(modelSettings,
-                               common_data);
+                               common_data,
+                               seismicParametersIntervals[0]);
 
     if(modelSettings->getDo4DInversion())
     {

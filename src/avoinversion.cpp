@@ -491,18 +491,9 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
     int dim=seisWavelet_[l]->getDim();
     std::string angle = NRLib::ToString(thetaDeg_[l], 1);
 
-    bool debug = false;
-
-    //if(ModelSettings::getDebugLevel() > 0) {
-    if (debug) {
+    if(ModelSettings::getDebugLevel() > 0) {
       std::string fileName = IO::PrefixOriginalSeismicData() + "With_Padding_" + angle;
       seisData_[l]->writeStormFile(fileName, simbox_, false, true, true);
-    }
-
-    //H-DEBUGGING
-    if (debug) {
-      std::string fileName = IO::PrefixOriginalSeismicData() + "Without_Padding_" + angle;
-      seisData_[l]->writeStormFile(fileName, simbox_, false, false, true);
     }
 
     seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -547,12 +538,6 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         localWavelet = seisWavelet_[l]->createLocalWavelet1D(iInd,jInd);  //
         double sfLoc =(simbox_->getRelThick(i,j)*seisWavelet_[l]->getLocalStretch(iInd,jInd));// scale factor from thickness stretch + (local stretch when 3D wavelet)
 
-        //H-DEBUGGING
-        //localWavelet->writeWaveletToFile("test/local_wavelet_individe", 1.0, false);
-
-        //H-DEBUGGING
-        //seisWavelet_[l]->writeWaveletToFile("test/seis_wavelet_individe", 1.0, false);
-
         double relT   = simbox_->getRelThick(i,j);
         double deltaF = static_cast<double>(nz_)*1000.0/(relT*simbox_->getlz()*static_cast<double>(nzp_));
         std::vector<float> A(3);
@@ -587,8 +572,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         }
       }
 
-      //if(ModelSettings::getDebugLevel() > 0)
-      if (debug)
+      if(ModelSettings::getDebugLevel() > 0)
       {
         ///* NBNB How to handle
         std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
@@ -602,8 +586,7 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
       LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
       seisData_[l]->interpolateSeismic(energyTreshold_);
 
-      //if(ModelSettings::getDebugLevel() > 0)
-      if (debug)
+      if(ModelSettings::getDebugLevel() > 0)
       {
         ///*
         std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
@@ -1135,8 +1118,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     }
   }
 
-  for (l=0;l<ntheta_;l++)
-    delete seisData_[l];
+  //Seismic data may be used in CravaResult. If seis_data are on crava/fft format these are a reference to commondata and cannot be deleted.
+  //for (l=0;l<ntheta_;l++)
+  //  delete seisData_[l];
   LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
   if (modelGeneral_->GetVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.

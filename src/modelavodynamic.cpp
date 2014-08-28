@@ -73,11 +73,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   LogKit::WriteHeader("Setting up models for vintage " + NRLib::ToString(t));
 
-  const std::vector<SeismicStorage> & seismic_data = common_data->GetSeismicDataTimeLapse(this_timelapse_);
+  const std::vector<SeismicStorage *> & seismic_data = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
   angle_.resize(number_of_angles_);
   for (int i = 0; i < number_of_angles_; i++)
-    angle_[i] = seismic_data[i].GetAngle();
+    angle_[i] = seismic_data[i]->GetAngle();
 
   for (int i = 0; i < number_of_angles_; i++) {
     err_theta_cov_[i] = new double[number_of_angles_];
@@ -105,7 +105,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     seis_cubes_[i]->createRealGrid();
     seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
-    int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSeismicType();
+    int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSeismicType();
     bool is_segy          = false;
     bool is_storm         = false;
     bool scale            = false;
@@ -113,11 +113,11 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     StormContGrid * storm = NULL;
 
     if (seismic_type == 0) { //SEGY
-      segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetSegY();
+      segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSegY();
       is_segy = true;
     }
     else if (seismic_type == 1 || seismic_type == 2) { //STORM / SGRI
-      storm    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetStorm();
+      storm    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetStorm();
       is_storm = true;
 
       if (seismic_type == 2) //SGRI
@@ -125,7 +125,15 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
 
     if (seismic_type == 3) { //FFTGrid: Seismic data on CRAVA format, which isn't allowed with multiple intervals, so no need for resampling
-      seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i].GetFFTGrid();
+
+      //Make a copy, seis_cubes_ are deleted in avoinversion and we need common_datas seis_cubes in cravaresult.
+      //common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->setAccessMode(FFTGrid::READ);
+      //seis_cubes_[i] = new FFTGrid(common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid());
+      //common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid()->endAccess();
+
+      //H-Test: + remove deletion in avoinversion.cpp
+      seis_cubes_[i] = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetFFTGrid();
+
       seis_cubes_[i]->setType(FFTGrid::DATA);
     }
     else { //Resample storm or segy to seis_cube
@@ -222,7 +230,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     wavelets_[i] = new Wavelet1D(common_data->GetWavelet(this_timelapse_)[i]);
     wavelets_[i]->scale(common_data->GetWavelet(this_timelapse_)[i]->getScale()); //Not copied in copy-constructor
 
-    std::vector<SeismicStorage> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
+    std::vector<SeismicStorage *> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
     bool adjust_scale = (wavelet_estimated[i] == true || model_settings->getEstimateGlobalWaveletScale(this_timelapse_, i) == true);
     bool adjust_noise = model_settings->getEstimateSNRatio(this_timelapse_, i);
@@ -274,7 +282,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                    blocked_log->GetWellSyntSeismicData());
 
           seis_logs[w].resize(blocked_log->GetNumberOfBlocks());
-          blocked_log->GetBlockedGrid(&(orig_seis[i]), &estimation_box, seis_logs[w]);
+          blocked_log->GetBlockedGrid(orig_seis[i], &estimation_box, seis_logs[w]);
           mapped_blocked_logs[iter->first] = blocked_log;
 
           w++;
@@ -312,15 +320,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
-    //H-DEBUGGING
-    //if (i == 0)
-    //  wavelets_[i]->printToFile("test/wavelet_pre_resample_modelavo_test", true);
-
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
-
-    //H-DEBUGGING
-    //if (i == 0)
-    //  wavelets_[i]->printToFile("test/wavelet_post_resample_modelavo", true);
   }
 
   //This is used in writing of wells and in faciesprob.

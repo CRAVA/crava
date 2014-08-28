@@ -113,6 +113,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   last_M_                       = IMISSING;
   first_B_                      = IMISSING;
   last_B_                       = IMISSING;
+
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
@@ -1648,7 +1649,7 @@ void BlockedLogsCommon::SetTimeGradientSettings(float distance, float sigma_m)
   sigma_m_ = sigma_m;
 }
 
-void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & seismic_data,
+void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage *>     & seismic_data,
                                             const Simbox                * const estimation_simbox,
                                             int                                 n_angles,
                                             std::vector<double>               & x_gradient,
@@ -1720,11 +1721,11 @@ void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & 
 
   double dz, ztop, dzW, ztopW;
   for (l = 0; l < n_angles; l++){
-    seismic_data[l].SetRandomAccess();
+    seismic_data[l]->SetRandomAccess();
     for (j = -yEx; j <= yEx; j++){
       for (i = -xEx; i <= xEx; i++){
 
-        seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0); ///H Correct values returned?
+        seis_trace = seismic_data[l]->GetRealTrace(estimation_simbox, i0, j0); ///H Correct values returned?
         //seis_trace = seisCube[l]->getRealTrace2(i0, j0);
 
         SmoothTrace(seis_trace);
@@ -1738,7 +1739,7 @@ void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & 
         FindPeakTrace(seis_trace, z_peak_well, peak_well, b_well, dzW, ztopW);
 
         //seis_trace = seisCube[l]->getRealTrace2(i0+i, j0+j);
-        seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i0, j0);
+        seis_trace = seismic_data[l]->GetRealTrace(estimation_simbox, i0, j0);
         SmoothTrace(seis_trace);
         if (i==0){
           for (size_t s = 0; s < seis_trace.size(); s++)
@@ -1759,14 +1760,14 @@ void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & 
           else{
             //well has changed lateral position and we adapt to the new well position
             //seis_trace = seisCube[l]->getRealTrace2(i_pos_[k],j_pos_[k]);
-            seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i_pos_[k], j_pos_[k]);
+            seis_trace = seismic_data[l]->GetRealTrace(estimation_simbox, i_pos_[k], j_pos_[k]);
             SmoothTrace(seis_trace);
             dzW = estimation_simbox->getdz(i_pos_[k],j_pos_[k]);
             ztopW = estimation_simbox->getTop(i_pos_[k],j_pos_[k]);
             FindPeakTrace(seis_trace, z_peak_well, peak_well, b_well, dzW, ztopW);
 
             //seis_trace = seisCube[l]->getRealTrace2(i_pos_[k]+i, j_pos_[k]+j);
-            seis_trace = seismic_data[l].GetRealTrace(estimation_simbox, i_pos_[k]+i, j_pos_[k]+j);
+            seis_trace = seismic_data[l]->GetRealTrace(estimation_simbox, i_pos_[k]+i, j_pos_[k]+j);
             SmoothTrace(seis_trace);
             dz = estimation_simbox->getdz(i_pos_[k]+i, j_pos_[k]+j);
             ztop = estimation_simbox->getTop(i_pos_[k]+i, j_pos_[k]+j);
@@ -1779,7 +1780,7 @@ void BlockedLogsCommon::FindSeismicGradient(std::vector<SeismicStorage>       & 
         }
       }
     }
-    seismic_data[l].EndAccess();
+    seismic_data[l]->EndAccess();
     double dx = estimation_simbox->getdx();
     double dy = estimation_simbox->getdy();
 
@@ -2373,7 +2374,7 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
 
 }
 
-void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & seismic_data,
+void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage *> & seismic_data,
                                                 const Simbox                  * estimation_simbox,
                                                 const Simbox                  & inversion_simbox,
                                                 const NRLib::Matrix           & refl_matrix,
@@ -2492,7 +2493,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage>   & 
     {
       for (l = 0; l < j_tot_offset; l++)
       {
-        GetBlockedGrid(&seismic_data[j], estimation_simbox, seis_log,i_offset[k],j_offset[l]);
+        GetBlockedGrid(seismic_data[j], estimation_simbox, seis_log, i_offset[k], j_offset[l]);
         for (m = 0; m < static_cast<int>(n_blocks_); m++)
         {
           seis_cube_small[j](k, l, m) = static_cast<float>(seis_log[m]);
@@ -3290,17 +3291,17 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     std::exit(1);
   }
 
-  int n_facies = facies_name.size();
-
+  int n_facies                 = facies_map_.size();
   bool got_facies              = (n_facies > 0);
-  bool got_facies_prob         = (facies_prob_.size() > 0);
-  bool got_real_seismic        = (real_seismic_data_.size() > 0);
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() != 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);
-  bool got_cpp                 = (cpp_.size() > 0);
-  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0);
   bool got_vp_rho_fac_log      = (vp_for_facies_.size() > 0);
-  bool got_predicted           = (GetVpPredicted().size() > 0);
+
+  bool got_cpp                 = (cpp_.size() > 0);
+  bool got_facies_prob         = (facies_prob_.size() > 0);
+  bool got_real_seismic        = (real_seismic_data_.size() > 0);
+  bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0);
+  bool got_predicted           = (continuous_logs_predicted_.size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (got_filtered_log)
@@ -3326,7 +3327,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   params[0] = "Vp";
   params[1] = "Vs";
   params[2] = "Rho";
-
   file << std::fixed
        << std::setprecision(2);
   //
@@ -3337,7 +3337,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
        << IO::PrefixBlockedWells() + well_name_ << " " << x_pos_blocked_[first_B_] << " " << y_pos_blocked_[first_B_] << "\n"
        << n_logs << "\n";
 
-  for (int i =0 ; i<3 ; i++) {
+  for (int i = 0; i < 3; i++) {
     file << params[i] << "  UNK lin\n";
     file << params[i] << static_cast<int>(max_hz_background) << "  UNK lin\n";
     file << params[i] << static_cast<int>(max_hz_seismic)    << "  UNK lin\n";
@@ -3347,7 +3347,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << params[i] << "_SeismicResolution UNK lin\n";
   }
   if (got_predicted) {
-    for (int i=0; i<3; i++)
+    for (int i = 0; i < 3; i++)
       file << params[i] << "_Predicted UNK lin\n";
   }
   if (got_vp_rho_fac_log) {
@@ -3356,7 +3356,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   }
   if (got_facies) {
     file << "FaciesLog  DISC ";
-    for (int i =0 ; i < static_cast<int>(facies_name.size()) ; i++)
+    for (int i = 0; i < static_cast<int>(facies_name.size()); i++)
       file << " " << facies_label[i] << " " << facies_name[i];
     file << "\n";
   }
@@ -3365,26 +3365,25 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << "FaciesProbabilities" << i << " UNK lin\n";
   }
   if (got_real_seismic) {
-    for (int i=0 ; i<n_angles_ ; i++)
+    for (int i = 0; i < n_angles_; i++)
       file << "RealSeis" << i << " UNK lin\n";
   }
   if (got_actual_synt_seismic) {
-    for (int i=0 ; i<n_angles_ ; i++)
+    for (int i = 0; i < n_angles_; i++)
       file << "ActualSyntSeis" << i << " UNK lin\n";
   }
   if (got_well_synt_seismic) {
-    for (int i=0 ; i<n_angles_ ; i++)
+    for (int i = 0; i < n_angles_; i++)
       file << "WellOptimizedSyntSeis" << i << " UNK lin\n";
   }
   if (got_cpp) {
-    for (int i=0 ; i<n_angles_ ; i++)
+    for (int i  = 0; i < n_angles_; i++)
       file << "ReflCoef" << i << " UNK lin\n";
   }
 
   //
   // Write LOGS
   //
-
   const std::vector<double> & vp  = GetVpBlocked();
   const std::vector<double> & vs  = GetVsBlocked();
   const std::vector<double> & rho = GetRhoBlocked();
@@ -3405,6 +3404,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
   const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
 
+
   for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
          << std::fixed
@@ -3422,12 +3422,12 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
          << std::setw(7) << (rho[i]==RMISSING                    ? WELLMISSING : exp(rho[i]))                    << " "
          << std::setw(7) << (rho_highcut_background[i]==RMISSING ? WELLMISSING : exp(rho_highcut_background[i])) << " "
          << std::setw(7) << (rho_highcut_seismic[i]==RMISSING    ? WELLMISSING : exp(rho_highcut_seismic[i]))    << " ";
-    if (got_filtered_log == true) {
+    if (got_filtered_log == true && vp_seismic_resolution.size() > 0) {
       file << std::setw(7) << (vp_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vp_seismic_resolution[i]))  << "  "
            << std::setw(7) << (vs_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vs_seismic_resolution[i]))  << "  "
            << std::setw(7) << (rho_seismic_resolution[i]==RMISSING ? WELLMISSING : exp(rho_seismic_resolution[i])) << "  ";
     }
-    if (got_predicted == true) {
+    if (got_predicted == true && vp_predicted.size() > 0) {
       file << std::setw(7) << (vp_predicted[i]==RMISSING  ? WELLMISSING : exp(vp_predicted[i]))  << "  "
            << std::setw(7) << (vs_predicted[i]==RMISSING  ? WELLMISSING : exp(vs_predicted[i]))  << "  "
            << std::setw(7) << (rho_predicted[i]==RMISSING ? WELLMISSING : exp(rho_predicted[i])) << "  ";
@@ -3437,7 +3437,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
            << std::setw(7) << (rho_for_facies_[i]==RMISSING ? WELLMISSING : exp(rho_for_facies_[i])) << "  ";
     }
     if (got_facies)
-      file << (facies_blocked_[i]==IMISSING                                 ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
+      file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
     file << std::scientific;
     if (got_facies_prob) {
       for (int a = 0; a < n_facies; a++)
@@ -3450,7 +3450,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << " ";
     }
     if (got_actual_synt_seismic) {
-      for (int a=0 ; a<n_angles_ ; a++)
+      for (int a = 0; a < n_angles_; a++)
         file << std::setw(12) << (actual_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : actual_synt_seismic_data_[a][i])          << " ";
       file << " ";
     }
@@ -3464,6 +3464,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
         file << std::setw(12) << (GetCpp(a)[i]==RMISSING               ? WELLMISSING : GetCpp(a)[i])                        << " ";
     file << "\n";
   }
+
   file.close();
 }
 

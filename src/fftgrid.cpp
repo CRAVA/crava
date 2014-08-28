@@ -211,6 +211,98 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
   endAccess();
 }
 
+FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
+{
+  cubetype_       = CTMISSING;
+  theta_          = RMISSING;
+  nx_             = grid->GetNI();
+  ny_             = grid->GetNJ();
+  nz_             = grid->GetNK();
+  nxp_            = nxp;
+  nyp_            = nyp;
+  nzp_            = nzp;
+  scale_          = 1.0;
+  rValMin_        = RMISSING;
+  rValMax_        = RMISSING;
+  rValAvg_        = RMISSING;
+  cnxp_           = nxp_/2+1;
+  rnxp_           = 2*(cnxp_);
+
+  csize_          = cnxp_*nyp_*nzp_;
+  rsize_          = rnxp_*nyp_*nzp_;
+
+  counterForGet_  = 0;
+  counterForSet_  = 0;
+  istransformed_  = false;
+  rvalue_         = NULL;
+  add_            = true;
+
+  // Copied from Background::createPaddedParameter
+  // Used to copy a background-model on NRLib::Grid format to a fft-grid, and fill in padding.
+
+  //
+  // Fill padding using linear interpolation between edges.
+  //
+  // When we fill the z-padding, we assume that x- and y-padding is
+  // already filled. The loop structure ensures this. Likewise, it
+  // is assumed that the x-padding is filled when we fill the
+  // y-padding.
+  //
+  // The linear algortihm is not "perfect", but should be more
+  // than good enough for padding the smooth background model.
+  //
+
+  createRealGrid();
+  setType(PARAMETER);
+
+  setAccessMode(RANDOMACCESS);
+
+  float sum_c = 1.0f/static_cast<float>(nzp_ - nz_ + 1);
+  float sum_b = 1.0f/static_cast<float>(nyp_ - ny_ + 1);
+  float sum_a = 1.0f/static_cast<float>(nxp_ - nx_ + 1);
+
+  for(int k = 0 ; k < nzp_ ; k++) {
+    for(int j = 0 ; j < nyp_ ; j++) {
+      for(int i = 0 ; i < rnxp_ ; i++) { // Must fill entire grid to avoid UMR.
+
+        float value = RMISSING;
+        if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
+
+          value = grid->GetValue(i, j, k);
+          //value = pOld->getRealValue(i, j, k);
+        }
+        else {
+          if(i >= nxp_)       //In dummy area for real grid, but fill to avoid UMR.
+            value = 0;
+          else if(k >= nz_) { // In z-padding (x- and y- padding is filled in pNew)
+            float c1 = getRealValue(i, j, 0     , true);
+            float c2 = getRealValue(i, j, nz_ - 1, true);
+            float w1 = sum_c*static_cast<float>(k - nz_ + 1);
+            float w2 = sum_c*static_cast<float>(nzp_ - k);
+            value = c1*w1 + c2*w2;
+          }
+          else if(j >= ny_) { // In y-padding (x-padding is filled in pNew)
+            float b1 = getRealValue(i, 0     , k, true);
+            float b2 = getRealValue(i, ny_ - 1, k, true);
+            float w1 = sum_b*static_cast<float>(j - ny_ + 1);
+            float w2 = sum_b*static_cast<float>(nyp_ - j);
+            value = b1*w1 + b2*w2;
+          }
+          else if(i >= nx_) { // In x-padding
+            float a1 = getRealValue(     0, j, k, true);
+            float a2 = getRealValue(nx_ - 1, j, k, true);
+            float w1 = sum_a*static_cast<float>(i - nx_ + 1);
+            float w2 = sum_a*static_cast<float>(nxp_ - i);
+            value = a1*w1 + a2*w2;
+          }
+        }
+        setRealValue(i,j,k,value,true);
+      }
+    }
+  }
+  endAccess();
+}
+
 FFTGrid::~FFTGrid()
 {
   if (rvalue_!=NULL)
