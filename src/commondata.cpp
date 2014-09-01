@@ -167,31 +167,35 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 
   // 13. Setup of prior correlation
-  bool run_prior_correlation = true;
   if(read_seismic_) {
     if(model_settings->getEstimateCorrelations() == true) {
       // 5.3 Block wells for inversion purposes
-      if (wells_.size() > 0 && read_wells_){
-        correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+      //if (wells_.size() > 0 && read_wells_){
+      correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
-      }
+      //}
       model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as an estimate, the min number of blocks is set to 100; ref Ragnar Hauge
-      if(!read_wells_ || !setup_multigrid_ || !correlation_wells_) {
-        run_prior_correlation = false;
+      if(read_wells_ || setup_multigrid_ || correlation_wells_) {
+        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
+                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
+                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+      }
+      else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
       }
     }
-  }
-  else{
-    run_prior_correlation = false;
-    err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  }
-  if (run_prior_correlation){
-    setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+    else{
+          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                   multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                   background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                   prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+    }
   }
+  else{
+    err_text += "Could not set up prior correlations since this requires seismic data.\n";
+  }
+
 
 
   // 14. Set up TimeLine class
