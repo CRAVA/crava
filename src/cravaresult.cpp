@@ -1342,7 +1342,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       for (int i = 0; i < n_timelapses; i ++) {
 
-        //H-TODO: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
+        //H: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
 
         int n_angles              = model_settings->getNumberOfAngles(i);
         std::vector<float> angles = model_settings->getAngle(i);

@@ -160,10 +160,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
   if (block_wells_ && optimize_well_location_)
-    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_, //local_shifts_,
-                                        //local_scales_,
-                                        global_noise_estimates_, sn_ratios_, //use_local_noises_,
-                                        t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
+    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_,
+                                        global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                         reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, err_text);
 
   // 13. Setup of prior correlation
@@ -3039,11 +3037,8 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                  std::vector<std::vector<SeismicStorage *> > & seismic_data,
                                  std::map<int, std::vector<Wavelet *> >      & wavelets,
                                  std::map<int, std::vector<Grid2D *> >       & local_noise_scales,
-                                 //std::map<int, std::vector<Grid2D *> >      & local_shifts,
-                                 //std::map<int, std::vector<Grid2D *> >      & local_scales,
                                  std::map<int, std::vector<float> >          & global_noise_estimates,
                                  std::map<int, std::vector<float> >          & sn_ratios,
-                                 //bool                                       & use_local_noise,
                                  std::vector<std::vector<double> >           & t_grad_x,
                                  std::vector<std::vector<double> >           & t_grad_y,
                                  NRLib::Grid2D<float>                        & ref_time_grad_x,
@@ -3080,7 +3075,6 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
 
     std::vector<float> sn_ratio = model_settings->getSNRatio(i);
     std::vector<float> angles   = model_settings->getAngle(i);
-    //use_local_noise             = model_settings->getUseLocalNoise(i);
 
     //Fra ModelAvoDynamic::processSeismic:
     std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
@@ -3101,16 +3095,12 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
     wavelets[i].resize(n_angles, NULL);
 
     std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
-    //std::vector<Grid2D *> local_shift(n_angles);
-    //std::vector<Grid2D *> local_scale(n_angles);
 
     bool has_3D_wavelet = false;
 
     for (int j = 0; j < n_angles; j++) {
 
       local_noise_scale[j] = NULL;
-      //local_shift[j]       = NULL;
-      //local_scale[j]       = NULL;
 
       if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
         has_3D_wavelet = true;
@@ -3227,15 +3217,12 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                   err_text,
                                   wavelets[i][j],
                                   local_noise_scale[j],
-                                  //local_shift[j],
-                                  //local_scale[j],
                                   i, //Timelapse
                                   j, //Angle
                                   angles[j],
                                   sn_ratio[j],
                                   estimate_wavelets[j],
                                   use_ricker_wavelet[j]);
-                                  //use_local_noise);
       else
         error += Process3DWavelet(model_settings,
                                   input_files,
@@ -3272,8 +3259,6 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
     }
 
     local_noise_scales[i]     = local_noise_scale;
-    //local_shifts[i]           = local_shift;
-    //local_scales[i]           = local_scale;
     global_noise_estimates[i] = sn_ratio;
     sn_ratios[i]              = sn_ratio;
 
@@ -3358,20 +3343,16 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              std::string                                & err_text,
                              Wavelet                                   *& wavelet,
                              Grid2D                                    *& local_noise_scale, //local noise estimates?
-                             //Grid2D                                    *& local_shift,
-                             //Grid2D                                    *& local_scale,
                              unsigned int                                 i_timelapse,
                              unsigned int                                 j_angle,
                              const float                                  angle,
                              float                                      & sn_ratio,
                              bool                                         estimate_wavelet,
                              bool                                         use_ricker_wavelet) const
-                             //bool                                         use_local_noise) const
 {
-  //assert (wavelet == NULL && local_noise_scale == NULL && local_shift == NULL && local_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
   assert (wavelet == NULL && local_noise_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
-  Grid2D * local_shift       = NULL;
-  Grid2D * local_scale       = NULL;
+  Grid2D * local_shift = NULL;
+  Grid2D * local_scale = NULL;
 
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));

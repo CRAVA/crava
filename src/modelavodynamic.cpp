@@ -55,7 +55,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   bool failed_loading_model = false;
   number_of_angles_         = model_settings->getNumberOfAngles(this_timelapse_);
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
-  use_local_noise_          = model_settings->getUseLocalNoise(this_timelapse_); //common_data->GetUseLocalNoise();
+  use_local_noise_          = model_settings->getUseLocalNoise(this_timelapse_);
 
   wavelets_.  resize(number_of_angles_);
   seis_cubes_.resize(number_of_angles_);
