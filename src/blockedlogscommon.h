@@ -47,9 +47,12 @@ public:
 
   //GET FUNCTIONS --------------------------------
 
+  // Number of blocks with data per interval name s
   int                                    GetNBlocksWithData(std::string s) const { return n_blocks_with_data_.find(s)->second                         ;}
+  // Total number of blocks with data across all intervals
   int                                    GetNBlocksWithDataTot() const { return n_blocks_with_data_tot_                                               ;}
   std::string                            GetWellName()         const   { return well_name_                                                            ;}
+  // Total number of blocks
   int                                    GetNumberOfBlocks()   const   { return n_blocks_                                                             ;}
   int                                    GetNFacies()          const   { return static_cast<int>(facies_map_.size())                                  ;}
   std::vector<double>                  & GetXposBlocked(void)          { return x_pos_blocked_                                                        ;}

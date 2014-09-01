@@ -483,6 +483,51 @@ ev(bool leftEV, bool rightEV,
                 work.data(), work.length());
 }
 
+
+// Complex general matrices
+template <typename MA, typename W, typename VL, typename VR>
+int
+ev(bool leftEV, bool rightEV,
+   GeMatrix<MA> &A, DenseVector<W> &w,
+   GeMatrix<VL> &vl, GeMatrix<VR> &vr)
+{
+    assert(A.numRows()==A.numCols());
+    assert(w.length()==A.numRows());
+    assert(vl.numRows()==vl.numCols());
+    assert(vr.numRows()==vr.numCols());
+    assert(!leftEV || (vl.numRows()==A.numRows()));
+    assert(!rightEV || (vr.numRows()==A.numRows()));
+
+    typedef typename MA::ElementType T;
+    T lwork;
+	DenseVector<Array<double> > rwork(2*A.numRows());
+	//double rwork;
+    int info;
+
+    int ldvl = leftEV  ? vl.engine().leadingDimension() : 1;
+    int ldvr = rightEV ? vr.engine().leadingDimension() : 1;
+	typename VL::ElementType *vldata = leftEV  ? vl.data() : 0;
+    typename VR::ElementType *vrdata = rightEV ? vr.data() : 0;
+    //T *vldata = leftEV  ? vl.data() : 0;
+    //T *vrdata = rightEV ? vr.data() : 0;
+
+    // query optimal work space size
+    info = geev(leftEV, rightEV, A.numRows(), A.data(), A.leadingDimension(),
+                w.data(), vldata, ldvl,
+                vrdata, ldvr,
+                &lwork, -1, &rwork(0));
+    assert(info==0);
+
+    // allocate work space
+    DenseVector<Array<T> > work ( static_cast<int>(lwork.real()));
+    return geev(leftEV, rightEV, A.numRows(), A.data(), A.leadingDimension(),
+                w.data(), vldata, ldvl,
+                vrdata, ldvr,
+                work.data(), work.length(), rwork.data());
+}
+
+
+/*
 template <typename MA, typename W, typename VL, typename VR>
 int
 ev(bool leftEV, bool rightEV,
@@ -520,6 +565,7 @@ ev(bool leftEV, bool rightEV,
                 vrdata, ldvr,
                 work.data(), work.length(), rwork.data());
 }
+*/
 
 //-- syev ----------------------------------------------------------------------
 

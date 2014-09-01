@@ -111,7 +111,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   signalVariance_    = modelAVOdynamic->GetSignalVariance();
   theoSNRatio_       = modelAVOdynamic->GetTheoSNRatio();
 
-  SpatialWellFilter * spatwellfilter = NULL;
+  SpatialRealWellFilter * spat_real_well_filter = NULL;
+  SpatialSyntWellFilter * spat_synt_well_filter = NULL;
 
   // reality check: all dimensions involved match
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
@@ -122,27 +123,81 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     seisData_       = modelAVOdynamic_->GetSeisCubes();
     modelAVOdynamic_->ReleaseGrids();
 
-    if (modelSettings->getDoInversion() && spatwellfilter == NULL) {
-      spatwellfilter = new SpatialWellFilter(modelSettings->getNumberOfWells());
+    // If facies prob are estimated, create the spatial well filter
+    if (modelSettings->getDoInversion() && modelSettings->getEstimateFaciesProb()) {
+      // Create Synthetic Well Filter
+      if (modelSettings->getFaciesProbFromRockPhysics()){
+          // GENERATE SYNTHETIC WELLS
+        int nSyntWellsToBeFiltered                                            = 10;
+        int nSyntWellsPerCombinationOfTrendParams                             = 10;
+        int syntWellLength                                                    = 100;
+        int nBinsTrendVector                                                  = 20;
+        std::vector<double> trend_min, trend_max;
+        FindSamplingMinMax(modelGeneral_->GetTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
+        const std::map<std::string, DistributionsRock *>  rock_distributions  = modelGeneral_->GetRockDistributionTime0();
+        const std::vector<std::string>                    facies_names        = modelGeneral_->GetFaciesNames();
 
-      FFTGrid * covVp = seismicParameters.GetCovVp();
-      covVp->setAccessMode(FFTGrid::RANDOMACCESS);
+        spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, seismicParameters.GetCovEstimated());
+        spat_synt_well_filter->SetNumberOfSyntWellsToBeFiltered(nSyntWellsToBeFiltered);
+        spat_synt_well_filter->SetNumberOfSyntWellsPerCombinationOfTrendParams(nSyntWellsPerCombinationOfTrendParams);
+        spat_synt_well_filter->GenerateSyntWellData(rock_distributions, facies_names, trend_min, trend_max, simbox_->getdz(), 
+                                                    nSyntWellsPerCombinationOfTrendParams, nBinsTrendVector, syntWellLength);
+      }
+      // Create Real Well filter
+      else
+        spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), seismicParameters.GetCovEstimated());
 
-      int i = 0;
-      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
-        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
-        BlockedLogsCommon * blocked_log = iter->second;
 
-        spatwellfilter->setPriorSpatialCorr(covVp, blocked_log, i);
-        i++;
+
+      FFTGrid * cov_vp    = seismicParameters.GetCovVp();
+      FFTGrid * cov_vs    = seismicParameters.GetCovVs();
+      FFTGrid * cov_rho   = seismicParameters.GetCovRho();
+      FFTGrid * cov_vpvs  = seismicParameters.GetCrCovVpVs();
+      FFTGrid * cov_vprho = seismicParameters.GetCrCovVpRho();
+      FFTGrid * cov_vsrho = seismicParameters.GetCrCovVsRho();
+      cov_vp->setAccessMode(FFTGrid::RANDOMACCESS);
+      cov_vs->setAccessMode(FFTGrid::RANDOMACCESS);
+      cov_rho->setAccessMode(FFTGrid::RANDOMACCESS);
+      cov_vpvs->setAccessMode(FFTGrid::RANDOMACCESS);
+      cov_vprho->setAccessMode(FFTGrid::RANDOMACCESS);
+      cov_vsrho->setAccessMode(FFTGrid::RANDOMACCESS);
+
+      // Synthetic wells
+      if (modelSettings->getFaciesProbFromRockPhysics()){
+        for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++){
+          if (seismicParameters.GetCovEstimated())
+            spat_synt_well_filter->SetPriorSpatialCovarianceSyntWell(cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho, j);
+          else
+            spat_synt_well_filter->SetPriorSpatialCorrSyntWell(cov_vp, j);
+        }
+      }
+      else{
+      // Real wells
+        int i = 0;
+        for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+          std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+          BlockedLogsCommon * blocked_log = iter->second;
+          if (seismicParameters.GetCovEstimated()){
+            spat_real_well_filter->SetPriorSpatialCovariance(blocked_log, i, cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho);
+          }
+          else{
+            spat_real_well_filter->setPriorSpatialCorr(cov_vp, blocked_log, i);
+          }
+          i++;
+        }
       }
 
-      covVp->endAccess();
+      cov_vp->endAccess();
+      cov_vs->endAccess();
+      cov_rho->endAccess();
+      cov_vpvs->endAccess();
+      cov_vprho->endAccess();
+      cov_vsrho->endAccess();
     }
 
     fftw_real * corrT = seismicParameters.extractParamCorrFromCovVp(nzp_);
 
-    seismicParameters.SetCorrT(corrT); //Need to store separatly because later CovVp is transformed
+    seismicParameters.SetCorrT(corrT); //Need to store separately because later CovVp is transformed
 
     errCorr_ = modelAVOstatic->GetErrCorr();
 
@@ -214,11 +269,14 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
+    //
+    // DO FILTERING
+    //
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
-    if(spatwellfilter != NULL && modelSettings->getFaciesProbFromRockPhysics() == false)
-      spatwellfilter->doFiltering(modelGeneral->GetBlockedWells(),
+    if(modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false)
+      spat_real_well_filter->doFiltering(modelGeneral->GetBlockedWells(),
                                   modelSettings->getNoVsFaciesProb(),
                                   activeAngles,
                                   this,
@@ -226,7 +284,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
                                   seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
-      computeFaciesProb(spatwellfilter, useFilter, seismicParameters);
+      computeFaciesProb(spat_real_well_filter, spat_synt_well_filter, useFilter, seismicParameters);
     }
     if(modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
@@ -254,8 +312,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   seismicParameters.SetPostCovRho00(postCovRho00_);
 
 
-  delete spatwellfilter;
-
+  delete spat_real_well_filter;
+  delete spat_synt_well_filter;
 }
 
 AVOInversion::~AVOInversion()
@@ -1629,9 +1687,10 @@ AVOInversion::printEnergyToScreen()
 
 
 void
-AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
-                                bool                            useFilter,
-                                SeismicParametersHolder       & seismicParameters)
+AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredRealLogs,
+                                SpatialSyntWellFilter             * filteredSyntLogs,
+                                bool                                useFilter,
+                                SeismicParametersHolder           & seismicParameters)
 {
   ModelSettings * modelSettings = modelSettings_;
 
@@ -1729,7 +1788,8 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               seismicParameters,
                               modelAVOdynamic_->GetLocalNoiseScales(),
                               modelSettings_,
-                              filteredlogs,
+                              filteredRealLogs,
+                              filteredSyntLogs,
                               blocked_wells_,
                               modelGeneral_->GetTrendCubes(),
                               simbox_->getdz(),
@@ -1769,7 +1829,8 @@ AVOInversion::computeFaciesProb(SpatialWellFilter             * filteredlogs,
                               seismicParameters,
                               modelAVOdynamic_->GetLocalNoiseScales(),
                               modelSettings_,
-                              filteredlogs,
+                              filteredRealLogs,
+                              filteredSyntLogs,
                               blocked_wells_,
                               modelGeneral_->GetTrendCubes(),
                               simbox_->getdz(),

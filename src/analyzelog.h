@@ -87,7 +87,7 @@ private:
                                       const std::vector<Simbox *>                              & interval_simboxes,
                                       bool                                                     & enough_data_for_corr_estimation,
                                       NRLib::Vector                                            & regression_coef,
-                                      double                                                   & var_vs_resid,
+                                      std::vector<double>                                      & residual_variance_vs,
                                       double                                                     dz_min,
                                       std::vector<double>                                        dz_rel,
                                       const std::vector<std::vector<NRLib::Grid<float> *> >    & background,
@@ -104,7 +104,7 @@ private:
                                                  bool                                                 all_Vs_logs_synthetic,
                                                  bool                                                 all_Vs_logs_non_synthetic,
                                                  NRLib::Vector                                      & regression_coef,
-                                                 double                                             & var_vs_resid,
+                                                 std::vector<double>                                & residual_variance_vs,
                                                  float                                                dt,
                                                  int                                                  max_nd,
                                                  int                                                  min_blocks_with_data_for_corr_estim,
@@ -184,7 +184,8 @@ private:
   std::vector<std::string>                              well_names_;
   int                                                   n_wells_;             // Number of wells
   NRLib::Vector                                         regression_coef_vs_;  // Regression coefficients for Vs ~ Vp + Rho in case of mixture of synthetic and non-synt wells (CRA-257)
-  double                                                var_vs_resid_;        // Variance of residuals for the Vs regression
+  std::vector<double>                                   residual_variance_vs_;
+  //double                                                var_vs_resid_;        // Variance of residuals for the Vs regression
 
   std::string                                           interval_name_;
   std::vector<NRLib::Matrix >                           auto_cov_;

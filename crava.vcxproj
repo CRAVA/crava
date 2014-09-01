@@ -350,6 +350,8 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\spatialrealwellfilter.cpp" />
+    <ClCompile Include="src\spatialsyntwellfilter.cpp" />
     <ClCompile Include="src\spatialwellfilter.cpp" />
     <ClCompile Include="src\state4d.cpp" />
     <ClCompile Include="src\tasklist.cpp" />
@@ -1373,6 +1375,8 @@
     <ClInclude Include="src\cravaresult.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
     <ClInclude Include="src\seismicstorage.h" />
+    <ClInclude Include="src\spatialrealwellfilter.h" />
+    <ClInclude Include="src\spatialsyntwellfilter.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
     <ClInclude Include="src\background.h" />

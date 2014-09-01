@@ -80,7 +80,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, facies_nr_wells_,
                             facies_names_wells_, model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
-  // 5. block wells for estimation
+  // 5.1 block wells for estimation
   // if well position is to be optimized or
   // if wavelet/noise should be estimated or
   // if correlations should be estimated
@@ -107,9 +107,11 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (!model_settings->getOptimizeWellLocation())
     optimize_well_location_ = true;
 
-  //Block wells for inversion purposes, ok now that moving of wells is done.
-  inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+  // 5.2 Block wells for inversion purposes, ok now that moving of wells is done.
+  if (wells_.size() > 0 && read_wells_) {
+    inversion_wells_ = BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                  discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
+  }
 
   // 9. Trend Cubes
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
@@ -167,31 +169,34 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 13. Setup of prior correlation
   if(read_seismic_) {
     if(model_settings->getEstimateCorrelations() == true) {
-      //Block wells for inversion purposes
+      // 5.3 Block wells for inversion purposes
+      //if (wells_.size() > 0 && read_wells_){
       correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
-
-      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
-      if(read_wells_ && setup_multigrid_ && correlation_wells_) {
+      //}
+      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as an estimate, the min number of blocks is set to 100; ref Ragnar Hauge
+      if(read_wells_ || setup_multigrid_ || correlation_wells_) {
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
-                                                         multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
-                                                         background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
-                                                         prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
+                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
+                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
       }
       else{
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
       }
     }
     else{
-      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
-                                                       multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
-                                                       background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
-                                                       prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+                                                  multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
+                                                  background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
+                                                  prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
     }
   }
   else{
     err_text += "Could not set up prior correlations since this requires seismic data.\n";
   }
+
+
 
   // 14. Set up TimeLine class
   setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
@@ -7964,9 +7969,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         // Number of bins
         int n_corr_T = interval_simboxes[i]->GetNZpad();
         if((n_corr_T % 2) == 0)
-          n_corr_T = n_corr_T/2+1;
-        else
           n_corr_T = n_corr_T/2;
+        else
+          n_corr_T = n_corr_T/2+1;
 
         if(!estimate_temp_corr) {
           // 2. Use variogram with correlation range
@@ -8026,6 +8031,8 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             failed_param_cov = true;
           }
           // Second possibility: Estimate over all intervals if the multiple interval setting is being used
+          // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
+          /*
           else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL) {
             std::vector<Simbox *> temp_simboxes;
             for (size_t j = 0; j < interval_simboxes.size(); j++)
@@ -8037,6 +8044,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               failed_temp_corr = true;
             }
           }
+          */
 
           if(err_text == "") {
             NRLib::Matrix param_cov_array_temp;
@@ -8125,7 +8133,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
     if(failed_temp_corr == true || failed_param_cov == true)
     {
-      err_text += "Could not construct prior correlation. Unknown why...\n";
+      err_text += "Could not estimate prior covariance.\n";
       failed = true;
     }
 

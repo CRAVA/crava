@@ -1008,6 +1008,12 @@
     <ClCompile Include="src\cravaresult.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\spatialrealwellfilter.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\spatialsyntwellfilter.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\tasklist.h">
@@ -1698,6 +1704,12 @@
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
     <ClInclude Include="src\cravaresult.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\spatialrealwellfilter.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\spatialsyntwellfilter.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
   </ItemGroup>

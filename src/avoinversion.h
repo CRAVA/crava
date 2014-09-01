@@ -5,9 +5,9 @@
 #ifndef AVOINVERSION_H
 #define AVOINVERSION_H
 
-#include "fftw.h"
 #include "definitions.h"
 #include "libs/nrlib/flens/nrlib_flens.hpp"
+#include "fftw.h"
 
 class ModelGeneral;
 class ModelAVOStatic;
@@ -26,6 +26,8 @@ class GridMapping;
 class ModelSettings;
 class SpatialWellFilter;
 class SeismicParametersHolder;
+class SpatialSyntWellFilter;
+class SpatialRealWellFilter;
 
 class BlockedLogsCommon;
 
@@ -77,9 +79,10 @@ private:
   int                simulate(SeismicParametersHolder & seismicParameters, RandomGen * randomGen );
   int                computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral);
   void               printEnergyToScreen();
-  void               computeFaciesProb(SpatialWellFilter       * filteredlogs,
-                                       bool                      useFilter,
-                                       SeismicParametersHolder & seismicParameters);
+  void               computeFaciesProb(SpatialRealWellFilter             * filteredRealLogs,
+                                       SpatialSyntWellFilter             * filteredSyntLogs,
+                                       bool                                useFilter,
+                                       SeismicParametersHolder           & seismicParameters);
   void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
   void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
   void               computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
