@@ -26,9 +26,7 @@ class GridMapping;
 class ModelSettings;
 class SpatialWellFilter;
 class SeismicParametersHolder;
-
 class BlockedLogsCommon;
-
 
 class AVOInversion
 {

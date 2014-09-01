@@ -248,7 +248,7 @@ CommonData::~CommonData() {
     }
   }
 
-  if (multiple_interval_grid_ != NULL){
+  if (multiple_interval_grid_ != NULL) {
     delete multiple_interval_grid_;
     multiple_interval_grid_ = NULL;
   }
@@ -327,24 +327,30 @@ CommonData::~CommonData() {
   // local_noise_scales_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_noise_scales_.begin(); it != local_noise_scales_.end(); it++) {
     for (size_t j = 0; j < local_noise_scales_.size(); j++) {
-      delete local_noise_scales_.find(it->first)->second[j];
-      local_noise_scales_.find(it->first)->second[j] = NULL;
+      if (local_noise_scales_.find(it->first)->second[j] != NULL) {
+        delete local_noise_scales_.find(it->first)->second[j];
+        local_noise_scales_.find(it->first)->second[j] = NULL;
+      }
     }
   }
 
   // local_shifts_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_shifts_.begin(); it != local_shifts_.end(); it++) {
     for (size_t j = 0; j < local_shifts_.size(); j++) {
-      delete local_shifts_.find(it->first)->second[j];
-      local_shifts_.find(it->first)->second[j] = NULL;
+      if (local_shifts_.find(it->first)->second[j] != NULL) {
+        delete local_shifts_.find(it->first)->second[j];
+        local_shifts_.find(it->first)->second[j] = NULL;
+      }
     }
   }
 
   // local_scales_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_scales_.begin(); it != local_scales_.end(); it++) {
     for (size_t j = 0; j < local_scales_.size(); j++) {
-      delete local_scales_.find(it->first)->second[j];
-      local_scales_.find(it->first)->second[j] = NULL;
+      if (local_scales_.find(it->first)->second[j] != NULL) {
+        delete local_scales_.find(it->first)->second[j];
+        local_scales_.find(it->first)->second[j] = NULL;
+      }
     }
   }
 
@@ -3091,17 +3097,17 @@ bool CommonData::WaveletHandling(ModelSettings                              * mo
 
     wavelets[i].resize(n_angles, NULL);
 
-    std::vector<Grid2D *> local_noise_scale(n_angles, NULL); ///< Scale factors for local noise
-    std::vector<Grid2D *> local_shift(n_angles, NULL);
-    std::vector<Grid2D *> local_scale(n_angles, NULL);
+    std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
+    std::vector<Grid2D *> local_shift(n_angles);
+    std::vector<Grid2D *> local_scale(n_angles);
 
     bool has_3D_wavelet = false;
 
     for (int j = 0; j < n_angles; j++) {
 
       local_noise_scale[j] = NULL;
-      local_shift[j] = NULL;
-      local_scale[j] = NULL;
+      local_shift[j]       = NULL;
+      local_scale[j]       = NULL;
 
       if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
         has_3D_wavelet = true;
@@ -3552,6 +3558,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      local_shift,
                                      angle);
         wavelet->setShiftGrid(local_shift);
+
+        if (wavelet_pre_resampling != NULL)
+          wavelet_pre_resampling->setShiftGrid(new Grid2D(*local_shift));
       }
 
       if (useLocalGain) {
@@ -3563,6 +3572,10 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      local_scale,
                                      angle);
         wavelet->setGainGrid(local_scale);
+
+        if (wavelet_pre_resampling != NULL)
+          wavelet_pre_resampling->setGainGrid(new Grid2D(*local_scale));
+
       }
     }
   }
@@ -7820,14 +7833,13 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     // Consistency check that only one option (file or rock physics) is possible, is done in XmlModelFile::checkInversionConsistency
     //
     //std::vector<NRLib::Grid2D<double> >     param_corr_array;
-    float                                ** temp_array;
     bool                                    failed_param_cov  = false;
     std::string                             tmp_err_text = "";
 
     // 1. If there is a param corr file defined, use this
     if(param_cov_file != "") {
       //prior_param_corr_.resize(n_intervals);
-      temp_array = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text);
+      float ** temp_array = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text);
       ValidateCovarianceMatrix(temp_array, model_settings, tmp_err_text);
       if(temp_array == NULL || tmp_err_text != "") {
         err_text += "Reading of file " + param_cov_file + " for parameter covariance matrix failed\n";
@@ -7846,13 +7858,18 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           }
         }
       }
+
+      for(int j=0; j<3; j++)
+        delete [] temp_array[j];
+      delete [] temp_array;
+
     }
     // 2. If there is no param correlation file and rock physics is used,
     // get param corr at lag 0 from the rock physics distribution.
     // (One 3x3 correlation matrix per interval)
     else if (param_cov_from_rock_physics) {
 
-      temp_array = new float * [3];
+      float ** temp_array = new float * [3];
       for(size_t i=0;i<3;i++) {
           temp_array[i] = new float[3];
       }
@@ -7891,6 +7908,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         failed_param_cov = true;
       }
       // 3 Parameter estimation from well data -> further down
+
+      for(int j=0; j<3; j++)
+        delete [] temp_array[j];
+      delete [] temp_array;
     }
     else {
       for (size_t i = 0; i < n_intervals; i++) {
@@ -7918,7 +7939,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     bool estimate_temp_corr               = (corr_time_file    == "" && model_settings->getUseVerticalVariogram() == false);
 
     bool failed_temp_corr                 = false;
-    failed_param_cov                     = false;
+    failed_param_cov                      = false;
 
     for (size_t i = 0; i<n_intervals; i++) {
       if(!failed_temp_corr && !failed_param_cov) {
@@ -8075,14 +8096,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         }
       }
     }
-
-    // Delete parameter correlation matrices
-
-    //H-failed in test_case 18
-    //for(int j=0; j<3; j++)
-    //  delete [] temp_array[j];
-    //delete [] temp_array;
-
 
     if(failed_temp_corr == true || failed_param_cov == true)
     {

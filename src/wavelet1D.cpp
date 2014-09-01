@@ -149,17 +149,6 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         errTxt  += "The seismic data in stack " + NRLib::ToString(iAngle) + " have zero amplitudes in well \'"+blocked_log->GetWellName()+"\'.\n";
       }
 
-      //H-DEBUGGING
-      //std::string file_name = "test/seislog";
-      //std::ofstream file;
-      //NRLib::OpenWrite(file, file_name);
-      //file << std::fixed
-      //      << std::setprecision(6);
-      //for (int k = 0; k < seisLog.size(); k++)
-      //  //if (seisLog[k] != RMISSING)
-      //    file << seisLog[k] << " ";
-      //file.close();
-
       //
       // Check seismic data outside estimation interval missing
       //
@@ -421,7 +410,7 @@ Wavelet1D::Wavelet1D(int difftype,
 {
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
-  rAmp_       = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_       = RMISSING;
   int i;
@@ -472,7 +461,7 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet,
 {
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   int i;
 
@@ -733,7 +722,6 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                   
 
   return scale1;
 }
-
 
 float
 Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,

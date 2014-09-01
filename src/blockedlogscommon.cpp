@@ -38,6 +38,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   last_M_                       = IMISSING;
   first_B_                      = IMISSING;
   last_B_                       = IMISSING;
+  lateral_threshold_gradient_   = RMISSING;
+  sigma_m_                      = RMISSING;
   //n_blocks_with_data_.resize(1,0);
 
   // FACIES
@@ -113,6 +115,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   last_M_                       = IMISSING;
   first_B_                      = IMISSING;
   last_B_                       = IMISSING;
+  lateral_threshold_gradient_   = RMISSING;
+  sigma_m_                      = RMISSING;
 
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
@@ -2970,7 +2974,7 @@ void BlockedLogsCommon::GetBlockedGrid(SeismicStorage         * grid,
                                        int                      j_offset) const
 {
   grid->SetRandomAccess(); //Needed if grid is FFTGrid.
-  for (int m = 0 ; m < static_cast<float>(n_blocks_) ; m++) {
+  for (int m = 0; m < static_cast<float>(n_blocks_); m++) {
     //LogKit::LogFormatted(LogKit::Low,"m=%d  ipos_[m], jpos_[m], kpos_[m] = %d %d %d\n",m,ipos_[m], jpos_[m], kpos_[m]);
     blocked_log[m] = grid->GetRealTraceValue(estimation_simbox, i_pos_[m]+i_offset, j_pos_[m]+j_offset, k_pos_[m]);
   }

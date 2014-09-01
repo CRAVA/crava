@@ -10,7 +10,6 @@
 
 #include "nrlib/segy/segy.hpp"
 #include "src/definitions.h"
-#include "src/simbox.h"
 
 class FFTGrid;
 class Simbox;

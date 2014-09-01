@@ -10,6 +10,13 @@
 #include <cmath>
 
 #include "src/cravaresult.h"
+#include "src/multiintervalgrid.h"
+#include "src/blockedlogscommon.h"
+#include "src/commondata.h"
+#include "src/seismicparametersholder.h"
+#include "src/krigingdata3d.h"
+#include "src/parameteroutput.h"
+#include "src/wavelet1D.h"
 
 CravaResult::CravaResult():
 cov_vp_(NULL),
@@ -31,14 +38,12 @@ block_grid_(NULL),
 facies_prob_undef_(NULL),
 quality_grid_(NULL),
 write_crava_(false),
-//reflection_matrix_(NULL),
 n_intervals_(1)
 {
 }
 
 CravaResult::~CravaResult()
 {
-  //
   for (size_t i = 0; i < corr_T_.size(); i++) {
     if (corr_T_[i] != NULL) {
       fftw_free(corr_T_[i]);
@@ -139,7 +144,6 @@ CravaResult::~CravaResult()
       delete background_rho_intervals_[i];
   }
   */
-
 
   for (size_t i = 0; i < simulations_seed0_.size(); i++) {
     delete simulations_seed0_[i];
@@ -1338,6 +1342,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       for (int i = 0; i < n_timelapses; i ++) {
 
+        //H-TODO: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
+
         int n_angles              = model_settings->getNumberOfAngles(i);
         std::vector<float> angles = model_settings->getAngle(i);
         std::vector<float> offset = model_settings->getLocalSegyOffset(i);
@@ -1401,10 +1407,12 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
             if (storm_tmp != NULL)
               delete storm_tmp;
-            if (segy != NULL)
-              delete segy;
+            //if (segy != NULL)
+            //  delete segy;
             if (seismic_storm != NULL)
               delete seismic_storm;
+            if (nrlib_grid != NULL)
+              delete nrlib_grid;
 
           }
           else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
@@ -1439,8 +1447,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
             }
 
-            if (storm != NULL)
-              delete storm;
+            //if (storm != NULL)
+            //  delete storm;
           }
           else { //FFTGrid
 
@@ -1456,8 +1464,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
               fft_grid->writeCravaFile(file_name_crava, &simbox);
             }
 
-            if (fft_grid != NULL)
-              delete fft_grid;
+            //if (fft_grid != NULL)
+            //  delete fft_grid;
           }
 
         }
@@ -1476,9 +1484,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                        *model_settings->getTraceHeaderFormatOutput());
 
       if (write_crava_) {
-        std::string file_name_vp  = IO::PrefixBackground() + "Vp" ;
-        std::string file_name_vs  = IO::PrefixBackground() + "Vs" ;
-        std::string file_name_rho = IO::PrefixBackground() + "Rho";
+        std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
+        std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
+        std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
 
         ExpTransf(background_vp_intervals_[0]);
         background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);

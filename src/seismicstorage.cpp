@@ -10,11 +10,8 @@
 #include <cmath>
 
 #include "src/seismicstorage.h"
-#include "src/definitions.h"
-//#include "src/commondata.h"
 #include "src/fftgrid.h"
-
-//#include "libs/nrlib/surface/surface.hpp"
+#include "src/simbox.h"
 
 SeismicStorage::SeismicStorage()
 {

@@ -27,6 +27,7 @@
 #include "src/io.h"
 #include "src/tasklist.h"
 #include "src/seismicparametersholder.h"
+#include "src/commondata.h"
 
 #include "lib/utils.h"
 #include "lib/random.h"
@@ -49,7 +50,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                  int                       t,
                                  int                       i_interval)
 { //Time lapse constructor
-  //reflection_matrix_        = NULL;
   failed_                   = false;
   this_timelapse_           = t;
   bool failed_loading_model = false;
@@ -57,8 +57,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   local_noise_scale_        = common_data->GetLocalNoiseScaleTimeLapse(this_timelapse_);
   use_local_noise_          = common_data->GetUseLocalNoise();
 
-  //estimateWavelet_        = modelSettings->getEstimateWavelet(thisTimeLapse_);
-  //matchEnergies_          = modelSettings->getMatchEnergies(thisTimeLapse_);
   wavelets_.  resize(number_of_angles_);
   seis_cubes_.resize(number_of_angles_);
   sn_ratio_.  resize(number_of_angles_);
@@ -89,6 +87,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   //Seismic data: resample seismic-data from correct vintage into the simbox for this interval.
   seis_cubes_.resize(number_of_angles_);
+  seismic_types_.resize(number_of_angles_);
 
   int nx  = simbox->getnx();
   int ny  = simbox->getny();
@@ -101,16 +100,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data for angle %4.1f ", theta_deg_[i]);
 
-    seis_cubes_[i] = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
-    seis_cubes_[i]->createRealGrid();
-    seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
-
     int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSeismicType();
     bool is_segy          = false;
     bool is_storm         = false;
     bool scale            = false;
     SegY          * segy  = NULL;
     StormContGrid * storm = NULL;
+
+    seismic_types_.push_back(seismic_type);
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSegY();
@@ -129,6 +126,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       seis_cubes_[i]->setType(FFTGrid::DATA);
     }
     else { //Resample storm or segy to seis_cube
+
+      seis_cubes_[i] = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
+      seis_cubes_[i]->createRealGrid();
+      seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
 
       int missing_traces_simbox  = 0;
       int missing_traces_padding = 0;
@@ -205,7 +206,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   std::vector<bool> wavelet_estimated = model_settings->getEstimateWavelet(this_timelapse_); //vector over angles
 
   wavelets_.resize(number_of_angles_);
-  //wavelets_ = common_data->GetWavelet(this_timelapse_);
 
   //Stored in Commondata for wavelets (Per timelapse, per angle):
   //local_noise_scale  //Updated above (taken directly from commonData)
@@ -218,7 +218,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   for (int i = 0; i < number_of_angles_; i++) {
 
     //Copy wavelets, since they may be resampled in cravaresult
-    //wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
     wavelets_[i] = new Wavelet1D(common_data->GetWavelet(this_timelapse_)[i]);
     wavelets_[i]->scale(common_data->GetWavelet(this_timelapse_)[i]->getScale()); //Not copied in copy-constructor
 
@@ -423,14 +422,16 @@ ModelAVODynamic::~ModelAVODynamic(void)
   }
   */
 
-  for (int i = 0 ; i < static_cast<int>(local_noise_scale_.size()) ; i++) {
-    if (local_noise_scale_[i] != NULL)
-      delete local_noise_scale_[i];
-  }
+  //for (int i = 0 ; i < static_cast<int>(local_noise_scale_.size()) ; i++) {
+  //  if (local_noise_scale_[i] != NULL)
+  //    delete local_noise_scale_[i];
+  //}
 
-  //for (int i=0;i<number_of_angles_;i++)
-  //  if (seis_cubes_[i] != NULL)
-  //    delete seis_cubes_[i];
+  for (int i = 0; i < number_of_angles_; i++)
+    if (seismic_types_[i] != 3) { //==3 seismic data only a reference to CommonData
+      if (seis_cubes_[i] != NULL)
+        delete seis_cubes_[i];
+    }
 }
 
 void

@@ -86,8 +86,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     // if multiple-intervals is NOT used in model settings
     else {
 
-      int nz = model_settings->getTimeNz("");
-
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
@@ -110,12 +108,12 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
         double dz = model_settings->getTimeDz();
         if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
-          nz = static_cast<int>(0.5+lz/dz);
+          int nz = static_cast<int>(0.5+lz/dz);
           model_settings->setTimeNz("", nz);
         }
-
       }
 
+      int nz = model_settings->getTimeNz("");
       desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
     }
   }

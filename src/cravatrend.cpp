@@ -89,14 +89,6 @@ CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
       sampling[n_samples_-1] = max;
 
       trend_cube_sampling_.push_back(sampling);
-
-      //H-Writing
-      //if(model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
-      //  std::string fileName = IO::PrefixTrendCubes() + "_" + interval_name + trend_cube_parameters[grid_number];
-      //  writeToFile(interval_simbox, trend_cube, fileName, "trend cube");
-      //}
-
-      //delete trend_cube;
     }
   }
 }

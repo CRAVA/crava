@@ -12,21 +12,15 @@
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/modelsettings.h"
-
-#include "src/multiintervalgrid.h"
-#include "src/blockedlogscommon.h"
-#include "src/commondata.h"
-#include "src/seismicparametersholder.h"
-#include "src/krigingdata3d.h"
-#include "src/parameteroutput.h"
-
-#include "src/wavelet1D.h"
+#include "nrlib/well/well.hpp"
 
 class FFTGrid;
 class Simbox;
 class CommonData;
 class ParameterOutput;
 class Wavelet1D;
+class MultiIntervalGrid;
+class BlockedLogsCommon;
 
 class CravaResult
 {

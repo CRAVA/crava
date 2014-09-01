@@ -77,7 +77,7 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
     delete avoinversion;
   }
 
-  //delete modelAVOdynamic;
+  delete modelAVOdynamic;
 
   return(failedLoadingModel);
 }

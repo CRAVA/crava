@@ -74,7 +74,7 @@ Wavelet::Wavelet(int       dim,
 
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   if(isReal_)
@@ -160,7 +160,7 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
   double t;
@@ -229,7 +229,7 @@ Wavelet::setupAsVector(int nz, int nzp)
   nzp_  = nzp;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   coeff_[0] = 0;
@@ -243,8 +243,8 @@ Wavelet::~Wavelet()
     delete shiftGrid_;
   if(gainGrid_!=NULL)
     delete gainGrid_;
-  //fftw_free(rAmp_);
-  delete [] rAmp_;
+  fftw_free(rAmp_); //H
+  //delete [] rAmp_;
   //delete    cAmp_;
 }
 
@@ -429,7 +429,7 @@ Wavelet::resample(float dz,
   int cnzp  =  nzp/2 + 1;
   int rnzp  =  2*cnzp;
 
-  fftw_real * wlet  = new fftw_real[rnzp];//static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
+  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp )); //new fftw_real[rnzp];
 
   float z;
   for(int k=0; k < rnzp; k++) {
@@ -477,7 +477,7 @@ Wavelet::shiftFromFFTOrder()
   assert(isReal_);
   assert(inFFTorder_);
 
-  fftw_real * wlet  = new fftw_real[nzp_];
+  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*nzp_ ));//new fftw_real[nzp_];
 
   int index = 0;
   float z;
@@ -917,7 +917,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
                          float                                        dzOut) const
 {
   // assumes dz[w] < dzOut for all w
-  fftw_real * wave= new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  fftw_real * wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   for(int i=0; i<nzp; i++)
     wave[i] = 0.0; // initialize
 
@@ -1292,7 +1292,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
   nzp   = nz_;
   cnzp  = nzp_/2+1;
   rnzp  = 2*cnzp_;
-  rAmp  = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  rAmp  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
   cAmp  = reinterpret_cast<fftw_complex*>(rAmp);
   norm  = RMISSING;
 
@@ -1396,7 +1396,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = new fftw_real[rnzp_];//static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
 

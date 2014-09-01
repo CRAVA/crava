@@ -937,7 +937,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   std::vector<std::string>                                     discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
 
   // Trend cubes and rock physics
-  std::vector<CravaTrend>                                      trend_cubes_;              //Trend cubes per interval.
+  std::vector<CravaTrend>                                      trend_cubes_;            //Trend cubes per interval.
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model. Outer map: Inner vector:
   std::map<std::string, std::vector<DistributionWithTrend *> > reservoir_variables_;    ///< Reservoir variables used in the rock physics model. Outer map: Inner vector:
 
@@ -961,7 +961,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   // Wavelet
   std::vector<Wavelet*>                                        temporary_wavelets_;            ///< Wavelet per angle
-  std::map<int, std::vector<Wavelet *> >                       wavelets_; //Map time_lapse, vector angles
+  std::map<int, std::vector<Wavelet *> >                       wavelets_;                      //Map time_lapse, vector angles
   std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
   std::map<int, std::vector<Grid2D *> >                        local_shifts_;
   std::map<int, std::vector<Grid2D *> >                        local_scales_;

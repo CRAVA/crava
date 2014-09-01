@@ -157,7 +157,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       seismicParameters.SetCorrTFiltered(corrTFiltered);
     }
 
-    if(simbox_->getIsConstantThick() == false) //H
+    if(simbox_->getIsConstantThick() == false)
       divideDataByScaleWavelet(seismicParameters);
 
     for (int i = 0 ; i < ntheta_ ; i++){
@@ -883,7 +883,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       // Copy matrix A to float**
       float ** A = new float * [3];
       for (int i = 0; i < ntheta_; i++)
-        A[i] = new float(3);
+        A[i] = new float[3]; //H
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
           A[i][j] = static_cast<float>(A_(i,j));
