@@ -263,9 +263,10 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   // are now integrated in auto_cov
   //
   if (cov_estimated){
-    double eps = 0.00000001;
+    double eps = std::pow(10.0,-10.0);
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
-
+    //NRLib::Vector pos(auto_cov.size());
+    //NRLib::Vector neg(auto_cov.size());
     circ_auto_cov.resize(3);
     for(int i = 0; i < 3; i++){
       circ_auto_cov[i].resize(3);
@@ -273,18 +274,27 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
         std::vector<double> corr_t_positive(auto_cov.size());
         std::vector<double> corr_t_negative(auto_cov.size());
         assert(auto_cov[0](i,j) == auto_cov[0](j,i)); // This condition must be true
+        //LogKit::LogFormatted(LogKit::Low,"\nAuto Cov "+ CommonData::ConvertIntToString(i) + CommonData::ConvertIntToString(j) + ": " + CommonData::ConvertFloatToString( auto_cov[0](i,j)) +"\n");
         for (size_t k = 0; k < auto_cov.size(); k++){
-          if(abs(auto_cov[0](i,j)) > eps){ // If the autocovariance in lag 0 is 0 to floating point precision the algorithm fails
+          if(std::abs(auto_cov[0](i,j)) > eps){ // If the autocovariance in lag 0 is 0 to floating point precision the algorithm fails
             corr_t_positive[k] = auto_cov[k](i,j);//auto_cov[0](i,j); // ComputeCircAutoCov scales the values with the first element
             corr_t_negative[k] = auto_cov[k](j,i);//auto_cov[0](j,i);
+            //pos(k) = corr_t_positive[k];
+            //neg(k) = corr_t_negative[k];
           }
           else{
             corr_t_positive[k] = 0;
+            corr_t_negative[k] = 0;
           }
         }
+        //std::string s1 = "vec_pos_" + CommonData::ConvertIntToString(i) + CommonData::ConvertIntToString(j) + ".dat";
+        //std::string s2 = "vec_neg_" + CommonData::ConvertIntToString(i) + CommonData::ConvertIntToString(j) + ".dat";
+        //NRLib::WriteVectorToFile(s1, pos);
+        //NRLib::WriteVectorToFile(s2, neg);
         circ_auto_cov [i][j]= ComputeCircAutoCov(corr_t_positive, corr_t_negative, nzp);
       }
     }
+
 
     //
     // Ensure that the covariance structure is positive definite by
@@ -293,11 +303,27 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     LogKit::LogFormatted(LogKit::Low,"\nMaking estimated autocovariance positive definite..\n");
     MakeCircAutoCovPosDef(circ_auto_cov, nzp);
 
+
     //
     // Taper the circular autocov vector
     //
     LogKit::LogFormatted(LogKit::Low,"\nTapering autocovariance estimates..\n");
     TaperCircAutoCovFunction(circ_auto_cov, nzp, dz);
+
+    /*
+        NRLib::Matrix cov(3,3);
+    for(int k = 0; k < nzp; k++){
+      for(int i = 0; i < 3; i++){
+        for(int j = 0; j < 3; j++){
+          cov(i,j) = circ_auto_cov[i][j][k];
+        }
+      }
+      std::string s = "cov_" + CommonData::ConvertIntToString(k);
+      NRLib::WriteMatrix(s, cov);
+    }
+    exit(1);
+    */
+
 
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
@@ -557,10 +583,31 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<doubl
 {
   //assert(auto_cov[0].numCols() >= static_cast<int>(j) && auto_cov[0].numRows() >= static_cast<int>(i));
 
+  bool even = true;
+  if (nzp%2 != 0)
+    even = false;
+
   size_t n = corr_t_pos.size();
 
   fftw_real * circ_auto_cov = reinterpret_cast<fftw_real*>(fftw_malloc(2*(nzp/2+1)*sizeof(fftw_real)));
-  bool positive;
+  //fftw_real * circ_auto_cov = reinterpret_cast<fftw_real*>(fftw_malloc(nzp*sizeof(fftw_real)));
+  //size_t vector_len = corr_t_pos.size();
+
+ 
+  for (int k = 0; k < nzp; k++)
+    circ_auto_cov[k] = 0;       // Initialize to 0
+
+  for (size_t k = 0; k < n; k++){
+    circ_auto_cov[k] = static_cast<fftw_real>(corr_t_pos[k]);
+    if (k < n -1)
+      circ_auto_cov[nzp-k-1] = static_cast<fftw_real>(corr_t_neg[k + 1]);
+  }
+
+  for(int k = nzp; k < 2*(nzp/2+1); k++)
+    circ_auto_cov[k] = RMISSING;
+
+
+  /*
   for(int k = 0; k < 2*(nzp/2+1); k++ ) {
     if(k < nzp) {
       size_t refk;
@@ -587,6 +634,7 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<doubl
     else
       circ_auto_cov[k] = RMISSING;
   }
+  */
 
   return circ_auto_cov;
 }
@@ -745,16 +793,25 @@ void      SeismicParametersHolder::TaperCircAutoCovFunction(std::vector<std::vec
                                                             int                                         nzp,
                                                             double                                      dz) const
 {
+  double eps                                  = std::pow(10.0,-10.0);
   double std_dev                              = static_cast<double>(50)/dz;   // 50 ms is the standard deviation, ref Odd Kolbjørnsen
   if (std_dev > static_cast<double>(nzp)/2.0)
     std_dev                                   = static_cast<double>(nzp)/2.0; // If the interval is short, set std dev to nzp/2
 
   fftw_real * taper                           = new fftw_real[nzp];
   for (int i = 0; i < nzp; i++){
-    if (i < nzp/2 + 1)
-      taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)));
-    else
-      taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(nzp - i)/std_dev,2)));
+    if (i < nzp/2 + 1){
+      if (std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)) > eps)
+        taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)));
+      else 
+        taper[i] = 0.0;
+    }
+    else{
+      if (std::exp(-0.5*std::pow(static_cast<float>(nzp - i)/std_dev,2)) > eps)
+        taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(nzp - i)/std_dev,2)));
+      else
+        taper[i] = 0.0;
+    }
   }
 
   for(int i = 0; i < 3; i++){

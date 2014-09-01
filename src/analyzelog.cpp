@@ -1213,6 +1213,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   }
 
 
+
   // CRA-257, Erik N: Should this still be done?
   /************************************************************
   //
@@ -1264,7 +1265,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         //
         // Vp-Vp, Vp-Rho, Rho-Rho or non-synthetic logs
         //
-        if ((j == 0 && k == 0) || (j == 0 && k ==2) || (j ==2 && k == 2) || !all_Vs_logs_synthetic){
+        if ((j == 0 && k == 0) || (j == 0 && k ==2) || (j ==2 && k == 2) || (j ==2 && k==0) || !all_Vs_logs_synthetic){
           if(count[i-1](j,k)>0)                 // Find previous estimated autocov with data
             i_prev[j][k]=i-1;
           if(i_next[j][k]<i+1){
@@ -1286,7 +1287,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         // Vp-Vs, Vs-Vs and Vs-Rho if all Vs logs are synthetic
         //
         else {
-          if ((j==0 && k == 1) || (j == 1 && k == 1)){
+          if ((j == 0 && k == 1) || (j == 1 && k == 1) || (j == 1 && k == 0)){
             // use same weights as for Vp correlations
             i_prev[j][k]      = i_prev[0][0];
             i_next[j][k]      = i_next[0][0];
@@ -1297,7 +1298,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             auto_cov[i](j,k)  = (count[i](0,0)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](0,0)+nipol);
             //auto_cov[i](k,j)  = auto_cov[i](j,k);
           }
-          else if(j == 1 && k ==2){
+          else if((j == 1 && k ==2) || (k == 1 && j == 1)){
             i_prev[j][k]      = i-1;
             i_next[j][k]      = i;
             auto_cov[i](j,k)  = 0.0;

@@ -7965,9 +7965,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         // Number of bins
         int n_corr_T = interval_simboxes[i]->GetNZpad();
         if((n_corr_T % 2) == 0)
-          n_corr_T = n_corr_T/2+1;
-        else
           n_corr_T = n_corr_T/2;
+        else
+          n_corr_T = n_corr_T/2+1;
 
         if(!estimate_temp_corr) {
           // 2. Use variogram with correlation range
@@ -8027,6 +8027,8 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             failed_param_cov = true;
           }
           // Second possibility: Estimate over all intervals if the multiple interval setting is being used
+          // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
+          /*
           else if(analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL) {
             std::vector<Simbox *> temp_simboxes;
             for (size_t j = 0; j < interval_simboxes.size(); j++)
@@ -8038,6 +8040,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               failed_temp_corr = true;
             }
           }
+          */
 
           if(err_text == "") {
             NRLib::Matrix param_cov_array_temp;
@@ -8126,7 +8129,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
     if(failed_temp_corr == true || failed_param_cov == true)
     {
-      err_text += "Could not construct prior correlation. Unknown why...\n";
+      err_text += "Could not estimate prior covariance.\n";
       failed = true;
     }
 

@@ -28,6 +28,7 @@ ModelSettings::ModelSettings(void)
     waveletScale_(0),
     SNRatio_(0),
     matchEnergies_(0),
+    estimateCorrelations_(0),
     estimateWavelet_(0),
     estimateSNRatio_(0),
     estimateLocalNoise_(0),

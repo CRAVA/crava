@@ -56,16 +56,7 @@ SpatialWellFilter::SpatialWellFilter(int    nwells,
 
 SpatialWellFilter::~SpatialWellFilter()
 {
-  int i,j;
-  for(i=0;i<nWells_;i++)
-  {
-    for(j=0;j<n_[i];j++)
-      delete [] priorSpatialCorr_[i][j];
-    delete [] priorSpatialCorr_[i];
-  }
-  delete [] priorSpatialCorr_;
 
-  delete [] n_;
 }
 
 

@@ -125,6 +125,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     // If facies prob are estimated, create the spatial well filter
     if (modelSettings->getDoInversion() && modelSettings->getEstimateFaciesProb()) {
+      // Create Synthetic Well Filter
       if (modelSettings->getFaciesProbFromRockPhysics()){
           // GENERATE SYNTHETIC WELLS
         int nSyntWellsToBeFiltered                                            = 10;
@@ -142,6 +143,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         spat_synt_well_filter->GenerateSyntWellData(rock_distributions, facies_names, trend_min, trend_max, simbox_->getdz(), 
                                                     nSyntWellsPerCombinationOfTrendParams, nBinsTrendVector, syntWellLength);
       }
+      // Create Real Well filter
       else
         spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), seismicParameters.GetCovEstimated());
 
@@ -267,6 +269,9 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     }
     seismicParameters.printPostVariances(postVar0_);
 
+    //
+    // DO FILTERING
+    //
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
     if(modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();

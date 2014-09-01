@@ -41,6 +41,7 @@ SpatialSyntWellFilter::SpatialSyntWellFilter(int    nwells,
 SpatialSyntWellFilter::~SpatialSyntWellFilter()
 {
   int i,j;
+  if (priorSpatialCorr_!= NULL){
   for(i=0;i<nWells_;i++)
   {
     for(j=0;j<n_[i];j++)
@@ -48,7 +49,7 @@ SpatialSyntWellFilter::~SpatialSyntWellFilter()
     delete [] priorSpatialCorr_[i];
   }
   delete [] priorSpatialCorr_;
-
+  }
   delete [] n_;
 }
 
@@ -125,24 +126,26 @@ void  SpatialSyntWellFilter::SetPriorSpatialCovarianceSyntWell(const FFTGrid    
     i1 = ipos[l1];
     j1 = jpos[l1];
     k1 = kpos[l1];
-    for(int l2 = 0; l2 <= l1; l2++)
+    for(int l2 = l1; l2 < n_blocks; l2++)
     {
       i2 = ipos[l2];
       j2 = jpos[l2];
-      k2 = kpos[l2];
-      prior_cov_vp_[wellnr](l1,l2) = cov_vp->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      k2 = kpos[l2];      
+      // Entries on the diagonal of the prior covariance matrix
+      prior_cov_vp_[wellnr](l1,l2) = cov_vp->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_vp_[wellnr](l2,l1) = prior_cov_vp_[wellnr](l1,l2);
-      prior_cov_vs_[wellnr](l1,l2) = cov_vs->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      prior_cov_vs_[wellnr](l1,l2) = cov_vs->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_vs_[wellnr](l2,l1) = prior_cov_vs_[wellnr](l1,l2);
-      prior_cov_rho_[wellnr](l1,l2) = cov_rho->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      prior_cov_rho_[wellnr](l1,l2) = cov_rho->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_rho_[wellnr](l2,l1) = prior_cov_rho_[wellnr](l1,l2);
       
-      prior_cov_vpvs_[wellnr](l1,l2) = cov_vpvs->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-      prior_cov_vpvs_[wellnr](l2,l1) = prior_cov_vpvs_[wellnr](l1,l2);
-      prior_cov_vprho_[wellnr](l1,l2) = cov_vprho->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-      prior_cov_vprho_[wellnr](l2,l1) = prior_cov_vprho_[wellnr](l1,l2);
-      prior_cov_vsrho_[wellnr](l1,l2) = cov_vsrho->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-      prior_cov_vsrho_[wellnr](l2,l1) = prior_cov_vsrho_[wellnr](l1,l2);
+      // Cross covariance entries in the prior cov matrix
+      prior_cov_vpvs_[wellnr](l1,l2) = cov_vpvs->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
+      prior_cov_vpvs_[wellnr](l2,l1) = cov_vpvs->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      prior_cov_vprho_[wellnr](l1,l2) = cov_vprho->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
+      prior_cov_vprho_[wellnr](l2,l1) = cov_vprho->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+      prior_cov_vsrho_[wellnr](l1,l2) = cov_vsrho->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
+      prior_cov_vsrho_[wellnr](l2,l1) = cov_vsrho->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
     }
   }
 }
@@ -236,12 +239,12 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
         j2 = jpos[l2];
         k2 = kpos[l2];
 
-        sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
-        sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
-        sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
-        sigmapri [l1      ][l2      ] = priorCov0(0,0)*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + n  ][l2 + n  ] = priorCov0(1,1)*priorSpatialCorr_[w1][l1][l2];
-        sigmapri [l1 + 2*n][l2 + 2*n] = priorCov0(2,2)*priorSpatialCorr_[w1][l1][l2];
+        //sigmapost[l2 + n  ][l1      ] = sigmapost[l1][n+l2];
+        //sigmapost[l2 + 2*n][l1      ] = sigmapost[l1][2*n+l2];
+        //sigmapost[l2 + n  ][l1 + 2*n] = sigmapost[2*n+l1][n+l2];
+        sigmapri [l1      ][l2      ] = prior_cov_vp_[w1](l1,l2);//priorCov0(0,0)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + n  ][l2 + n  ] = prior_cov_vs_[w1](l1,l2);//priorCov0(1,1)*priorSpatialCorr_[w1][l1][l2];
+        sigmapri [l1 + 2*n][l2 + 2*n] = prior_cov_rho_[w1](l1,l2);//priorCov0(2,2)*priorSpatialCorr_[w1][l1][l2];
         if(l1==l2){
           sigmapost[l1      ][l2      ] += regularization*sigmapost[l1][l2]/sigmapri[l1][l2];
           sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[n+l1][n+l2]/sigmapri[n+l1][n+l2];
@@ -250,12 +253,20 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
           sigmapri [l1 + n  ][l2 + n  ] += regularization;
           sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
         }
+        sigmapri[l1      ][l2 + n  ] = prior_cov_vpvs_[w1](l1,l2);
+        sigmapri[l2      ][l1 + n  ] = prior_cov_vpvs_[w1](l2,l1);
+        sigmapri[l1][l2+2*n]         = prior_cov_vprho_[w1](l1,l2);
+        sigmapri[l2][l1+2*n]         = prior_cov_vprho_[w1](l2,l1);
+        sigmapri[l1 + n  ][l2 + 2*n] = prior_cov_vsrho_[w1](l1,l2);
+        sigmapri[l2 + n  ][l1 + 2*n] = prior_cov_vsrho_[w1](l2,l1);
+        /*
         sigmapri[l1 + n  ][l2      ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
         sigmapri[l2      ][l1 + n  ] = priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
         sigmapri[l1 + 2*n][l2      ] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
         sigmapri[l2      ][l1 + 2*n] = priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
         sigmapri[l1 + n  ][l2 + 2*n] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
         sigmapri[l2 + 2*n][l1 + n  ] = priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
+        */
       }
     }
 
@@ -263,11 +274,11 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
     NRLib::SymmetricMatrix Spost(3*n);
 
     for(int i = 0 ; i < 3*n ; i++)
-      for(int j = 0 ; j <= i ; j++)
+      for(int j = i ; j < 3*n ; j++)
         Sprior(j,i) = sigmapri[j][i];
 
     for(int i = 0 ; i < 3*n ; i++)
-      for(int j = 0 ; j <= i ; j++)
+      for(int j = i ; j < 3*n ; j++)
         Spost(j,i) = sigmapost[j][i];
 
     //
@@ -327,34 +338,37 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
   Timings::setTimeFiltering(wall,cpu);
 }
 
-void SpatialSyntWellFilter::FillValuesInSigmapostSyntWell(double **sigmapost, const int *ipos, const int *jpos, const int *kpos, FFTGrid *covgrid, int n, int ni, int nj)
+void SpatialSyntWellFilter::FillValuesInSigmapostSyntWell(double      ** sigmapost,
+                                                          const int    * ipos,
+                                                          const int    * jpos,
+                                                          const int    * kpos,
+                                                          FFTGrid      * covgrid,
+                                                          int            n,
+                                                          int            ni,
+                                                          int            nj)
 {
-  double minValue = std::pow(10.0,-9);
-  int nz = covgrid->getNz();
-  double factorNorm = 1/sqrt(2*NRLib::Pi);
-  double endValue = covgrid->getRealValueCyclic(0,0,nz-1);
-  double div = 1/(nz*.1);
+  //double minValue = std::pow(10.0,-9);
+  //int nz = covgrid->getNz();
+  //double factorNorm = 1/sqrt(2*NRLib::Pi);
+  //double endValue = covgrid->getRealValueCyclic(0,0,nz-1);
+  //double div = 1/(nz*.1);
   // tapering limit at 90%
-  double smoothLimit = nz*.9;
+  //double smoothLimit = nz*.9;
 
   covgrid->setAccessMode(FFTGrid::RANDOMACCESS);
   int i1, j1, k1, l1, i2, j2, k2, l2;
-  for(l1=0;l1<n;l1++)
+  for(l1 = 0; l1<n; l1++)
   {
     i1 = ipos[l1];
     j1 = jpos[l1];
     k1 = kpos[l1];
-    for(l2=0;l2<n;l2++)
-    {
+    for (l2 = l1 ; l2 < n ; l2++) {
       i2 = ipos[l2];
       j2 = jpos[l2];
       k2 = kpos[l2];
-      if(abs(k2-k1) > smoothLimit){
-        sigmapost[l1+ni][l2+nj] = std::max(endValue*factorNorm*exp(-(div*(abs(k2-k1)-smoothLimit))*(div*(abs(k2-k1)-smoothLimit))*0.5), minValue);
-      }
-      else{
-        sigmapost[l1+ni][l2+nj] = covgrid->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
-      }
+
+      sigmapost[l1+ni][l2+nj] = covgrid->getRealValueCyclic(i1-i2, j1-j2, k2-k1);
+      sigmapost[l2+ni][l1+nj] = covgrid->getRealValueCyclic(i1-i2, j1-j2, k1-k2);
     }
   }
   covgrid->endAccess();
