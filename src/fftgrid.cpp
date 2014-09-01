@@ -1217,7 +1217,7 @@ FFTGrid::getRealTrace(int i, int j) const
 }
 
 float
-FFTGrid::getRealValueCyclic(int i, int j, int k)
+FFTGrid::getRealValueCyclic(int i, int j, int k) const
 {
   float value;
   if(i<0)

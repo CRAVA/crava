@@ -20,8 +20,7 @@ public:
 
   ~SeismicParametersHolder(void);
 
-  //void getMeanReferenceVector(std::vector<FFTGrid *> mu);
-  //void getCovReferenceVector(std::vector<FFTGrid *> sigma);
+  bool                          GetCovEstimated()            const {return cov_estimated_ ;}
 
   FFTGrid                     * GetMeanVp()                        { return meanVp_     ;}
   FFTGrid                     * GetMeanVs()                        { return meanVs_     ;}
@@ -131,7 +130,8 @@ public:
                                                          const int                          & nz,
                                                          const int                          & nxPad,
                                                          const int                          & nyPad,
-                                                         const int                          & nzPad);
+                                                         const int                          & nzPad,
+                                                         double                               dz);
 
   void                          allocateGrids(const int nx,
                                               const int ny,
@@ -145,9 +145,9 @@ public:
 
   float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov,
-                                                   int                                  minIntFq,
-                                                   int                                  nzp) const;
+  fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov_pos, // positive lags
+                                                   const std::vector<double>            & auto_cov_neg, // negative lags
+                                                   int                                    nzp) const;
 
   fftw_real                   * computeCircCorrT(const std::vector<double> & priorCorrT,
                                                  const int                 & minIntFq,
@@ -195,7 +195,8 @@ private:
                                                        const float                         & corrGradI,
                                                        const float                         & corrGradJ,
                                                        const int                           & lowIntCut,
-                                                       const int                           & nzp);
+                                                       const int                           & nzp,
+                                                       double                                dz);
 
   void                          FillInLateralCorr(const Surface       * prior_corr_xy,
                                                   const fftw_real     * circ_auto_cov,
@@ -206,11 +207,12 @@ private:
                                               int nxp, int nyp, int nzp,
                                               bool fileGrid);
 
-  /*
-  void                          MakeCircAutoCovPosDef(fftw_real  * circ_auto_cov,
-                                                     int          minIntFq,
-                                                     int          nzp) const;
-                                                     */
+  void                          TaperCircAutoCovFunction(std::vector<std::vector<fftw_real *> >     & circ_auto_cov,
+                                                         int                                          nzp,
+                                                         double                                       dz) const;
+
+  void                          MakeCircAutoCovPosDef(std::vector<std::vector<fftw_real *> >  & circ_auto_cov,
+                                                      int                                       nzp) const;
 
   void                          makeCircCorrTPosDef(fftw_real * circCorrT,
                                                     const int & minIntFq,
@@ -234,7 +236,8 @@ private:
   FFTGrid * crCovVpRho_;
   FFTGrid * crCovVsRho_;
 
-  NRLib::Matrix priorVar0_;
+  bool            cov_estimated_;
+  NRLib::Matrix   priorVar0_;
 
   //Stored variables for writing:
 

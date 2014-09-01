@@ -6,7 +6,6 @@
 #include "src/fftgrid.h"
 #include "src/modelsettings.h"
 #include <src/simbox.h>
-#include "lib/lib_matr.h"
 
 
 PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double> & d1,    // first dimension of data points
@@ -85,18 +84,25 @@ z_max_(d3_max)
 
   histogram_->fftInPlace();
 
+  NRLib::Matrix sigma_tmp(3,3);
+
+  /*
   double **sigma_tmp = new double *[3];
   for (int i=0;i<3;i++){
     sigma_tmp[i] = new double[3];
   }
+  */
   for(int i=0;i<3;i++){
     for(int j=0; j<3; j++)
-      sigma_tmp[i][j] = sigma[i][j];
+      sigma_tmp(i,j) = sigma[i][j];
     }
   // Matrix inversion of the covariance matrix sigma
+  NRLib::Matrix sigma_inv;
+  /*
   double **sigma_inv = new double *[3];
   for(int i=0; i<3; i++)
     sigma_inv[i] = new double [3];
+  */
 
   InvertSquareMatrix(sigma_tmp,sigma_inv,3);
 
@@ -129,19 +135,13 @@ z_max_(d3_max)
   histogram_->endAccess();
 
   delete smoother;
-  for(int i=0;i<3;i++){
-    delete [] sigma_inv[i];
-      delete [] sigma_tmp[i];
-    }
-  delete [] sigma_tmp;
-  delete [] sigma_inv;
 }
 
 PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>               & d1,        // first dimension of data points
                                              const std::vector<double>               & d2,        // second dimension of data points
                                              const std::vector<double>               & d3,        // third dimension of data points
                                              const std::vector<int>                  & t1,        // trend data points
-                                             const std::vector<std::vector<double> > & v,        // Transformation of elastic variables from 3D to 2D
+                                             const NRLib::Matrix                     & v,        // Transformation of elastic variables from 3D to 2D
                                              const double             *const*const   sigma,     // Gaussian smoothing kernel in 2D
                                              int                                     n1,        // resolution of density grid in elastic dimension 1
                                              int                                     n2,        // resolution of density grid in elastic dimension 2
@@ -166,15 +166,15 @@ PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>          
   // We assume that the input vectors are of the same length
   if (d1.size()!=d2.size() || d2.size()!=d3.size() || d3.size()!=t1.size())
     throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
-  if (v.size()>2 || static_cast<int>(v[0].size()) != 3 ||  static_cast<int>(v[1].size()) != 3)
+  if (v.numRows()>2 )
     throw NRLib::Exception("Facies probabilities: Transformation matrix v does not have the right dimensions");
 
   v1_.resize(3);
   v2_.resize(3);
 
   for(int i=0; i<3; i++){
-    v1_[i] = v[0][i];
-    v2_[i] = v[1][i];
+    v1_[i] = v(0,i);
+    v2_[i] = v(1,i);
   }
 
   int dim = static_cast<int>(d1.size());
@@ -231,19 +231,20 @@ PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>          
 
   histogram_->fftInPlace();
 
+  NRLib::Matrix sigma_tmp(2,3,0);// = sigma;
+  /*
   double **sigma_tmp = new double *[2];
   for (int i=0;i<2;i++){
     sigma_tmp[i] = new double[2];
   }
+  */
   for(int i=0;i<2;i++){
     for(int j=0; j<2; j++)
-      sigma_tmp[i][j] = sigma[i][j];
+      sigma_tmp(i,j) = sigma[i][j];
   }
+
   // Matrix inversion of the covariance matrix sigma
-  // SINGULAR MATRIX ?!
-  double **sigma_inv = new double *[2];
-  for(int i=0; i<2; i++)
-    sigma_inv[i] = new double [2];
+  NRLib::Matrix sigma_inv;
 
   InvertSquareMatrix(sigma_tmp,sigma_inv,2);
 
@@ -276,12 +277,6 @@ PosteriorElasticPDF3D::PosteriorElasticPDF3D(const std::vector<double>          
   histogram_->endAccess();
 
   delete smoother;
-  for(int i=0;i<2;i++){
-    delete [] sigma_inv[i];
-    delete [] sigma_tmp[i];
-    }
-  delete [] sigma_tmp;
-  delete [] sigma_inv;
 }
 
 
@@ -356,8 +351,8 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
   expDens.writeFile(fileName, "", volume);
 }
 
-void PosteriorElasticPDF3D::SetupSmoothingGaussian3D(FFTGrid * smoother,
-                                                     const double *const*const sigma_inv)
+void PosteriorElasticPDF3D::SetupSmoothingGaussian3D(FFTGrid              * smoother,
+                                                     const NRLib::Matrix  & sigma_inv)
 {
   float *smooth = new float[n1_*n2_*n3_];
   int j,k,l,jj,jjj,kk,kkk,ll,lll;
@@ -387,12 +382,12 @@ void PosteriorElasticPDF3D::SetupSmoothingGaussian3D(FFTGrid * smoother,
           jj = -(j-jjj);
           jjj+=2;
         }
-        smooth[j+k*n1_+l*n1_*n2_] = float(exp(-0.5f*(jj*dx_*jj*dx_*sigma_inv[0][0]
-                                                   +kk*dy_*kk*dy_*sigma_inv[1][1]
-                                                   +ll*dz_*ll*dz_*sigma_inv[2][2]
-                                                   +2*jj*dx_*kk*dy_*sigma_inv[1][0]
-                                                   +2*jj*dx_*ll*dz_*sigma_inv[2][0]
-                                                   +2*kk*dy_*ll*dz_*sigma_inv[2][1])));
+        smooth[j+k*n1_+l*n1_*n2_] = float(exp(-0.5f*(jj*dx_*jj*dx_*sigma_inv(0,0)
+                                                   +kk*dy_*kk*dy_*sigma_inv(1,1)
+                                                   +ll*dz_*ll*dz_*sigma_inv(2,2)
+                                                   +2*jj*dx_*kk*dy_*sigma_inv(1,0)
+                                                   +2*jj*dx_*ll*dz_*sigma_inv(2,0)
+                                                   +2*kk*dy_*ll*dz_*sigma_inv(2,1))));
         sum += smooth[j+k*n1_+l*n1_*n2_];
       }
     }

@@ -27,6 +27,7 @@
 #include "../exception/exception.hpp"
 
 namespace NRLib {
+  using flens::conjugateTranspose;
   using flens::transpose;
   using flens::_;
 
@@ -61,6 +62,9 @@ namespace NRLib {
   void            InitializeMatrix(Matrix & A,
                                    double   value);
 
+  void            InitializeComplexMatrix(ComplexMatrix         & A,
+                                          std::complex<double>    value);
+
   void            InitializeSymmetricMatrix(SymmetricMatrix & A,
                                             double            value);
 
@@ -92,6 +96,10 @@ namespace NRLib {
   void ComputeEigenVectors(Matrix & A,
                            Vector & eigen_values,
                            Matrix & eigen_vectors);
+
+  void ComputeEigenVectorsComplex(ComplexMatrix         & A,
+                                  ComplexVector         & eigen_values,
+                                  ComplexMatrix         & eigen_vectors);
 
   void ComputeEigenVectorsSymmetric(const SymmetricMatrix & A,
                                     Vector                & eigen_values,

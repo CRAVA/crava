@@ -6,14 +6,13 @@
 
 
 PosteriorElasticPDF2D::PosteriorElasticPDF2D(const std::vector<double> & d1,
-                               const std::vector<double> & d2,
-                               const std::vector<double> & d3,
-                               int n1,
-                               int n2,
-                               double **smoothvar,
-                               const std::vector<double> & v1,
-                               const std::vector<double> & v2)
-                               :
+                                             const std::vector<double> & d2,
+                                             const std::vector<double> & d3,
+                                             int                         n1,
+                                             int                         n2,
+                                             NRLib::Matrix             & smoothvar,
+                                             const std::vector<double> & v1,
+                                             const std::vector<double> & v2):
 n1_(n1),
 n2_(n2)
 {
@@ -39,33 +38,28 @@ n2_(n2)
   }
 
   // Create covariance matrix from the input smoothing variables
-  double ** sigma_2d = new double *[2];
-  for(int i=0; i<2; i++)
-    sigma_2d[i] = new double[2];
+  NRLib::Matrix sigma_2d(2,2);
+  //double ** sigma_2d = new double *[2];
+  //for(int i=0; i<2; i++)
+  //  sigma_2d[i] = new double[2];
 
   this->CalculateVariance2D(smoothvar, sigma_2d, v1, v2);
 
   // Establish minimum and maximum limits of the input data
   // (Should this be done before inverting sigma?)
-  x_min_ = *min_element(x.begin(), x.end()) - 5.0f*sqrt(sigma_2d[0][0]);
-  x_max_ = *max_element(x.begin(), x.end()) + 5.0f*sqrt(sigma_2d[0][0]);
-  y_min_ = *min_element(y.begin(), y.end()) - 5.0f*sqrt(sigma_2d[1][1]);
-  y_max_ = *max_element(y.begin(), y.end()) + 5.0f*sqrt(sigma_2d[1][1]);
+  x_min_ = *min_element(x.begin(), x.end()) - 5.0f*sqrt(sigma_2d(0,0));
+  x_max_ = *max_element(x.begin(), x.end()) + 5.0f*sqrt(sigma_2d(0,0));
+  y_min_ = *min_element(y.begin(), y.end()) - 5.0f*sqrt(sigma_2d(1,1));
+  y_max_ = *max_element(y.begin(), y.end()) + 5.0f*sqrt(sigma_2d(1,1));
 
   // Spacing variables in the density grid
   dx_ = (x_max_ - x_min_)/n1_;
   dy_ = (y_max_ - y_min_)/n2_;
 
   // Matrix inversion of the covariance matrix sigma
-  double **sigma_inv = new double *[2];
-  for(int i=0; i<2; i++)
-    sigma_inv[i] = new double [2];
+  NRLib::Matrix sigma_inv;
 
   this->InvertSquareMatrix(sigma_2d,sigma_inv,2);
-
-  for(int i=0; i<2; i++)
-    delete [] sigma_2d[i];
-  delete [] sigma_2d;
 
   // Create density grid as a FFTGrid
   histogram_ = new FFTGrid(n1_, n2_, 1, n1_, n2_, 1);
@@ -98,19 +92,16 @@ n2_(n2)
   histogram_->multiplyByScalar(float(sqrt(double(n1_*n2_))));
 
   delete smoother;
-  for(int i=0;i<2;i++)
-    delete [] sigma_inv[i];
-  delete [] sigma_inv;
+
 }
 
-PosteriorElasticPDF2D::PosteriorElasticPDF2D(const std::vector<double> & d1,
-                               const std::vector<double> & d2,
-                               const std::vector<double> & d3,
-                               int n1,
-                               int n2,
-                               double ** sigma_prior,
-                               double ** sigma_posterior)
-                               :
+PosteriorElasticPDF2D::PosteriorElasticPDF2D(const std::vector<double>  & d1,
+                                             const std::vector<double>  & d2,
+                                             const std::vector<double>  & d3,
+                                             int                          n1,
+                                             int                          n2,
+                                             NRLib::Matrix              & sigma_prior,
+                                             NRLib::Matrix              & sigma_posterior) :
 n1_(n1),
 n2_(n2)
 {
@@ -126,7 +117,7 @@ n2_(n2)
   std::vector<double> x(dim);
   std::vector<double> y(dim);
 
-  // find v1 and v2 automagically
+  // find v1 and v2
   this->SolveGEVProblem(sigma_prior, sigma_posterior, v1, v2);
 
   for (int i = 0; i<3; i++){
@@ -138,33 +129,31 @@ n2_(n2)
   //this->CalculateTransform2D(d1, d2, d3, x, y, v1, v2);
 
   // Create covariance matrix from the input smoothing variables
-  double ** sigma_2d = new double *[2];
-  for(int i=0; i<2; i++)
-    sigma_2d[i] = new double[2];
+  NRLib::Matrix sigma_2d(2,2);
+  //double ** sigma_2d = new double *[2];
+  //for(int i=0; i<2; i++)
+  //  sigma_2d[i] = new double[2];
 
   this->CalculateVariance2D(sigma_posterior, sigma_2d, v1, v2);
 
   // Establish minimum and maximum limits of the input data
   // (Should this be done before inverting sigma?)
-  x_min_ = *min_element(x.begin(), x.end()) - 5.0f*sqrt(sigma_2d[0][0]);
-  x_max_ = *max_element(x.begin(), x.end()) + 5.0f*sqrt(sigma_2d[0][0]);
-  y_min_ = *min_element(y.begin(), y.end()) - 5.0f*sqrt(sigma_2d[1][1]);
-  y_max_ = *max_element(y.begin(), y.end()) + 5.0f*sqrt(sigma_2d[1][1]);
+  x_min_ = *min_element(x.begin(), x.end()) - 5.0f*sqrt(sigma_2d(0,0));
+  x_max_ = *max_element(x.begin(), x.end()) + 5.0f*sqrt(sigma_2d(0,0));
+  y_min_ = *min_element(y.begin(), y.end()) - 5.0f*sqrt(sigma_2d(1,1));
+  y_max_ = *max_element(y.begin(), y.end()) + 5.0f*sqrt(sigma_2d(1,1));
 
   // Spacing variables in the density grid
   dx_ = (x_max_ - x_min_)/n1_;
   dy_ = (y_max_ - y_min_)/n2_;
 
   // Matrix inversion of the covariance matrix sigma
-  double **sigma_inv = new double *[2];
-  for(int i=0; i<2; i++)
-    sigma_inv[i] = new double [2];
+  NRLib::Matrix sigma_inv;
+  //double **sigma_inv = new double *[2];
+  //for(int i=0; i<2; i++)
+  //  sigma_inv[i] = new double [2];
 
   this->InvertSquareMatrix(sigma_2d,sigma_inv,2);
-
-  for(int i=0; i<2; i++)
-    delete [] sigma_2d[i];
-  delete [] sigma_2d;
 
   // Create density grid as a FFTGrid
   histogram_ = new FFTGrid(n1_, n2_, 1, n1_, n2_, 1);
@@ -196,9 +185,6 @@ n2_(n2)
   histogram_->multiplyByScalar(float(sqrt(double(n1_*n2_))));
 
   delete smoother;
-  for(int i=0;i<2;i++)
-    delete [] sigma_inv[i];
-  delete [] sigma_inv;
 }
 
 
@@ -214,12 +200,12 @@ PosteriorElasticPDF2D::~PosteriorElasticPDF2D()
   delete histogram_;
 }
 
-void PosteriorElasticPDF2D::SetupSmoothingGaussian2D(FFTGrid * smoother,
-                                double ** smoothingVar,
-                                int n1,
-                                int n2,
-                                double dx,
-                                double dy)
+void PosteriorElasticPDF2D::SetupSmoothingGaussian2D(FFTGrid        * smoother,
+                                                     NRLib::Matrix  & smoothingVar,
+                                                     int              n1,
+                                                     int              n2,
+                                                     double           dx,
+                                                     double           dy)
 {
   float *smooth = new float[n1*n2];
   int j,k,jj,kk,jjj,kkk;
@@ -242,9 +228,9 @@ void PosteriorElasticPDF2D::SetupSmoothingGaussian2D(FFTGrid * smoother,
         jj = -(j-jjj);
         jjj+=2;
       }
-      smooth[j+k*n1] = float(exp(-0.5f*(jj*dx*jj*dx*smoothingVar[0][0]
-                        +kk*dy*kk*dy*smoothingVar[1][1]
-                        +2*jj*dx*kk*dy*smoothingVar[1][0])));
+      smooth[j+k*n1] = float(exp(-0.5f*(jj*dx*jj*dx*smoothingVar(0,0)
+                        +kk*dy*kk*dy*smoothingVar(1,1)
+                        +2*jj*dx*kk*dy*smoothingVar(1,0))));
       sum = sum+smooth[j+k*n1];
     }
   }
