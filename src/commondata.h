@@ -529,6 +529,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                    double                 radius,
                                                    const Surface        * t0_surf,
                                                    const Surface        * correlation_direction,
+                                                   const Simbox         & full_inversion_simbox,
                                                    const Simbox         & estimation_simbox,
                                                    NRLib::Grid2D<float> & structure_depth_grad_x,
                                                    NRLib::Grid2D<float> & structure_depth_grad_y) const;

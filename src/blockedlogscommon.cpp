@@ -45,6 +45,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
+  lateral_threshold_gradient_ = 0; //Minimum lateral distance where gradient lines must not cross
+  sigma_m_ = 0; //Smoothing factor for the gradients
 
   // 20130627 EN: Missing data are removed upon construction of a well_data object, whereas
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.

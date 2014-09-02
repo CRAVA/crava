@@ -1326,8 +1326,9 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
 
     LogKit::LogFormatted(LogKit::Low,"ok\nWrite Seismic Data...");
     //Write seismic data
-    if( (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
-        || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 ) {
+    if(model_settings->getForwardModeling() == false && 
+       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
+        || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
 
       int n_timelapses = model_settings->getNumberOfTimeLapses();
 
@@ -1341,7 +1342,7 @@ void CravaResult::WriteResults(ModelSettings * model_settings,
           std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
           std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
           std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-          if (offset[j] < 0)
+          if (offset.size() > 0 && offset[j] < 0)
             offset[j] = model_settings->getSegyOffset(i);
 
           std::string angle_synt     = NRLib::ToString(j);

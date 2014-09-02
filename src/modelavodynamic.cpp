@@ -153,8 +153,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
       seis_cubes_[i]->endAccess();
 
-      if (storm != NULL)
-        delete storm;
       if(grid_tmp != NULL)
         delete grid_tmp;
 
