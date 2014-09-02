@@ -324,7 +324,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
 
   float value;
   if(parseValue(root, "high-cut-seismic-resolution", value, errTxt) == true)
-    modelSettings_->setHighCut(value);
+    modelSettings_->setMaxHzSeismic(value); //H was modelSettings_->setHighCut(value), but thats wrong? HighCut is set under <frequency-band>
 
   parseAllowedParameterValues(root, errTxt);
 

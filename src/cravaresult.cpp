@@ -858,9 +858,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     std::string well_name = blocked_log_final->GetWellName();
     int n_blocks          = blocked_log_final->GetNumberOfBlocks();
 
+    LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
+
     //Predicted Logs
     bool got_predicted = blocked_logs_intervals[0].find(well_name)->second->GetVpPredicted().size() > 0;
     if (got_predicted) {
+      LogKit::LogFormatted(LogKit::Low,"\n    predicted... ");
+
       std::vector<double> vp_predicted_final(n_blocks);
       std::vector<double> vs_predicted_final(n_blocks);
       std::vector<double> rho_predicted_final(n_blocks);
@@ -884,13 +888,14 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpPredicted(vp_predicted_final);
       blocked_log_final->SetVsPredicted(vs_predicted_final);
       blocked_log_final->SetRhoPredicted(rho_predicted_final);
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     //In the end of CombineResult we set real seismic log from seismic data if we have estimation mode.
     //An option is to skip this resampling and set these logs from seismic data in CombineResult if we have multiple intervals
     bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
     if (got_real_seismic_data) {
-
+      LogKit::LogFormatted(LogKit::Low,"\n    real seis data... ");
       int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
 
       for (int j = 0; j < n_angles; j++) {
@@ -909,11 +914,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
       }
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     //Facies prob
     bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
     if (got_facies_prob) {
+       LogKit::LogFormatted(LogKit::Low,"\n    facies prob... ");
 
       int n_faices = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb();
 
@@ -933,11 +940,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetFaciesProb(j, facies_prob_final);
       }
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     //Cpp
     bool got_cpp = blocked_logs_intervals[0].find(well_name)->second->GetNCpp() > 0;
     if (got_cpp) {
+      LogKit::LogFormatted(LogKit::Low,"\n    cpp... ");
 
       int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNCpp();
 
@@ -957,12 +966,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetCpp(j, cpp_final);
       }
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     //ForFacies logs (vp, rho)
     bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpForFacies().size() > 0;
     if (got_vp_rho_fac_log) {
-
+      LogKit::LogFormatted(LogKit::Low,"\n    vp rho fac log... ");
       std::vector<double> vp_for_facies_final(n_blocks);
       std::vector<double> rho_for_facies_final(n_blocks);
       std::vector<std::vector<double> > vp_for_facies_intervals(n_intervals_);
@@ -982,11 +992,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       blocked_log_final->SetVpForFacies(vp_for_facies_final);
       blocked_log_final->SetRhoForFacies(rho_for_facies_final);
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     //Filtered logs
     bool got_filtered_logs = blocked_logs_intervals[0].find(well_name)->second->GetVpSeismicResolution().size() > 0;
     if (got_filtered_logs) {
+      LogKit::LogFormatted(LogKit::Low,"\n    filtered logs... ");
       std::vector<double> vp_filtered_final(n_blocks);
       std::vector<double> vs_filtered_final(n_blocks);
       std::vector<double> rho_filtered_final(n_blocks);
@@ -1020,6 +1032,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpSeismicResolution(vp_filtered_final);
       blocked_log_final->SetVsSeismicResolution(vs_filtered_final);
       blocked_log_final->SetRhoSeismicResolution(rho_filtered_final);
+      LogKit::LogFormatted(LogKit::Low,"\ok");
     }
 
     blocked_logs_output.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, blocked_log_final));

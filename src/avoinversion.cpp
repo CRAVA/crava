@@ -124,9 +124,9 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     modelAVOdynamic_->ReleaseGrids();
 
     // If facies prob are estimated, create the spatial well filter
-    if (modelSettings->getDoInversion() && modelSettings->getEstimateFaciesProb()) {
+    if (modelSettings->getDoInversion() && (modelSettings->getEstimateFaciesProb() || (modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0)) {
       // Create Synthetic Well Filter
-      if (modelSettings->getFaciesProbFromRockPhysics()){
+      if (modelSettings->getFaciesProbFromRockPhysics()) {
           // GENERATE SYNTHETIC WELLS
         int nSyntWellsToBeFiltered                                            = 10;
         int nSyntWellsPerCombinationOfTrendParams                             = 10;
@@ -176,10 +176,10 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
           BlockedLogsCommon * blocked_log = iter->second;
-          if (seismicParameters.GetCovEstimated()){
+          if (seismicParameters.GetCovEstimated()) {
             spat_real_well_filter->SetPriorSpatialCovariance(blocked_log, i, cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho);
           }
-          else{
+          else {
             spat_real_well_filter->setPriorSpatialCorr(cov_vp, blocked_log, i);
           }
           i++;
@@ -200,7 +200,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     errCorr_ = modelAVOstatic->GetErrCorr();
 
-    for (int i=0 ; i< ntheta_ ; i++)
+    for (int i = 0; i < ntheta_; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
@@ -272,20 +272,20 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // DO FILTERING
     //
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-    if(modelAVOdynamic->GetUseLocalNoise()==true)
+    if (modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
-    if(modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false)
+    if ((modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false) || ((modelSettings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0))
       spat_real_well_filter->doFiltering(modelGeneral->GetBlockedWells(),
-                                  modelSettings->getNoVsFaciesProb(),
-                                  activeAngles,
-                                  this,
-                                  modelAVOdynamic->GetLocalNoiseScales(),
-                                  seismicParameters);
+                                         modelSettings->getNoVsFaciesProb(),
+                                         activeAngles,
+                                         this,
+                                         modelAVOdynamic->GetLocalNoiseScales(),
+                                         seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
       computeFaciesProb(spat_real_well_filter, spat_synt_well_filter, useFilter, seismicParameters);
     }
-    if(modelSettings->getKrigingParameter() > 0)
+    if (modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
 
     //Computation of SyntSeismic is moved until after intervalgrids are combined in CravaResult
@@ -317,7 +317,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 AVOInversion::~AVOInversion()
 {
   delete [] thetaDeg_;
-  //delete [] empSNRatio_;
   delete [] theoSNRatio_;
   delete [] modelVariance_;
   delete [] signalVariance_;

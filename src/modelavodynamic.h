@@ -51,8 +51,6 @@ public:
   std::vector<float>            GetSNRatio()               const { return sn_ratio_                       ;}
   bool                          GetUseLocalNoise()         const { return use_local_noise_                ;}
   float                         GetAngle(int i)            const { return angle_[i]                       ;}
-  //bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
-  //bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
   int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
 
   float                       * GetThetaDeg()              const { return theta_deg_                      ;}
