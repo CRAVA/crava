@@ -108,6 +108,7 @@ public:
   const std::vector<double>            & GetVsHighCutSeismic(void)  const { return cont_logs_highcut_seismic_.find("Vs")->second                      ;}
   const std::vector<double>            & GetRhoHighCutSeismic(void) const { return cont_logs_highcut_seismic_.find("Rho")->second                     ;}
 
+  std::map<std::string, std::vector<double> > & GetContLogsPredicted() { return continuous_logs_predicted_                                            ;}
   const std::vector<double>            & GetVpPredicted(void)  const { return continuous_logs_predicted_.find("Vp")->second                           ;}
   const std::vector<double>            & GetVsPredicted(void)  const { return continuous_logs_predicted_.find("Vs")->second                           ;}
   const std::vector<double>            & GetRhoPredicted(void) const { return continuous_logs_predicted_.find("Rho")->second                          ;}

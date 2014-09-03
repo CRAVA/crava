@@ -450,7 +450,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   int useForWaveletEstimation = ModelSettings::NOTSET;
   int useForFaciesProbability = ModelSettings::NOTSET;
   int useForRockPhysics       = ModelSettings::NOTSET;
-  int filterElasticLogs       = ModelSettings::NOTSET;
+  int filterElasticLogs       = ModelSettings::NO; //H Use no as default
   int hasRealVs               = ModelSettings::NOTSET;
 
   bool use;

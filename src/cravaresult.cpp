@@ -861,7 +861,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
 
     //Predicted Logs
-    bool got_predicted = blocked_logs_intervals[0].find(well_name)->second->GetVpPredicted().size() > 0;
+    bool got_predicted = blocked_logs_intervals[0].find(well_name)->second->GetContLogsPredicted().size() > 0;
     if (got_predicted) {
       LogKit::LogFormatted(LogKit::Low,"\n    predicted... ");
 
@@ -888,7 +888,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpPredicted(vp_predicted_final);
       blocked_log_final->SetVsPredicted(vs_predicted_final);
       blocked_log_final->SetRhoPredicted(rho_predicted_final);
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     //In the end of CombineResult we set real seismic log from seismic data if we have estimation mode.
@@ -914,7 +914,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
       }
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     //Facies prob
@@ -940,7 +940,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetFaciesProb(j, facies_prob_final);
       }
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     //Cpp
@@ -966,7 +966,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         blocked_log_final->SetCpp(j, cpp_final);
       }
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     //ForFacies logs (vp, rho)
@@ -992,11 +992,11 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       blocked_log_final->SetVpForFacies(vp_for_facies_final);
       blocked_log_final->SetRhoForFacies(rho_for_facies_final);
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     //Filtered logs
-    bool got_filtered_logs = blocked_logs_intervals[0].find(well_name)->second->GetVpSeismicResolution().size() > 0;
+    bool got_filtered_logs = blocked_logs_intervals[0].find(well_name)->second->GetContLogsSeismicRes().size() > 0;
     if (got_filtered_logs) {
       LogKit::LogFormatted(LogKit::Low,"\n    filtered logs... ");
       std::vector<double> vp_filtered_final(n_blocks);
@@ -1032,7 +1032,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpSeismicResolution(vp_filtered_final);
       blocked_log_final->SetVsSeismicResolution(vs_filtered_final);
       blocked_log_final->SetRhoSeismicResolution(rho_filtered_final);
-      LogKit::LogFormatted(LogKit::Low,"\ok");
+      LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
     blocked_logs_output.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, blocked_log_final));
