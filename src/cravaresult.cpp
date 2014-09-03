@@ -809,17 +809,30 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
 
 double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled_trace,
                                            const double              & dz_resampled,
-                                           const double              & top,
-                                           const double              & global_z, //center of cell
+                                           const double              & top, //resample from (top of this interval)
+                                           const double              & global_z, //center of cell, resample to
                                            const double              & dz_final)
 {
   int nz_resampled    = resampled_trace.size();
   double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
+  //Get trace value to global_z. We search from the top of this interval until we find the corresponding z-value
+
   double trace_z = top;
   int index      = 0;
+  //while (index < (nz_resampled-1)) {
+  //  if (trace_z >= global_z_top && trace_z <= (global_z_top + dz_resampled))
+  //    break;
+  //  else {
+  //    trace_z += dz_resampled;
+  //    index++;
+  //  }
+  //}
+
   while (index < (nz_resampled-1)) {
-    if (trace_z >= global_z_top && trace_z <= (global_z_top + dz_resampled))
+    if (global_z_top < trace_z) //wanted z-value is above top surface of this interval
+      break;
+    else if (global_z_top >= trace_z && global_z_top <= (trace_z + dz_resampled)) //wanted z is inside this fine interval
       break;
     else {
       trace_z += dz_resampled;
