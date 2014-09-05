@@ -808,20 +808,24 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
 }
 
 double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled_trace,
-                                           const double              & dz_resampled,
-                                           const double              & top, //resample from (top of this interval)
-                                           const double              & global_z, //center of cell, resample to
-                                           const double              & dz_final)
+                                           const std::vector<double> & z_pos_resampled,
+                                           //const double              & dz_resampled,
+                                           //const double              & top, //resample from (top of this interval)
+                                           const double              & global_z) //z-value for this cell in the final blocked log
+                                           //const double              & dz_final)
 {
   int nz_resampled    = resampled_trace.size();
-  double global_z_top = global_z - 0.5*dz_final; //Use top of cell
+  //double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
   //Get trace value to global_z. We search from the top of this interval until we find the corresponding z-value
 
-  double trace_z = top;
+  //double trace_z = top;
   int index      = 0;
+
   //while (index < (nz_resampled-1)) {
-  //  if (trace_z >= global_z_top && trace_z <= (global_z_top + dz_resampled))
+  //  if (global_z_top < trace_z) //wanted z-value is above top surface of this interval
+  //    break;
+  //  else if (global_z_top >= trace_z && global_z_top <= (trace_z + dz_resampled)) //wanted z is inside this fine interval
   //    break;
   //  else {
   //    trace_z += dz_resampled;
@@ -829,14 +833,12 @@ double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled
   //  }
   //}
 
-  while (index < (nz_resampled-1)) {
-    if (global_z_top < trace_z) //wanted z-value is above top surface of this interval
-      break;
-    else if (global_z_top >= trace_z && global_z_top <= (trace_z + dz_resampled)) //wanted z is inside this fine interval
-      break;
-    else {
-      trace_z += dz_resampled;
-      index++;
+  if (global_z > z_pos_resampled[0]) { //z-value above this blocked log, we use the first element
+    for (int i = 0; i < (nz_resampled-1); i++) {
+      if (global_z >= z_pos_resampled[i] && global_z <= z_pos_resampled[i+1]) { //wanted z is inside this fine interval
+        index = i;
+        break;
+      }
     }
   }
 
@@ -887,11 +889,15 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       //Get well logs, missing values are interpolated
       for (int i = 0; i < n_intervals_; i++) {
-        int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-        int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-        GetWellLogContributed(vp_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpPredicted(),  first_B, last_B);
-        GetWellLogContributed(vs_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVsPredicted(),  first_B, last_B);
-        GetWellLogContributed(rho_predicted_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoPredicted(), first_B, last_B);
+        //int start = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+        //int end   = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+
+        int start = 0;
+        int end   = blocked_logs_intervals[i].find(well_name)->second->GetNumberOfBlocks()-1;
+
+        GetWellLogContributed(vp_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpPredicted(),  start, end);
+        GetWellLogContributed(vs_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVsPredicted(),  start, end);
+        GetWellLogContributed(rho_predicted_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoPredicted(), start, end);
       }
 
       ResampleLog(vp_predicted_final,  vp_predicted_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
@@ -918,9 +924,12 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         //Get well logs, missing values are interpolated
         for (int i = 0; i < n_intervals_; i++) {
-          int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-          int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-          GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
+          //int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+          //int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+
+          int start = 0;
+          int end   = blocked_logs_intervals[i].find(well_name)->second->GetNumberOfBlocks()-1;
+          GetWellLogContributed(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), start, end);
         }
 
         ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
@@ -944,9 +953,11 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         //Get well logs, missing values are interpolated
         for (int i = 0; i < n_intervals_; i++) {
-          int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-          int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-          GetWellLogContributed(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), first_B, last_B);
+          //int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+          //int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+          int start = 0;
+          int end   = blocked_logs_intervals[i].find(well_name)->second->GetNumberOfBlocks()-1;
+          GetWellLogContributed(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j), start, end);
         }
 
         ResampleLog(facies_prob_final, facies_prob_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
@@ -970,9 +981,11 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         //Get well logs, missing values are interpolated
         for (int i = 0; i < n_intervals_; i++) {
-          int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-          int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
-          GetWellLogContributed(cpp_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetCpp(j), first_B, last_B);
+          //int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+          //int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+          int start = 0;
+          int end   = blocked_logs_intervals[i].find(well_name)->second->GetNumberOfBlocks()-1;
+          GetWellLogContributed(cpp_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetCpp(j), start, end);
         }
 
         ResampleLog(cpp_final, cpp_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
@@ -993,11 +1006,13 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       //Get well logs, missing values are interpolated
       for (int i = 0; i < n_intervals_; i++) {
-        int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
-        int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+        //int first_B = blocked_logs_intervals[i].find(well_name)->second->GetFirstB();
+        //int last_B  = blocked_logs_intervals[i].find(well_name)->second->GetLastB();
+        int start = 0;
+        int end   = blocked_logs_intervals[i].find(well_name)->second->GetNumberOfBlocks()-1;
 
-        GetWellLogContributed(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpForFacies(),  first_B, last_B);
-        GetWellLogContributed(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoForFacies(), first_B, last_B);
+        GetWellLogContributed(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpForFacies(),  start, end);
+        GetWellLogContributed(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoForFacies(), start, end);
       }
 
       ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
@@ -1055,10 +1070,10 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
 void CravaResult::GetWellLogContributed(std::vector<double>       & log_new,
                                         const std::vector<double> & log_old,
-                                        int                         first_B,
-                                        int                         last_B)
+                                        int                         start,
+                                        int                         end)
 {
-  for (int i = first_B; i < last_B + 1; i++) {
+  for (int i = start; i <= end; i++) {
     log_new.push_back(log_old[i]);
   }
 
@@ -1121,18 +1136,24 @@ void CravaResult::ResampleLog(std::vector<double>                               
                               float                                                            res_fac)
 {
   std::vector<std::vector<double> > interval_logs_fine(n_intervals_); //resample to, per interval
+  std::vector<std::vector<double> > z_pos_resampled_fine(n_intervals_); //Resample z-blocked log, it is used when we combine traces.
 
   //Get logs per interval and resample to a fine resolution
   for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
 
-    int nz_interval = static_cast<int>(old_log_interval[i_interval].size() * res_fac);
+    int nz_interval           = static_cast<int>(old_log_interval[i_interval].size() * res_fac);
+    std::vector<double> z_pos = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked();
 
     interval_logs_fine[i_interval].resize(nz_interval);
-    ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval],  res_fac); //Interpolate missing
+    z_pos_resampled_fine[i_interval].resize(nz_interval);
+
+    ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval], res_fac); //Interpolate missing
+    ResampleTrace(z_pos, z_pos_resampled_fine[i_interval], res_fac);
+
   }
 
-  CombineTraces(final_log, blocked_log_final, blocked_logs_intervals, well_name, multi_interval_grid, interval_logs_fine);
-
+  //CombineTraces(final_log, blocked_log_final, blocked_logs_intervals, well_name, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine);
+  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine);
 }
 
 void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it is changed
@@ -1191,10 +1212,11 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
 
 void CravaResult::CombineTraces(std::vector<double>                                            & final_log,
                                 const BlockedLogsCommon                                        * blocked_log_final,
-                                const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
-                                std::string                                                    & well_name,
+                                //const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                                //std::string                                                    & well_name,
                                 MultiIntervalGrid                                              * multi_interval_grid,
-                                const std::vector<std::vector<double> >                        & interval_logs_fine)
+                                const std::vector<std::vector<double> >                        & interval_logs_fine,
+                                const std::vector<std::vector<double> >                        & z_pos_resampled)
 {
   int nz          = final_log.size();
   int n_intervals = interval_logs_fine.size();
@@ -1209,7 +1231,7 @@ void CravaResult::CombineTraces(std::vector<double>                             
     double global_y = blocked_log_final->GetYposBlocked()[k];
     double global_z = blocked_log_final->GetZposBlocked()[k];
 
-    double dz_final = blocked_log_final->GetDz();
+    //double dz_final = blocked_log_final->GetDz();
 
     int i_interval = 0;
     for (i_interval = 0; i_interval < n_intervals; i_interval++) {
@@ -1226,10 +1248,10 @@ void CravaResult::CombineTraces(std::vector<double>                             
     }
 
     double value        = 0.0;
-    double nz_resampled = interval_logs_fine[i_interval].size();
+    //double nz_resampled = interval_logs_fine[i_interval].size();
     int interval_index  = i_interval;
 
-   if (two_intervals == true) {
+    if (two_intervals == true) {
       //Use erorsion priorities to select between the two intervals
       if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
         interval_index = i_interval;
@@ -1237,14 +1259,15 @@ void CravaResult::CombineTraces(std::vector<double>                             
         interval_index = i_interval+1;
     }
 
-    int first_B = blocked_logs_intervals[interval_index].find(well_name)->second->GetFirstB();
-    int last_B  = blocked_logs_intervals[interval_index].find(well_name)->second->GetLastB();
-    double top  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[first_B];
-    double bot  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[last_B];
+    //int first_B = blocked_logs_intervals[interval_index].find(well_name)->second->GetFirstB();
+    //int last_B  = blocked_logs_intervals[interval_index].find(well_name)->second->GetLastB();
+    //double top  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[first_B];
+    //double bot  = blocked_logs_intervals[interval_index].find(well_name)->second->GetZposBlocked()[last_B];
 
-    double dz_resampled = (bot - top) / nz_resampled;
+    //double dz_resampled = (bot - top) / nz_resampled;
 
-    value = GetResampledTraceValue(interval_logs_fine[i_interval], dz_resampled, top, global_z, dz_final);
+    //value = GetResampledTraceValue(interval_logs_fine[i_interval], z_pos_resampled[i_interval], dz_resampled, top, global_z, dz_final);
+    value = GetResampledTraceValue(interval_logs_fine[i_interval], z_pos_resampled[i_interval], global_z);
 
     final_log[k] = value;
   }

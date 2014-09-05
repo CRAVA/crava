@@ -46,10 +46,11 @@ public:
                                const double             & dz_final);
 
   double GetResampledTraceValue(const std::vector<double> & resampled_trace,
-                                const double              & dz_resampled,
-                                const double              & top,
-                                const double              & global_z, //center of cell
-                                const double              & dz_final);
+                                const std::vector<double> & z_pos_resampled,
+                                //const double              & dz_resampled,
+                                //const double              & top,
+                                const double              & global_z); //z-value for this cell in the final blocked log
+                                //const double              & dz_final);
 
   void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
                           const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
@@ -58,8 +59,8 @@ public:
 
   void GetWellLogContributed(std::vector<double>       & log_out,
                              const std::vector<double> & log_old,
-                             int                         first_B,
-                             int                         last_B);
+                             int                         start,
+                             int                         end);
 
   void InterpolateMissing(std::vector<double> & well_log);
 
@@ -79,10 +80,11 @@ public:
 
   void CombineTraces(std::vector<double>                                            & final_log,
                      const BlockedLogsCommon                                        * blocked_log_final,
-                     const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
-                     std::string                                                    & well_name,
+                     //const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                     //std::string                                                    & well_name,
                      MultiIntervalGrid                                              * multiple_interval_grid,
-                     const std::vector<std::vector<double> >                        & resampled_logs);
+                     const std::vector<std::vector<double> >                        & resampled_logs,
+                     const std::vector<std::vector<double> >                        & z_pos_resampled);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,
