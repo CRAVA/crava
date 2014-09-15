@@ -262,7 +262,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   // Erik N: If correlations are estimated, parameter covariance and temporal correlation
   // are now integrated in auto_cov
   //
-  if (cov_estimated){
+  if (cov_estimated) {
     double eps = std::pow(10.0,-10.0);
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
     //NRLib::Vector pos(auto_cov.size());
@@ -324,14 +324,12 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     exit(1);
     */
 
-
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
     covRho_     ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[2][2], corr_grad_I, corr_grad_J);
     crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
     crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
-
 
     /*
     covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));

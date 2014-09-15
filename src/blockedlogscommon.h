@@ -5,7 +5,6 @@
 #ifndef BLOCKEDLOGSCOMMON_H
 #define BLOCKEDLOGSCOMMON_H
 
-#include "src/seismicstorage.h"
 #include "src/commondata.h"
 #include "fftw.h"
 #include <map>
@@ -13,6 +12,7 @@
 #include "nrlib/well/well.hpp"
 #include "src/definitions.h"
 #include "src/fftgrid.h"
+#include "src/seismicstorage.h"
 
 class MultiIntervalGrid;
 

@@ -480,7 +480,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                 int                 n1,
                                 int                 n2,
                                 const std::string & read_reason,
-                                std::string       & err_text) const;
+                                std::string       & err_text,
+                                bool                check_length = true) const;
 
   int                Process1DWavelet(const ModelSettings                        * modelSettings,
                                       const InputFiles                           * inputFiles,
@@ -778,6 +779,11 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                            bool                                                        & prior_cov_estimated,
                                            std::string                                                 & err_text_common) const;
 
+  void               ReadPriorAutoCovariance(const std::string                        & file_name,
+                                             std::vector<std::vector<NRLib::Matrix> > & prior_auto_cov,
+                                             int                                        nz_pad,
+                                             std::string                              & err_txt) const;
+
   void               ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
                                                 double                                                  dz_min,
                                                 std::vector<NRLib::Matrix>                            & prior_auto_cov,
@@ -801,6 +807,10 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   void               ValidateCovarianceMatrix(float               ** C,
                                               const ModelSettings *  model_settings,
                                               std::string         &  err_txt) const;
+
+  void               ValidatePriorAutoCovMatrices(const std::vector<std::vector<NRLib::Matrix> > & prior_auto_cov,
+                                                  const ModelSettings                            * model_settings,
+                                                  std::string                                    & err_txt) const;
 
   Surface *          FindCorrXYGrid(const Simbox           * time_simbox,
                                     const ModelSettings    * model_settings) const;
@@ -844,10 +854,10 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                               std::string   & err_text_common) const;
                                               */
 
-  void               WriteFilePriorVariances(const ModelSettings      * model_settings,
-                                             const std::vector<double> & prior_corr_T,
-                                             const Surface             * prior_corr_XY,
-                                             const float               & dt) const;
+  //void               WriteFilePriorVariances(const ModelSettings      * model_settings,
+  //                                           const std::vector<double> & prior_corr_T,
+  //                                           const Surface             * prior_corr_XY,
+  //                                           const float               & dt) const;
 
   void               PrintPriorVariances() const;
 
@@ -859,7 +869,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                              const double                      & dz) const;
 
   void               WriteFilePriorVariances(const ModelSettings                * model_settings,
-                                             const std::vector<NRLib::Matrix>   & prior_auto_cov_,
+                                             const std::vector<NRLib::Matrix>   & prior_auto_cov,
                                              const Surface                      * prior_corr_XY,
                                              const std::string                  & interval_name,
                                              double                               dz) const;

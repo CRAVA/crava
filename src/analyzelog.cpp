@@ -68,12 +68,8 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   enough_data_for_corr_estimation_  = false;
   n_lags_                           = 0;
   interval_name_                    = "";
-  //point_var_0_.resize(3,3);
   var_0_.resize(3,3);
 
-  //mapped_blocked_logs_for_correlation_ = mapped_blocked_logs_for_correlation;
-  //simbox_       = interval_simbox;
-  //wells_        = wells;
   n_wells_       = static_cast<int>(mapped_blocked_logs_for_correlation.size());
   well_names_.resize(n_wells_);
   for (int i = 0; i < n_wells_; i++){

@@ -2184,7 +2184,7 @@ void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *
 {
   std::map<std::string, BlockedLogsCommon *> new_blocked_logs;
 
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
@@ -2206,7 +2206,7 @@ void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>           
   int nzp = simbox.GetNZpad();
   int nz  = simbox.getnz();
 
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 
@@ -2224,7 +2224,7 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   int n_angles = model_settings->getNumberOfAngles(0);
 
   //Need to set angles in blocked_log before wavelet estimation
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
 

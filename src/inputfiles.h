@@ -39,6 +39,7 @@ public:
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCovFile(void)         const { return paramCovFile_         ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
+  const std::string              & getParamAutoCovFile(void)     const { return paramAutoCovFile_     ;}
   const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void) const {return priorFaciesProb_ ;}
@@ -87,6 +88,7 @@ public:
   void setReflMatrFile(const std::string & reflMatrFile)                  { reflMatrFile_         = reflMatrFile      ;}
   void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_         = paramCovFile      ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
+  void setParamAutoCovFile(const std::string & paramAutoCovFile)          { paramAutoCovFile_     = paramAutoCovFile  ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
@@ -141,6 +143,7 @@ private:
   std::string                reflMatrFile_;          ///< File name for reflection matrix file.
   std::string                paramCovFile_;          ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
+  std::string                paramAutoCovFile_;      ///< File name for parameter autocovariance.
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 
   std::string                        timeSurfTopFile_;    ///< File names: top time surface

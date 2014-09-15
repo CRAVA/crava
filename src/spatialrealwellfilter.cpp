@@ -112,8 +112,11 @@ void SpatialRealWellFilter::SetPriorSpatialCovariance(const BlockedLogsCommon   
       matvpvs(l1,l2) = prior_cov_vpvs_[wellnr](l1,l2);
     }
   }
-  NRLib::WriteMatrixToFile("priorvpvp", matvpvp);
-  NRLib::WriteMatrixToFile("priorvpvs", matvpvs);
+  bool debug = false;
+  if (debug) {
+    NRLib::WriteMatrixToFile("priorvpvp", matvpvp);
+    NRLib::WriteMatrixToFile("priorvpvs", matvpvs);
+  }
 }
 
 void
