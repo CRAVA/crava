@@ -62,8 +62,8 @@ SeismicStorage::~SeismicStorage()
     delete segy_;
   if (storm_grid_ != NULL)
     delete storm_grid_;
-  if (fft_grid_ != NULL)
-    delete fft_grid_;
+  //if (fft_grid_ != NULL)
+  //  delete fft_grid_;
 }
 
 //std::vector<float>

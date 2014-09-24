@@ -1327,7 +1327,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
 
   // check that not both param autocovariance and param_correlations + temporal_correlations are given
   if (filename_autocov != "" && (filename_tmpcorr != "" || modelSettings_->getUseVerticalVariogram() || filename_paramcorr != ""))
-    errTxt += "Both a parameter autocovariance file and either parameter correlation file or temporal correlations are given as input. Please specify only one of them.\n";
+    errTxt += "Parameter correlation and/or Temporal correlation cannot be given as input together with autocovariance. Parameter and temporal correlation are integrated into the autocovariance";
 
   parseCorrelationDirection(root, errTxt);
 

@@ -47,20 +47,15 @@ public:
 
   double GetResampledTraceValue(const std::vector<double> & resampled_trace,
                                 const std::vector<double> & z_pos_resampled,
-                                //const double              & dz_resampled,
-                                //const double              & top,
                                 const double              & global_z); //z-value for this cell in the final blocked log
-                                //const double              & dz_final);
 
   void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
                           const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
                           MultiIntervalGrid                                              * multi_interval_grid,
                           const Simbox                                                   * output_simbox);
 
-  void GetWellLogContributed(std::vector<double>       & log_out,
-                             const std::vector<double> & log_old,
-                             int                         start,
-                             int                         end);
+  void CopyWellLog(std::vector<double>       & log_out,
+                   const std::vector<double> & log_old);
 
   void InterpolateMissing(std::vector<double> & well_log);
 
@@ -78,13 +73,11 @@ public:
                      std::vector<double> & new_trace,
                      const float           res_fac);
 
-  void CombineTraces(std::vector<double>                                            & final_log,
-                     const BlockedLogsCommon                                        * blocked_log_final,
-                     //const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
-                     //std::string                                                    & well_name,
-                     MultiIntervalGrid                                              * multiple_interval_grid,
-                     const std::vector<std::vector<double> >                        & resampled_logs,
-                     const std::vector<std::vector<double> >                        & z_pos_resampled);
+  void CombineTraces(std::vector<double>                     & final_log,
+                     const BlockedLogsCommon                 * blocked_log_final,
+                     MultiIntervalGrid                       * multiple_interval_grid,
+                     const std::vector<std::vector<double> > & resampled_logs,
+                     const std::vector<std::vector<double> > & z_pos_resampled);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,

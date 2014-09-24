@@ -162,7 +162,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (block_wells_ && optimize_well_location_)
     wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_,
                                         global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
-                                        reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, err_text);
+                                        reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
   // 13. Setup of prior correlation
   if (read_seismic_) {
@@ -2590,12 +2590,12 @@ CommonData::GetMinMaxFnr(int            & min,
   }
 }
 
-bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_settings,
-                                       InputFiles                     * input_files,
-                                       std::vector<NRLib::Matrix>     & reflection_matrix,
-                                       std::vector<int>                 n_angles,
-                                       bool                             refmat_from_file_global_vpvs,
-                                       std::string                    & err_text_common) const
+bool CommonData::SetupReflectionMatrix(ModelSettings              * model_settings,
+                                       InputFiles                 * input_files,
+                                       std::vector<NRLib::Matrix> & reflection_matrix,
+                                       std::vector<int>             n_angles,
+                                       bool                         refmat_from_file_global_vpvs,
+                                       std::string                & err_text_common) const
 
 
 {
@@ -2649,6 +2649,7 @@ bool CommonData::SetupReflectionMatrix(ModelSettings                  * model_se
     else {
       LogKit::LogFormatted(LogKit::Low,"\nMaking reflection matrix with Vp/Vs equal to 2\n");
       double vsvp = 0.5;
+
       reflection_matrix.push_back(SetupDefaultReflectionMatrix(vsvp, model_settings, n_angles_this_timelapse, i));
       refmat_from_file_global_vpvs = false;
     }
@@ -2806,8 +2807,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
                                 int                 n1,
                                 int                 n2,
                                 const std::string & read_reason,
-                                std::string       & err_text,
-                                bool                check_length) const
+                                std::string       & err_text) const
 {
   float * tmp_res = new float[n1*n2+1];
   std::ifstream in_file;
@@ -2818,7 +2818,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
   int index   = 0;
   bool failed = false;
 
-  while(failed == false && in_file >> storage) {
+  while (failed == false && in_file >> storage) {
     if (index < n1*n2) {
       try {
         tmp_res[index] = NRLib::ParseType<float>(storage);
@@ -2832,7 +2832,7 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
     index++;
   }
   if (failed == false) {
-    if (check_length == true && index != n1*n2) { //Parameter Autocovariance files contains covariences for several lags, and we only read in the first one.
+    if (index != n1*n2) {
       failed = true;
       err_text += "Found "+NRLib::ToString(index)+" in file "+file_name+", expected "+NRLib::ToString(n1*n2)+".\n";
     }
@@ -2844,9 +2844,9 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
     result = new float * [n1];
     int i, j;
     index = 0;
-    for (i=0;i<n1;i++) {
+    for (i = 0; i < n1; i++) {
       result[i] = new float[n2];
-      for (j=0;j<n2;j++) {
+      for (j = 0; j < n2; j++) {
         result[i][j] = tmp_res[index];
         index++;
       }
@@ -2858,7 +2858,6 @@ float ** CommonData::ReadMatrix(const std::string & file_name,
   delete [] tmp_res;
   return(result);
 }
-
 
 NRLib::Matrix
 CommonData::SetupDefaultReflectionMatrix(double                vsvp,
@@ -2920,8 +2919,8 @@ CommonData::SetupDefaultReflectionMatrix(double                vsvp,
 }
 
 void
-CommonData::SetupCorrectReflectionMatrix(const ModelSettings            * model_settings,
-                                         std::vector<NRLib::Matrix >    & reflection_matrix) const
+CommonData::SetupCorrectReflectionMatrix(const ModelSettings         * model_settings,
+                                         std::vector<NRLib::Matrix > & reflection_matrix) const
 {
   std::string origin;
   double vsvp = FindVsVpForZone(0, model_settings, origin);
@@ -2968,9 +2967,9 @@ CommonData::FindVsVpForZone(int                   i_interval,
 
 
 void
-CommonData::VsVpFromWells(int          i_interval,
-                          double     & vs_vp,
-                          int        & N) const
+CommonData::VsVpFromWells(int      i_interval,
+                          double & vs_vp,
+                          int    & N) const
 {
   const std::vector<NRLib::Well> & wells = GetWells();
   size_t n_wells = wells.size();
@@ -3047,10 +3046,12 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                  std::vector<NRLib::Matrix >                 & reflection_matrix,
                                  std::string                                 & wavelet_est_int_top,
                                  std::string                                 & wavelet_est_int_bot,
+                                 std::vector<std::vector<Grid2D *> >         & shift_grids,
+                                 std::vector<std::vector<Grid2D *> >         & gain_grids,
                                  std::string                                 & err_text_common) const
 {
 
-  int n_timeLapses     = model_settings->getNumberOfTimeLapses();
+  int n_timelapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
   std::string err_text = "";
 
@@ -3069,8 +3070,10 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
     SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
 
+  shift_grids.resize(n_timelapses);
+  gain_grids.resize(n_timelapses);
 
-  for (int i = 0; i < n_timeLapses; i++) {
+  for (int i = 0; i < n_timelapses; i++) {
 
     int n_angles = model_settings->getNumberOfAngles(i);
 
@@ -3202,6 +3205,9 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
 
+      shift_grids[i].resize(n_angles);
+      gain_grids[i].resize(n_angles);
+
       SeismicStorage * seismic_data_tmp = NULL;
       if (forward_modeling_ == false) {
         seismic_data_tmp = seismic_data[i][j];
@@ -3217,6 +3223,8 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                   reflection_matrix[i],
                                   err_text,
                                   wavelets[i][j],
+                                  shift_grids[i][j],
+                                  gain_grids[i][j],
                                   local_noise_scale[j],
                                   i, //Timelapse
                                   j, //Angle
@@ -3343,6 +3351,8 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              const NRLib::Matrix                        & reflection_matrix,
                              std::string                                & err_text,
                              Wavelet                                   *& wavelet,
+                             Grid2D                                    *& shift_grid,
+                             Grid2D                                    *& gain_grid,
                              Grid2D                                    *& local_noise_scale, //local noise estimates?
                              unsigned int                                 i_timelapse,
                              unsigned int                                 j_angle,
@@ -3355,22 +3365,22 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   Grid2D * local_shift = NULL;
   Grid2D * local_scale = NULL;
 
+  shift_grid = NULL;
+  gain_grid  = NULL;
+
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
   reflection_coefs[1] = static_cast<float>(reflection_matrix(j_angle, 1));
   reflection_coefs[2] = static_cast<float>(reflection_matrix(j_angle, 2));
   int error = 0;
-  //Grid2D * shiftGrid(NULL);
-  //Grid2D * gainGrid(NULL);
   if (model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
       Surface help(input_files->getScaleFile(i_timelapse, j_angle));
-      //gainGrid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
-      local_scale = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
+      local_scale = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
       ResampleSurfaceToGrid2D(&help, local_scale, full_inversion_simbox);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
-    local_shift = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
+    local_shift = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
     ResampleSurfaceToGrid2D(&helpShift, local_shift, full_inversion_simbox);
   }
   if (model_settings->getUseLocalNoise(i_timelapse) && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
@@ -3546,10 +3556,14 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      full_inversion_simbox,
                                      local_shift,
                                      angle);
-        wavelet->setShiftGrid(local_shift);
+
+        shift_grid = new Grid2D(*local_shift);
 
         if (wavelet_pre_resampling != NULL)
           wavelet_pre_resampling->setShiftGrid(new Grid2D(*local_shift));
+
+        wavelet->setShiftGrid(local_shift);
+
       }
 
       if (useLocalGain) {
@@ -3560,10 +3574,13 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      full_inversion_simbox,
                                      local_scale,
                                      angle);
-        wavelet->setGainGrid(local_scale);
 
-        if (wavelet_pre_resampling != NULL)
-          wavelet_pre_resampling->setGainGrid(new Grid2D(*local_scale));
+        gain_grid = new Grid2D(*local_scale); //Gain grid is set in modelavodynamic for the correct wavelet
+
+        //if (wavelet_pre_resampling != NULL)
+        //  wavelet_pre_resampling->setGainGrid(new Grid2D(*local_scale));
+
+        //wavelet->setGainGrid(local_scale);
 
       }
     }
@@ -3579,6 +3596,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   else if (wavelet->getInFFTOrder()) { //Wavlet estimated
     wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
   }
+
+  if (wavelet->getIsReal() == false)
+    wavelet->invFFT1DInPlace();
 
   return error;
 }
@@ -4503,6 +4523,7 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
                                     std::string                                                & err_text_common) const
 {
   // Block logs to interval simboxes for estimation
+  LogKit::WriteHeader("Blocking wells for correlation");
   std::string err_text;
   //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
@@ -4539,6 +4560,7 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
                                   std::string                                                & err_text_common) const
 {
   // Block logs to each interval simbox
+  LogKit::WriteHeader("Blocking wells for intervals");
   std::string err_text;
   try {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
@@ -7776,7 +7798,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        std::vector<NRLib::Matrix>                                  & prior_param_cov,
                                        std::vector<Surface *>                                      & prior_corr_XY,
                                        std::vector<std::vector<NRLib::Matrix> >                    & prior_auto_cov,
-                                       bool                                                        & prior_cov_estimated,
+                                       bool                                                        & prior_cov_estimated, //or prior_auto_cov read from file
                                        std::string                                                 & err_text_common) const
 {
 
@@ -7804,35 +7826,40 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     double wall=0.0, cpu=0.0;
     TimeKit::getTime(wall,cpu);
 
+    //H-TODO (CRA-734) if only param_corr is given on file and not time corr then an auto_cov is estimated, but then auto_cov[0] != param_corr from file.
+    //Need to update the estimated auto_cov (estimate a time corr) so it corresponds with param_corr given from file.
+
+    //If only timeCorr is given, it is discarded and a complete auto_cov is estimated.
+    //If both param_corr and CorrT given from file we don't set up the auto_cov (prior_cov_estimated = false, different setup in seismicparametersholder)
+
+    //Read auto_covariance from file, this overrides estimate_param_cov and estimate_temp_corr
     const std::string & param_auto_cov_file = input_files->getParamAutoCovFile();
+    bool failed_auto_cov = false;
     if (param_auto_cov_file != "") { //Parameter autocovariance from file
 
+      prior_cov_estimated      = true;
       std::string tmp_err_text = "";
       ReadPriorAutoCovariance(param_auto_cov_file, prior_auto_cov, interval_simboxes[0]->GetNZpad(), tmp_err_text);
       ValidatePriorAutoCovMatrices(prior_auto_cov, model_settings, tmp_err_text);
 
-      //Lateral correlation
-      for (size_t i = 0; i < n_intervals; i++) {
-        prior_corr_XY[i] = FindCorrXYGrid(interval_simboxes[i], model_settings);
-      }
-
-      prior_cov_estimated = true;
-
+      //Set prior_param_cov equal to auto_cov[0]
       for (size_t i = 0; i < n_intervals; i++)
         prior_param_cov[i].resize(3,3);
       prior_param_cov[0] = prior_auto_cov[0][0];
 
-      if (print_result == true)
-        WriteFilePriorVariances(model_settings, prior_auto_cov[0], prior_corr_XY[0], interval_names[0], interval_simboxes[0]->getdz());
+      // B Lateral correlation -------------------------------------------------------------------
+      for (size_t i = 0; i < n_intervals; i++) {
+        prior_corr_XY[i] = FindCorrXYGrid(interval_simboxes[i], model_settings);
+      }
 
-      if (tmp_err_text != "")
+      if (tmp_err_text != "") {
+        failed_auto_cov = true;
         err_text += tmp_err_text;
-
+      }
+      else if (print_result == true)
+        WriteFilePriorVariances(model_settings, prior_auto_cov[0], prior_corr_XY[0], interval_names[0], interval_simboxes[0]->getdz());
     }
     else {
-      //Either estimate auto parameter covariance or the old param corr and temporal corr are from file.
-      //If only param corr are given on file, this is discarded(?) and a new auto parameter covariance is estimated.
-
 
       // A Parameter covariance -----------------------------------------------------------------------
       // 1. From file
@@ -7857,7 +7884,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       // 1. If there is a param corr file defined, use this
       if (param_cov_file != "") {
         //prior_param_corr_.resize(n_intervals);
-        float ** temp_array = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text, false);
+        float ** temp_array = ReadMatrix(param_cov_file, 3, 3, "parameter covariance", tmp_err_text);
         ValidateCovarianceMatrix(temp_array, model_settings, tmp_err_text);
         if (temp_array == NULL || tmp_err_text != "") {
           err_text += "Reading of file " + param_cov_file + " for parameter covariance matrix failed\n";
@@ -7888,11 +7915,11 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       else if (param_cov_from_rock_physics) {
 
         float ** temp_array = new float * [3];
-        for (size_t i=0;i<3;i++) {
+        for (size_t i = 0; i < 3; i++) {
             temp_array[i] = new float[3];
         }
 
-        for (size_t i = 0; i<n_intervals; i++) {
+        for (size_t i = 0; i < n_intervals; i++) {
           prior_param_cov[i].resize(3,3);
         }
 
@@ -7900,7 +7927,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         typedef std::map<std::string, DistributionsRock *> Rp_Map_Type;
         Rp_Map_Type rp_map = GetRockDistributionTime0();
 
-        for (size_t i=0; i<n_facies; i++) {
+        for (size_t i=0; i < n_facies; i++) {
           std::map<std::string, DistributionsRock *>::iterator iter = rp_map.find(facies_names_[i]);
           if (iter != rp_map.end()) {
             rock_distribution[i] = iter->second;
@@ -7910,7 +7937,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           }
         }
 
-        for (size_t i = 0; i<n_intervals; i++) {
+        for (size_t i = 0; i < n_intervals; i++) {
           CalculateCovarianceFromRockPhysics(rock_distribution,
                                               model_settings->getPriorFaciesProb(interval_names[i]),
                                               facies_names_,
@@ -7919,15 +7946,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                               err_text);
         }
 
-        if (tmp_err_text != "")
-        {
+        if (tmp_err_text != "") {
           err_text += "Parameter covariance matrix from rock physics failed\n";
           err_text += tmp_err_text;
           failed_param_cov = true;
         }
         // 3 Parameter estimation from well data -> further down
 
-        for (int j=0; j<3; j++)
+        for (int j = 0; j < 3; j++)
           delete [] temp_array[j];
         delete [] temp_array;
       }
@@ -7974,7 +8000,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               prior_corr_T[i].resize(n_corr_T+1,0);
               float temp_corr_range = model_settings->getTemporalCorrelationRange();
               float dz = static_cast<float>(interval_simboxes[i]->getdz());
-              for (int j=0; j<=n_corr_T; j++) {
+              for (int j=0; j <= n_corr_T; j++) {
                 //using an exponential variogram with a = 1/3 (Chiles and Delfiner 1999)
                 prior_corr_T[i][j] = exp(-3*dz*j/temp_corr_range);
               }
@@ -7983,16 +8009,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             else {
               std::string tmp_err_text("");
               float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
-              if (corr_mat == NULL)
-              {
+              if (corr_mat == NULL) {
                 err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
                 err_text += tmp_err_text;
                 failed_temp_corr = true;
               }
               prior_corr_T[i].resize(n_corr_T,0);
-              if (!failed_temp_corr)
-              {
-                for (int j=0;j<n_corr_T;j++)
+              if (!failed_temp_corr) {
+                for (int j = 0; j < n_corr_T; j++)
                   prior_corr_T[i][j] = corr_mat[0][j+1];
                 delete [] corr_mat[0];
                 delete [] corr_mat;
@@ -8006,14 +8030,13 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           //
           // Estimation of parameter and temporal correlation ----------------------------------------
           //
-
           // A.3 Estimation of parameter correlation from data
           // C.3 Estimation of temporal correlation from data
 
           if (estimate_param_cov || estimate_temp_corr) {
             prior_cov_estimated = true;
             prior_auto_cov[i].resize(n_corr_T);
-            std::string tmp_err_txt;
+            std::string tmp_err_txt = "";
 
             // First possibility: Estimate within this interval
             std::vector<Simbox *> temp_simbox;
@@ -8026,7 +8049,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               failed_param_cov = true;
             }
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
-            else if (analyze->GetEnoughData() == false && interval_names.size() > 0 && analyze_all == NULL) {
+            // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
+            /*
+            else if (analyze->GetEnoughData() == false && interval_names.size() > 1 && analyze_all == NULL) {
               std::vector<Simbox *> temp_simboxes;
               for (size_t j = 0; j < interval_simboxes.size(); j++)
                 temp_simboxes.push_back(interval_simboxes[j]);
@@ -8037,6 +8062,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 failed_temp_corr = true;
               }
             }
+            */
 
             if (err_text == "") {
               NRLib::Matrix param_cov_array_temp;
@@ -8048,7 +8074,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                   param_cov_array_temp = analyze_all->GetVar0();
                 }
 
-                //H-Moved this from outside (estimate_param_cov)
                 for (int j = 0; j < 3; j++) {
                   for (int k = 0; k < 3; k++)
                     prior_param_cov[i](j,k) = param_cov_array_temp(j,k);
@@ -8078,7 +8103,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                     "\nOnly able to estimate the autocovariance for %d of the predefined vector size of %d dz lags. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
               }
 
-              for (int j=0; j<n_est; j++) {
+              for (int j = 0; j < n_est; j++) {
                 prior_auto_cov[i][j] = prior_auto_cov_temp[j];
               }
               for (int j = n_est; j < n_corr_T; j++) {
@@ -8119,7 +8144,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         err_text += "Could not construct prior correlation. Unknown why...\n";
         failed = true;
       }
-
     }
 
     Timings::setTimePriorCorrelation(wall,cpu);

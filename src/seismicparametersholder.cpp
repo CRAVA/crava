@@ -248,7 +248,7 @@ SeismicParametersHolder::createFFTGrid(int nx,  int ny,  int nz,
 
 //-------------------------------------------------------------------
 void
-SeismicParametersHolder::InitializeCorrelations(bool                                  cov_estimated,
+SeismicParametersHolder::InitializeCorrelations(bool                                  cov_estimated, //or from file
                                                 const Surface                       * prior_corr_xy,
                                                 const std::vector<NRLib::Matrix>    & auto_cov,
                                                 const std::vector<double>           & prior_corr_t,
@@ -441,7 +441,6 @@ SeismicParametersHolder::FFTAllGrids()
   LogKit::LogFormatted(LogKit::High,"...done\n");
 
   FFTCovGrids();
-
 
 }
 //-----------------------------------------------------------------------------------------

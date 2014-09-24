@@ -107,6 +107,9 @@ public:
   const std::string                                                  & GetWaveletEstIntTop()                            const { return wavelet_est_int_top_                           ;}
   const std::string                                                  & GetWaveletEstIntBot()                            const { return wavelet_est_int_bot_                           ;}
 
+  Grid2D                                                             * GetGainGrid(int timelapse, int angle)            const { return gain_grids_[timelapse][angle]                  ;}
+  Grid2D                                                             * GetShiftGrid(int timelapse, int angle)           const { return shift_grids_[timelapse][angle]                 ;}
+
   static void         ResampleTrace(const std::vector<float> & data_trace,
                                     const rfftwnd_plan       & fftplan1,
                                     const rfftwnd_plan       & fftplan2,
@@ -430,6 +433,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                      std::vector<NRLib::Matrix>                  & refl_mat,
                                      std::string                                 & wavelet_est_int_top,
                                      std::string                                 & wavelet_est_int_bot,
+                                     std::vector<std::vector<Grid2D *> >         & shift_grids,
+                                     std::vector<std::vector<Grid2D *> >         & gain_grids,
                                      std::string                                 & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
@@ -480,8 +485,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                 int                 n1,
                                 int                 n2,
                                 const std::string & read_reason,
-                                std::string       & err_text,
-                                bool                check_length = true) const;
+                                std::string       & err_text) const;
 
   int                Process1DWavelet(const ModelSettings                        * modelSettings,
                                       const InputFiles                           * inputFiles,
@@ -493,6 +497,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                       const NRLib::Matrix                        & reflection_matrix,
                                       std::string                                & err_text,
                                       Wavelet                                   *& wavelet,
+                                      Grid2D                                    *& shift_grid,
+                                      Grid2D                                    *& gain_grid,
                                       Grid2D                                    *& local_noise_scale,
                                       unsigned int                                 i_timelapse,
                                       unsigned int                                 j_angle,
@@ -970,6 +976,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   std::map<int, std::vector<float> >                           sn_ratios_;
   std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
   std::string                                                  wavelet_est_int_bot_ ;
+  std::vector<std::vector<Grid2D *> >                          shift_grids_; //vector timelapse, vector angles
+  std::vector<std::vector<Grid2D *> >                          gain_grids_;  //vector timelapse, vector angles
 
   std::vector<std::vector<double> >                            t_grad_x_;
   std::vector<std::vector<double> >                            t_grad_y_;
@@ -986,15 +994,11 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   // Prior correlation
   bool                                                         prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
-  //std::vector<NRLib::Grid<double> >             cov_params_interval_;           ///<
-  //std::vector<NRLib::Grid<double> >             corr_params_interval_;
-  bool                                                         prior_cov_estimated_;             //< CRA-257: If prior covariances are estimated, time corr is included in this estimation
+  bool                                                         prior_cov_estimated_;           ///< CRA-257: If prior covariances are estimated, time corr is included in this estimation. This is also true if prior_auto_cov_ is read from file.
   std::vector<Surface *>                                       prior_corr_XY_;
-  std::vector<std::vector<NRLib::Matrix> >                     prior_auto_cov_;                  //< CRA-257: New estimation of prior autocovariance - in this case prior_param_corr is not used. The first vector is intervals.
+  std::vector<std::vector<NRLib::Matrix> >                     prior_auto_cov_;                ///< CRA-257: New estimation of prior autocovariance - in this case prior_param_corr is not used. The first vector is intervals.
   std::vector<NRLib::Matrix>                                   prior_param_cov_;
   std::vector<std::vector<double> >                            prior_corr_T_;
-  //std::vector<NRLib::Grid<double> >             prior_cov_; //Vp, vs, rho
-  //std::vector<std::vector<NRLib::Grid<double> > > prior_corr_; //Vp-vs, Vp-Rho, Vs-Rho
 
   //Gravimetry parameters per timelapse
   std::vector<std::vector<float> >                             observation_location_utmx_;     ///< Vectors to store observation location coordinates

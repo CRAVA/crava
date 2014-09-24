@@ -1014,9 +1014,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
     for ( j = 0; j < nyp_; j++) {
       for ( i = 0; i < cnxp; i++) {
-        ijkMean[0] = meanVp_->getNextComplex();
+        ijkMean[0] = meanVp_ ->getNextComplex();
         ijkMean[1] = meanVs_ ->getNextComplex();
-        ijkMean[2] = meanRho_  ->getNextComplex();
+        ijkMean[2] = meanRho_->getNextComplex();
 
         for (l = 0; l < ntheta_; l++ )
         {
@@ -1092,9 +1092,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
   //  time(&timeend);
   // LogKit::LogFormatted(LogKit::Low,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
-  meanVp_      = NULL; // the content is taken care of by  postVp_
-  meanVs_       = NULL; // the content is taken care of by  postVs_
-  meanRho_        = NULL; // the content is taken care of by  postRho_
+  meanVp_  = NULL; // the content is taken care of by  postVp_
+  meanVs_  = NULL; // the content is taken care of by  postVs_
+  meanRho_ = NULL; // the content is taken care of by  postRho_
 
   postVp_->endAccess();
   postVs_->endAccess();
@@ -1163,12 +1163,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     postCovRho00_ = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
-
     correctVpVsRho(modelSettings_);
   }
 
   if (doing4DInversion_==false) {
-
     if(writePrediction_ == true ) {
       seismicParameters.SetPostVp(postVp_);
       seismicParameters.SetPostVs(postVs_);
@@ -1177,7 +1175,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
     writeBWPredicted();
   }
-
   //delete [] seisData_;
   delete [] kW;
   delete [] errMult1;
@@ -1190,7 +1187,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete [] ijkAns;
   delete    diff1Operator;
   delete    diff3Operator;
-
 
   for (i = 0; i < ntheta_; i++)
   {
@@ -2037,31 +2033,26 @@ void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
   //  this function name is not suited... it returns not what we should think perhaps...
   //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
   //  sigmamdnew = Sqrt( Posterior covariance)
-
+  LogKit::LogFormatted(LogKit::Low,NRLib::ToString(ntheta_)); //H-REMOVE
   NRLib::Matrix D = NRLib::ZeroMatrix(ntheta_);
   for (int i=0 ; i<ntheta_ ; i++) {
     D(i,i) = sqrt(scales(i));
   }
-
   NRLib::Matrix ErrThetaCov(ntheta_, ntheta_);
   NRLib::SetMatrixFrom2DArray(ErrThetaCov, errThetaCov_);
-
   NRLib::Matrix help      = D * ErrThetaCov;
   NRLib::Matrix sigmaenew = help * D;
-
   NRLib::Matrix GT        = NRLib::transpose(G);
   NRLib::Matrix sigmam    = priorVar0_;
   NRLib::Matrix H1        = G * sigmam;
-
   help = H1 * GT;
   help = help + sigmaenew;
-
   NRLib::Vector eigvale(ntheta_);
   NRLib::Matrix eigvece(ntheta_,ntheta_);
+  LogKit::LogFormatted(LogKit::Low,"test14\n");
   NRLib::ComputeEigenVectors(help, eigvale, eigvece);
-
+  LogKit::LogFormatted(LogKit::Low,"test15\n");
   NRLib::Matrix eigvalmate = NRLib::ZeroMatrix(ntheta_);
-
   for (int i=0 ; i<ntheta_ ; i++) {
     if (eigvale(i) > 0.00000001) {
       eigvalmate(i,i) = 1.0/eigvale(i);
@@ -2158,7 +2149,7 @@ AVOInversion::computeFilter(NRLib::SymmetricMatrix & Sprior,
 void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 {
   int i,j,k;
-
+  LogKit::LogFormatted(LogKit::Low,"test3\n");
   NRLib::Matrix G(ntheta_, 3);
 
   computeG(G);
@@ -2219,7 +2210,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
   for (int angle=0;angle<modelAVOdynamic_->GetNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->GetLocalNoiseScale(angle)->FindMin(RMISSING);
-
+  LogKit::LogFormatted(LogKit::Low,"test4\n");
   postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
   postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2231,19 +2222,22 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   {
     for (j=0;j<ny_;j++)
     {
+      LogKit::LogFormatted(LogKit::Low,"test5\n");
       NRLib::Vector scales(modelAVOdynamic_->GetNumberOfAngles());
       for (int angle=0 ; angle<modelAVOdynamic_->GetNumberOfAngles() ; angle++)
         scales(angle) = (*(modelAVOdynamic_->GetLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
+      LogKit::LogFormatted(LogKit::Low,"test6\n");
       newPosteriorCovPointwise(sigmanew,
                                G,
                                scales,
                                sigmamd);
-
+      //LogKit::LogFormatted(LogKit::Low,"test7\n");
       NRLib::Set2DArrayFromMatrix(sigmamd, sigmamdx);
-
+      //LogKit::LogFormatted(LogKit::Low,"test8\n");
       lib_matr_prod(sigmamdx,sigmamdold,3,3,3,eigvec); // store product in eigvec
 
+      LogKit::LogFormatted(LogKit::Low,"test9\n");
       if(sigmamdnew_!=NULL)
       {
         (*sigmamdnew_)(i,j) = new double*[3];
@@ -2254,7 +2248,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
             (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
         }
       }
-
       postVp_->getRealTrace(vp, i, j);
       postVs_->getRealTrace(vs, i, j);
       postRho_->getRealTrace(rho, i, j);
@@ -2276,7 +2269,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
       postRho_->setRealTrace(i,j,rho);
     }
   }
-
+  LogKit::LogFormatted(LogKit::Low,"test5\n");
   postVp_->endAccess();
   postVs_->endAccess();
   postRho_->endAccess();

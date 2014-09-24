@@ -577,7 +577,6 @@ FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
   }
 }
 
-
 void
 FFTGrid::setTrace(const std::vector<float> & trace, size_t i, size_t j)
 {

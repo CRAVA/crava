@@ -229,6 +229,7 @@ int main(int argc, char** argv)
 
       //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
       LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
+
       seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
                                                                              simbox->GetNXpad(),
                                                                              simbox->GetNYpad(),
@@ -243,7 +244,6 @@ int main(int argc, char** argv)
       common_data->ReleaseBackgroundGrids(i_interval, 0);
       common_data->ReleaseBackgroundGrids(i_interval, 1);
       common_data->ReleaseBackgroundGrids(i_interval, 2);
-
 
       //korrelasjonsgrid (2m)
       float corr_grad_I = 0.0f;

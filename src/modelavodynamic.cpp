@@ -219,18 +219,20 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
     //Copy wavelets, since they may be resampled in cravaresult
     wavelets_[i] = new Wavelet1D(common_data->GetWavelet(this_timelapse_)[i]);
-    wavelets_[i]->scale(common_data->GetWavelet(this_timelapse_)[i]->getScale()); //Not copied in copy-constructor
+
+    //Not copied in copy-constructor
+    wavelets_[i]->scale(common_data->GetWavelet(this_timelapse_)[i]->getScale());
 
     std::vector<SeismicStorage *> orig_seis = common_data->GetSeismicDataTimeLapse(this_timelapse_);
 
     bool adjust_scale = (wavelet_estimated[i] == true || model_settings->getEstimateGlobalWaveletScale(this_timelapse_, i) == true);
     bool adjust_noise = model_settings->getEstimateSNRatio(this_timelapse_, i);
-    if ((adjust_scale == true || adjust_noise == true) && common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1) {
+    if (((adjust_scale == true || adjust_noise == true) && common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1)) {
       std::string err_text;
       int error = 0;
-      Grid2D * noise_scaled_tmp;
-      Grid2D * shift_grid_tmp;
-      Grid2D * gain_grid_tmp;
+      Grid2D * noise_scaled_tmp = NULL;
+      Grid2D * shift_grid_tmp   = NULL;
+      Grid2D * gain_grid_tmp    = NULL;
 
       float sn_ratio_new = 0.0f;
 
@@ -292,18 +294,23 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                     gain_grid_tmp,
                                                                     common_data->GetSNRatioTimeLapse(this_timelapse_)[i],
                                                                     1.0,    //scale, set to 1 due to resampling.
-                                                                    adjust_noise,   // doEstimateSNRatio
-                                                                    adjust_scale,   // doEstimateGlobalScale
-                                                                    false,  // doEstimateLocalNoise
-                                                                    false,  // doEstimateLocalShift
-                                                                    false,  // doEstimateLocalScale
-                                                                    false); // doEstimateWavelet
+                                                                    adjust_noise,     // doEstimateSNRatio
+                                                                    adjust_scale,     // doEstimateGlobalScale
+                                                                    false,            // doEstimateLocalNoise
+                                                                    false,            // doEstimateLocalShift
+                                                                    false,            // doEstimateLocalScale
+                                                                    false);           // doEstimateWavelet
 
-        sn_ratio_[i] = sn_ratio_new;
+        if ((adjust_scale == true || adjust_noise == true) && common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1) {
+          sn_ratio_[i] = sn_ratio_new;
 
-        //Compute scaling and scale original wavelet
-        float gain = est_wavelet->getScale();
-        wavelets_[i]->scale(gain);
+          //Compute scaling and scale original wavelet
+          float gain = est_wavelet->getScale();
+          wavelets_[i]->scale(gain);
+        }
+        else
+          sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
+
       }
     }
     else {
@@ -312,6 +319,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
 
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
+
+    //Set shift and gain grids if they were used in WaveletHandling, they are not copied in copy-constructor
+    if (common_data->GetShiftGrid(this_timelapse_, i) != NULL)
+      wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(this_timelapse_, i)));
+    if (common_data->GetGainGrid(this_timelapse_, i) != NULL) {
+      wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(this_timelapse_, i)));
+      wavelets_[i]->invFFT1DInPlace();
+    }
   }
 
   //This is used in writing of wells and in faciesprob.
@@ -339,6 +354,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   for (int i=0; i < number_of_angles_; i++) {
     Wavelet1D * wavelet1D = wavelets_[i]->createWavelet1DForErrorNorm();
+
     error_smooth[i]       = new Wavelet1D(wavelet1D, Wavelet::FIRSTORDERFORWARDDIFF);
     delete wavelet1D;
 
@@ -369,7 +385,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   }
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
-  for (int l=0; l < number_of_angles_; l++) {
+  for (int l = 0; l < number_of_angles_; l++) {
     model_variance_[l]  = wd_corr_mvar[l]*param_var[l];
     signal_variance_[l] = error_variance_[l] + model_variance_[l];
   }

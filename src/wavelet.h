@@ -165,7 +165,9 @@ public:
   void           nullOutsideFrequencyBand(float loCut ,float hiCut );
   float          findNorm() const;
   void           SetReflectionCoeffs(const NRLib::Matrix & reflCoef, int i);
-  bool           getInFFTOrder()     const {return inFFTorder_;}
+  bool           getInFFTOrder()     const { return inFFTorder_ ;}
+  //Grid2D       * getGainGrid()       const { return gainGrid_   ;}
+  //Grid2D       * getShiftGrid()      const { return shiftGrid_  ;}
 
 protected:
   float          getTheta()          const {return theta_;}

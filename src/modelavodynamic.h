@@ -51,7 +51,8 @@ public:
   std::vector<float>            GetSNRatio()               const { return sn_ratio_                       ;}
   bool                          GetUseLocalNoise()         const { return use_local_noise_                ;}
   float                         GetAngle(int i)            const { return angle_[i]                       ;}
-  int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+  //int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+  int                           GetNumberOfAngles()        const { return number_of_angles_               ;}
 
   float                       * GetThetaDeg()              const { return theta_deg_                      ;}
   float                       * GetDataVariance()          const { return data_variance_                  ;}
