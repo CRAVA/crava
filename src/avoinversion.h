@@ -31,7 +31,6 @@ class SpatialRealWellFilter;
 
 class BlockedLogsCommon;
 
-
 class AVOInversion
 {
 public:

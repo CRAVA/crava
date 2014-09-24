@@ -68,12 +68,8 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   enough_data_for_corr_estimation_  = false;
   n_lags_                           = 0;
   interval_name_                    = "";
-  //point_var_0_.resize(3,3);
   var_0_.resize(3,3);
 
-  //mapped_blocked_logs_for_correlation_ = mapped_blocked_logs_for_correlation;
-  //simbox_       = interval_simbox;
-  //wells_        = wells;
   n_wells_       = static_cast<int>(mapped_blocked_logs_for_correlation.size());
   well_names_.resize(n_wells_);
   for (int i = 0; i < n_wells_; i++){
@@ -878,7 +874,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
             for (size_t k = 0; k < well_log_vp.size(); k++){
               for (size_t l = k; l < well_log_vp.size(); l++){
-                if (well_log_vp[k] != RMISSING && well_log_vp[l] != RMISSING 
+                if (well_log_vp[k] != RMISSING && well_log_vp[l] != RMISSING
                   && well_log_rho[k] != RMISSING && well_log_rho[l] != RMISSING){
                   double z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(x_pos[k], y_pos[k]))/interval_simboxes[j]->getRelThick(x_pos[k], y_pos[k]);
                   double z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(x_pos[l], y_pos[l]))/interval_simboxes[j]->getRelThick(x_pos[l], y_pos[l]);
@@ -901,7 +897,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         else
           residual_variance_vs[i] = 0;
       }
-      
+
       // 2.1.3 Linear downscaling of error covariance
       for (int i = 0; i <= last_obs; i++){
         residual_variance_vs[i] *= static_cast<float>(last_obs - i)/(last_obs);
@@ -913,7 +909,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
 
   //
   // 2.2: Estimate autocovariance using both synthetic and non-synthetic well logs
-  // OBS The autocovariance function does not necessarily result in symmetric 
+  // OBS The autocovariance function does not necessarily result in symmetric
   // matrices for each time lag, i.e. cov(h)(vp, vs) != cov(h)(vs, vp)
   // but cov(h)(vp,vs) = cov(-h)(vs,vp) and cov(h)(vs,vp) = cov(-h)(vp,vs)
   //
@@ -1013,7 +1009,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
                     count[lag](0,1)         += 1;
                   }
                 }
-                // cov[l-k](rho_k, vs_l) = cov[l-k](rho_k, a*vp_l + b*rho_l + e_l) = a*cov[l-k](rho_k,vp_l) + b*cov[l-k](rho_k, rho_l) 
+                // cov[l-k](rho_k, vs_l) = cov[l-k](rho_k, a*vp_l + b*rho_l + e_l) = a*cov[l-k](rho_k,vp_l) + b*cov[l-k](rho_k, rho_l)
                 if (log_rho[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
                   temp_auto_cov[lag](1,2) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
                   count[lag](1,2)         += 1;
@@ -1152,7 +1148,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       }
     }
   }
-  
+
   //
   // 2.2.3 Calculate cross autocovariances
   //
@@ -1168,7 +1164,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       else{
         temp_auto_cov[i](0,1) = std::sqrt(2.0)*temp_auto_cov[i](0,0)*0.7;
       }
-      
+
       // cov[t](vs, vp) = cov[-t](vp,vs)
       if (count[i](1,0) > 1){
         temp_auto_cov[i](1,0) /= (count[i](1,0) - 1);

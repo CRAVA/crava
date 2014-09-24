@@ -186,7 +186,7 @@ SeismicParametersHolder::setCorrelationParameters(bool                          
                                                   double                                dz)
 {
   priorVar0_      = priorVar0;
-  cov_estimated_  = cov_estimated; 
+  cov_estimated_  = cov_estimated;
 
   createCorrGrids(nx, ny, nz, nxPad, nyPad, nzPad, false);
 
@@ -248,7 +248,7 @@ SeismicParametersHolder::createFFTGrid(int nx,  int ny,  int nz,
 
 //-------------------------------------------------------------------
 void
-SeismicParametersHolder::InitializeCorrelations(bool                                  cov_estimated,
+SeismicParametersHolder::InitializeCorrelations(bool                                  cov_estimated, //or from file
                                                 const Surface                       * prior_corr_xy,
                                                 const std::vector<NRLib::Matrix>    & auto_cov,
                                                 const std::vector<double>           & prior_corr_t,
@@ -262,7 +262,7 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
   // Erik N: If correlations are estimated, parameter covariance and temporal correlation
   // are now integrated in auto_cov
   //
-  if (cov_estimated){
+  if (cov_estimated) {
     double eps = std::pow(10.0,-10.0);
     std::vector<std::vector<fftw_real *> > circ_auto_cov;
     //NRLib::Vector pos(auto_cov.size());
@@ -324,14 +324,12 @@ SeismicParametersHolder::InitializeCorrelations(bool                            
     exit(1);
     */
 
-
     covVp_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][0], corr_grad_I, corr_grad_J);
     covVs_      ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][1], corr_grad_I, corr_grad_J);
     covRho_     ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[2][2], corr_grad_I, corr_grad_J);
     crCovVpVs_  ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][1], corr_grad_I, corr_grad_J);
     crCovVpRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[0][2], corr_grad_I, corr_grad_J);
     crCovVsRho_ ->FillInLateralCorr(prior_corr_xy, circ_auto_cov[1][2], corr_grad_I, corr_grad_J);
-
 
     /*
     covVp_      ->multiplyByScalar(static_cast<float>(auto_cov[0](0,0)));
@@ -443,7 +441,6 @@ SeismicParametersHolder::FFTAllGrids()
   LogKit::LogFormatted(LogKit::High,"...done\n");
 
   FFTCovGrids();
-
 
 }
 //-----------------------------------------------------------------------------------------
@@ -593,7 +590,7 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<doubl
   //fftw_real * circ_auto_cov = reinterpret_cast<fftw_real*>(fftw_malloc(nzp*sizeof(fftw_real)));
   //size_t vector_len = corr_t_pos.size();
 
- 
+
   for (int k = 0; k < nzp; k++)
     circ_auto_cov[k] = 0;       // Initialize to 0
 
@@ -625,7 +622,7 @@ fftw_real *  SeismicParametersHolder::ComputeCircAutoCov(const std::vector<doubl
         //circ_auto_cov[k] = static_cast<fftw_real>(auto_cov[refk](i,j));
         if (positive)
           circ_auto_cov[k] = static_cast<fftw_real>(corr_t_pos[refk]);
-        else 
+        else
           circ_auto_cov[k] = static_cast<fftw_real>(corr_t_neg[refk]);
       }
       else
@@ -741,7 +738,7 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fft
         }
       }
     }
-    
+
     product_mat_1     = diag_std_var_inv*cov_dens_i;      // temp variable
     product_mat_2      = product_mat_1*diag_std_var_inv;  // temp variable
     NRLib::ComputeEigenVectorsComplex(product_mat_2, eig_values, eig_vectors);
@@ -754,7 +751,7 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fft
     product_mat_1 = diag_std_var * eig_vectors;                               // temp variable
     product_mat_2 = product_mat_1 * eigen_values_mat;                         // temp variable
     product_mat_3 = product_mat_2 * NRLib::conjugateTranspose(eig_vectors);   // temp variable
-    cov_dens_adjusted[i] = product_mat_3 * diag_std_var; 
+    cov_dens_adjusted[i] = product_mat_3 * diag_std_var;
   }
 
   // convert from std::complex to fftw_complex
@@ -803,7 +800,7 @@ void      SeismicParametersHolder::TaperCircAutoCovFunction(std::vector<std::vec
     if (i < nzp/2 + 1){
       if (std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)) > eps)
         taper[i] = static_cast<fftw_real>(std::exp(-0.5*std::pow(static_cast<float>(i)/std_dev,2)));
-      else 
+      else
         taper[i] = 0.0;
     }
     else{

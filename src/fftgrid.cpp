@@ -309,7 +309,9 @@ FFTGrid::~FFTGrid()
   {
     if(add_==true)
       nGrids_ = nGrids_ - 1;
-    fftw_free(rvalue_);
+
+    fftw_free(rvalue_); //delete rvalue_;
+
     FFTMemUse_ -= rsize_ * sizeof(fftw_real);
     LogKit::LogFormatted(LogKit::DebugLow,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
   }
@@ -574,7 +576,6 @@ FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
     }
   }
 }
-
 
 void
 FFTGrid::setTrace(const std::vector<float> & trace, size_t i, size_t j)
@@ -1001,7 +1002,8 @@ FFTGrid::createComplexGrid()
 
 void FFTGrid::createGrid()
 {
-  rvalue_         = new fftw_real[rsize_]; //static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
+  rvalue_         = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real))); //new fftw_real[rsize_]; //static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
+
   cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
 
   counterForGet_  = 0;

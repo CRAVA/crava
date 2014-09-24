@@ -10,11 +10,8 @@
 #include <cmath>
 
 #include "src/seismicstorage.h"
-#include "src/definitions.h"
-//#include "src/commondata.h"
 #include "src/fftgrid.h"
-
-//#include "libs/nrlib/surface/surface.hpp"
+#include "src/simbox.h"
 
 SeismicStorage::SeismicStorage()
 {
@@ -65,8 +62,8 @@ SeismicStorage::~SeismicStorage()
     delete segy_;
   if (storm_grid_ != NULL)
     delete storm_grid_;
-  if (fft_grid_ != NULL)
-    delete fft_grid_;
+  //if (fft_grid_ != NULL)
+  //  delete fft_grid_;
 }
 
 //std::vector<float>
@@ -376,6 +373,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
 
         seismic_simbox.SetErodedSurfaces(*top_grid, *bot_grid, true);
         seismic_simbox.setDepth(*top_grid, *bot_grid, storm_grid_->GetNK(), true);
+        seismic_simbox.SetIsConstantThick(false);
 
         delete top_grid;
         delete bot_grid;
@@ -391,6 +389,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
                              static_cast<int>(full_inversion_simbox.getny()),
                              err_txt);
       seismic_simbox.CopyAllPadding(full_inversion_simbox, lz_limit, err_txt);
+      seismic_simbox.SetIsConstantThick(full_inversion_simbox.getIsConstantThick());
   }
 }
 

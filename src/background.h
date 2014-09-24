@@ -10,7 +10,7 @@
 #include "nrlib/random/beta.hpp"
 
 #include "src/blockedlogscommon.h"
-#include "src/multiintervalgrid.h"
+//#include "src/multiintervalgrid.h"
 
 class Vario;
 class Simbox;

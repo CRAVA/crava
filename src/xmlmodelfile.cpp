@@ -324,7 +324,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
 
   float value;
   if(parseValue(root, "high-cut-seismic-resolution", value, errTxt) == true)
-    modelSettings_->setHighCut(value);
+    modelSettings_->setMaxHzSeismic(value); //H was modelSettings_->setHighCut(value), but thats wrong? HighCut is set under <frequency-band>
 
   parseAllowedParameterValues(root, errTxt);
 
@@ -450,7 +450,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   int useForWaveletEstimation = ModelSettings::NOTSET;
   int useForFaciesProbability = ModelSettings::NOTSET;
   int useForRockPhysics       = ModelSettings::NOTSET;
-  int filterElasticLogs       = ModelSettings::NOTSET;
+  int filterElasticLogs       = ModelSettings::NO; //H Use no as default
   int hasRealVs               = ModelSettings::NOTSET;
 
   bool use;
@@ -1280,6 +1280,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("temporal-correlation");
   legalCommands.push_back("temporal-correlation-range");
   legalCommands.push_back("parameter-correlation");
+  legalCommands.push_back("parameter-autocovariance");
   legalCommands.push_back("correlation-direction");
   legalCommands.push_back("facies-probabilities");
   legalCommands.push_back("earth-model");
@@ -1295,12 +1296,11 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     if (vario != NULL) {
       modelSettings_->setLateralCorr(vario);
     }
-
   }
 
-  std::string filename;
-  if(parseFileName(root, "temporal-correlation", filename, errTxt) == true){
-    inputFiles_->setTempCorrFile(filename);
+  std::string filename_tmpcorr;
+  if(parseFileName(root, "temporal-correlation", filename_tmpcorr, errTxt) == true){
+    inputFiles_->setTempCorrFile(filename_tmpcorr);
     if (modelSettings_->GetMultipleIntervalSetting()){
       errTxt += "Temporal correlation files cannot be used in combination with multiple intervals.\n";
     }
@@ -1313,11 +1313,21 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   }
 
   // check that not both a file and a range for temporal correlation is given
-  if(filename!="" && modelSettings_->getUseVerticalVariogram())
+  if(filename_tmpcorr != "" && modelSettings_->getUseVerticalVariogram())
     errTxt += "Both a temporal correlation file and a temporal variogram range are given as input. Please specify only one of them.\n";
 
-  if(parseFileName(root, "parameter-correlation", filename, errTxt) == true)
-    inputFiles_->setParamCovFile(filename);
+  std::string filename_paramcorr;
+  if(parseFileName(root, "parameter-correlation", filename_paramcorr, errTxt) == true)
+    inputFiles_->setParamCovFile(filename_paramcorr);
+
+  std::string filename_autocov;
+  if(parseFileName(root, "parameter-autocovariance", filename_autocov, errTxt) == true){
+    inputFiles_->setParamAutoCovFile(filename_autocov);
+  }
+
+  // check that not both param autocovariance and param_correlations + temporal_correlations are given
+  if (filename_autocov != "" && (filename_tmpcorr != "" || modelSettings_->getUseVerticalVariogram() || filename_paramcorr != ""))
+    errTxt += "Parameter correlation and/or Temporal correlation cannot be given as input together with autocovariance. Parameter and temporal correlation are integrated into the autocovariance";
 
   parseCorrelationDirection(root, errTxt);
 

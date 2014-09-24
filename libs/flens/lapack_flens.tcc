@@ -500,13 +500,13 @@ ev(bool leftEV, bool rightEV,
 
     typedef typename MA::ElementType T;
     T lwork;
-	DenseVector<Array<double> > rwork(2*A.numRows());
-	//double rwork;
+    DenseVector<Array<double> > rwork(2*A.numRows());
+    //double rwork;
     int info;
 
     int ldvl = leftEV  ? vl.engine().leadingDimension() : 1;
     int ldvr = rightEV ? vr.engine().leadingDimension() : 1;
-	typename VL::ElementType *vldata = leftEV  ? vl.data() : 0;
+    typename VL::ElementType *vldata = leftEV  ? vl.data() : 0;
     typename VR::ElementType *vrdata = rightEV ? vr.data() : 0;
     //T *vldata = leftEV  ? vl.data() : 0;
     //T *vrdata = rightEV ? vr.data() : 0;

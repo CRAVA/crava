@@ -130,7 +130,7 @@ void  SpatialSyntWellFilter::SetPriorSpatialCovarianceSyntWell(const FFTGrid    
     {
       i2 = ipos[l2];
       j2 = jpos[l2];
-      k2 = kpos[l2];      
+      k2 = kpos[l2];
       // Entries on the diagonal of the prior covariance matrix
       prior_cov_vp_[wellnr](l1,l2) = cov_vp->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_vp_[wellnr](l2,l1) = prior_cov_vp_[wellnr](l1,l2);
@@ -138,7 +138,7 @@ void  SpatialSyntWellFilter::SetPriorSpatialCovarianceSyntWell(const FFTGrid    
       prior_cov_vs_[wellnr](l2,l1) = prior_cov_vs_[wellnr](l1,l2);
       prior_cov_rho_[wellnr](l1,l2) = cov_rho->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_rho_[wellnr](l2,l1) = prior_cov_rho_[wellnr](l1,l2);
-      
+
       // Cross covariance entries in the prior cov matrix
       prior_cov_vpvs_[wellnr](l1,l2) = cov_vpvs->getRealValueCyclic(i1-i2,j1-j2,k2-k1);
       prior_cov_vpvs_[wellnr](l2,l1) = cov_vpvs->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
@@ -301,7 +301,7 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
                  Spost,
                  n);
 
-    
+
     lastn += n;
 
     for(int i=0;i<3*n;i++){

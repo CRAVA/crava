@@ -12,21 +12,15 @@
 #include "src/simbox.h"
 #include "src/fftgrid.h"
 #include "src/modelsettings.h"
-
-#include "src/multiintervalgrid.h"
-#include "src/blockedlogscommon.h"
-#include "src/commondata.h"
-#include "src/seismicparametersholder.h"
-#include "src/krigingdata3d.h"
-#include "src/parameteroutput.h"
-
-#include "src/wavelet1D.h"
+#include "nrlib/well/well.hpp"
 
 class FFTGrid;
 class Simbox;
 class CommonData;
 class ParameterOutput;
 class Wavelet1D;
+class MultiIntervalGrid;
+class BlockedLogsCommon;
 
 class CravaResult
 {
@@ -52,20 +46,16 @@ public:
                                const double             & dz_final);
 
   double GetResampledTraceValue(const std::vector<double> & resampled_trace,
-                                const double              & dz_resampled,
-                                const double              & top,
-                                const double              & global_z, //center of cell
-                                const double              & dz_final);
+                                const std::vector<double> & z_pos_resampled,
+                                const double              & global_z); //z-value for this cell in the final blocked log
 
   void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
                           const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
                           MultiIntervalGrid                                              * multi_interval_grid,
                           const Simbox                                                   * output_simbox);
 
-  void GetWellLogContributed(std::vector<double>       & log_out,
-                             const std::vector<double> & log_old,
-                             int                         first_B,
-                             int                         last_B);
+  void CopyWellLog(std::vector<double>       & log_out,
+                   const std::vector<double> & log_old);
 
   void InterpolateMissing(std::vector<double> & well_log);
 
@@ -83,12 +73,11 @@ public:
                      std::vector<double> & new_trace,
                      const float           res_fac);
 
-  void CombineTraces(std::vector<double>                                            & final_log,
-                     const BlockedLogsCommon                                        * blocked_log_final,
-                     const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
-                     std::string                                                    & well_name,
-                     MultiIntervalGrid                                              * multiple_interval_grid,
-                     const std::vector<std::vector<double> >                        & resampled_logs);
+  void CombineTraces(std::vector<double>                     & final_log,
+                     const BlockedLogsCommon                 * blocked_log_final,
+                     MultiIntervalGrid                       * multiple_interval_grid,
+                     const std::vector<std::vector<double> > & resampled_logs,
+                     const std::vector<std::vector<double> > & z_pos_resampled);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,
@@ -132,6 +121,9 @@ public:
 
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
+                        StormContGrid           * background_vp,
+                        StormContGrid           * background_vs,
+                        StormContGrid           * background_rho,
                         GridMapping             * depth_mapping,
                         const TraceHeaderFormat & thf);
 
@@ -237,9 +229,11 @@ private:
 
   std::vector<StormContGrid *>                             facies_prob_geo_;
 
-  std::vector<StormContGrid*>                              lh_cubes_;
+  std::vector<StormContGrid *>                              lh_cubes_;
 
   StormContGrid                                          * quality_grid_;
+
+  std::vector<StormContGrid *>                             trend_cubes_; //vector trend_parameters
 
   std::vector<Wavelet *>                                   wavelets_; //Vector angles //Wavelet from common_data based on estimation simbox
   NRLib::Matrix                                            reflection_matrix_;

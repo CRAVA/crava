@@ -14,7 +14,6 @@
 #include "nrlib/random/beta.hpp"
 #include "nrlib/random/distribution.hpp"
 
-//#include "src/blockedlogsforzone.h"
 #include "src/definitions.h"
 #include "src/modelgeneral.h"
 #include "src/modelsettings.h"
@@ -30,6 +29,7 @@
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"
 #include "src/io.h"
+#include "src/multiintervalgrid.h"
 
 Background::Background(std::vector<NRLib::Grid<float> *>                & parameters,
                        NRLib::Grid<float>                               * velocity,
@@ -1360,7 +1360,7 @@ Background::CalculateVelocityDeviations(NRLib::Grid<float>                      
   //
   int max_blocks = 0;
   int w = 0;
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
     int n_blocks = iter->second->GetNumberOfBlocks();
 

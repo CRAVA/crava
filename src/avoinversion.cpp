@@ -118,15 +118,25 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   assert(meanVs_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
   assert(meanRho_->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
+  //Check if filtering is set for at least one well
+  bool do_filtering = false;
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if (blocked_log->GetUseForFiltering() == true)
+      do_filtering = true;
+  }
+
   if (!modelAVOstatic->GetForwardModeling()) {
     priorVar0_      = seismicParameters.getPriorVar0();
     seisData_       = modelAVOdynamic_->GetSeisCubes();
     modelAVOdynamic_->ReleaseGrids();
 
     // If facies prob are estimated, create the spatial well filter
-    if (modelSettings->getDoInversion() && modelSettings->getEstimateFaciesProb()) {
+    if (modelSettings->getDoInversion() && (modelSettings->getEstimateFaciesProb() || do_filtering == true)) {
       // Create Synthetic Well Filter
-      if (modelSettings->getFaciesProbFromRockPhysics()){
+      if (modelSettings->getFaciesProbFromRockPhysics()) {
           // GENERATE SYNTHETIC WELLS
         int nSyntWellsToBeFiltered                                            = 10;
         int nSyntWellsPerCombinationOfTrendParams                             = 10;
@@ -137,16 +147,17 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         const std::map<std::string, DistributionsRock *>  rock_distributions  = modelGeneral_->GetRockDistributionTime0();
         const std::vector<std::string>                    facies_names        = modelGeneral_->GetFaciesNames();
 
-        spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, seismicParameters.GetCovEstimated());
+        //spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, seismicParameters.GetCovEstimated());
+        spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, true); //H
         spat_synt_well_filter->SetNumberOfSyntWellsToBeFiltered(nSyntWellsToBeFiltered);
         spat_synt_well_filter->SetNumberOfSyntWellsPerCombinationOfTrendParams(nSyntWellsPerCombinationOfTrendParams);
-        spat_synt_well_filter->GenerateSyntWellData(rock_distributions, facies_names, trend_min, trend_max, simbox_->getdz(), 
+        spat_synt_well_filter->GenerateSyntWellData(rock_distributions, facies_names, trend_min, trend_max, simbox_->getdz(),
                                                     nSyntWellsPerCombinationOfTrendParams, nBinsTrendVector, syntWellLength);
       }
       // Create Real Well filter
       else
-        spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), seismicParameters.GetCovEstimated());
-
+        spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), true); //H
+        //spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), seismicParameters.GetCovEstimated());
 
 
       FFTGrid * cov_vp    = seismicParameters.GetCovVp();
@@ -162,13 +173,15 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       cov_vprho->setAccessMode(FFTGrid::RANDOMACCESS);
       cov_vsrho->setAccessMode(FFTGrid::RANDOMACCESS);
 
+      //H Removed SetPriorSpatialCorrSyntWell if prior correlations isnt estimated, since that setup isnt compatible with doFiltering
+
       // Synthetic wells
       if (modelSettings->getFaciesProbFromRockPhysics()){
         for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++){
-          if (seismicParameters.GetCovEstimated())
+          //if (seismicParameters.GetCovEstimated())
             spat_synt_well_filter->SetPriorSpatialCovarianceSyntWell(cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho, j);
-          else
-            spat_synt_well_filter->SetPriorSpatialCorrSyntWell(cov_vp, j);
+          //else
+            //spat_synt_well_filter->SetPriorSpatialCorrSyntWell(cov_vp, j);
         }
       }
       else{
@@ -177,12 +190,12 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
           BlockedLogsCommon * blocked_log = iter->second;
-          if (seismicParameters.GetCovEstimated()){
+          //if (seismicParameters.GetCovEstimated()) {
             spat_real_well_filter->SetPriorSpatialCovariance(blocked_log, i, cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho);
-          }
-          else{
-            spat_real_well_filter->setPriorSpatialCorr(cov_vp, blocked_log, i);
-          }
+          //}
+          //else {
+            //spat_real_well_filter->setPriorSpatialCorr(cov_vp, blocked_log, i);
+          //}
           i++;
         }
       }
@@ -201,7 +214,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
     errCorr_ = modelAVOstatic->GetErrCorr();
 
-    for (int i=0 ; i< ntheta_ ; i++)
+    for (int i = 0; i < ntheta_; i++)
       assert(seisData_[i]->consistentSize(nx_,ny_,nz_,nxp_,nyp_,nzp_));
 
     scaleWarning_ = checkScale();  // fills in scaleWarningText_ if needed.
@@ -273,20 +286,21 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     // DO FILTERING
     //
     int activeAngles = 0; //How many dimensions for local noise interpolation? Turn off for now.
-    if(modelAVOdynamic->GetUseLocalNoise()==true)
+    if (modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
-    if(modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false)
+
+    if ((modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false) || do_filtering == true)
       spat_real_well_filter->doFiltering(modelGeneral->GetBlockedWells(),
-                                  modelSettings->getNoVsFaciesProb(),
-                                  activeAngles,
-                                  this,
-                                  modelAVOdynamic->GetLocalNoiseScales(),
-                                  seismicParameters);
+                                         modelSettings->getNoVsFaciesProb(),
+                                         activeAngles,
+                                         this,
+                                         modelAVOdynamic->GetLocalNoiseScales(),
+                                         seismicParameters);
     if (modelSettings->getEstimateFaciesProb()) {
       bool useFilter = modelSettings->getUseFilterForFaciesProb();
       computeFaciesProb(spat_real_well_filter, spat_synt_well_filter, useFilter, seismicParameters);
     }
-    if(modelSettings->getKrigingParameter() > 0)
+    if (modelSettings->getKrigingParameter() > 0)
       doPredictionKriging(seismicParameters);
 
     //Computation of SyntSeismic is moved until after intervalgrids are combined in CravaResult
@@ -311,7 +325,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   seismicParameters.SetPostCovVs00(postCovVs00_);
   seismicParameters.SetPostCovRho00(postCovRho00_);
 
-
   delete spat_real_well_filter;
   delete spat_synt_well_filter;
 }
@@ -319,7 +332,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 AVOInversion::~AVOInversion()
 {
   delete [] thetaDeg_;
-  //delete [] empSNRatio_;
   delete [] theoSNRatio_;
   delete [] modelVariance_;
   delete [] signalVariance_;
@@ -942,7 +954,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       // Copy matrix A to float**
       float ** A = new float * [3];
       for (int i = 0; i < ntheta_; i++)
-        A[i] = new float(3);
+        A[i] = new float[3]; //H
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
           A[i][j] = static_cast<float>(A_(i,j));
@@ -1002,9 +1014,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
     for ( j = 0; j < nyp_; j++) {
       for ( i = 0; i < cnxp; i++) {
-        ijkMean[0] = meanVp_->getNextComplex();
+        ijkMean[0] = meanVp_ ->getNextComplex();
         ijkMean[1] = meanVs_ ->getNextComplex();
-        ijkMean[2] = meanRho_  ->getNextComplex();
+        ijkMean[2] = meanRho_->getNextComplex();
 
         for (l = 0; l < ntheta_; l++ )
         {
@@ -1080,9 +1092,9 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
   //  time(&timeend);
   // LogKit::LogFormatted(LogKit::Low,"\n Core inversion finished after %ld seconds ***\n",timeend-timestart);
-  meanVp_      = NULL; // the content is taken care of by  postVp_
-  meanVs_       = NULL; // the content is taken care of by  postVs_
-  meanRho_        = NULL; // the content is taken care of by  postRho_
+  meanVp_  = NULL; // the content is taken care of by  postVp_
+  meanVs_  = NULL; // the content is taken care of by  postVs_
+  meanRho_ = NULL; // the content is taken care of by  postRho_
 
   postVp_->endAccess();
   postVs_->endAccess();
@@ -1151,12 +1163,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     postCovRho00_ = seismicParameters.createPostCov00(postCovRho);
 
     seismicParameters.FFTCovGrids();
-
     correctVpVsRho(modelSettings_);
   }
 
   if (doing4DInversion_==false) {
-
     if(writePrediction_ == true ) {
       seismicParameters.SetPostVp(postVp_);
       seismicParameters.SetPostVs(postVs_);
@@ -1165,7 +1175,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
     writeBWPredicted();
   }
-
   //delete [] seisData_;
   delete [] kW;
   delete [] errMult1;
@@ -1178,7 +1187,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete [] ijkAns;
   delete    diff1Operator;
   delete    diff3Operator;
-
 
   for (i = 0; i < ntheta_; i++)
   {
@@ -2025,31 +2033,24 @@ void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
   //  this function name is not suited... it returns not what we should think perhaps...
   //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
   //  sigmamdnew = Sqrt( Posterior covariance)
-
   NRLib::Matrix D = NRLib::ZeroMatrix(ntheta_);
   for (int i=0 ; i<ntheta_ ; i++) {
     D(i,i) = sqrt(scales(i));
   }
-
   NRLib::Matrix ErrThetaCov(ntheta_, ntheta_);
   NRLib::SetMatrixFrom2DArray(ErrThetaCov, errThetaCov_);
-
   NRLib::Matrix help      = D * ErrThetaCov;
   NRLib::Matrix sigmaenew = help * D;
-
   NRLib::Matrix GT        = NRLib::transpose(G);
   NRLib::Matrix sigmam    = priorVar0_;
   NRLib::Matrix H1        = G * sigmam;
-
   help = H1 * GT;
   help = help + sigmaenew;
-
   NRLib::Vector eigvale(ntheta_);
   NRLib::Matrix eigvece(ntheta_,ntheta_);
+  //LogKit::LogFormatted(LogKit::Low,"test14\n"); H-REMOVE
   NRLib::ComputeEigenVectors(help, eigvale, eigvece);
-
   NRLib::Matrix eigvalmate = NRLib::ZeroMatrix(ntheta_);
-
   for (int i=0 ; i<ntheta_ ; i++) {
     if (eigvale(i) > 0.00000001) {
       eigvalmate(i,i) = 1.0/eigvale(i);
@@ -2146,7 +2147,6 @@ AVOInversion::computeFilter(NRLib::SymmetricMatrix & Sprior,
 void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 {
   int i,j,k;
-
   NRLib::Matrix G(ntheta_, 3);
 
   computeG(G);
@@ -2207,7 +2207,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
   for (int angle=0;angle<modelAVOdynamic_->GetNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->GetLocalNoiseScale(angle)->FindMin(RMISSING);
-
   postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
   postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2227,9 +2226,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
                                G,
                                scales,
                                sigmamd);
-
       NRLib::Set2DArrayFromMatrix(sigmamd, sigmamdx);
-
       lib_matr_prod(sigmamdx,sigmamdold,3,3,3,eigvec); // store product in eigvec
 
       if(sigmamdnew_!=NULL)
@@ -2242,7 +2239,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
             (*sigmamdnew_)(i,j)[ii][jj] = eigvec[ii][jj];
         }
       }
-
       postVp_->getRealTrace(vp, i, j);
       postVs_->getRealTrace(vs, i, j);
       postRho_->getRealTrace(rho, i, j);
@@ -2252,9 +2248,9 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
       for (k=0;k<nz_;k++)
       {
-        float vpdiff = vp[k] - meanvp[k];
+        float vpdiff  = vp[k]  - meanvp[k];
         float vsdiff  = vs[k]  - meanvs[k];
-        float rhodiff   = rho[k]   - meanrho[k];
+        float rhodiff = rho[k] - meanrho[k];
         vp[k]  = float(meanvp[k] +sigmanew(0,0)*vpdiff + sigmanew(0,1)*vsdiff + sigmanew(0,2)*rhodiff);
         vs[k]  = float(meanvs[k] +sigmanew(1,0)*vpdiff + sigmanew(1,1)*vsdiff + sigmanew(1,2)*rhodiff);
         rho[k] = float(meanrho[k]+sigmanew(2,0)*vpdiff + sigmanew(2,1)*vsdiff + sigmanew(2,2)*rhodiff);
@@ -2264,7 +2260,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
       postRho_->setRealTrace(i,j,rho);
     }
   }
-
   postVp_->endAccess();
   postVs_->endAccess();
   postRho_->endAccess();

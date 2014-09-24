@@ -190,6 +190,8 @@ ModelSettings::ModelSettings(void)
 
   seed_                    =        0;
 
+  erosion_priority_top_surface_ = 1; //H
+
   //intervalTopConformCorrelation_[""]  = false;
   //intervalBaseConformCorrelation_[""] = false;
 

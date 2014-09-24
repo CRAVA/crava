@@ -10,10 +10,7 @@
 #include "nrlib/surface/regularsurface.hpp"
 
 #include "src/vario.h"
-#include "src/definitions.h"
-#include "src/modelsettings.h"
 #include "src/inputfiles.h"
-#include "src/commondata.h"
 
 struct irapgrid;
 class Wavelet;
@@ -23,7 +20,6 @@ class FFTGrid;
 class RandomGen;
 class GridMapping;
 class InputFiles;
-//class ModelAVOStatic;
 class ModelGeneral;
 class SeismicParametersHolder;
 
@@ -31,7 +27,6 @@ class ModelAVODynamic
 {
 public:
   ModelAVODynamic(ModelSettings          *& model_settings,
-                  //ModelAVOStatic          * model_avo_static,
                   ModelGeneral            * model_general,
                   CommonData              * common_data,
                   SeismicParametersHolder & seismic_parameters,
@@ -56,9 +51,8 @@ public:
   std::vector<float>            GetSNRatio()               const { return sn_ratio_                       ;}
   bool                          GetUseLocalNoise()         const { return use_local_noise_                ;}
   float                         GetAngle(int i)            const { return angle_[i]                       ;}
-  //bool                          getEstimateWavelet(int i)  const { return estimateWavelet_[i]             ;}
-  //bool                          getMatchEnergies(int i)    const { return matchEnergies_[i]               ;}
-  int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+  //int                           GetNumberOfAngles()        const { return static_cast<int>(angle_.size()) ;}
+  int                           GetNumberOfAngles()        const { return number_of_angles_               ;}
 
   float                       * GetThetaDeg()              const { return theta_deg_                      ;}
   float                       * GetDataVariance()          const { return data_variance_                  ;}
@@ -110,6 +104,7 @@ private:
 
   std::vector<Wavelet *>            wavelets_;               ///< Wavelet for angle
   std::vector<FFTGrid *>            seis_cubes_;             ///< Seismic data cubes. Deleted in the commondata destructor
+  std::vector<int>                  seismic_types_;
 
   NRLib::Matrix                     reflection_matrix_;      ///< May specify own Zoeppritz-approximation. Default NULL,
                                                              ///< indicating that standard approximation will be used.
@@ -135,12 +130,6 @@ private:
   float                           * theo_sn_ratio_;      // signal noise ratio from model
 
   double                         ** err_theta_cov_;
-
-  //GridMapping             * timeCutMapping_;        ///< Simbox and mapping for timeCut*/
-
-  //std::vector<bool>         matchEnergies_;
-  //std::vector<bool>         estimateWavelet_;
-
 };
 
 #endif

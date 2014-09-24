@@ -68,7 +68,7 @@ private:
                                  const int                   offset,
                                  NRLib::Vector &             residuals);
 
-  
+
   void fillValuesInSigmapost(double    ** sigmapost,
                              const int *  ipos,
                              const int *  jpos,

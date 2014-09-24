@@ -117,13 +117,15 @@ void NRLib::ComputeEigenVectors(Matrix &A,
 {
   Matrix dummy_mat(A.numRows(), A.numCols());
   Vector dummy_vec(A.numRows());
+  //LogKit::LogFormatted(LogKit::Low,"test14 4\n"); //H-REMOVE
   flens::ev(false, true, A, eigen_values, dummy_vec, dummy_mat, eigen_vectors);
+  //LogKit::LogFormatted(LogKit::Low,"test14 5\n"); //H-REMOVE
 }
 
 void NRLib::ComputeEigenVectorsComplex(ComplexMatrix        & A,
                                        ComplexVector        & eigen_values,
                                        ComplexMatrix        & eigen_vectors)
-{  
+{
   ComplexMatrix dummy_mat(A.numRows(), A.numCols());
   flens::ev(false, true, A, eigen_values, dummy_mat, eigen_vectors);
 }

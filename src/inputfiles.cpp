@@ -19,6 +19,7 @@ InputFiles::InputFiles(void)
     reflMatrFile_(""),
     paramCovFile_(""),
     tempCorrFile_(""),
+    paramAutoCovFile_(""),
     timeSurfTopFile_(""),
     depthSurfTopFile_(""),
     areaSurfaceFile_("")
@@ -84,11 +85,7 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(faciesEstIntFile_[i]);
   for(i=0;i<wellMoveIntFile_.size();i++)
     errTxt += addPathAndCheck(wellMoveIntFile_[i], true);
-  //for(i=0;i<timeSurfFiles_.size();i++)
-  //  errTxt += addPathAndCheck(timeSurfFiles_[i], true);
   errTxt += addPathAndCheck(timeSurfTopFile_, true);
-  //for(i=0;i<depthSurfFiles_.size();i++)
-  //  errTxt += addPathAndCheck(depthSurfFiles_[i]);
   errTxt += addPathAndCheck(depthSurfTopFile_);
   //for(i=0;i<multizoneSurfaceFiles_.size();i++)
   //  errTxt += addPathAndCheck(multizoneSurfaceFiles_[i]);
@@ -114,12 +111,10 @@ InputFiles::addInputPathAndCheckFiles()
   }
 
   errTxt += addPathAndCheck(backVelFile_);
-  //errTxt += addPathAndCheck(corrDirFile_);
-  //errTxt += addPathAndCheck(corrDirTopFile_);
-  //errTxt += addPathAndCheck(corrDirBaseFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCovFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
+  errTxt += addPathAndCheck(paramAutoCovFile_);
   errTxt += addPathAndCheck(refSurfaceFile_,true);
   errTxt += addPathAndCheck(areaSurfaceFile_);
 
