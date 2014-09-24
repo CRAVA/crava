@@ -324,6 +324,26 @@ CommonData::~CommonData() {
     }
   }
 
+  //Shift grids
+  for (size_t i = 0; i < shift_grids_.size(); i++) {
+    for (size_t j = 0; j < shift_grids_[i].size(); j++) {
+      if (shift_grids_[i][j] != NULL) {
+        delete shift_grids_[i][j];
+        shift_grids_[i][j] = NULL;
+      }
+    }
+  }
+
+  //Gain grids
+  for (size_t i = 0; i < gain_grids_.size(); i++) {
+    for (size_t j = 0; j < gain_grids_[i].size(); j++) {
+      if (gain_grids_[i][j] != NULL) {
+        delete gain_grids_[i][j];
+        gain_grids_[i][j] = NULL;
+      }
+    }
+  }
+
   // local_noise_scales_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_noise_scales_.begin(); it != local_noise_scales_.end(); it++) {
     for (size_t j = 0; j < local_noise_scales_.size(); j++) {
@@ -3102,9 +3122,14 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
 
     bool has_3D_wavelet = false;
 
+    shift_grids[i].resize(n_angles);
+    gain_grids[i].resize(n_angles);
+
     for (int j = 0; j < n_angles; j++) {
 
       local_noise_scale[j] = NULL;
+      shift_grids[i][j]    = NULL;
+      gain_grids[i][j]     = NULL;
 
       if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
         has_3D_wavelet = true;
@@ -3204,9 +3229,6 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
 
       float angle = float(angles[j]*180.0/M_PI);
       LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-
-      shift_grids[i].resize(n_angles);
-      gain_grids[i].resize(n_angles);
 
       SeismicStorage * seismic_data_tmp = NULL;
       if (forward_modeling_ == false) {
@@ -3361,12 +3383,14 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              bool                                         estimate_wavelet,
                              bool                                         use_ricker_wavelet) const
 {
-  assert (wavelet == NULL && local_noise_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
-  Grid2D * local_shift = NULL;
-  Grid2D * local_scale = NULL;
+  //assert (wavelet == NULL && local_noise_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
+  assert (wavelet == NULL && local_noise_scale == NULL && shift_grid == NULL && gain_grid == NULL); //Erik N: *& means we get a memory leak if it is not NULL
+  //Grid2D * local_shift = NULL;
+  //Grid2D * local_scale = NULL;
+  //shift_grid = NULL;
+  //gain_grid  = NULL;
 
-  shift_grid = NULL;
-  gain_grid  = NULL;
+  //Since shift_grid and gain_grid isn't copied in the copy constructor, we store them separately and add them when we copy the wavelet (modelavodynamic and cravaresult).
 
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
@@ -3374,14 +3398,18 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   reflection_coefs[2] = static_cast<float>(reflection_matrix(j_angle, 2));
   int error = 0;
   if (model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
-      Surface help(input_files->getScaleFile(i_timelapse, j_angle));
-      local_scale = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
-      ResampleSurfaceToGrid2D(&help, local_scale, full_inversion_simbox);
+    Surface help(input_files->getScaleFile(i_timelapse, j_angle));
+    //local_scale = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
+    //ResampleSurfaceToGrid2D(&help, local_scale, full_inversion_simbox);
+    gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
+    ResampleSurfaceToGrid2D(&help, gain_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
-    local_shift = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
-    ResampleSurfaceToGrid2D(&helpShift, local_shift, full_inversion_simbox);
+    //local_shift = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
+    //ResampleSurfaceToGrid2D(&helpShift, local_shift, full_inversion_simbox);
+    shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
+    ResampleSurfaceToGrid2D(&helpShift, shift_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalNoise(i_timelapse) && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
     Surface helpNoise(input_files->getLocalNoiseFile(i_timelapse, j_angle));
@@ -3495,8 +3523,8 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                                                    error,
                                                                    j_angle,
                                                                    local_noise_scale,
-                                                                   local_shift,
-                                                                   local_scale,
+                                                                   shift_grid, //local_shift,
+                                                                   gain_grid, //local_scale,
                                                                    sn_ratio,
                                                                    model_settings->getWaveletScale(i_timelapse, j_angle),
                                                                    model_settings->getEstimateSNRatio(i_timelapse, j_angle),
@@ -3554,15 +3582,15 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      1.0,
                                      model_settings,
                                      full_inversion_simbox,
-                                     local_shift,
+                                     shift_grid, //local_shift,
                                      angle);
 
-        shift_grid = new Grid2D(*local_shift);
+        //shift_grid = new Grid2D(*local_shift);
 
-        if (wavelet_pre_resampling != NULL)
-          wavelet_pre_resampling->setShiftGrid(new Grid2D(*local_shift));
+        //if (wavelet_pre_resampling != NULL)
+        //  wavelet_pre_resampling->setShiftGrid(new Grid2D(*local_shift));
 
-        wavelet->setShiftGrid(local_shift);
+        //wavelet->setShiftGrid(local_shift);
 
       }
 
@@ -3572,10 +3600,10 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      1.0,
                                      model_settings,
                                      full_inversion_simbox,
-                                     local_scale,
+                                     gain_grid, //local_scale,
                                      angle);
 
-        gain_grid = new Grid2D(*local_scale); //Gain grid is set in modelavodynamic for the correct wavelet
+        //gain_grid = new Grid2D(*local_scale); //Gain grid is set in modelavodynamic for the correct wavelet
 
         //if (wavelet_pre_resampling != NULL)
         //  wavelet_pre_resampling->setGainGrid(new Grid2D(*local_scale));
@@ -3585,6 +3613,15 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       }
     }
   }
+
+  //if (local_shift != NULL) {
+  //  delete local_shift;
+  //  local_shift = NULL;
+  //}
+  //if (local_scale != NULL) {
+  //  delete local_scale;
+  //  local_scale = NULL;
+  //}
 
   delete [] reflection_coefs;
 

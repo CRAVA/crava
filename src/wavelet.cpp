@@ -243,7 +243,7 @@ Wavelet::~Wavelet()
     delete shiftGrid_;
   if(gainGrid_!=NULL)
     delete gainGrid_;
-  fftw_free(rAmp_); //H
+  fftw_free(rAmp_);
   //delete [] rAmp_;
   //delete    cAmp_;
 }

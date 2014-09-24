@@ -2033,7 +2033,6 @@ void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
   //  this function name is not suited... it returns not what we should think perhaps...
   //  sigmanew=  sqrt( (sigmaM - sigmaM|d_new )^-1 ) * sqrt( (sigmaM -s igmaM|d_old )^-1)
   //  sigmamdnew = Sqrt( Posterior covariance)
-  LogKit::LogFormatted(LogKit::Low,NRLib::ToString(ntheta_)); //H-REMOVE
   NRLib::Matrix D = NRLib::ZeroMatrix(ntheta_);
   for (int i=0 ; i<ntheta_ ; i++) {
     D(i,i) = sqrt(scales(i));
@@ -2049,9 +2048,8 @@ void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
   help = help + sigmaenew;
   NRLib::Vector eigvale(ntheta_);
   NRLib::Matrix eigvece(ntheta_,ntheta_);
-  LogKit::LogFormatted(LogKit::Low,"test14\n");
+  //LogKit::LogFormatted(LogKit::Low,"test14\n"); H-REMOVE
   NRLib::ComputeEigenVectors(help, eigvale, eigvece);
-  LogKit::LogFormatted(LogKit::Low,"test15\n");
   NRLib::Matrix eigvalmate = NRLib::ZeroMatrix(ntheta_);
   for (int i=0 ; i<ntheta_ ; i++) {
     if (eigvale(i) > 0.00000001) {
@@ -2149,7 +2147,6 @@ AVOInversion::computeFilter(NRLib::SymmetricMatrix & Sprior,
 void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 {
   int i,j,k;
-  LogKit::LogFormatted(LogKit::Low,"test3\n");
   NRLib::Matrix G(ntheta_, 3);
 
   computeG(G);
@@ -2210,7 +2207,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
   for (int angle=0;angle<modelAVOdynamic_->GetNumberOfAngles();angle++)
     minScale[angle] = modelAVOdynamic_->GetLocalNoiseScale(angle)->FindMin(RMISSING);
-  LogKit::LogFormatted(LogKit::Low,"test4\n");
   postVp_->setAccessMode(FFTGrid::RANDOMACCESS);
   postVs_->setAccessMode(FFTGrid::RANDOMACCESS);
   postRho_->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -2222,22 +2218,17 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   {
     for (j=0;j<ny_;j++)
     {
-      LogKit::LogFormatted(LogKit::Low,"test5\n");
       NRLib::Vector scales(modelAVOdynamic_->GetNumberOfAngles());
       for (int angle=0 ; angle<modelAVOdynamic_->GetNumberOfAngles() ; angle++)
         scales(angle) = (*(modelAVOdynamic_->GetLocalNoiseScale(angle)))(i, j)/minScale[angle];
 
-      LogKit::LogFormatted(LogKit::Low,"test6\n");
       newPosteriorCovPointwise(sigmanew,
                                G,
                                scales,
                                sigmamd);
-      //LogKit::LogFormatted(LogKit::Low,"test7\n");
       NRLib::Set2DArrayFromMatrix(sigmamd, sigmamdx);
-      //LogKit::LogFormatted(LogKit::Low,"test8\n");
       lib_matr_prod(sigmamdx,sigmamdold,3,3,3,eigvec); // store product in eigvec
 
-      LogKit::LogFormatted(LogKit::Low,"test9\n");
       if(sigmamdnew_!=NULL)
       {
         (*sigmamdnew_)(i,j) = new double*[3];
@@ -2257,9 +2248,9 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
 
       for (k=0;k<nz_;k++)
       {
-        float vpdiff = vp[k] - meanvp[k];
+        float vpdiff  = vp[k]  - meanvp[k];
         float vsdiff  = vs[k]  - meanvs[k];
-        float rhodiff   = rho[k]   - meanrho[k];
+        float rhodiff = rho[k] - meanrho[k];
         vp[k]  = float(meanvp[k] +sigmanew(0,0)*vpdiff + sigmanew(0,1)*vsdiff + sigmanew(0,2)*rhodiff);
         vs[k]  = float(meanvs[k] +sigmanew(1,0)*vpdiff + sigmanew(1,1)*vsdiff + sigmanew(1,2)*rhodiff);
         rho[k] = float(meanrho[k]+sigmanew(2,0)*vpdiff + sigmanew(2,1)*vsdiff + sigmanew(2,2)*rhodiff);
@@ -2269,7 +2260,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
       postRho_->setRealTrace(i,j,rho);
     }
   }
-  LogKit::LogFormatted(LogKit::Low,"test5\n");
   postVp_->endAccess();
   postVs_->endAccess();
   postRho_->endAccess();

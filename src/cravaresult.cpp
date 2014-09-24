@@ -130,7 +130,7 @@ CravaResult::~CravaResult()
     block_grid_ = NULL;
   }
 
-  //H-TEST
+  //H-CHECK
   /**/
   for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
     if (background_vp_intervals_[i] != NULL) {
@@ -481,6 +481,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
                            output_simbox.getnz(),
                            output_simbox.GetNZpad());
 
+    if (common_data->GetShiftGrid(0, i) != NULL)
+      wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, i)));
     if (common_data->GetGainGrid(0, i) != NULL) {
       wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       wavelets_[i]->invFFT1DInPlace();
