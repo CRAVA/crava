@@ -28,6 +28,7 @@
 #include "rmswell.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/stringtools.hpp"
 #include "nrlib/surface/surface.hpp"
 //#include "src/definitions.h"
 
@@ -81,11 +82,16 @@ Well::ReadWell(const std::string              & file_name,
 {
   if(file_name.find(".nwh",0) != std::string::npos) {
     NRLib::NorsarWell well(file_name);
-    well_name_ = well.GetWellName();
+    std::string name = NRLib::RemovePath(file_name);
+    name = NRLib::ReplaceExtension(name, "");
+    well_name_ = name;
     cont_log_  = well.GetContLog();
     n_data_    = well.GetNData();
     disc_log_  = well.GetDiscLog();
     read_ok    = true;
+
+    x_pos0_ = well.GetXPosOrigin()*1000;
+    y_pos0_ = well.GetYPosOrigin()*1000;
 
     //Norsar wells has its own missing value in the well-log
     SetMissing(well.GetContMissing());

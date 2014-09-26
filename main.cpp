@@ -208,152 +208,151 @@ int main(int argc, char** argv)
     -------------------------------------------------------------*/
 
     common_data = new CommonData(modelSettings, inputFiles);
-
+    int n_intervals = common_data->GetMultipleIntervalGrid()->GetNIntervals();
     std::vector<SeismicParametersHolder> seismicParametersIntervals(common_data->GetMultipleIntervalGrid()->GetNIntervals());
 
-    //Loop over intervals
-    int n_intervals = common_data->GetMultipleIntervalGrid()->GetNIntervals();
-    for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
+    if(modelSettings->getEstimationMode() == false) {
+      //Loop over intervals
+      for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
-      modelGeneral       = NULL;
-      modelAVOstatic     = NULL;
-      modelGravityStatic = NULL;
+        modelGeneral       = NULL;
+        modelAVOstatic     = NULL;
+        modelGravityStatic = NULL;
 
-      std::string interval_text = "";
-      if (n_intervals > 1)
-        interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
-      LogKit::WriteHeader("Setting up model" + interval_text);
+        std::string interval_text = "";
+        if (n_intervals > 1)
+          interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
+        LogKit::WriteHeader("Setting up model" + interval_text);
 
-      //Priormodell i 3D
-      const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
+        //Priormodell i 3D
+        const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
-      //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
-      LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
+        //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
+        LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
 
-      seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
-                                                                             simbox->GetNXpad(),
-                                                                             simbox->GetNYpad(),
-                                                                             simbox->GetNZpad());
+        seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
+                                                                                simbox->GetNXpad(),
+                                                                                simbox->GetNYpad(),
+                                                                                simbox->GetNZpad());
 
-      //Background grids are overwritten in avoinversion
-      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
-      crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
-      crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
-      crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
-      //Release background grids from common_data.
-      common_data->ReleaseBackgroundGrids(i_interval, 0);
-      common_data->ReleaseBackgroundGrids(i_interval, 1);
-      common_data->ReleaseBackgroundGrids(i_interval, 2);
+        //Background grids are overwritten in avoinversion
+        std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+        crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
+        crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
+        crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
+        //Release background grids from common_data.
+        common_data->ReleaseBackgroundGrids(i_interval, 0);
+        common_data->ReleaseBackgroundGrids(i_interval, 1);
+        common_data->ReleaseBackgroundGrids(i_interval, 2);
 
-      //korrelasjonsgrid (2m)
-      float corr_grad_I = 0.0f;
-      float corr_grad_J = 0.0f;
-      common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
+        //korrelasjonsgrid (2m)
+        float corr_grad_I = 0.0f;
+        float corr_grad_J = 0.0f;
+        common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
 
-      float dt        = static_cast<float>(simbox->getdz());
-      float low_cut   = modelSettings->getLowCut();
-      int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
+        float dt        = static_cast<float>(simbox->getdz());
+        float low_cut   = modelSettings->getLowCut();
+        int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
 
-      if (!modelSettings->getForwardModeling()){
-        LogKit::LogFormatted(LogKit::Low,"\nCorrelation parameters..\n");
-        seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
-                                                                        common_data->GetPriorParamCov(i_interval),
-                                                                        common_data->GetPriorAutoCov(i_interval),
-                                                                        common_data->GetPriorCorrT(i_interval),
-                                                                        common_data->GetPriorCorrXY(i_interval),
-                                                                        low_int_cut,
-                                                                        corr_grad_I,
-                                                                        corr_grad_J,
-                                                                        simbox->getnx(),
-                                                                        simbox->getny(),
-                                                                        simbox->getnz(),
-                                                                        simbox->GetNXpad(),
-                                                                        simbox->GetNYpad(),
-                                                                        simbox->GetNZpad(),
-                                                                        simbox->getdz());
+        if (!modelSettings->getForwardModeling()){
+          LogKit::LogFormatted(LogKit::Low,"\nCorrelation parameters..\n");
+          seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
+                                                                          common_data->GetPriorParamCov(i_interval),
+                                                                          common_data->GetPriorAutoCov(i_interval),
+                                                                          common_data->GetPriorCorrT(i_interval),
+                                                                          common_data->GetPriorCorrXY(i_interval),
+                                                                          low_int_cut,
+                                                                          corr_grad_I,
+                                                                          corr_grad_J,
+                                                                          simbox->getnx(),
+                                                                          simbox->getny(),
+                                                                          simbox->getnz(),
+                                                                          simbox->GetNXpad(),
+                                                                          simbox->GetNYpad(),
+                                                                          simbox->GetNZpad(),
+                                                                          simbox->getdz());
 
-      }
-
-      //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
-      LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
-      setupStaticModels(modelGeneral,
-                        modelAVOstatic,
-                        //modelGravityStatic,
-                        modelSettings,
-                        inputFiles,
-                        seismicParametersIntervals[i_interval],
-                        common_data,
-                        i_interval);
-
-      //Loop over dataset
-      //i.   ModelAVODynamic
-      //ii.  Inversion
-      //iii. Move model one time-step ahead
-
-      //Do not run avoinversion if forward modelleing or estimationmode
-      //Syntetic seismic is generated in CravaResult
-      if (!modelSettings->getForwardModeling() && !modelSettings->getEstimationMode()) {
-        int  eventType;
-        int  eventIndex;
-        modelGeneral->GetTimeLine()->ReSet();
-
-        double time;
-        int time_index = 0;
-        bool first     = true;
-        while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
-          if (first == false) {
-             modelGeneral->AdvanceTime(time_index, seismicParametersIntervals[i_interval], modelSettings);
-             time_index++;
-          }
-          bool failed;
-          switch(eventType) {
-          case TimeLine::AVO : {
-            LogKit::LogFormatted(LogKit::Low,"\nAVO inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
-            failed = doTimeLapseAVOInversion(modelSettings,
-                                             modelGeneral,
-                                             modelAVOstatic,
-                                             common_data,
-                                             seismicParametersIntervals[i_interval],
-                                             eventIndex,
-                                             i_interval);
-            break;
-          }
-          case TimeLine::TRAVEL_TIME : {
-            LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
-            failed = doTimeLapseTravelTimeInversion(modelSettings,
-                                                    modelGeneral,
-                                                    inputFiles,
-                                                    eventIndex,
-                                                    seismicParametersIntervals[i_interval]);
-            break;
-          }
-          case TimeLine::GRAVITY : {
-            LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
-            failed = doTimeLapseGravimetricInversion(modelSettings,
-                                                     modelGeneral,
-                                                     modelGravityStatic,
-                                                     common_data,
-                                                     eventIndex,
-                                                     seismicParametersIntervals[i_interval]);
-            break;
-          }
-          default :
-            failed = true;
-            break;
-          }
-          if(failed)
-            return(1);
-
-          first = false;
         }
-      }
 
-      crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+        //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
+        LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
+        setupStaticModels(modelGeneral,
+                          modelAVOstatic,
+                          //modelGravityStatic,
+                          modelSettings,
+                          inputFiles,
+                          seismicParametersIntervals[i_interval],
+                          common_data,
+                          i_interval);
 
-      if (n_intervals == 1)
-        crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
+        //Loop over dataset
+        //i.   ModelAVODynamic
+        //ii.  Inversion
+        //iii. Move model one time-step ahead
 
-    } //interval_loop
+        //Do not run avoinversion if forward modelleing or estimationmode
+        //Syntetic seismic is generated in CravaResult
+        if (!modelSettings->getForwardModeling() && !modelSettings->getEstimationMode()) {
+          int  eventType;
+          int  eventIndex;
+          modelGeneral->GetTimeLine()->ReSet();
+
+          double time;
+          int time_index = 0;
+          bool first     = true;
+          while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+            if (first == false) {
+                modelGeneral->AdvanceTime(time_index, seismicParametersIntervals[i_interval], modelSettings);
+                time_index++;
+            }
+            bool failed;
+            switch(eventType) {
+            case TimeLine::AVO : {
+              LogKit::LogFormatted(LogKit::Low,"\nAVO inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseAVOInversion(modelSettings,
+                                                modelGeneral,
+                                                modelAVOstatic,
+                                                common_data,
+                                                seismicParametersIntervals[i_interval],
+                                                eventIndex,
+                                                i_interval);
+              break;
+            }
+            case TimeLine::TRAVEL_TIME : {
+              LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseTravelTimeInversion(modelSettings,
+                                                      modelGeneral,
+                                                      inputFiles,
+                                                      eventIndex,
+                                                      seismicParametersIntervals[i_interval]);
+              break;
+            }
+            case TimeLine::GRAVITY : {
+              LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseGravimetricInversion(modelSettings,
+                                                        modelGeneral,
+                                                        modelGravityStatic,
+                                                        common_data,
+                                                        eventIndex,
+                                                        seismicParametersIntervals[i_interval]);
+              break;
+            }
+            default :
+              failed = true;
+              break;
+            }
+            if(failed)
+              return(1);
+
+            first = false;
+          }
+        }
+
+        crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+      } //interval_loop
+    }
+    if (n_intervals == 1)
+      crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
     //Combine interval grids to one grid per parameter
     LogKit::WriteHeader("Combine Results and Write to Files");

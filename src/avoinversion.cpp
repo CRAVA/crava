@@ -2000,7 +2000,8 @@ void AVOInversion::computeG(NRLib::Matrix & G) const
 
   NRLib::InitializeMatrix(Lg, 0.0);
   for (int i=0 ; i < std::min(n_theta, 3) ; i++) {
-    Lg(i,i) = sqrt(Eval(i)/(1.0 - Eval(i)));
+    if(Eval(i) > 0)
+      Lg(i,i) = sqrt(Eval(i)/(1.0 - Eval(i)));
   }
 
   NRLib::Vector Evale(n_theta);
@@ -2218,6 +2219,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   {
     for (j=0;j<ny_;j++)
     {
+      std::cout << "Processing trace " << i << "," << j <<"\n";
       NRLib::Vector scales(modelAVOdynamic_->GetNumberOfAngles());
       for (int angle=0 ; angle<modelAVOdynamic_->GetNumberOfAngles() ; angle++)
         scales(angle) = (*(modelAVOdynamic_->GetLocalNoiseScale(angle)))(i, j)/minScale[angle];
