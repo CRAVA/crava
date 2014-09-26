@@ -182,7 +182,7 @@ CommonData::CommonData(ModelSettings * model_settings,
         err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
       }
     }
-    else {
+    else if(model_settings->getEstimationMode() == false) {
       setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                        multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                        background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
@@ -193,29 +193,32 @@ CommonData::CommonData(ModelSettings * model_settings,
     err_text += "Could not set up prior correlations since this requires seismic data.\n";
   }
 
-  // 14. Set up TimeLine class
-  setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
+  if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
+    // 14. Set up TimeLine class
+    setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
 
-  // 15. Data for gravity inversion
-  setup_gravity_inversion_ = SetupGravityInversion(model_settings,
-                                                   input_files,
-                                                   observation_location_utmx_,
-                                                   observation_location_utmy_,
-                                                   observation_location_depth_,
-                                                   gravity_response_,
-                                                   gravity_std_dev_,
-                                                   err_text);
+    // 15. Data for gravity inversion
+    setup_gravity_inversion_ = SetupGravityInversion(model_settings,
+                                                     input_files,
+                                                     observation_location_utmx_,
+                                                     observation_location_utmy_,
+                                                     observation_location_depth_,
+                                                     gravity_response_,
+                                                     gravity_std_dev_,
+                                                     err_text);
 
-  // 16. Data for Travel time Inversion
-  //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
+    // 16. Data for Travel time Inversion
+    //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
 
-  // 17. Depth Conversion
-  if (model_settings->getDoDepthConversion())
-    setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
+    // 17. Depth Conversion
+    if (model_settings->getDoDepthConversion())
+      setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
 
-  //Punkt o: diverse:
-  ReadAngularCorrelations(model_settings, angular_correlations_);
-  CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
+    //Punkt o: diverse:
+    ReadAngularCorrelations(model_settings, angular_correlations_);
+    CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
+  }
+
 
   if (err_text != "") {
     LogKit::WriteHeader("Loading and processing data failed:");
@@ -3179,6 +3182,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                         model_settings->getGradientSmoothingRange(),
                                         &t0_surf,
                                         correlation_direction,
+                                        full_inversion_simbox,
                                         estimation_simbox,
                                         structure_depth_grad_x,
                                         structure_depth_grad_y);
@@ -3666,6 +3670,7 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
   reflection_coefs[1] = static_cast<float>(reflection_matrix(j_angle, 1));
   reflection_coefs[2] = static_cast<float>(reflection_matrix(j_angle, 2));
   int error = 0;
+
   if (estimate_wavelet) {
     wavelet = new Wavelet3D(input_files->getWaveletFilterFile(j_angle),
                             wavelet_estim_interval,
@@ -3698,10 +3703,11 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
                               error,
                               err_text,
                               input_files->getWaveletFilterFile(j_angle));
-      if (error == 0)
+      if (error == 0) {
         wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                           estimation_simbox.getnz(),
                           estimation_simbox.GetNZpad());
+      }
     }
   }
   if ((model_settings->getEstimationMode() == false) && full_inversion_simbox.getIsConstantThick()) {
@@ -3768,6 +3774,10 @@ CommonData::Process3DWavelet(const ModelSettings                      * model_se
 
   delete [] reflection_coefs;
 
+ if (wavelet->getInFFTOrder() == true) { //Always want walvelet in original order here.
+    wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
+  }
+
   return error;
 }
 
@@ -3776,6 +3786,7 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
                                           double                 radius,
                                           const Surface        * t0_surf,
                                           const Surface        * correlation_direction,
+                                          const Simbox         & full_inversion_simbox,
                                           const Simbox         & estimation_simbox,
                                           NRLib::Grid2D<float> & structure_depth_grad_x,
                                           NRLib::Grid2D<float> & structure_depth_grad_y) const
@@ -3804,10 +3815,10 @@ CommonData::ComputeStructureDepthGradient(double                 v0,
          gy+=gyTmp;
        }
        else {
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (full_inversion_simbox.GetTopSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
-         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (estimation_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
+         CalculateSmoothGrad( &(dynamic_cast<const Surface &> (full_inversion_simbox.GetBotSurface())), x, y, radius, ds,gxTmp, gyTmp);
          gx+=gxTmp*0.5;
          gy+=gyTmp*0.5;
        }
@@ -5857,8 +5868,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   interval_grids,
                   grid_type,
                   par_name,
-                  interval_simboxes,
-                  model_settings,
+                  interval_simboxes,                  model_settings,
                   err_text,
                   false,
                   nopadding);
@@ -6758,7 +6768,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                           const std::vector<Simbox *>         & interval_simboxes,
                           const ModelSettings               * model_settings,
                           std::string                       & err_text,
-                          bool                                scale,
+                            bool                                scale,
                           bool                                nopadding) const
 {
  (void) nopadding;
@@ -6769,6 +6779,8 @@ CommonData::ReadStormFile(const std::string                 & file_name,
   try {
     stormgrid = new StormContGrid(0,0,0);
     stormgrid->ReadFromFile(file_name);
+    //std::string name = "check_"+NRLib::ReplaceExtension(NRLib::RemovePath(file_name),".storm");
+    //stormgrid->WriteToFile(name);
   }
   catch (NRLib::Exception & e) {
     err_text += e.what();
