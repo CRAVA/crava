@@ -189,10 +189,12 @@ CravaResult::~CravaResult()
   //  }
   //}
 
-  for (int i = 0; i < n_intervals_; i++) {
-    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_intervals_[i].begin(); it != blocked_logs_intervals_[i].end(); it++) {
-      if (blocked_logs_intervals_[i].find(it->first)->second != NULL) {
-        delete blocked_logs_intervals_[i].find(it->first)->second;
+  if(blocked_logs_intervals_.size() > 0) {
+    for (int i = 0; i < n_intervals_; i++) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_intervals_[i].begin(); it != blocked_logs_intervals_[i].end(); it++) {
+        if (blocked_logs_intervals_[i].find(it->first)->second != NULL) {
+          delete blocked_logs_intervals_[i].find(it->first)->second;
+        }
       }
     }
   }
