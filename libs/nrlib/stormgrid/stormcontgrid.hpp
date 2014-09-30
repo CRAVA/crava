@@ -35,6 +35,7 @@ namespace NRLib {
 
     explicit StormContGrid(const std::string& filename, Endianess file_format = END_BIG_ENDIAN);
     explicit StormContGrid(size_t nx = 0, size_t ny = 0, size_t nz = 0);
+    explicit StormContGrid(const Volume &vol, const Grid<float> & grid);
     explicit StormContGrid(const Volume &vol, size_t nx = 0, size_t ny = 0, size_t nz = 0);
 
     void SetMissingCode(float missing_code)

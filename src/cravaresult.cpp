@@ -17,6 +17,7 @@
 #include "src/krigingdata3d.h"
 #include "src/parameteroutput.h"
 #include "src/wavelet1D.h"
+#include "src/modelavodynamic.h"
 
 CravaResult::CravaResult():
 cov_vp_(NULL),
@@ -1708,6 +1709,100 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 }
 
 
+void CravaResult::WriteEstimationResults(ModelSettings           * model_settings,
+                                         CommonData              * common_data)
+{
+  //No CombineResults have been run, so much is unset, but we should be able to live with it.
+  LogKit::LogFormatted(LogKit::Low,"\n\nWrite Results");
+
+  const Simbox & simbox            = common_data->GetOutputSimbox();
+  GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
+
+  blocked_logs_ = common_data->GetBlockedLogsOutput();
+
+  //Estimation model: All estimated parameters are written to file, regardless of output settings
+  if(((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) && 
+     (model_settings->getEstimateBackground() || model_settings->getEstimateWaveletNoise())) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
+
+    //Fill in seismic if needed.
+    if(model_settings->getEstimateWaveletNoise()) {
+      //ComputeSeismicImpedance from avoinversion.cpp
+      reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
+      wavelets_          = common_data->GetWavelet(0);
+
+      std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
+      //Resample wavelet to output simbox, and generate seismic logs.
+      for (size_t i = 0; i < wavelets_.size(); i++) {
+        wavelets_[i]->resample(static_cast<float>(simbox.getdz()),
+                               simbox.getnz(),
+                               simbox.GetNZpad());
+
+        if (common_data->GetShiftGrid(0, i) != NULL)
+          wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, i)));
+        if (common_data->GetGainGrid(0, i) != NULL)
+          wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
+      }
+
+      GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox);
+
+      //We need synt_seis from well wavelets, but it needs to be based on output simbox
+      //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
+      bool wavelet_estimated = false;
+      for (size_t i = 0; i < wavelets_.size(); i++) {
+        if (model_settings->getEstimateWavelet(0)[i] == true)
+          wavelet_estimated = true;
+      }
+      if (wavelet_estimated == true)
+        GenerateWellOptSyntSeis(model_settings, common_data, blocked_logs_, simbox, reflection_matrix_);
+
+      std::vector<SeismicStorage *> seismic_data = common_data->GetSeismicDataTimeLapse(0);
+      int n_angles = static_cast<int>(seismic_data.size());
+      ModelAVODynamic::AddSeismicLogsFromStorage(blocked_logs_,
+                                                 seismic_data,
+                                                 simbox,
+                                                 n_angles);
+      
+    }
+    WriteBlockedWells(common_data->GetBlockedLogsOutput(), model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    LogKit::LogFormatted(LogKit::Low,"ok");
+  }
+
+  if (model_settings->getEstimateBackground() == true) {
+    std::vector<NRLib::Grid<float> *> bg = common_data->GetBackgroundParametersInterval(0);
+    background_vp_  = new NRLib::StormContGrid(simbox, *(bg[0]));
+    background_vs_  = new NRLib::StormContGrid(simbox, *(bg[1]));
+    background_rho_ = new NRLib::StormContGrid(simbox, *(bg[2]));
+
+    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Background Grids...");
+    WriteBackgrounds(model_settings,
+                     &simbox,
+                     background_vp_,
+                     background_vs_,
+                     background_rho_,
+                     time_depth_mapping,
+                     *model_settings->getTraceHeaderFormatOutput());
+
+    if (write_crava_) {
+
+      LogKit::LogFormatted(LogKit::Low,"ok\nWrite Background CRAVA Grids...");
+      std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
+      std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
+      std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
+
+      ExpTransf(background_vp_intervals_[0]);
+      background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
+
+      ExpTransf(background_vs_intervals_[0]);
+      background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
+
+      ExpTransf(background_rho_intervals_[0]);
+      background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+    }
+
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
+  }
+}
 
 void CravaResult::WriteFilePriorCorrT(fftw_real   * prior_corr_T,
                                       const int   & nzp,

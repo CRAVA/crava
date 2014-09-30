@@ -64,6 +64,11 @@ public:
 
   void                          ReleaseGrids();                        // Cuts connection to SeisCube_
 
+  static void       AddSeismicLogsFromStorage(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                              const std::vector<SeismicStorage *>        & seismic_data,
+                                              const Simbox                               & simbox,
+                                              int                                          n_angles);
+
 private:
 
   bool             FindTimeGradientSurface(const std::string     & refTimeFile,
@@ -90,11 +95,6 @@ private:
   float             ComputeWDCorrMVar(Wavelet1D* WD,
                                       fftw_real* corrT,
                                       int        nzp);
-
-  void              AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                   const std::vector<SeismicStorage>          & seismic_data,
-                                   const Simbox                               & simbox,
-                                   int                                          n_angles);
 
   void              AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                    std::vector<FFTGrid *>                     & seismic_grids,

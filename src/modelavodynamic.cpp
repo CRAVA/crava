@@ -618,10 +618,10 @@ ModelAVODynamic::ComputeWDCorrMVar(Wavelet1D* WD,
   return var;
 }
 
-void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                     const std::vector<SeismicStorage>          & seismic_data,
-                                     const Simbox                               & simbox,
-                                     int                                          n_angles)
+void ModelAVODynamic::AddSeismicLogsFromStorage(std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                                                const std::vector<SeismicStorage *>        & seismic_data,
+                                                const Simbox                               & simbox,
+                                                int                                          n_angles)
 {
   for (int i = 0; i < n_angles; i++) {
 
@@ -629,14 +629,14 @@ void ModelAVODynamic::AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> 
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
       BlockedLogsCommon * blocked_log = iter->second;
 
-      int seismic_type = seismic_data[i].GetSeismicType();
+      int seismic_type = seismic_data[i]->GetSeismicType();
 
       if (seismic_type == 0) //SEGY
-        blocked_log->SetLogFromGrid(seismic_data[i].GetSegY(), simbox, i, n_angles, "SEISMIC_DATA");
+        blocked_log->SetLogFromGrid(seismic_data[i]->GetSegY(), simbox, i, n_angles, "SEISMIC_DATA");
       else if (seismic_type == 3) //FFTGrid
-        blocked_log->SetLogFromGrid(seismic_data[i].GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
+        blocked_log->SetLogFromGrid(seismic_data[i]->GetFFTGrid(), i, n_angles, "SEISMIC_DATA");
       else //STORM / SGRI
-        blocked_log->SetLogFromGrid(seismic_data[i].GetStorm(), i, n_angles, "SEISMIC_DATA");
+        blocked_log->SetLogFromGrid(seismic_data[i]->GetStorm(), i, n_angles, "SEISMIC_DATA");
 
     }
   }
