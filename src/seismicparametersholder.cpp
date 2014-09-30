@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include <cstdio>
+#include <complex>
 
 #include "nrlib/flens/nrlib_flens.hpp"
 
@@ -705,8 +706,8 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fft
   NRLib::InitializeComplexMatrix(diag_std_var, zero_complex);
 
   for (int i = 0; i < 3; i++){
-    diag_std_var_inv(i,i).real(1.0/std::sqrt(circ_auto_cov_copy[i][i][0]));
-    diag_std_var(i,i).real(std::sqrt(circ_auto_cov_copy[i][i][0]));
+    diag_std_var_inv(i,i) = static_cast<double>(1.0/std::sqrt(circ_auto_cov_copy[i][i][0]));
+    diag_std_var(i,i) = static_cast<double>(std::sqrt(circ_auto_cov_copy[i][i][0]));
   }
 
   NRLib::ComplexMatrix   eig_vectors(3,3);
@@ -714,7 +715,6 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fft
   std::vector<NRLib::ComplexMatrix>   cov_dens_adjusted(nzp);
   NRLib::ComplexMatrix   eigen_values_mat(3,3);
 
-  std::complex<double> temp_complex_std;
   NRLib::ComplexMatrix cov_dens_i(3,3);
   NRLib::ComplexMatrix product_mat_1(3,3);
   NRLib::ComplexMatrix product_mat_2(3,3);
@@ -732,8 +732,7 @@ void  SeismicParametersHolder::MakeCircAutoCovPosDef(std::vector<std::vector<fft
     for (int j = 0; j < 3; j++){
       for (int k = 0; k < 3; k++){
         if (i < vector_len){
-          temp_complex_std.real(fft_circ_auto_cov[j][k][i].re);
-          temp_complex_std.imag(fft_circ_auto_cov[j][k][i].im);
+          std::complex<double> temp_complex_std(fft_circ_auto_cov[j][k][i].re, fft_circ_auto_cov[j][k][i].im);
           cov_dens_i(j,k) =  temp_complex_std;
         }
       }
