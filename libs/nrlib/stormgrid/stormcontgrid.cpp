@@ -60,7 +60,17 @@ StormContGrid::StormContGrid(const Volume &vol, size_t nx, size_t ny, size_t nz)
   model_file_name_ = "ModelFile";
   variable_name_ = "UNKNOWN";
   Resize(nx,ny,nz);
+}
 
+StormContGrid::StormContGrid(const Volume &vol, const Grid<float> & grid)
+:Grid<float>(grid),
+ Volume(vol)
+{
+  file_format_ = STORM_BINARY;
+  missing_code_ = STD_MISSING_CODE;
+  zone_number_ = 0;
+  model_file_name_ = "ModelFile";
+  variable_name_ = "UNKNOWN";
 }
 
 StormContGrid::StormContGrid(const std::string& filename, Endianess file_format)

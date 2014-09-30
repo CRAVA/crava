@@ -83,6 +83,9 @@ public:
                     CommonData              * common_data,
                     SeismicParametersHolder & seismic_parameters);
 
+  void WriteEstimationResults(ModelSettings           * model_settings,
+                              CommonData              * common_data);
+
   void WriteFilePriorCorrT(fftw_real   * prior_corr_T,
                            const int   & nzp,
                            const float & dt,

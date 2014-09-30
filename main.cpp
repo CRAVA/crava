@@ -354,30 +354,44 @@ int main(int argc, char** argv)
     if (n_intervals == 1)
       crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
-    //Combine interval grids to one grid per parameter
-    LogKit::WriteHeader("Combine Results and Write to Files");
-    crava_result->CombineResults(modelSettings,
+    if(modelSettings->getEstimationMode() == true) {
+      const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(0);
+      seismicParametersIntervals[0].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(0),
+                                                                    simbox->GetNXpad(),
+                                                                    simbox->GetNYpad(),
+                                                                    simbox->GetNZpad());
+      crava_result->AddBackgroundVp(seismicParametersIntervals[0].GetMeanVp());
+      crava_result->AddBackgroundVs(seismicParametersIntervals[0].GetMeanVs());
+      crava_result->AddBackgroundRho(seismicParametersIntervals[0].GetMeanRho());
+
+      crava_result->WriteEstimationResults(modelSettings,
+                                           common_data);
+    }
+    else {
+      //Combine interval grids to one grid per parameter
+      LogKit::WriteHeader("Combine Results and Write to Files");
+      crava_result->CombineResults(modelSettings,
+                                   common_data,
+                                   seismicParametersIntervals);
+
+      crava_result->WriteResults(modelSettings,
                                  common_data,
-                                 seismicParametersIntervals);
+                                 seismicParametersIntervals[0]);
 
-    crava_result->WriteResults(modelSettings,
-                               common_data,
-                               seismicParametersIntervals[0]);
-
-    if(modelSettings->getDo4DInversion())
-    {
-
-      bool failed;
-      if(modelSettings->getDo4DRockPhysicsInversion())
+      if(modelSettings->getDo4DInversion())
       {
-        LogKit::WriteHeader("4D Rock Physics Inversion");
-        failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
 
-        if(failed)
-          return(1);
+        bool failed;
+        if(modelSettings->getDo4DRockPhysicsInversion())
+        {
+          LogKit::WriteHeader("4D Rock Physics Inversion");
+          failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
+
+          if(failed)
+            return(1);
+        }
       }
     }
-
     if (modelSettings->getDoInversion() && FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids()) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
       LogKit::LogFormatted(LogKit::Warning,"\n            Maximum number of grids requested  :  %2d",FFTGrid::getMaxAllowedGrids());
