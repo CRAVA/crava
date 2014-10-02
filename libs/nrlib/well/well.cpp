@@ -26,12 +26,17 @@
 #include "well.hpp"
 #include "../iotools/stringtools.hpp"
 
+#include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/stringtools.hpp"
+#include "nrlib/surface/surface.hpp"
+//#include "src/definitions.h"
+
 using namespace NRLib;
 
 Well::Well()
 {
   well_rmissing_ = -999.0;
-  well_imissing_  = -999;
+  well_imissing_ = -999;
 }
 
 
@@ -45,6 +50,13 @@ Well::Well(const std::string & name,
 }
 
 
+Well::Well(const std::string & file_name,
+           bool              & read_ok,
+           const std::string & facies_log)
+{
+  ReadWell(file_name, read_ok, facies_log);
+}
+
 
 Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
            const std::map<std::string,std::vector<int> >    & disc_log,
@@ -57,9 +69,60 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
+Well::~Well(){
 
-Well::~Well()
-{}
+}
+
+
+void
+Well::ReadWell(const std::string              & file_name,
+               bool                           & read_ok,
+               const std::string              & facies_log)
+{
+  if(file_name.find(".nwh",0) != std::string::npos) {
+    NRLib::NorsarWell well(file_name);
+    std::string name = NRLib::RemovePath(file_name);
+    name = NRLib::ReplaceExtension(name, "");
+    well_name_ = name;
+    cont_log_  = well.GetContLog();
+    n_data_    = well.GetNData();
+    disc_log_  = well.GetDiscLog();
+    read_ok    = true;
+
+    x_pos0_ = well.GetXPosOrigin()*1000;
+    y_pos0_ = well.GetYPosOrigin()*1000;
+
+    //Norsar wells has its own missing value in the well-log
+    SetMissing(well.GetContMissing());
+
+    // assume that facies logs from norsar wells are not used
+    has_facies_log_ = false;
+  }
+  else if(file_name.find(".rms",0) != std::string::npos || file_name.find(".txt",0) != std::string::npos) {
+    NRLib::RMSWell well(file_name);
+    well_name_ = well.GetWellName();
+    n_data_    = well.GetNData();
+    cont_log_  = well.GetContLog();
+    disc_log_  = well.GetDiscLog();
+    x_pos0_    = well.GetXPos0();
+    y_pos0_    = well.GetYPos0();
+
+    std::map<int, std::string> facies_map;
+    if(well.HasDiscLog(facies_log))
+      facies_map = well.GetDiscNames(facies_log);
+
+    if(facies_map.size() > 0){
+      has_facies_log_ = true;
+      facies_map_ = facies_map;
+    }
+    else{
+      has_facies_log_ = false;
+    }
+    read_ok = true;
+  }
+  else
+    read_ok = false;
+}
 
 
 void
@@ -68,15 +131,37 @@ Well::AddContLog(const std::string& name, const std::vector<double>& log)
   cont_log_[name] = log;
 }
 
+void
+Well::AddContLogSeismicResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_seismic_resolution_[name] = log;
+}
+
+void
+Well::AddContLogBackgroundResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_background_resolution_[name] = log;
+}
+
+
+bool Well::HasDiscLog(const std::string& name) const{
+  std::map<std::string, std::vector<int> >::const_iterator it = disc_log_.find(name);
+  if(it != disc_log_.end()){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
 
 bool
 Well::HasContLog(const std::string& name) const
 {
-  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
-  if(item != cont_log_.end())
-    return(true);
+  //std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  if(cont_log_.find(name) != cont_log_.end())
+    return true;
   else
-    return(false);
+    return false;
 }
 
 
@@ -88,11 +173,43 @@ Well::GetContLog(const std::string& name)
   return item->second;
 }
 
+std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_background_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
 
 const std::vector<double>&
 Well::GetContLog(const std::string& name) const
 {
   std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_background_resolution_.find(name);
   assert(item != cont_log_.end());
   return item->second;
 }

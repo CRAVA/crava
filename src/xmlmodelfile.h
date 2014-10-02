@@ -6,7 +6,6 @@
 #define XMLMODELFILE_H
 
 #include <stdio.h>
-
 #include "nrlib/segy/traceheader.hpp"
 #include "nrlib/tinyxml/tinyxml.h"
 #include "src/definitions.h"
@@ -14,10 +13,13 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsfluidstorage.h"
 #include "rplib/distributionssolidstorage.h"
+#include "src/blockedlogscommon.h"
+#include "src/inputfiles.h"
+#include "src/modelsettings.h"
 
 class Vario;
-class ModelSettings;
-class InputFiles;
+
+
 
 class XmlModelFile
 {
@@ -25,9 +27,9 @@ public:
   XmlModelFile(const std::string & fileName);
     ~XmlModelFile(void);
 
-  ModelSettings * getModelSettings(void)  const { return modelSettings_ ;}
-  InputFiles    * getInputFiles(void)     const { return inputFiles_    ;}
-  bool            getParsingFailed(void)  const { return failed_        ;}
+  ModelSettings * getModelSettings(void)         { return modelSettings_ ;}
+  InputFiles    * getInputFiles(void)            { return inputFiles_    ;}
+  bool            getParsingFailed(void)   const { return failed_        ;}
 
 private:
   bool parseCrava(TiXmlNode * node, std::string & errTxt);
@@ -65,7 +67,7 @@ private:
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
   bool parseMultizoneModel(TiXmlNode * node, std::string & errTxt);
-  bool parseZone(TiXmlNode * node, std::string & errTxt);
+  //bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
@@ -180,7 +182,7 @@ private:
   void checkTimeLapseConsistency(std::string & errTxt);
   void checkRockPhysicsConsistency(std::string & errTxt);
   void checkIOConsistency(std::string & errTxt);
-  void checkMultizoneBackgroundConsistency(std::string & errTxt);
+  //void checkMultizoneBackgroundConsistency(std::string & errTxt);
 
   void setMissing(int & value)         { value = IMISSING ;}
   void setMissing(float & value)       { value = RMISSING ;}
@@ -189,8 +191,8 @@ private:
 
 private:
 
-  ModelSettings  * modelSettings_;
-  InputFiles     * inputFiles_;
+  ModelSettings    * modelSettings_;
+  InputFiles       * inputFiles_;
 
   bool             failed_;                // Indicates whether errors ocuured during construction.
   bool             surveyFailed_;

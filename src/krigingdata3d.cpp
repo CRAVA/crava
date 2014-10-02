@@ -10,9 +10,9 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/krigingdata3d.h"
-#include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/definitions.h"
+#include "src/blockedlogscommon.h"
 
 //---------------------------------------------------------------------
 KrigingData3D::KrigingData3D(int ntot)
@@ -23,9 +23,73 @@ KrigingData3D::KrigingData3D(int ntot)
 }
 
 //---------------------------------------------------------------------
-KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
-                             int                     nWells,
-                             int                     type)
+//KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
+//                             int                     nWells,
+//                             int                     type)
+//  : data_(NULL),
+//    nd_(0)
+//{
+//  //
+//  // Find total number of data
+//  //
+//  int ntot = 0;
+//  int maxBlocks = 0;
+//  for (int w = 0 ; w < nWells ; w++) {
+//    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+//    ntot += nBlocks;
+//    if (nBlocks > maxBlocks)
+//      maxBlocks = nBlocks;
+//  }
+//
+//  data_ = new CBWellPt * [ntot];
+//
+//  //
+//  // Fill with data
+//  //
+//  for (int w = 0 ; w < nWells ; w++) {
+//
+//    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+//    const int nBlocks = bl->getNumberOfBlocks();
+//
+//    const float * vp;
+//    const float * vs;
+//    const float * rho;
+//    if (type == 1) {
+//      vp = bl->getVp();
+//      vs  = bl->getVs();
+//      rho   = bl->getRho();
+//    }
+//    else if (type == 2) {
+//      vp = bl->getVpHighCutBackground();
+//      vs  = bl->getVsHighCutBackground();
+//      rho   = bl->getRhoHighCutBackground();
+//    }
+//    else if (type == 3) {
+//      vp = bl->getVpHighCutSeismic();
+//      vs  = bl->getVsHighCutSeismic();
+//      rho   = bl->getRhoHighCutSeismic();
+//    }
+//    else if (type == 4) {
+//      vp = bl->getVpSeismicResolution();
+//      vs  = bl->getVsSeismicResolution();
+//      rho   = bl->getRhoSeismicResolution();
+//    }
+//    else {
+//      LogKit::LogFormatted(LogKit::Low,"ERROR: Undefined log type %d\n",type);
+//      exit(1);
+//    }
+//
+//    const int * ipos = bl->getIpos();
+//    const int * jpos = bl->getJpos();
+//    const int * kpos = bl->getKpos();
+//
+//    addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
+//  }
+//  divide();
+//}
+
+KrigingData3D::KrigingData3D(std::map<std::string, BlockedLogsCommon *> blocked_wells,
+                             int                                        type)
   : data_(NULL),
     nd_(0)
 {
@@ -34,8 +98,11 @@ KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
   //
   int ntot = 0;
   int maxBlocks = 0;
-  for (int w = 0 ; w < nWells ; w++) {
-    int nBlocks = wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks();
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    int nBlocks = blocked_log->GetNumberOfBlocks();
     ntot += nBlocks;
     if (nBlocks > maxBlocks)
       maxBlocks = nBlocks;
@@ -46,44 +113,49 @@ KrigingData3D::KrigingData3D(std::vector<WellData *> wells,
   //
   // Fill with data
   //
-  for (int w = 0 ; w < nWells ; w++) {
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
 
-    BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
-    const int nBlocks = bl->getNumberOfBlocks();
+    const int nBlocks = blocked_log->GetNumberOfBlocks();
 
-    const float * alpha;
-    const float * beta;
-    const float * rho;
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
+    const std::vector<int> & kpos = blocked_log->GetKposVector();
+
     if (type == 1) {
-      alpha = bl->getAlpha();
-      beta  = bl->getBeta();
-      rho   = bl->getRho();
+      const std::vector<double> & vp  = blocked_log->GetVpBlocked();
+      const std::vector<double> & vs  = blocked_log->GetVsBlocked();
+      const std::vector<double> & rho = blocked_log->GetRhoBlocked();
+
+      addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
     }
     else if (type == 2) {
-      alpha = bl->getAlphaHighCutBackground();
-      beta  = bl->getBetaHighCutBackground();
-      rho   = bl->getRhoHighCutBackground();
+      const std::vector<double> & vp  = blocked_log->GetVpHighCutBackground();
+      const std::vector<double> & vs  = blocked_log->GetVsHighCutBackground();
+      const std::vector<double> & rho = blocked_log->GetRhoHighCutBackground();
+
+      addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
     }
     else if (type == 3) {
-      alpha = bl->getAlphaHighCutSeismic();
-      beta  = bl->getBetaHighCutSeismic();
-      rho   = bl->getRhoHighCutSeismic();
+      const std::vector<double> & vp  = blocked_log->GetVpHighCutSeismic();
+      const std::vector<double> & vs  = blocked_log->GetVsHighCutSeismic();
+      const std::vector<double> & rho = blocked_log->GetRhoHighCutSeismic();
+
+      addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
     }
     else if (type == 4) {
-      alpha = bl->getAlphaSeismicResolution();
-      beta  = bl->getBetaSeismicResolution();
-      rho   = bl->getRhoSeismicResolution();
+      const std::vector<double> & vp =  blocked_log->GetVpSeismicResolution();
+      const std::vector<double> & vs =  blocked_log->GetVsSeismicResolution();
+      const std::vector<double> & rho = blocked_log->GetRhoSeismicResolution();
+
+      addData(vp, vs, rho, ipos, jpos, kpos, nBlocks);
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"ERROR: Undefined log type %d\n",type);
       exit(1);
     }
 
-    const int * ipos = bl->getIpos();
-    const int * jpos = bl->getJpos();
-    const int * kpos = bl->getKpos();
-
-    addData(alpha, beta, rho, ipos, jpos, kpos, nBlocks);
   }
   divide();
 }
@@ -98,14 +170,71 @@ KrigingData3D::~KrigingData3D(void)
 }
 
 //---------------------------------------------------------------------
+//void
+//KrigingData3D::addData(const float * vp,
+//                       const float * vs,
+//                       const float * rho,
+//                       const int   * ipos,
+//                       const int   * jpos,
+//                       const int   * kpos,
+//                       const int     nd)
+//{
+//  for (int m = 0 ; m < nd ; m++)
+//  {
+//    const int i = ipos[m];
+//    const int j = jpos[m];
+//    const int k = kpos[m];
+//
+//    if (vp[m] != RMISSING || vs[m] != RMISSING || rho[m] != RMISSING)
+//    {
+//      float a,b,r;
+//
+//      if (vp[m] != RMISSING)
+//        a = exp(vp[m]);
+//      else
+//        a = RMISSING;
+//
+//      if (vs[m] != RMISSING)
+//        b = exp(vs[m]);
+//      else
+//        b = RMISSING;
+//
+//      if (rho[m] != RMISSING)
+//        r = exp(rho[m]);
+//      else
+//        r = RMISSING;
+//
+//      int index = gotBlock(i,j,k);
+//      if (index == -1)
+//      {
+//        data_[nd_] = new CBWellPt(i, j, k);
+//        data_[nd_]->AddLog(a, b, r);
+//        nd_++;
+//      }
+//      else
+//      {
+//        data_[index]->AddLog(a, b, r);
+//        //
+//        // This is not a problem for CRAVA, but normally two wells should not share the same
+//        // set of blocks (with the possible exception of side-tracks).
+//        //
+//        LogKit::LogFormatted(LogKit::DebugLow,"\nNOTE: Blocked log with indices i,j,k = %d,%d,%d has been referred to twice. This is not a problem",i,j,k);
+//        LogKit::LogFormatted(LogKit::DebugLow,"\n      but may indicate that the grid is too coarse, or that you have wells with side-tracks?\n");
+//      }
+//    }
+//  }
+//}
+
+
+//---------------------------------------------------------------------
 void
-KrigingData3D::addData(const float * alpha,
-                       const float * beta,
-                       const float * rho,
-                       const int   * ipos,
-                       const int   * jpos,
-                       const int   * kpos,
-                       const int     nd)
+KrigingData3D::addData(const std::vector<double> & vp,
+                       const std::vector<double> & vs,
+                       const std::vector<double> & rho,
+                       const std::vector<int>    & ipos,
+                       const std::vector<int>    & jpos,
+                       const std::vector<int>    & kpos,
+                       const int                   nd)
 {
   for (int m = 0 ; m < nd ; m++)
   {
@@ -113,17 +242,17 @@ KrigingData3D::addData(const float * alpha,
     const int j = jpos[m];
     const int k = kpos[m];
 
-    if (alpha[m] != RMISSING || beta[m] != RMISSING || rho[m] != RMISSING)
+    if (vp[m] != RMISSING || vs[m] != RMISSING || rho[m] != RMISSING)
     {
-      float a,b,r;
+      double a,b,r;
 
-      if (alpha[m] != RMISSING)
-        a = exp(alpha[m]);
+      if (vp[m] != RMISSING)
+        a = exp(vp[m]);
       else
         a = RMISSING;
 
-      if (beta[m] != RMISSING)
-        b = exp(beta[m]);
+      if (vs[m] != RMISSING)
+        b = exp(vs[m]);
       else
         b = RMISSING;
 
@@ -136,12 +265,12 @@ KrigingData3D::addData(const float * alpha,
       if (index == -1)
       {
         data_[nd_] = new CBWellPt(i, j, k);
-        data_[nd_]->AddLog(a, b, r);
+        data_[nd_]->AddLog(static_cast<float>(a), static_cast<float>(b), static_cast<float>(r));
         nd_++;
       }
       else
       {
-        data_[index]->AddLog(a, b, r);
+        data_[index]->AddLog(static_cast<float>(a), static_cast<float>(b), static_cast<float>(r));
         //
         // This is not a problem for CRAVA, but normally two wells should not share the same
         // set of blocks (with the possible exception of side-tracks).
@@ -192,21 +321,21 @@ KrigingData3D::writeToFile(const std::string fileName)
 
   for (int m = 0 ; m < nd_ ; m++)
   {
-    float  alpha, beta, rho;
-    bool   hasAlpha, hasBeta, hasRho;
+    float  vp, vs, rho;
+    bool   hasVp, hasVs, hasRho;
     int    i, j, k;
     data_[m]->GetIJK(i, j, k);
-    data_[m]->IsValidObs(hasAlpha, hasBeta, hasRho);
-    data_[m]->GetAlphaBetaRho(alpha, beta, rho);
+    data_[m]->IsValidObs(hasVp, hasVs, hasRho);
+    data_[m]->GetAlphaBetaRho(vp, vs, rho);
 
-    if (hasAlpha)
-      alpha = exp(alpha);
+    if (hasVp)
+      vp = exp(vp);
     else
-      alpha = WELLMISSING;
-    if (hasBeta)
-      beta = exp(beta);
+      vp = WELLMISSING;
+    if (hasVs)
+      vs = exp(vs);
     else
-      beta = WELLMISSING;
+      vs = WELLMISSING;
     if (hasRho)
       rho = exp(rho);
     else
@@ -217,8 +346,8 @@ KrigingData3D::writeToFile(const std::string fileName)
          << std::setw(3) << j << " "
          << std::setw(3) << k << "   "
          << std::setprecision(2)
-         << std::setw(8) << alpha << "  "
-         << std::setw(8) << beta  << "  "
+         << std::setw(8) << vp << "  "
+         << std::setw(8) << vs  << "  "
          << std::setprecision(5)
          << std::setw(8) << rho   << "\n";
   }

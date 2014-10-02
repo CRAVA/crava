@@ -26,7 +26,9 @@ public:
   NRLib::Matrix getEvolutionMatrix(int time_step)          const { return evolution_matrix_[time_step]; }
   NRLib::Vector getMeanCorrectionTerm(int time_step)       const { return mean_correction_term_[time_step];}
   NRLib::Matrix getCovarianceCorrectionTerm(int time_step) const { return cov_correction_term_[time_step]; }
-  std::vector<std::vector<std::vector<double> > > returnCorrelatedSample(int i_max,TimeLine & time_line,   const std::vector<DistributionsRock*> & dist_rock);
+  std::vector<std::vector<std::vector<double> > > returnCorrelatedSample(int                                      i_max,
+                                                                         TimeLine                               & time_line,
+                                                                         const std::vector<DistributionsRock*>  & dist_rock);
   NRLib::Vector computePriorMeanStaticAndDynamicLastTimeStep();
   NRLib::Matrix computePriorCovStaticAndDynamicLastTimeStep();
   void SetInitialMean(NRLib::Vector initialMean){initial_mean_=initialMean;}

@@ -14,18 +14,40 @@ public:
                               int     nd,
                               float   dz);
 
+  static void      krigVector(double * data,
+                              double * trend,
+                              int      nd,
+                              float    dz);
+
 private:
   static void      locateValidData(float * data,
                                    int   * index,
                                    int     nd,
                                    int   & md);
+
+  static void      locateValidData(double * data,
+                                   int    * index,
+                                   int      nd,
+                                   int    & md);
+
   static void      subtractTrend(float * data,
                                  float * trend,
                                  int   * index,
                                  int     md);
+
+  static void      subtractTrend(double * data,
+                                 double * trend,
+                                 int    * index,
+                                 int      md);
+
   static void      addTrend(float * data,
                             float * trend,
                             int     nd);
+
+  static void      addTrend(double * data,
+                            double * trend,
+                            int      nd);
+
   static void      allocateSpaceForMatrixEq(double ** & K,
                                             double ** & C,
                                             double  * & k,

@@ -28,6 +28,7 @@
 #include "norsarwell.hpp"
 #include "../iotools/stringtools.hpp"
 #include "../iotools/fileio.hpp"
+//#include "src/definitions.h"
 
 using namespace NRLib;
 
@@ -115,7 +116,7 @@ NorsarWell::NorsarWell(const std::string & filename)
   std::vector<std::string> log_name;
   for(int i=0; i<n_track_par;i++) {
     name = ReadNext<std::string>(file, line); //parameter
-    log_name.push_back(name);
+    log_name.push_back(NRLib::Uppercase(name));
     if(name == "MD")
       track_MD = i;
     token = ReadNext<std::string>(file, line); //unit
@@ -159,7 +160,7 @@ NorsarWell::NorsarWell(const std::string & filename)
       if(name == "MD")
         log_MD = i;
       else
-        log_name.push_back(name);
+        log_name.push_back(NRLib::Uppercase(name));
       token = ReadNext<std::string>(file, line); //unit
       if(log_MD != i)
         units_.insert(unitpair(name,token));
@@ -178,6 +179,12 @@ NorsarWell::NorsarWell(const std::string & filename)
 
   for(int i=0;i<static_cast<int>(track_logs.size());i++)
     AddContLog(log_name[i], track_logs[i]);
+
+  // find n_data including WELLMISSING values
+  unsigned int n_data = GetContLog("TWT").size();
+  SetNumberOfData(n_data);
+  SetXPos0(xpos0_);
+  SetYPos0(ypos0_);
 }
 
 
@@ -195,6 +202,9 @@ NorsarWell::ReadLogs(const std::string & filename, int n_col, int n_row, int ski
 
   int baseline = line;
   int i,j; //For use in error message.
+
+  //int legal_data = 0;
+
   try {
     for(i=0;i<n_row;i++) {
       for(j=0;j<n_col;j++)
@@ -213,12 +223,17 @@ NorsarWell::ReadLogs(const std::string & filename, int n_col, int n_row, int ski
           throw (NRLib::IOError(error));
         }
       }
+      //if(result[0][i] != WELLMISSING) //H [0] First?
+      //  legal_data++;
     }
   }
   catch (NRLib::EndOfFile) {
     std::string error = "Unexpected end of file "+filename+": Expected to read "+NRLib::ToString(n_row*n_col)+"elements, found only "+NRLib::ToString(i*n_col+j)+".";
     throw (NRLib::IOError(error));
   }
+
+  //this->SetNumberOfLegalData(legal_data);
+
   return(result);
 }
 

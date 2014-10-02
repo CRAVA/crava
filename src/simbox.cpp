@@ -15,9 +15,15 @@
 #include "src/fftgrid.h"
 #include "src/definitions.h"
 
+//
+// Empty constructor
+//
 Simbox::Simbox(void)
-  : Volume()
+  : Volume(),
+  top_eroded_surface_(NULL),
+  base_eroded_surface_(NULL)
 {
+  interval_name_ = "";
   status_      = EMPTY;
   topName_     = "";
   botName_     = "";
@@ -30,12 +36,21 @@ Simbox::Simbox(void)
   xlStepY_     = 0;
   ilStepX_     = 0;
   ilStepY_     = 1;
+  grad_x_      = 0;
+  grad_y_      = 0;
+  lz_eroded_   = 0;
 }
 
+//
+// Constructor where a simple geometric cube defines the simbox
+//
 Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
-               double ly, double lz, double rot, double dx, double dy, double dz) :
-  Volume()
+               double ly, double lz, double rot, double dx, double dy, double dz)
+  :  Volume(),
+  top_eroded_surface_(NULL),
+  base_eroded_surface_(NULL)
 {
+  interval_name_ = "";
   status_      = BOXOK;
   topName_     = "";
   botName_     = "";
@@ -45,6 +60,7 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   Surface z1(z0);
   z1.Add(lz);
   SetSurfaces(z0,z1); //Automatically sets lz correct in this case.
+  lz_eroded_   = lz;
 
   cosrot_      = cos(rot);
   sinrot_      = sin(rot);
@@ -56,45 +72,528 @@ Simbox::Simbox(double x0, double y0, const Surface & z0, double lx,
   nz_          = int(0.5+lz/dz_);
   constThick_  = true;
   minRelThick_ = 1.0;
-
   inLine0_     = -0.5;
   crossLine0_  = -0.5;
   xlStepX_     =  cosrot_/dx_;
   xlStepY_     =  sinrot_/dx_;
   ilStepX_     = -sinrot_/dy_;
   ilStepY_     =  cosrot_/dy_;
+  grad_x_      = 0;
+  grad_y_      = 0;
 }
 
-Simbox::Simbox(const Simbox *simbox) :
-  Volume(*simbox)
+//
+// Constructor that copies all simbox data from simbox
+//
+Simbox::Simbox(const Simbox & simbox):
+Volume(simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
 {
-  status_      = simbox->status_;
-  cosrot_      = cos(GetAngle());
-  sinrot_      = sin(GetAngle());
-  dx_          = simbox->dx_;
-  dy_          = simbox->dy_;
-  dz_          = simbox->dz_;
-  nx_          = simbox->nx_;
-  ny_          = simbox->ny_;
-  nz_          = simbox->nz_;
-  inLine0_     = simbox->inLine0_;
-  crossLine0_  = simbox->crossLine0_;
-  ilStepX_     = simbox->ilStepX_;
-  ilStepY_     = simbox->ilStepY_;
-  xlStepX_     = simbox->xlStepX_;
-  xlStepY_     = simbox->xlStepY_;
-  constThick_  = simbox->constThick_;
-  minRelThick_ = simbox->minRelThick_;
-  topName_     = simbox->topName_;
-  botName_     = simbox->botName_;
+  interval_name_  = "";
+  status_         = simbox.status_;
+  cosrot_         = cos(GetAngle());
+  sinrot_         = sin(GetAngle());
+  dx_             = simbox.dx_;
+  dy_             = simbox.dy_;
+  dz_             = simbox.dz_;
+  inLine0_        = simbox.inLine0_;
+  crossLine0_     = simbox.crossLine0_;
+  ilStepX_        = simbox.ilStepX_;
+  ilStepY_        = simbox.ilStepY_;
+  xlStepX_        = simbox.xlStepX_;
+  xlStepY_        = simbox.xlStepY_;
+  lz_eroded_      = 0;
+  constThick_     = simbox.constThick_;
+  minRelThick_    = simbox.minRelThick_;
+  topName_        = simbox.topName_;
+  botName_        = simbox.botName_;
+  grad_x_         = 0;
+  grad_y_         = 0;
+
+  std::string s   = "";
+  this->setArea(&simbox, static_cast<int>(simbox.getnx()), static_cast<int>(simbox.getny()), s);
+  this->CopyAllPadding(simbox, 0.0, s); //Second parameter is smallest legal ratio between thickest and thinnest; since this is a copy, allow anything.
+  this->SetErodedSurfaces(simbox.GetTopErodedSurface(), simbox.GetBaseErodedSurface());
 }
 
+
+//
+// Constructor that copies the area from estimation_simbox and where
+// top surface and base_surface both define the inversion interval
+// and correlation surfaces
+//
+Simbox::Simbox(const Simbox             * estimation_simbox,
+               const std::string        & interval_name,
+               int                        n_layers,
+               double                     lz_limit,
+               const Surface            & top_surface,
+               const Surface            & base_surface,
+               std::string              & err_text,
+               bool                     & failed)
+: Volume(*estimation_simbox),
+  top_eroded_surface_(NULL),
+  base_eroded_surface_(NULL)
+{
+  std::string output_name = "";
+  if (interval_name != "")
+    output_name = " for interval \'" + interval_name + "\'";
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox %s\n",output_name.c_str());
+  interval_name_  = interval_name;
+  status_         = NODEPTH;
+  cosrot_         = cos(estimation_simbox->getAngle());
+  sinrot_         = sin(estimation_simbox->getAngle());
+  dx_             = estimation_simbox->getdx();
+  dy_             = estimation_simbox->getdy();
+  dz_             = -1;
+  nx_             = estimation_simbox->getnx();
+  ny_             = estimation_simbox->getny();
+  nz_             = n_layers;
+  nx_pad_         = nx_;
+  ny_pad_         = ny_;
+  nz_pad_         = nz_;
+  x_pad_fac_      = (nx_pad_ / nx_);
+  y_pad_fac_      = (ny_pad_ / ny_);
+  z_pad_fac_      = (nz_pad_ / nz_);
+  inLine0_        = estimation_simbox->getIL0();
+  crossLine0_     = estimation_simbox->getXL0();
+  ilStepX_        = estimation_simbox->getILStepX();
+  ilStepY_        = estimation_simbox->getILStepY();
+  xlStepX_        = estimation_simbox->getXLStepX();
+  xlStepY_        = estimation_simbox->getXLStepY();
+  constThick_     = estimation_simbox->constThick_;
+  minRelThick_    = estimation_simbox->minRelThick_;
+  lz_eroded_      = 0;
+  topName_        = "";
+  botName_        = "";
+  grad_x_         = 0;
+  grad_y_         = 0;
+  setDepth(top_surface, base_surface, n_layers);
+  this->calculateDz(lz_limit, err_text);
+  SetErodedSurfaces(top_surface, base_surface);
+
+  if (estimation_simbox->CheckSurface(top_surface) == false){
+    err_text += "Error: Surface "+ topName_ +" does not cover volume.\n";
+    failed = true;
+  }
+  if(estimation_simbox->CheckSurface(base_surface) == false){
+    err_text += "Error: Surface"+ botName_ +"does not cover volume.\n";
+    failed  = true;
+  }
+  // Set Eroded surfaces in the simbox
+  if(!failed){
+    SetErodedSurfaces(top_surface, base_surface);
+    // Set surfaces in the volume
+    // This should set the status to BOXOK
+    setDepth(top_surface, base_surface, n_layers);
+  }
+  if(status_!=BOXOK){
+    failed = true;
+    err_text+="Simbox setup failed: there is a problem with the surfaces.";
+  }
+}
+
+
+//
+// Constructor for intervals with one correlation direction
+//
+Simbox::Simbox(const Simbox         * simbox,
+               const std::string    & interval_name,
+               int                    n_layers,
+               double                 lz_limit,
+               const Surface        & top_surface,
+               const Surface        & bot_surface,
+               Surface              * single_corr_surface,
+               int                    other_output,
+               int                    output_domain,
+               int                    output_format,
+               std::string          & err_text,
+               bool                 & failed)
+: Volume(*simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
+{
+  std::string output_name = "";
+  if (interval_name != "")
+    output_name = " for interval \'" + interval_name + "\'";
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + " .\n");
+
+  interval_name_  = interval_name;
+  status_         = BOXOK;
+  cosrot_         = cos(simbox->GetAngle());
+  sinrot_         = sin(simbox->GetAngle());
+  SetAngle (simbox->GetAngle());
+  dx_             = simbox->getdx();
+  dy_             = simbox->getdy();
+  dz_             = -1;
+  nx_             = simbox->getnx();
+  ny_             = simbox->getny();
+  nz_             = n_layers;
+  nx_pad_         = nx_;
+  ny_pad_         = ny_;
+  nz_pad_         = nz_;
+  x_pad_fac_      = (nx_pad_ / nx_);
+  y_pad_fac_      = (ny_pad_ / ny_);
+  z_pad_fac_      = (nz_pad_ / nz_);
+  topName_        = "";
+  botName_        = "";
+  lz_eroded_      = 0;
+  inLine0_        = simbox->getIL0();
+  crossLine0_     = simbox->getXL0();
+  ilStepX_        = simbox->getILStepX();
+  ilStepY_        = simbox->getILStepY();
+  xlStepX_        = simbox->getXLStepX();
+  xlStepY_        = simbox->getXLStepY();
+  setDepth(top_surface, bot_surface, n_layers);
+  this->calculateDz(lz_limit, err_text);
+  SetErodedSurfaces(top_surface, bot_surface);
+
+  if (simbox->CheckSurface(*single_corr_surface) != true) {
+    err_text += "Error: Correlation surface "+single_corr_surface->GetName()+" does not cover volume.\n";
+    failed = true;
+  }
+  // Extend simbox as in ModelGeneral::SetupExtendedTimeSimbox
+
+  NRLib::Vector corr_plane_parameters = FindPlane(single_corr_surface);
+  Surface * mean_surface;
+  if(single_corr_surface->GetNI() > 2)
+  mean_surface = new Surface(*single_corr_surface);
+  else {
+    mean_surface = new Surface(dynamic_cast<const Surface &>(top_surface));
+    if(mean_surface->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
+      double minX = mean_surface->GetXMin();
+      double maxX = mean_surface->GetXMax();
+      double minY = mean_surface->GetYMin();
+      double maxY = mean_surface->GetYMax();
+      if(minX > single_corr_surface->GetXMin())
+        minX = single_corr_surface->GetXMin();
+      if(maxX < single_corr_surface->GetXMax())
+        maxX = single_corr_surface->GetXMax();
+      if(minY > single_corr_surface->GetYMin())
+        minY = single_corr_surface->GetYMin();
+      if(maxY < single_corr_surface->GetYMax())
+        maxY = single_corr_surface->GetYMax();
+      single_corr_surface->SetDimensions(minX, minY, maxX-minX, maxY-minY);
+    }
+  }
+
+  // initialize mean surface to 0
+  for(size_t i=0;i<mean_surface->GetN();i++)
+    (*mean_surface)(i) = 0;
+
+  // Find mean of top and base surface
+  mean_surface->AddNonConform(&GetTopSurface());
+  mean_surface->AddNonConform(&GetBotSurface());
+  mean_surface->Multiply(0.5);
+  NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
+
+  // tilt the mean plane with the correlation plane
+  ref_plane_parameters -= corr_plane_parameters;
+  grad_x_ = ref_plane_parameters(1);
+  grad_y_ = ref_plane_parameters(2);
+
+  // Create plane from parameters and add the original corr surface
+  Surface * ref_plane = CreatePlaneSurface(ref_plane_parameters, mean_surface);
+  ref_plane->AddNonConform(single_corr_surface);
+
+  // Create new top surface
+  Surface new_top_surface(*ref_plane);
+  new_top_surface.SubtractNonConform(&(top_surface));
+  double shift_top = new_top_surface.Max();
+  shift_top *= -1.0;
+  new_top_surface.Add(shift_top);
+  new_top_surface.AddNonConform(&(simbox->GetTopSurface()));
+
+  // Create new base surface
+  Surface new_base_surface(*ref_plane);
+  new_base_surface.SubtractNonConform(&(bot_surface));
+  double shift_bot = new_base_surface.Min();
+  shift_bot *= -1.0;
+  double thick    = shift_bot-shift_top;
+  double dz       = getdz();
+  int    nz       = int(thick/dz);
+  double residual = thick - nz*dz;
+  if (residual > 0.0) {
+    shift_bot += dz-residual;
+    nz++;
+  }
+  if (nz != n_layers) {
+    LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+    LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
+  }
+
+  new_base_surface.Add(shift_bot);
+  new_base_surface.AddNonConform(&(bot_surface));
+
+  setDepth(new_top_surface, new_base_surface, nz);
+
+  if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Eroded_Extended";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Eroded_Extended";
+    if (interval_name == ""){
+      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Eroded_Extended";
+      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Eroded_Extended";
+    }
+    WriteTopBaseSurfaceGrids(top_surf_name,
+                             base_surf_name,
+                             IO::PathToInversionResults(),
+                             output_format);
+  }
+
+  delete mean_surface;
+  delete ref_plane;
+}
+
+// Constructor with two correlation surfaces -------------------------
+Simbox::Simbox(const Simbox         * simbox,
+               const std::string    & interval_name,
+               int                    n_layers,
+               double                 lz_limit,
+               const Surface        & top_surface,
+               const Surface        & base_surface,
+               const Surface        * top_corr_surface,
+               const Surface        * base_corr_surface,
+               int                    other_output,
+               int                    output_domain,
+               int                    output_format,
+               std::string          & err_text,
+               bool                 & failed)
+: Volume(*simbox)
+{
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces for interval \'%s\'.\n",interval_name.c_str());
+  interval_name_  = interval_name;
+  status_         = BOXOK;
+  cosrot_         = cos(simbox->GetAngle());
+  sinrot_         = sin(simbox->GetAngle());
+  dx_             = simbox->getdx();
+  dy_             = simbox->getdy();
+  dz_             = -1;
+  nx_             = simbox->getnx();
+  ny_             = simbox->getny();
+  nz_             = n_layers;
+  nx_pad_         = nx_;
+  ny_pad_         = ny_;
+  nz_pad_         = nz_;
+  x_pad_fac_      = (nx_pad_ / nx_);
+  y_pad_fac_      = (ny_pad_ / ny_);
+  z_pad_fac_      = (nz_pad_ / nz_);
+  lz_eroded_      = 0;
+  inLine0_        = simbox->getIL0();
+  crossLine0_     = simbox->getXL0();
+  ilStepX_        = simbox->getILStepX();
+  ilStepY_        = simbox->getILStepY();
+  xlStepX_        = simbox->getXLStepX();
+  xlStepY_        = simbox->getXLStepY();
+  setDepth(top_surface, base_surface, n_layers);
+  SetErodedSurfaces(top_surface, base_surface);
+  this->calculateDz(lz_limit, err_text);
+
+  //
+  // Check that the two surfaces do not intersect
+  //
+  for (size_t i = 0; i < base_surface.GetNI(); i++){
+    for (size_t j = 0; j < base_surface.GetNJ(); j++){
+      double z_top_corr   = top_corr_surface->GetZ(base_surface.GetX(i), base_surface.GetY(j));
+      double z_base_corr  = base_corr_surface->GetZ(base_surface.GetX(i), base_surface.GetY(j));
+      if (z_top_corr > z_base_corr){
+        err_text += "Error: The top correlation surface crosses the base correlation surface for interval "+ interval_name +".\n";
+        failed = true;
+      }
+    }
+  }
+
+  //
+  // Check that the correlation surfaces cover the inversion surfaces
+  //
+  if (simbox->CheckSurface(*top_corr_surface) == false) {
+    err_text += "Error: Top correlation surface "+ top_corr_surface->GetName() +"does not cover volume.\n";
+    failed = true;
+  }
+  if (simbox->CheckSurface(*base_corr_surface) == false){
+    err_text += "Error: Base correlation surface "+ base_corr_surface->GetName() +"does not cover volume.\n";
+    failed = true;
+  }
+
+  //
+  // Should the corr surfaces have the same resolution?
+  //
+
+  if(!failed){
+    Surface * mean_corr_surface;
+    //NRLib::Vector corr_plane_parameters_top = FindPlane(top_corr_surface);
+    //NRLib::Vector corr_plane_parameters_base = FindPlane(base_corr_surface);
+
+    Surface * mean_surface;
+    // Use the finest resolution
+    double resolution_top   = top_corr_surface->GetDX()*top_corr_surface->GetDY();
+    double resolution_base  = base_corr_surface->GetDX()*base_corr_surface->GetDY();
+    if(resolution_top != resolution_base){
+      if(resolution_top > resolution_base){ // base corr surface has higher resolution
+        mean_surface            = new Surface(*base_corr_surface);
+        mean_corr_surface       = new Surface(*base_corr_surface);
+      }
+      else{                                 // top corr surface has the highest resolution
+        mean_surface            = new Surface(*top_corr_surface);
+        mean_corr_surface       = new Surface(*top_corr_surface);
+      }
+
+    }
+    else{
+      mean_surface              = new Surface(*top_corr_surface);
+      mean_corr_surface         = new Surface(*top_corr_surface);
+    }
+
+    // Initialize mean surface to 0
+    for(size_t i = 0; i < mean_surface->GetN(); i++){
+      (*mean_surface)(i)        = 0;
+      (*mean_corr_surface)(i)   = 0;
+    }
+
+    // Find mean of top and base surface
+
+    mean_surface->AddNonConform(&GetTopSurface());
+    mean_surface->AddNonConform(&GetBotSurface());
+    mean_surface->Multiply(0.5);
+    NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
+
+    // Find the mean of the top and base correlation surface
+    mean_corr_surface->AddNonConform(top_corr_surface);
+    mean_corr_surface->AddNonConform(base_corr_surface);
+    mean_corr_surface->Multiply(0.5);
+    //NRLib::Vector corr_plane_parameters = FindPlane(mean_corr_surface);
+
+
+    // tilt the mean plane with the correlation plane
+
+    NRLib::Vector corr_plane_parameters_mean = FindPlane(mean_corr_surface);
+    ref_plane_parameters -= corr_plane_parameters_mean;
+    grad_x_               = ref_plane_parameters(1);
+    grad_y_               = ref_plane_parameters(2);
+
+    // Create plane from parameters and add the original corr surfaces
+
+    //Surface * ref_plane_base    = CreatePlaneSurface(ref_plane_parameters, mean_surface);
+    Surface * ref_plane     = CreatePlaneSurface(ref_plane_parameters, mean_surface);
+
+    // Create new top surface
+    ref_plane->AddNonConform(top_corr_surface);
+    ref_plane->AddNonConform(base_corr_surface);
+    ref_plane->Multiply(0.5);
+    Surface new_top(*ref_plane);
+    new_top.SubtractNonConform(&(top_surface));
+    double shift_top = new_top.Max();
+    shift_top *= -1.0;
+    new_top.Add(shift_top);
+    new_top.AddNonConform(&(simbox->GetTopSurface()));
+
+    // Create new base surface
+    //ref_plane_base->AddNonConform(base_corr_surface);
+    Surface new_base(*ref_plane);
+    new_base.SubtractNonConform(&(base_surface));
+    double shift_bot = new_base.Min();
+    shift_bot *= -1.0;
+
+    double thick    = shift_bot-shift_top;
+    double dz       = getdz();
+    int    nz       = int(thick/dz);
+    double residual = thick - nz*dz;
+    if (residual > 0.0) {
+      shift_bot += dz-residual;
+      nz++;
+    }
+
+    if (nz != n_layers) {
+      LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+      LogKit::LogFormatted(LogKit::High," to %d in grid created using the correlation direction.\n",nz);
+    }
+
+    new_base.Add(shift_bot);
+    new_base.AddNonConform(&(base_surface));
+
+    setDepth(new_top, new_base, nz);
+
+  if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Extended";
+    if (interval_name == ""){
+      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
+      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
+    }
+    WriteTopBaseSurfaceGrids(top_surf_name,
+                             base_surf_name,
+                             IO::PathToInversionResults(),
+                             output_format);
+  }
+
+    delete  ref_plane;
+    //delete  ref_plane_base;
+    delete  mean_surface;
+    delete  mean_corr_surface;
+  }
+}
+
+//
+// Destructor
+//
 Simbox::~Simbox()
 {
+  delete top_eroded_surface_;
+  delete base_eroded_surface_;
 }
 
-int
-Simbox::getIndex(double x, double y, double z) const
+//
+// Copy constructor
+//
+Simbox & Simbox::operator=(const Simbox   & rhs)
+{
+  if(this ==  &rhs) return *this;
+
+  // Erik N: Should use copy and swap for exception safety - but not possible
+  // for NRLib::Volume ?
+  Simbox tmp(rhs);
+
+  std::string   s = "";
+  // sets top and base surfaces, nz_, lz_ dz_, nx_pad_, ny_pad_, nz_pad_ and nx_pad_factor_,
+  // ny_pad_factor_, nz_pad_factor_
+  this->CopyAllPadding(rhs, rhs.getMaxLz(), s);
+  // sets   x_min_, y_min_,lx_ and ly_
+  this->setArea(&rhs, static_cast<int>(rhs.getnx()),
+                  static_cast<int>(rhs.getny()), s);
+  // sets lz_eroded_, top and base eroded surfaces
+  SetErodedSurfaces(rhs.GetTopErodedSurface(), rhs.GetBaseErodedSurface());
+
+  std::swap(interval_name_, tmp.interval_name_);
+  std::swap(status_, tmp.status_);
+  this->SetAngle(tmp.GetAngle());
+  this->SetTolerance(tmp.GetTolerance());
+  std::swap(cosrot_, tmp.cosrot_);
+  std::swap(sinrot_, tmp.sinrot_);
+  std::swap(dx_, tmp.dx_);
+  std::swap(dy_, tmp.dy_);
+  std::swap(dz_, tmp.dz_);
+  std::swap(inLine0_, tmp.inLine0_);
+  std::swap(crossLine0_, tmp.crossLine0_);
+  std::swap(ilStepX_, tmp.ilStepX_);
+  std::swap(ilStepY_, tmp.ilStepY_);
+  std::swap(xlStepX_, tmp.xlStepX_);
+  std::swap(xlStepY_, tmp.xlStepY_);
+  std::swap(constThick_, tmp.constThick_);
+  std::swap(minRelThick_, tmp.minRelThick_);
+  std::swap(topName_, tmp.topName_);
+  std::swap(botName_, tmp.botName_);
+  grad_x_         = 0;
+  grad_y_         = 0;
+
+  return *this;
+}
+
+
+
+//
+// --------------------------------------------------------------------------
+//
+
+int Simbox::getIndex(double x, double y, double z) const
 
 {
   int index = IMISSING;
@@ -236,6 +735,17 @@ Simbox::getZInterpolation(double x, double y, double z,
       index2 = xInd+yInd*nx_+zInd2*nx_*ny_;
     }
   }
+}
+
+bool Simbox::IsPointBetweenOriginalSurfaces(double x, double y, double z) const{
+  const NRLib::Surface<double> * top_surf  = &GetTopErodedSurface();
+  const NRLib::Surface<double> * base_surf = &GetBaseErodedSurface();
+  bool b = false;
+  if(isInside(x, y)){
+    if (top_surf->GetZ(x,y) <= z && base_surf->GetZ(x,y) > z)
+      b = true;
+  }
+  return b;
 }
 
 void
@@ -404,6 +914,38 @@ Simbox::getBot(double x, double y) const
   return(zBot);
 }
 
+double  Simbox::GetTopErodedSurface(int i, int j) const{
+  double x, y;
+  getXYCoord(i,j,x,y);
+  double z_top = GetTopErodedSurface().GetZ(x,y);
+  if(GetTopErodedSurface().IsMissing(z_top))
+    z_top = RMISSING;
+  return z_top;
+}
+
+double  Simbox::GetTopErodedSurface(double x, double y) const{
+  double z_top = GetTopErodedSurface().GetZ(x, y);
+  if(GetBotSurface().IsMissing(z_top))
+    z_top = RMISSING;
+  return(z_top);
+}
+
+double  Simbox::GetBotErodedSurface(int i, int j) const{
+  double x, y;
+  getXYCoord(i,j,x,y);
+  double z_base = GetBaseErodedSurface().GetZ(x,y);
+  if(GetTopErodedSurface().IsMissing(z_base))
+    z_base = RMISSING;
+  return z_base;
+}
+
+double  Simbox::GetBotErodedSurface(double x, double y) const{
+  double z_bot = GetBaseErodedSurface().GetZ(x, y);
+  if(GetBotSurface().IsMissing(z_bot))
+    z_bot = RMISSING;
+  return(z_bot);
+}
+
 std::string
 Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool ascii) const
 {
@@ -426,42 +968,28 @@ Simbox::getStormHeader(int cubetype, int nx, int ny, int nz, bool flat, bool asc
   header += NRLib::ToString(nx) +" "+ NRLib::ToString(ny) +" "+ NRLib::ToString(nz)+"\n";
   std::string strHeader(header);
 
-  /*
-    ==>
-    ==> Code to be used with g++ 4.3.2
-    ==>
-  std::string strHeader;
-  if(ascii == false)
-    strHeader += "storm_petro_binary\n";
-  else
-    strHeader += "storm_petro_ascii\n";
-
-  strHeader += "0 " + NRLib::ToString(cubetype,6) + " " + NRLib::ToString(RMISSING,6) + "\n";
-  strHeader += "FFTGrid\n";
-
-  if(flat == false)
-    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
-      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + topName_ + " "
-      + botName_ + " 0.0 0.0\n";
-  else
-    strHeader += NRLib::ToString(GetXMin(),6) + " " + NRLib::ToString(GetLX(),6) + " "
-      + NRLib::ToString(GetYMin(),6) + " " + NRLib::ToString(GetLY(),6) + " "
-               + "0.0 "
-      + NRLib::ToString(GetLZ(),6)+" 0.0 0.0\n";
-
-  strHeader += NRLib::ToString(GetLZ(),6) + " " + NRLib::ToString(GetAngle()*180/PI,6) + "\n\n";
-  strHeader += NRLib::ToString(nx) + " " + NRLib::ToString(ny) + " " + NRLib::ToString(nz) + "\n";
-  */
-
   return(strHeader);
 }
 
-void
-Simbox::writeTopBotGrids(const std::string & topname,
-                         const std::string & botname,
-                         const std::string & subdir,
-                         int                 outputFormat)
+void Simbox::WriteTopBaseErodedSurfaceGrids(const std::string   & top_name,
+                                            const std::string   & base_name,
+                                            const std::string   & subdir,
+                                            int                   output_format) const
+{
+  assert(typeid(this->GetTopErodedSurface()) == typeid(Surface));
+  assert(typeid(this->GetBaseErodedSurface()) == typeid(Surface));
+
+  const Surface & t_surf = dynamic_cast<const Surface &>(this->GetTopErodedSurface());
+  const Surface & b_surf = dynamic_cast<const Surface &>(this->GetBaseErodedSurface());
+
+  IO::writeSurfaceToFile(t_surf, top_name, subdir, output_format);
+  IO::writeSurfaceToFile(b_surf, base_name, subdir, output_format);
+}
+
+void Simbox::WriteTopBaseSurfaceGrids(const std::string   & top_name,
+                                      const std::string   & base_name,
+                                      const std::string   & subdir,
+                                      int                   output_format) const
 {
   assert(typeid(GetTopSurface()) == typeid(Surface));
   assert(typeid(GetBotSurface()) == typeid(Surface));
@@ -469,8 +997,22 @@ Simbox::writeTopBotGrids(const std::string & topname,
   const Surface & wtsurf = dynamic_cast<const Surface &>(GetTopSurface());
   const Surface & wbsurf = dynamic_cast<const Surface &>(GetBotSurface());
 
-  IO::writeSurfaceToFile(wtsurf, topname, subdir, outputFormat);
-  IO::writeSurfaceToFile(wbsurf, botname, subdir, outputFormat);
+  IO::writeSurfaceToFile(wtsurf, top_name, subdir, output_format);
+  IO::writeSurfaceToFile(wbsurf, base_name, subdir, output_format);
+}
+
+void  Simbox::SetTopBaseErodedNames(const std::string       & top_name,
+                                    const std::string       & bot_name,
+                                    int                       output_format)
+{
+  std::string suffix;
+  if ((output_format & IO::ASCII) > 0 && (output_format & IO::STORM) == 0)
+    suffix = IO::SuffixAsciiIrapClassic();
+  else
+    suffix = IO::SuffixStormBinary();
+
+  topName_ = IO::getFilePrefix()+top_name+suffix;
+  botName_ = IO::getFilePrefix()+bot_name+suffix;
 }
 
 void
@@ -530,7 +1072,7 @@ Simbox::calculateDz(double lzLimit, std::string & errText)
     if(lzMin < 0.0)
     {
       status_ = INTERNALERROR;
-      errText += "At least parts of the top surface is lower than the base surface. Are surfaces given in wrong order?\n";
+      errText += "-At least parts of the top surface is lower than the base surface. Are surfaces given in wrong order?\n";
     }
     else
     {
@@ -539,7 +1081,7 @@ Simbox::calculateDz(double lzLimit, std::string & errText)
       if(lzFac < lzLimit)
       {
         status_ = INTERNALERROR;
-        errText += "Error with top/bottom grids. Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
+        errText += "-Error with top/bottom grids in interval "+interval_name_+". Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
       }
       else
       {
@@ -609,6 +1151,70 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   return false; // OK
 }
 
+bool
+Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errText, bool scale)
+{
+  double scale_value = 1.0;
+
+  if (scale == true) //SGRI
+    scale_value = 1000;
+
+  double x0  = volume->GetXMin()*scale_value;
+  double y0  = volume->GetYMin()*scale_value;
+  double lx  = volume->GetLX()*scale_value;
+  double ly  = volume->GetLY()*scale_value;
+  double rot = volume->GetAngle();
+  double dx  = lx/static_cast<double>(nx);
+  double dy  = ly/static_cast<double>(ny);
+
+  bool failed = false;
+
+  try
+  {
+    SetDimensions(x0,y0,lx,ly);
+  }
+  catch (NRLib::Exception & e)
+  {
+    errText += "Could not set x0, y0, lx, and ly.\n";
+    errText += e.what();
+    return true; // Failed
+  }
+  try
+  {
+    SetAngle(rot);
+  }
+  catch (NRLib::Exception & e)
+  {
+    errText += "Could not set rotation angle.\n";
+    errText += e.what();
+    failed = true;
+    return true; // Failed
+  }
+  cosrot_      = cos(rot);
+  sinrot_      = sin(rot);
+  dx_          = dx;
+  dy_          = dy;
+  nx_          = static_cast<int>(0.5+lx/dx_);
+  ny_          = static_cast<int>(0.5+ly/dy_);
+
+  // In case IL/XL information is not available, we fall back
+  //  on the following base case values ...
+  inLine0_     = -0.5;
+  crossLine0_  = -0.5;
+  ilStepX_     =  cosrot_/dx_;
+  ilStepY_     =  sinrot_/dx_;
+  xlStepX_     = -sinrot_/dy_;
+  xlStepY_     =  cosrot_/dy_;
+
+  if(status_ == EMPTY)
+    status_ = NODEPTH;
+  else if(status_ == NOAREA)
+    status_ = BOXOK;
+
+  return false; // OK
+}
+
+
 void
 Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool skipCheck)
 {
@@ -625,18 +1231,34 @@ Simbox::setDepth(const Surface & zRef, double zShift, double lz, double dz, bool
     status_ = BOXOK;
 }
 
-void
-Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
+void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
+                      const NRLib::Surface<double>& bot_surf, int nz, bool skipCheck)
 {
-  SetSurfaces(z0, z1, skipCheck);
-  nz_ = nz;
-  dz_ = -1;
+  SetSurfaces(top_surf, bot_surf, skipCheck);
+  nz_     = nz;
+  nz_pad_ = nz;
+  dz_     = -1;
   if(status_ == EMPTY)
     status_ = NOAREA;
   else if(status_ == NODEPTH)
     status_ = BOXOK;
 
-  constThick_ = false;
+  //constThick_ = false;
+}
+
+void
+Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
+{
+  SetSurfaces(z0, z1, skipCheck);
+  nz_     = nz;
+  nz_pad_ = nz;
+  dz_     = -1;
+  if(status_ == EMPTY)
+    status_ = NOAREA;
+  else if(status_ == NODEPTH)
+    status_ = BOXOK;
+
+  //constThick_ = false;
 }
 
 void
@@ -719,6 +1341,16 @@ Simbox::getRelThick(int i, int j) const
   return(getRelThick(x, y));
 }
 
+double Simbox::GetRelThickErodedInterval(double x, double y) const{
+  double rel_thick  = 1; //Default value to be used outside grid.
+  double z_top      = GetTopErodedSurface().GetZ(x, y);
+  double z_base     = GetBaseErodedSurface().GetZ(x, y);
+  if(GetTopSurface().IsMissing(z_top) == false &&
+     GetBotSurface().IsMissing(z_base) == false)
+    rel_thick = (z_base-z_top)/GetLZ();
+  return(rel_thick);
+}
+
 double
 Simbox::getRelThick(double x, double y) const
 {
@@ -749,3 +1381,127 @@ void Simbox::getMinAndMaxXY(double &xmin, double &xmax, double &ymin, double &ym
   ymax = std::max(ymax,GetYMin()+GetLY()*cosrot_);
   ymax = std::max(ymax,GetYMin()+GetLX()*sinrot_+GetLY()*cosrot_);
 }
+
+NRLib::Vector Simbox::FindPlane(const Surface * surf){
+
+  NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
+  NRLib::Vector b(3);
+  NRLib::Vector x(3);
+
+  b = 0;
+
+  int nData = 0;
+
+  for(int i=0 ; i<static_cast<int>(surf->GetN()) ; i++) {
+    double x, y, z;
+    surf->GetXY(i, x, y);
+    z = (*surf)(i);
+    if(!surf->IsMissing(z)) {
+      nData++;
+      A(0,1) += x;
+      A(0,2) += y;
+      A(1,1) += x*x;
+      A(1,2) += x*y;
+      A(2,2) += y*y;
+      b(0)   += z;
+      b(1)   += x*z;
+      b(2)   += y*z;
+    }
+  }
+
+  A(0,0) = nData;
+
+  NRLib::CholeskySolve(A, b, x);
+
+  return x;
+}
+
+Surface * Simbox::CreatePlaneSurface(const NRLib::Vector & planeParams,
+                                     Surface             * templateSurf) const{
+
+  Surface * result = new Surface(*templateSurf);
+  for(int i=0;i<static_cast<int>(result->GetN());i++) {
+    double x,y;
+    result->GetXY(i,x,y);
+    (*result)(i) = planeParams(0)+planeParams(1)*x+planeParams(2)*y;
+  }
+  return(result);
+}
+
+void Simbox::SetErodedSurfaces(const NRLib::Surface<double> & top_surf,
+                               const NRLib::Surface<double> & bot_surf,
+                               bool  skip_check)
+{
+  if (top_eroded_surface_ != NULL)
+    delete top_eroded_surface_;
+  if (base_eroded_surface_ != NULL)
+    delete base_eroded_surface_;
+  top_eroded_surface_  = top_surf.Clone();
+  base_eroded_surface_ = bot_surf.Clone();
+
+  if (getlx() > 0 && getly() > 0 && skip_check == false)
+    CheckErodedSurfaces();
+
+  lz_eroded_ = RecalculateErodedLZ();
+}
+
+bool Simbox::CheckErodedSurfaces() const
+{
+  if (!CheckSurface(*top_eroded_surface_)) {
+    throw NRLib::Exception("The top surface does not cover the volume.");
+  }
+  if (!CheckSurface(*base_eroded_surface_)) {
+    throw NRLib::Exception("The bottom surface does not cover the volume.");
+  }
+  return true;
+}
+
+double Simbox::RecalculateErodedLZ() const
+{
+  double lz = 0;
+  if (this->getlx() > 0.0 || this->getly() > 0.0) { //Only do if area is initialized.
+    // An arbitary grid resolution.
+    int nx = 100;
+    int ny = 100;
+
+    double dx = getlx() / nx;
+    double dy = getly() / ny;
+
+
+    for (int i = 0; i < nx; ++i) {
+      for (int j = 0; j < ny; ++j) {
+        double x, y;
+        LocalToGlobalCoord(dx * i, dy * j, x, y);
+        lz = std::max(lz_eroded_, base_eroded_surface_->GetZ(x, y) - top_eroded_surface_->GetZ(x, y));
+      }
+    }
+  }
+  return lz;
+}
+
+void
+Simbox::CopyAllPadding(const Simbox & original,
+                       double         lz_limit,
+                       std::string  & err_txt)
+{
+  setDepth(original.GetTopSurface(), original.GetBotSurface(), original.getnz(), true);
+  calculateDz(lz_limit, err_txt);
+  SetNXpad(original.GetNXpad());
+  SetNYpad(original.GetNYpad());
+  SetNZpad(original.GetNZpad());
+  SetXPadFactor(original.GetXPadFactor());
+  SetYPadFactor(original.GetYPadFactor());
+  SetZPadFactor(original.GetZPadFactor());
+}
+
+void
+Simbox::SetNoPadding()
+{
+  SetNXpad(nx_);
+  SetNYpad(ny_);
+  SetNZpad(nz_);
+  SetXPadFactor(0);
+  SetYPadFactor(0);
+  SetZPadFactor(0);
+}
+

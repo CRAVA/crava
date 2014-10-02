@@ -33,25 +33,28 @@
 #include "src/program.h"
 #include "src/definitions.h"
 #include "src/wavelet.h"
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/fftgrid.h"
 #include "src/gridmapping.h"
 #include "src/simbox.h"
-#include "src/welldata.h"
 #include "src/timings.h"
 #include "src/spatialwellfilter.h"
 #include "src/tasklist.h"
+#include "src/commondata.h"
 
 #include "src/xmlmodelfile.h"
 #include "src/modelavostatic.h"
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
 #include "src/timeline.h"
+
 #include "src/modeltraveltimestatic.h"
 #include "src/modelgravitystatic.h"
 
 #include "src/seismicparametersholder.h"
 #include "src/doinversion.h"
+
+#include "src/cravaresult.h"
 
 #if defined(COMPILE_STORM_MODULES_FOR_RMS)
 
@@ -178,12 +181,13 @@ int main(int argc, char** argv)
   try
   {
     XmlModelFile modelFile(argv[1]);
-    InputFiles            * inputFiles            = modelFile.getInputFiles();
-    ModelSettings         * modelSettings         = modelFile.getModelSettings();
-    ModelGeneral          * modelGeneral          = NULL;
-    ModelAVOStatic        * modelAVOstatic        = NULL;
-    ModelTravelTimeStatic * modelTravelTimeStatic = NULL;
-    ModelGravityStatic    * modelGravityStatic    = NULL;
+    InputFiles         * inputFiles         = modelFile.getInputFiles();
+    ModelSettings      * modelSettings      = modelFile.getModelSettings();
+    CommonData         * common_data        = NULL;
+    ModelGeneral       * modelGeneral       = NULL;
+    ModelAVOStatic     * modelAVOstatic     = NULL;
+    ModelGravityStatic * modelGravityStatic = NULL;
+    CravaResult        * crava_result       = new CravaResult();
     NRLib::Random::Initialize();
 
     if (modelFile.getParsingFailed()) {
@@ -202,165 +206,197 @@ int main(int argc, char** argv)
       return(1);
     }
 
-    Simbox * timeBGSimbox = NULL;
-    SeismicParametersHolder seismicParameters;
+    /*------------------------------------------------------------
+    READ COMMON DATA AND PERFORM ESTIMATION BASED ON INPUT FILES
+    AND MODEL SETTINGS
+    -------------------------------------------------------------*/
 
-    setupStaticModels(modelGeneral,
-                      modelAVOstatic,
-                      modelTravelTimeStatic,
-                      modelGravityStatic,
-                      modelSettings,
-                      inputFiles,
-                      seismicParameters,
-                      timeBGSimbox);
+    common_data = new CommonData(modelSettings, inputFiles);
+    int n_intervals = common_data->GetMultipleIntervalGrid()->GetNIntervals();
+    std::vector<SeismicParametersHolder> seismicParametersIntervals(common_data->GetMultipleIntervalGrid()->GetNIntervals());
 
-    if(modelGeneral   == NULL || modelGeneral->getFailed()   ||
-       modelAVOstatic == NULL || modelAVOstatic->getFailed() ||
-       modelTravelTimeStatic->getFailed()                    ||
-       modelGravityStatic->GetFailed()) {
+    if(modelSettings->getEstimationMode() == false) {
+      //Loop over intervals
+      for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
 
-         return(1);
-    }
+        modelGeneral       = NULL;
+        modelAVOstatic     = NULL;
+        modelGravityStatic = NULL;
 
-    if(modelGeneral->getTimeLine() == NULL) { //Forward modelling.
+        std::string interval_text = "";
+        if (n_intervals > 1)
+          interval_text = " for interval " + NRLib::ToString(common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval));
+        LogKit::WriteHeader("Setting up model" + interval_text);
 
-      bool failed = doFirstAVOInversion(modelSettings,
-                                        modelGeneral,
-                                        modelAVOstatic,
-                                        seismicParameters,
-                                        inputFiles,
-                                        0,
-                                        timeBGSimbox);
-      if(failed)
-        return(1);
-    }
-    else {
-      int        eventType;
-      int        vintage;
-      double     oldTime;
-      bool       failedFirst = false;
-      TimeLine * time_line   = modelGeneral->getTimeLine();
+        //Priormodell i 3D
+        const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 
-      time_line->ReSet();
-      time_line->GetNextEvent(eventType, vintage, oldTime);
+        //Expectationsgrids. NRLib::Grid to FFTGrid, fills in padding
+        LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
 
-      // First inversion
-      switch (eventType) {
+        seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
+                                                                                simbox->GetNXpad(),
+                                                                                simbox->GetNYpad(),
+                                                                                simbox->GetNZpad());
 
-      case TimeLine::AVO :
-        if (modelSettings->getDo4DInversion()){ // In case of 4D inversion
-          failedFirst = doTimeLapseAVOInversion(modelSettings,
+        //Background grids are overwritten in avoinversion
+        std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
+        crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
+        crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
+        crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
+        //Release background grids from common_data.
+        common_data->ReleaseBackgroundGrids(i_interval, 0);
+        common_data->ReleaseBackgroundGrids(i_interval, 1);
+        common_data->ReleaseBackgroundGrids(i_interval, 2);
+
+        //korrelasjonsgrid (2m)
+        float corr_grad_I = 0.0f;
+        float corr_grad_J = 0.0f;
+        common_data->GetCorrGradIJ(corr_grad_I, corr_grad_J, simbox);
+
+        float dt        = static_cast<float>(simbox->getdz());
+        float low_cut   = modelSettings->getLowCut();
+        int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
+
+        if (!modelSettings->getForwardModeling()){
+          LogKit::LogFormatted(LogKit::Low,"\nCorrelation parameters..\n");
+          seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
+                                                                          common_data->GetPriorParamCov(i_interval),
+                                                                          common_data->GetPriorAutoCov(i_interval),
+                                                                          common_data->GetPriorCorrT(i_interval),
+                                                                          common_data->GetPriorCorrXY(i_interval),
+                                                                          low_int_cut,
+                                                                          corr_grad_I,
+                                                                          corr_grad_J,
+                                                                          simbox->getnx(),
+                                                                          simbox->getny(),
+                                                                          simbox->getnz(),
+                                                                          simbox->GetNXpad(),
+                                                                          simbox->GetNYpad(),
+                                                                          simbox->GetNZpad(),
+                                                                          simbox->getdz());
+
+        }
+
+        //ModelGeneral, modelAVOstatic, modelGravityStatic, (modelTravelTimeStatic?)
+        LogKit::LogFormatted(LogKit::Low,"\nStatic models..\n");
+        setupStaticModels(modelGeneral,
+                          modelAVOstatic,
+                          //modelGravityStatic,
+                          modelSettings,
+                          inputFiles,
+                          seismicParametersIntervals[i_interval],
+                          common_data,
+                          i_interval);
+
+        //Loop over dataset
+        //i.   ModelAVODynamic
+        //ii.  Inversion
+        //iii. Move model one time-step ahead
+
+        //Do not run avoinversion if forward modelleing or estimationmode
+        //Syntetic seismic is generated in CravaResult
+        if (!modelSettings->getForwardModeling() && !modelSettings->getEstimationMode()) {
+          int  eventType;
+          int  eventIndex;
+          modelGeneral->GetTimeLine()->ReSet();
+      }
+
+          double time;
+          int time_index = 0;
+          bool first     = true;
+          while(modelGeneral->GetTimeLine()->GetNextEvent(eventType, eventIndex, time) == true) {
+            if (first == false) {
+                modelGeneral->AdvanceTime(time_index, seismicParametersIntervals[i_interval], modelSettings);
+                time_index++;
+            }
+            bool failed;
+            switch(eventType) {
+            case TimeLine::AVO : {
+              LogKit::LogFormatted(LogKit::Low,"\nAVO inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseAVOInversion(modelSettings,
                                                 modelGeneral,
                                                 modelAVOstatic,
-                                                inputFiles,
-                                                seismicParameters,
-                                                vintage);
-        }
-        else  // In case of 3D inversion
-          failedFirst = doFirstAVOInversion(modelSettings,
-                                            modelGeneral,
-                                            modelAVOstatic,
-                                            seismicParameters,
-                                            inputFiles,
-                                            vintage,
-                                            timeBGSimbox);
-        break;
-
-      case TimeLine::TRAVEL_TIME :
-        failedFirst = doTimeLapseTravelTimeInversion(modelSettings,
-                                                     modelGeneral,
-                                                     modelTravelTimeStatic,
-                                                     inputFiles,
-                                                     vintage,
-                                                     seismicParameters);
-        break;
-
-      case TimeLine::GRAVITY :
-        failedFirst = doTimeLapseGravimetricInversion(modelSettings,
+                                                common_data,
+                                                seismicParametersIntervals[i_interval],
+                                                eventIndex,
+                                                i_interval);
+              break;
+            }
+            case TimeLine::TRAVEL_TIME : {
+              LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseTravelTimeInversion(modelSettings,
                                                       modelGeneral,
-                                                      modelGravityStatic,
                                                       inputFiles,
-                                                      vintage,
-                                                      seismicParameters);
+                                                      eventIndex,
+                                                      seismicParametersIntervals[i_interval]);
+              break;
+            }
+            case TimeLine::GRAVITY : {
+              LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
+              failed = doTimeLapseGravimetricInversion(modelSettings,
+                                                        modelGeneral,
+                                                        modelGravityStatic,
+                                                        common_data,
+                                                        eventIndex,
+                                                        seismicParametersIntervals[i_interval]);
+              break;
+            }
+            default :
+              failed = true;
+              break;
+            }
+            if(failed)
+              return(1);
 
-        errTxt += "Warning Gravimetric under construction\n";
-        break;
+            first = false;
+          }
+        }
 
-      default :
-        errTxt += "Error: Unknown inverstion type.\n";
-        break;
-      }
+        crava_result->AddBlockedLogs(modelGeneral->GetBlockedWells());
+      } //interval_loop
+    }
+    if (n_intervals == 1)
+      crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
-      if(failedFirst == true || errTxt != "") {
-        std::cout << errTxt << std::endl;
-        return(1);
-      }
+    if(modelSettings->getEstimationMode() == true) {
+      const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(0);
+      seismicParametersIntervals[0].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(0),
+                                                                    simbox->GetNXpad(),
+                                                                    simbox->GetNYpad(),
+                                                                    simbox->GetNZpad());
+      crava_result->AddBackgroundVp(seismicParametersIntervals[0].GetMeanVp());
+      crava_result->AddBackgroundVs(seismicParametersIntervals[0].GetMeanVs());
+      crava_result->AddBackgroundRho(seismicParametersIntervals[0].GetMeanRho());
 
-      delete timeBGSimbox;
+      crava_result->WriteEstimationResults(modelSettings,
+                                           common_data);
+    }
+    else {
+      //Combine interval grids to one grid per parameter
+      LogKit::WriteHeader("Combine Results and Write to Files");
+      crava_result->CombineResults(modelSettings,
+                                   common_data,
+                                   seismicParametersIntervals);
 
-      double time;
+      crava_result->WriteResults(modelSettings,
+                                 common_data,
+                                 seismicParametersIntervals[0]);
 
-      // Time lapse inversions
-      while (time_line->GetNextEvent(eventType, vintage, time) == true) {
-
-        modelGeneral->advanceTime(vintage - 1,
-                                  time,
-                                  seismicParameters,
-                                  modelSettings);
+      if(modelSettings->getDo4DInversion())
+      {
 
         bool failed;
+        if(modelSettings->getDo4DRockPhysicsInversion())
+        {
+          LogKit::WriteHeader("4D Rock Physics Inversion");
+          failed = modelGeneral->Do4DRockPhysicsInversion(modelSettings);
 
-        switch(eventType) {
-
-        case TimeLine::AVO :
-          failed = doTimeLapseAVOInversion(modelSettings,
-                                           modelGeneral,
-                                           modelAVOstatic,
-                                           inputFiles,
-                                           seismicParameters,
-                                           vintage);
-          break;
-
-        case TimeLine::TRAVEL_TIME :
-          failed = doTimeLapseTravelTimeInversion(modelSettings,
-                                                  modelGeneral,
-                                                  modelTravelTimeStatic,
-                                                  inputFiles,
-                                                  vintage,
-                                                  seismicParameters);
-          break;
-
-        case TimeLine::GRAVITY :
-          failed = doTimeLapseGravimetricInversion(modelSettings,
-                                                   modelGeneral,
-                                                   modelGravityStatic,
-                                                   inputFiles,
-                                                   vintage,
-                                                   seismicParameters);
-          break;
-
-        default :
-          failed = true;
-          break;
+          if(failed)
+            return(1);
         }
-
-        if (failed)
-          return(1);
       }
     }
-
-    if (modelSettings->getDo4DInversion()) {
-
-      bool failed;
-      if (modelSettings->getDo4DRockPhysicsInversion()) {
-
-        failed = modelGeneral->do4DRockPhysicsInversion(modelSettings);
-
-        if (failed)
-          return(1);
-      }
-    }
-
     if (modelSettings->getDoInversion() && FFTGrid::getMaxAllowedGrids() != FFTGrid::getMaxAllocatedGrids()) {
       //NBNB-PAL: Memory check is bogus at the moment. Include again when 4.0 release is fixed.")
       //LogKit::LogFormatted(LogKit::Warning,"\nWARNING: A memory requirement inconsistency has been detected:");
@@ -376,10 +412,13 @@ int main(int argc, char** argv)
 
     delete modelAVOstatic;
     delete modelGeneral;
+    delete common_data;
+    delete crava_result;
+    crava_result            = NULL;
     delete modelSettings;
+    modelSettings           = NULL;
     delete inputFiles;
-    delete modelTravelTimeStatic;
-    delete modelGravityStatic;
+    inputFiles              = NULL;
 
     Timings::reportTotal();
     LogKit::LogFormatted(LogKit::Low,"\n*** CRAVA closing  ***\n");

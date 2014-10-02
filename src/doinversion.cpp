@@ -1,6 +1,6 @@
 #include <time.h>
 
-#include "src/crava.h"
+#include "src/avoinversion.h"
 #include "src/traveltimeinversion.h"
 #include "src/spatialwellfilter.h"
 #include "src/modelsettings.h"
@@ -18,110 +18,65 @@
 
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
-                       ModelTravelTimeStatic   *& modelTravelTimeStatic,
-                       ModelGravityStatic      *& modelGravityStatic,
+                       //ModelGravityStatic      *& modelGravityStatic,
                        ModelSettings            * modelSettings,
                        InputFiles               * inputFiles,
                        SeismicParametersHolder  & seismicParameters,
-                       Simbox                  *& timeBGSimbox)
+                       CommonData               * commonData,
+                       int                        i_interval)
 {
   // Construct ModelGeneral object first.
   // For each data type, construct the static model class before the dynamic.
-  modelGeneral    = new ModelGeneral(modelSettings, inputFiles, seismicParameters, timeBGSimbox);
-  modelAVOstatic  = new ModelAVOStatic(modelSettings,
-                                       modelGeneral,
-                                       inputFiles,
-                                       modelGeneral->getTimeCutMapping(),
-                                       modelGeneral->getTimeSimbox(),
-                                       timeBGSimbox,
-                                       modelGeneral->getTimeSimboxConstThick(),
-                                       modelGeneral->getWells());
+  modelGeneral    = new ModelGeneral(modelSettings,
+                                     inputFiles,
+                                     seismicParameters,
+                                     commonData,
+                                     i_interval);
 
-  modelTravelTimeStatic = new ModelTravelTimeStatic(modelSettings,
-                                                    inputFiles,
-                                                    modelGeneral->getTimeSimbox());
+  modelAVOstatic  = new ModelAVOStatic(modelSettings,
+                                       inputFiles,
+                                       commonData,
+                                       modelGeneral->GetSimbox(),
+                                       i_interval);
 
   // Add some logic to decide if modelGravityStatic should be created. To be done later.
-  modelGravityStatic = new ModelGravityStatic(modelSettings, modelGeneral, inputFiles);
+  //H-Debugging
+  //modelGravityStatic = new ModelGravityStatic(modelSettings,
+  //                                            commonData,
+  //                                            modelGeneral->GetSimbox(),
+  //                                            i_interval);
+
+  //Add in ModelTravelTimeStatic when ready
 }
 
-
-bool doFirstAVOInversion(ModelSettings           * modelSettings,
-                         ModelGeneral            * modelGeneral,
-                         ModelAVOStatic          * modelAVOstatic,
-                         SeismicParametersHolder & seismicParameters,
-                         InputFiles              * inputFiles,
-                         int                       vintage,
-                         Simbox                  * timeBGSimbox)
+bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
+                             ModelGeneral            * modelGeneral,
+                             ModelAVOStatic          * modelAVOstatic,
+                             CommonData              * commonData,
+                             SeismicParametersHolder & seismicParameters,
+                             int                       vintage,
+                             int                       i_interval)
 {
+  //For intervals: Combination of doFirstAVOInversion and doTimeLapseAVOInversion
 
   ModelAVODynamic * modelAVOdynamic = NULL;
 
   // Wells are adjusted by ModelAVODynamic constructor.
   modelAVOdynamic = new ModelAVODynamic(modelSettings,
-                                        inputFiles,
-                                        modelGeneral->getFailedDetails(),
-                                        modelAVOstatic->getFailedDetails(),
-                                        modelGeneral->getTimeSimbox(),
-                                        timeBGSimbox,
-                                        modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getRandomGen(),
-                                        modelGeneral->getTimeDepthMapping(),
-                                        modelGeneral->getTimeCutMapping(),
-                                        modelAVOstatic->getWaveletEstimInterval(),
-                                        modelAVOstatic->getWellMoveInterval(),
-                                        modelAVOstatic->getFaciesEstimInterval(),
-                                        modelAVOstatic,
                                         modelGeneral,
-                                        vintage,
-                                        seismicParameters);
-
-  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
-
-  if(failedLoadingModel == false && modelSettings->getEstimationMode() == false){
-
-    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
-
-    delete crava;
-  }
-
-  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
-
-  delete modelAVOdynamic;
-
-  return(failedLoadingModel);
-}
-
-
-bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
-                             ModelGeneral            * modelGeneral,
-                             ModelAVOStatic          * modelAVOstatic,
-                             InputFiles              * inputFiles,
-                             SeismicParametersHolder & seismicParameters,
-                             int                       vintage)
-{
-  ModelAVODynamic * modelAVOdynamic = NULL;
-
-  modelAVOdynamic = new ModelAVODynamic(modelSettings,
-                                        inputFiles,
-                                        modelAVOstatic,
-                                        modelGeneral,
+                                        commonData,
                                         seismicParameters,
-                                        modelGeneral->getTimeSimbox(),
-                                        modelGeneral->getCorrelationDirection(),
-                                        modelGeneral->getTimeDepthMapping(),
-                                        modelGeneral->getTimeCutMapping(),
-                                        vintage);
+                                        modelGeneral->GetSimbox(),
+                                        vintage,
+                                        i_interval);
 
-  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->getFailed();
+  bool failedLoadingModel = modelAVOdynamic == NULL || modelAVOdynamic->GetFailed();
 
   if(failedLoadingModel == false) {
-    Crava * crava = new Crava(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
+    AVOInversion * avoinversion = new AVOInversion(modelSettings, modelGeneral, modelAVOstatic, modelAVOdynamic, seismicParameters);
 
-    delete crava;
+    delete avoinversion;
   }
-
-  modelAVOstatic->deleteDynamicWells(modelGeneral->getWells(),modelSettings->getNumberOfWells());
 
   delete modelAVOdynamic;
   if(modelSettings->getDebugLevel()>0)
@@ -189,6 +144,41 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                                                            modelGravityStatic,
                                                                            modelGravityDynamic,
                                                                            seismicParameters);
+
+    delete gravimetricInversion;
+  }
+
+  delete modelGravityDynamic;
+
+  return(failedLoadingModel);
+}
+
+bool
+doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
+                                ModelGeneral            * modelGeneral,
+                                ModelGravityStatic      * modelGravityStatic,
+                                CommonData              * commonData,
+                                int                     & vintage,
+                                SeismicParametersHolder & seismicParameters)
+{
+  ModelGravityDynamic * modelGravityDynamic = NULL;
+
+  modelGravityDynamic = new ModelGravityDynamic(modelSettings,
+                                                modelGravityStatic,
+                                                modelGeneral->GetSimbox(),
+                                                commonData,
+                                                vintage,
+                                                seismicParameters);
+
+  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->GetFailed();
+
+   if(failedLoadingModel == false) {
+
+    GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
+                                                                           modelGravityStatic,
+                                                                           modelGravityDynamic,
+                                                                           seismicParameters,
+                                                                           modelSettings);
 
     delete gravimetricInversion;
   }

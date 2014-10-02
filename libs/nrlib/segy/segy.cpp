@@ -315,6 +315,80 @@ SegY::SegY(const std::string       & fileName,
   }
 }
 
+SegY::SegY(const StormContGrid     * storm_grid,
+           float                     z0,
+           const std::string       & file_name,
+           bool                      write_to_file,
+           const TraceHeaderFormat & trace_header_format)
+{
+  rmissing_      = segyRMISSING;
+  geometry_      = NULL;
+  binary_header_ = NULL;
+
+  int i,k,j;
+  TextualHeader header = TextualHeader::standardHeader();
+  int nx = static_cast<int>(storm_grid->GetNI());
+  int ny = static_cast<int>(storm_grid->GetNJ());
+  SegyGeometry geometry(storm_grid->GetXMin(), storm_grid->GetYMin(), storm_grid->GetDX(), storm_grid->GetDY(),
+                        nx, ny, storm_grid->GetAngle());
+  float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
+  //float z0 = 0.0;
+  int nz   = int(ceil((storm_grid->GetZMax())/dz));
+
+  //SegY segyout(file_name,0,nz,dz,header);
+  trace_header_format_ = trace_header_format;
+  z0_ = z0;
+  nz_ = nz;
+  dz_ = dz;
+
+  if (write_to_file) {
+    OpenWrite(file_, file_name, std::ios::out | std::ios::binary);
+    WriteMainHeader(header);
+  }
+
+  SetGeometry(&geometry);
+
+  std::vector<float> data_vec;
+  data_vec.resize(nz);
+  float x, y, xt, yt, z;
+  for (j = 0; j < ny; j++) {
+    for (i = 0; i < nx; i++) {
+
+      xt = float((i+0.5)*geometry.GetDx());
+      yt = float((j+0.5)*geometry.GetDy());
+      x  = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
+      y  = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
+
+      double z_bot      = storm_grid->GetBotSurface().GetZ(x,y);
+      double z_top      = storm_grid->GetTopSurface().GetZ(x,y);
+      int    first_data = static_cast<int>(floor((z_top)/dz));
+      int    end_data   = static_cast<int>(floor((z_bot)/dz));
+
+      if (end_data > nz) {
+        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, end_data);
+        end_data = nz;
+      }
+      for (k = 0; k < first_data; k++) {
+        data_vec[k] = 0.0;
+      }
+
+      for (k = first_data; k < end_data; k++) {
+        z           = z0 + k*dz;
+        data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
+      }
+      for (k = end_data; k < nz; k++) {
+        data_vec[k] = 0.0;
+      }
+      StoreTrace(x, y, data_vec, NULL);
+    }
+
+  }
+
+  if (write_to_file)
+    WriteAllTracesToFile();
+
+}
+
 SegY::~SegY()
 {
   if (geometry_!=NULL)

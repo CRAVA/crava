@@ -13,9 +13,9 @@ CorrelatedRockSamples::~CorrelatedRockSamples()
 }
 
 std::vector< std::vector< std::vector<double> > >
-CorrelatedRockSamples::CreateSamples(int                                     i_max,
-                                     TimeLine                              & time_line,
-                                     const std::vector<DistributionsRock*> & dist_rock)
+CorrelatedRockSamples::CreateSamples(int                                             i_max,
+                                     TimeLine                                      & time_line,
+                                     const std::vector<DistributionsRock *>        & dist_rock)
 {
   std::list<int> time;
   time_line.GetAllTimes(time);
@@ -79,9 +79,9 @@ CorrelatedRockSamples::CreateSamples(int                                     i_m
 
 
 std::vector< std::vector< std::vector<double> > >
-CorrelatedRockSamples::CreateSamplesExtended(int                                     i_max,
-                                             TimeLine                              & time_line,
-                                             const std::vector<DistributionsRock*> & dist_rock)
+CorrelatedRockSamples::CreateSamplesExtended(int                                      i_max,
+                                             TimeLine                               & time_line,
+                                             const std::vector<DistributionsRock*>  & dist_rock)
 {
   std::list<int> time;
   time_line.GetAllTimes(time);

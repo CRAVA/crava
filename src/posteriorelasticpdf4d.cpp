@@ -4,7 +4,6 @@
 #include <math.h>
 #include "src/modelsettings.h"
 #include <src/simbox.h>
-#include "lib/lib_matr.h"
 #include "nrlib/trend/trend.hpp"
 
 
@@ -13,7 +12,7 @@ PosteriorElasticPDF4D::PosteriorElasticPDF4D(const std::vector<double>          
                                              const std::vector<double>                   & d3, // third dimension of data points
                                              const std::vector<int>                      & t1, // fourth dimension (trend parameters)
                                              const std::vector<int>                      & t2, // fourth dimension (trend parameters)
-                                             const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
+                                             const NRLib::Matrix                         & v,  // Transformation of elastic variables from 3D to 2D
                                              const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
                                              int                                           n1,    // resolution of density grid in elastic dimension 1
                                              int                                           n2,    // resolution of density grid in elastic dimension 2
@@ -44,15 +43,15 @@ t2_max_(t2_max)
   // We assume that the input vectors are of the same length
   if (d1.size()!=d2.size() || d2.size()!=d3.size() || d3.size()!=t1.size() || t1.size() != t2.size())
     throw NRLib::Exception("Facies probabilities: Size of input vectors do not match.");
-  if (v.size()>2 || static_cast<int>(v[0].size()) != 3 ||  static_cast<int>(v[1].size()) != 3)
+  if (v.numRows()>2)
     throw NRLib::Exception("Facies probabilities: Transformation matrix v does not have the right dimensions");
 
   v1_.resize(3,0.0);
   v2_.resize(3,0.0);
 
   for(int i=0; i<3; i++){
-    v1_[i] = v[0][i];
-    v2_[i] = v[1][i];
+    v1_[i] = v(0,i);
+    v2_[i] = v(1,i);
   }
 
   // set size of 2D grid to ni*nj
@@ -122,19 +121,15 @@ t2_max_(t2_max)
       }
       histogram_(i,j)->fftInPlace();
 
-      double **sigma_tmp = new double *[2];
-      for (int m=0;m<2;m++){
-        sigma_tmp[m] = new double[2];
-      }
+      NRLib::Matrix sigma_tmp(2,2);
+
       for(int m=0;m<2;m++){
         for(int n=0; n<2; n++)
-          sigma_tmp[m][n] = sigma[m][n];
+          sigma_tmp(m,n) = sigma[m][n];
       }
 
       // Matrix inversion of the covariance matrix sigma
-      double **sigma_inv = new double *[2];
-      for(int m=0; m<2; m++)
-        sigma_inv[m] = new double [2];
+      NRLib::Matrix sigma_inv;
 
       InvertSquareMatrix(sigma_tmp,sigma_inv,2);
 
@@ -159,12 +154,6 @@ t2_max_(t2_max)
       histogram_(i,j)->endAccess();
 
       delete smoother;
-      for(int i=0;i<2;i++){
-        delete [] sigma_inv[i];
-        delete [] sigma_tmp[i];
-      }
-      delete [] sigma_tmp;
-      delete [] sigma_inv;
     }
   }
 }

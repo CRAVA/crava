@@ -1184,10 +1184,10 @@ WellData::setWrongLogEntriesUndefined(int & count_alpha, int & count_beta, int &
   //
   bool debug = true;
 
-  float alpha_min = modelSettings_->getAlphaMin();
-  float alpha_max = modelSettings_->getAlphaMax();
-  float beta_min  = modelSettings_->getBetaMin();
-  float beta_max  = modelSettings_->getBetaMax();
+  float alpha_min = modelSettings_->getVpMin();
+  float alpha_max = modelSettings_->getVpMax();
+  float beta_min  = modelSettings_->getVsMin();
+  float beta_max  = modelSettings_->getVsMax();
   float rho_min   = modelSettings_->getRhoMin();
   float rho_max   = modelSettings_->getRhoMax();
 
@@ -1594,10 +1594,10 @@ WellData::applyFilter(float * log_filtered, float *log_interpolated, int n_time_
 
 //----------------------------------------------
 
-bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
-{
-  return (i1.second < i2.second);
-}
+//bool compare(const std::pair<int, float>& i1, const std::pair<int, float>& i2)
+//{
+//  return (i1.second < i2.second);
+//}
 
 //----------------------------------------------------------------------------
 void
@@ -1613,100 +1613,100 @@ WellData::findILXLAtStartPosition(void)
 }
 
 //----------------------------------------------------------------------------
-void
-WellData::lookForSyntheticVsLog(float & rank_correlation)
-{
-  float corr_threshold = modelSettings_->getMaxRankCorr();
-
-  //
-  // Estimate the correlation between Vp and Vs logs. To be able to identify
-  // nonlinear relationships between the logs we use rank correlation.
-  //
-  typedef std::pair<int, float> Item;
-  std::vector<Item> sorted_alpha;
-  std::vector<Item> sorted_beta;
-
-  //
-  // Store Vp and Vs in sortable structs. Note that we can only use nonmissing values.
-  //
-  for (int i = 0 ; i < nd_ ; i++)
-  {
-    if (alpha_[i] != RMISSING && beta_[i] != RMISSING)
-    {
-      sorted_alpha.push_back(Item(i, alpha_[i]));
-      sorted_beta.push_back(Item(i,beta_[i]));
-    }
-  }
-
-  int n = static_cast<int>(sorted_alpha.size());
-  if (n > 0)
-  {
-    //
-    // Sort Vp and Vs logs.
-    //
-    std::sort(sorted_alpha.begin(), sorted_alpha.end(), compare);
-    std::sort(sorted_beta.begin(), sorted_beta.end(), compare);
-
-    //
-    // Estimate correlation between sorted alpha and beta sorted by alpha
-    //
-    float mean = float(n)/2.0f; // We start the indexing at 0 rather than 1
-    float cov_rank = 0.0;       // Covariance between ranks of alpha and beta (sorted on alpha)
-    float var_rank = 0.0;       // Variance in ranks of alpha and beta (which are equal)
-
-    for (int i = 0 ; i < n ; i++)
-    {
-      var_rank +=(i - mean)*(i - mean);
-      for (int j = 0 ; j < n ; j++)
-      {
-
-        if (sorted_beta[j].first == sorted_alpha[i].first)
-        {
-          cov_rank += (j - mean)*(i - mean);
-        }
-      }
-    }
-    rank_correlation = cov_rank/var_rank; // Skip division by n-1 in both nominator and denominator
-
-    if (rank_correlation > corr_threshold)
-    {
-      if(realVsLog_ == ModelSettings::NOTSET) {
-        LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
-        realVsLog_ = ModelSettings::NO;
-      }
-      else {
-        if(realVsLog_ == ModelSettings::YES)
-          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
-        else
-          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
-      }
-    }
-    else
-    {
-      switch(realVsLog_) {
-        case ModelSettings::YES :
-          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
-          break;
-        case ModelSettings::NO :
-          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
-          break;
-        default :
-          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
-          break;
-      }
-    }
-  }
-  else
-  {
-    LogKit::LogFormatted(LogKit::Low,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
-  }
-
-  bool useFilter  = modelSettings_->getUseFilterForFaciesProb();
-  bool useVpVsRho = modelSettings_->getNoVsFaciesProb() == false;
-
-  if(useFilter && useVpVsRho && realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
-    useForFaciesProbabilities_ = ModelSettings::NO;
-}
+//void
+//WellData::lookForSyntheticVsLog(float & rank_correlation)
+//{
+//  float corr_threshold = modelSettings_->getMaxRankCorr();
+//
+//  //
+//  // Estimate the correlation between Vp and Vs logs. To be able to identify
+//  // nonlinear relationships between the logs we use rank correlation.
+//  //
+//  typedef std::pair<int, float> Item;
+//  std::vector<Item> sorted_alpha;
+//  std::vector<Item> sorted_beta;
+//
+//  //
+//  // Store Vp and Vs in sortable structs. Note that we can only use nonmissing values.
+//  //
+//  for (int i = 0 ; i < nd_ ; i++)
+//  {
+//    if (alpha_[i] != RMISSING && beta_[i] != RMISSING)
+//    {
+//      sorted_alpha.push_back(Item(i, alpha_[i]));
+//      sorted_beta.push_back(Item(i,beta_[i]));
+//    }
+//  }
+//
+//  int n = static_cast<int>(sorted_alpha.size());
+//  if (n > 0)
+//  {
+//    //
+//    // Sort Vp and Vs logs.
+//    //
+//    std::sort(sorted_alpha.begin(), sorted_alpha.end(), compare);
+//    std::sort(sorted_beta.begin(), sorted_beta.end(), compare);
+//
+//    //
+//    // Estimate correlation between sorted alpha and beta sorted by alpha
+//    //
+//    float mean = float(n)/2.0f; // We start the indexing at 0 rather than 1
+//    float cov_rank = 0.0;       // Covariance between ranks of alpha and beta (sorted on alpha)
+//    float var_rank = 0.0;       // Variance in ranks of alpha and beta (which are equal)
+//
+//    for (int i = 0 ; i < n ; i++)
+//    {
+//      var_rank +=(i - mean)*(i - mean);
+//      for (int j = 0 ; j < n ; j++)
+//      {
+//
+//        if (sorted_beta[j].first == sorted_alpha[i].first)
+//        {
+//          cov_rank += (j - mean)*(i - mean);
+//        }
+//      }
+//    }
+//    rank_correlation = cov_rank/var_rank; // Skip division by n-1 in both nominator and denominator
+//
+//    if (rank_correlation > corr_threshold)
+//    {
+//      if(realVsLog_ == ModelSettings::NOTSET) {
+//        LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. Treating Vs log as synthetic.\n",rank_correlation);
+//        realVsLog_ = ModelSettings::NO;
+//      }
+//      else {
+//        if(realVsLog_ == ModelSettings::YES)
+//          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f, but well log is defined as real.\n",rank_correlation);
+//        else
+//          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+//      }
+//    }
+//    else
+//    {
+//      switch(realVsLog_) {
+//        case ModelSettings::YES :
+//          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as real.)\n",rank_correlation);
+//          break;
+//        case ModelSettings::NO :
+//          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
+//          break;
+//        default :
+//          LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
+//          break;
+//      }
+//    }
+//  }
+//  else
+//  {
+//    LogKit::LogFormatted(LogKit::Low,"   Cannot calculate Vp-Vs rank correlation. One or both logs are empty.\n");
+//  }
+//
+//  bool useFilter  = modelSettings_->getUseFilterForFaciesProb();
+//  bool useVpVsRho = modelSettings_->getNoVsFaciesProb() == false;
+//
+//  if(useFilter && useVpVsRho && realVsLog_ == ModelSettings::NO && useForFaciesProbabilities_ == ModelSettings::NOTSET)
+//    useForFaciesProbabilities_ = ModelSettings::NO;
+//}
 
 //----------------------------------------------------------------------------
 void

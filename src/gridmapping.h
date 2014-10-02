@@ -22,16 +22,17 @@ public:
   ~GridMapping(void);
   StormContGrid * getMapping(void)  const { return mapping_ ;}
   Simbox        * getSimbox(void)   const { return simbox_  ;}
-  Surface       & GetBaseSurface()  const { return * z1Grid_;}
-
-  void            setDepthSurfaces(const std::vector<std::string> & surfFile,
-                                   bool                           & failed,
-                                   std::string                    & errText);
+  void            setDepthSurfaces(const std::string & topSurfFile,
+                                   const std::string & baseSurfFiles,
+                                   bool              & failed,
+                                   std::string       & errText);
 
   void            setTopSurface(const Surface & top_surface);
 
   void            calculateSurfaceFromVelocity(FFTGrid      * velocity,
                                                const Simbox * simbox);
+  void            calculateSurfaceFromVelocity(NRLib::Grid<float> * velocity,
+                                               const Simbox       * simbox);
   void            setDepthSimbox(const Simbox * timeSimbox,
                                  int            nz,
                                  int            outputFormat,
@@ -39,9 +40,13 @@ public:
                                  std::string  & errText);
   void            makeTimeDepthMapping(FFTGrid      * velocity,
                                        const Simbox * timeSimbox);
+  void            makeTimeDepthMapping(NRLib::Grid<float> * velocity,
+                                       const Simbox       * timeSimbox);
   void            makeTimeTimeMapping(const Simbox * timeCutSimbox);
 
   void            setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox);
+
+  void            setMappingFromVelocity(StormContGrid * velocity, const Simbox * timeSimbox, int format);
 
   //Please do not renumber the modes below. It is very convenient that TOPGIVEN+BOTTOMGIVEN = BOTHGIVEN.
   enum            surfaceModes{NONEGIVEN = 0, TOPGIVEN = 1, BOTTOMGIVEN = 2, BOTHGIVEN = 3};

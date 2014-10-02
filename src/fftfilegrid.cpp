@@ -253,8 +253,8 @@ FFTFileGrid::SetNextComplex(std::complex<double> & value)
   assert(istransformed_==true);
   assert(accMode_ == READANDWRITE || accMode_ == WRITE);
   fftw_complex tmp;
-  tmp.re = value.real();
-  tmp.im = value.imag();
+  tmp.re = static_cast<fftw_real>(value.real());
+  tmp.im = static_cast<fftw_real>(value.imag());
   char * buffer = reinterpret_cast<char *>(&tmp);
   outFile_.write(buffer,sizeof(fftw_complex));
   return(0);
@@ -584,22 +584,23 @@ FFTFileGrid::fillInComplexNoise(RandomGen * ranGen)
 }
 
 void
-FFTFileGrid::writeFile(const std::string              & fileName,
-                       const std::string              & subDir,
-                       const Simbox                   * simbox,
-                       const std::string                sgriLabel,
-                       const float                      z0,
-                       const GridMapping              * depthMap,
-                       const GridMapping              * timeMap,
-                       const TraceHeaderFormat        & thf,
+FFTFileGrid::writeFile(const std::string & fileName,
+                       const std::string & subDir,
+                       const Simbox      * simbox,
+                       const std::string   sgriLabel,
+                       const float         z0,
+                       const GridMapping * depthMap,
+                       //const GridMapping * timeMap,
+                       const TraceHeaderFormat & thf,
                        bool                             padding,
                        bool                             scientific_format,
                        const std::vector<std::string> & headerText)
+
 {
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   if(accMode_ != RANDOMACCESS)
     load();
-  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, timeMap, thf,padding, scientific_format, headerText);
+  FFTGrid::writeFile(fileName, subDir, simbox, sgriLabel, z0, depthMap, thf,padding, scientific_format, headerText);
   if(accMode_ != RANDOMACCESS)
     unload();
 }
@@ -661,11 +662,10 @@ FFTFileGrid::readCravaFile(const std::string & fileName, std::string & error, bo
   if(accMode_ != RANDOMACCESS)
     load();
   FFTGrid::readCravaFile(fileName, error, nopadding);
+  modified_ = 1;
   if(accMode_ != RANDOMACCESS)
     save();
 }
-
-
 
 void
 FFTFileGrid::load()

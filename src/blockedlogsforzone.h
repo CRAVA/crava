@@ -12,7 +12,11 @@
 #include "fftw.h"
 #include "lib/utils.h"
 
+//#include "nrlib/well/well.hpp"
+//#include "src/blockedlogscommon.h"
+
 class WellData;
+class BlockedLogs;
 
 class BlockedLogsForZone
 {
@@ -20,6 +24,10 @@ public:
   BlockedLogsForZone(WellData            * well,
                      const StormContGrid & background_grid,
                      const NRLib::Volume & eroded_grid);
+
+  //BlockedLogsForZone(const NRLib::Well   & well,
+  //                   const StormContGrid & stormgrid,
+  //                   BlockedLogsCommon   * mapped_blocked_logs);
 
   ~BlockedLogsForZone();
 
@@ -45,14 +53,27 @@ private:
                                 const float            * wellLog,
                                 std::vector<float>     & blockedLog);
 
+  void       blockContinuousLog(const std::vector<int>    bInd,
+                                const double *  wellLog,
+                                std::vector<float>     & blockedLog);
+
   void       findBlockIJK(WellData               * well,
                           const StormContGrid    & stormgrid,
                           const std::vector<int>   bInd);
+
+  //void       findBlockIJK(const StormContGrid    & stormgrid,
+  //                        const std::vector<int>   bInd,
+  //                        BlockedLogsCommon      * mapped_blocked_log);
 
   void       findSizeAndBlockPointers(WellData            * well,
                                       const StormContGrid & background_grid,
                                       const NRLib::Volume & eroded_grid,
                                       std::vector<int>    & bInd);
+
+  //void       findSizeAndBlockPointers(const StormContGrid  & stormgrid,
+  //                                    std::vector<int>     & bInd,
+  //                                    BlockedLogsCommon    * mapped_blocked_log,
+  //                                    int                    number_of_nonmissing_welldata);
 
   std::vector<float>        alpha_;                    ///<
   std::vector<float>        beta_;                     ///< Logs (log-domain)
