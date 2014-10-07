@@ -230,7 +230,7 @@ ModelSettings::~ModelSettings(void)
       delete timeLapseTravelTimeLateralCorrelation_[i];
   }
 
-  if(geometry_ != NULL)
+  if(geometry_ != NULL) {
     delete geometry_;
     geometry_ = NULL;
   }
@@ -256,10 +256,6 @@ ModelSettings::~ModelSettings(void)
     }
   }
 
-  for(size_t i=0; i<travelTimeTHF_.size(); i++){
-    delete travelTimeTHF_[i];
-    travelTimeTHF_[i] = NULL;
-  }
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
     delete storage;

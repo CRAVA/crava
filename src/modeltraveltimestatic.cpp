@@ -181,7 +181,7 @@ ModelTravelTimeStatic::setupSimboxAbove(const Simbox  * timeSimbox,
   //
   // Make new simbox
   //
-  simbox_above_ = new Simbox(timeSimbox);
+  simbox_above_ = new Simbox(*timeSimbox);
   simbox_above_->setDepth(top_surface, top_simbox_surface, n_layers_above_);
 
   int status = simbox_above_->calculateDz(lz_limit, tmpErrTxt);
@@ -195,10 +195,11 @@ ModelTravelTimeStatic::setupSimboxAbove(const Simbox  * timeSimbox,
   if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Above_Reservoir";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Above_Reservoir";
-    simbox_above_->writeTopBotGrids(topSurf,
-                                    baseSurf,
-                                    IO::PathToBackground(),
-                                    outputFormat);
+//What happened to this? Ask Håvard when we activate.
+//    simbox_above_->writeTopBotGrids(topSurf,
+//                                    baseSurf,
+//                                    IO::PathToBackground(),
+//                                    outputFormat);
     simbox_above_->setTopBotName(topSurf, baseSurf, outputFormat);
   }
 

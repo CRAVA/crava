@@ -283,6 +283,9 @@ CommonData::~CommonData() {
     }
   }
 
+  for(size_t i=0;i<wells_.size();i++)
+    delete wells_[i];
+
   // facies_estim_interval_
   for (size_t i = 0; i < facies_estim_interval_.size(); i++) {
     delete facies_estim_interval_[i];
@@ -1050,7 +1053,7 @@ CommonData::CheckThatDataCoverGrid(StormContGrid * stormgrid,
 bool CommonData::ReadWellData(ModelSettings                           * model_settings,
                               Simbox                                  * full_inversion_simbox,
                               InputFiles                              * input_files,
-                              std::vector<NRLib::Well>                & wells,
+                              std::vector<NRLib::Well *>              & wells,
                               std::vector<bool>                       & facies_log_wells,
                               std::vector<std::string>                & log_names,
                               std::vector<int>                        & facies_nr,
@@ -1105,116 +1108,117 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     for (int i = 0; i < n_wells; i++) {
 
       std::string well_file_name = input_files->getWellFile(i);
-      bool read_ok = false;
 
       // If the facies log is given, it is always entry 4 in the log name list
       std::string facies_log = "FACIES";
       if (log_names_from_user.size() > 4 && log_names_from_user[4] != "")
         facies_log = log_names_from_user[4];
 
-      NRLib::Well new_well(well_file_name, read_ok, facies_log);
-      LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
+      int format = -1;
+      try {
+        NRLib::Well * base_well = NRLib::Well::ReadWell(well_file_name, format);
+        NRLib::Well & new_well  = *base_well; //Convenience-variable.
+        LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
 
-      std::vector<int> facies_nr;
-      std::vector<std::string> facies_names;
+        std::vector<int> facies_nr;
+        std::vector<std::string> facies_names;
 
-      //Process logs
-      if (well_file_name.find(".nwh",0) != std::string::npos)
-        ProcessLogsNorsarWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
-      else if (well_file_name.find(".rms",0) != std::string::npos || well_file_name.find(".txt",0) != std::string::npos)
-        ProcessLogsRMSWell(new_well, log_names, inverse_velocity, facies_log_given, err_text);
+        //Process logs
+        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, format, err_text);
 
-      //Cut wells against full_inversion_volume
-      //if (err_text == "")
-      //  CutWell(well_file_name, new_well, *full_inversion_simbox);
+        //Cut wells against full_inversion_volume
+        //if (err_text == "")
+        //  CutWell(well_file_name, new_well, *full_inversion_simbox);
 
-      //Store facies names.
-      if (model_settings->getFaciesLogGiven()) {
-        ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names);
-      }
+        //Store facies names.
+        if (model_settings->getFaciesLogGiven()) {
+          ReadFaciesNamesFromWellLogs(new_well, facies_nr, facies_names);
+        }
 
-      facies_nr_wells.push_back(facies_nr);
-      facies_names_wells.push_back(facies_names);
+        facies_nr_wells.push_back(facies_nr);
+        facies_names_wells.push_back(facies_names);
 
-      new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(i));
-      new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
-      new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
-      new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
-      new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
+        new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(i));
+        new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
+        new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
+        new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
+        new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
 
-      //Check if well is valid
-      bool well_valid = true;
-      bool facies_ok  = true;
+        //Check if well is valid
+        bool well_valid = true;
+        bool facies_ok  = true;
 
-      if (CheckWellAgainstSimbox(full_inversion_simbox, new_well) == 1) {
-        well_valid = false;
-        no_hit++;
-        TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
-      }
-      if (new_well.GetNData() == 0) {
-        LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
-        well_valid = false;
-        empty++;
-        TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
-      }
-      //Check well for valid facies
-      if (new_well.HasFaciesLog() == true) {
-        const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
-        int n_facies                        = new_well.GetNFacies();
-        bool facies_ok_tmp                  = false;
-        for (size_t j = 0; j < facies_log.size(); j++) {
-          if (facies_log[j] != IMISSING) {
-            for (int k = 0; k < n_facies; k++) {
-              if (facies_nr[k] == facies_log[j]) {
-                facies_ok_tmp = true;
+        if (CheckWellAgainstSimbox(full_inversion_simbox, new_well) == 1) {
+          well_valid = false;
+          no_hit++;
+          TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
+        }
+        if (new_well.GetNData() == 0) {
+          LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
+          well_valid = false;
+          empty++;
+          TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
+        }
+        //Check well for valid facies
+        if (new_well.HasDiscLog("Facies") == true) {
+          const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
+          int n_facies                        = new_well.GetNFacies();
+          bool facies_ok_tmp                  = false;
+          for (size_t j = 0; j < facies_log.size(); j++) {
+            if (facies_log[j] != IMISSING) {
+              for (int k = 0; k < n_facies; k++) {
+                if (facies_nr[k] == facies_log[j]) {
+                  facies_ok_tmp = true;
+                  break;
+                }
+              }
+              if (facies_ok_tmp == false) { //Found a facies in facies_log that is not defined in facies_nr
+                facies_ok = false;
                 break;
               }
             }
-            if (facies_ok_tmp == false) { //Found a facies in facies_log that is not defined in facies_nr
-              facies_ok = false;
-              break;
-            }
           }
         }
+        if (facies_ok == false) {
+          LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
+          well_valid = false;
+          facies_log_not_ok++;
+          TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
+        }
+        bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[i]);
+        if (monotonous == false) {
+          LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
+          well_valid = false;
+          upwards++;
+          TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
+        }
+
+        well_names[i]            = new_well.GetWellName();
+        well_synthetic_vs_log[i] = new_well.HasSyntheticVsLog();
+
+        if (well_valid == true) {
+
+          valid_index[i] = true;
+          SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[i], n_invalid_vs[i], n_invalid_rho[i]);
+          FilterLogs(new_well, model_settings);
+          LookForSyntheticVsLog(new_well, model_settings, rank_corr[i]);
+          CalculateDeviation(new_well, model_settings, dev_angle[i], full_inversion_simbox);
+
+          if (n_facies > 0)
+            CountFaciesInWell(new_well, full_inversion_simbox, n_facies, facies_nr, facies_count[i]);
+
+          wells.push_back(base_well);
+
+          if (model_settings->getFaciesLogGiven())
+            facies_log_wells[i] = true;
+        }
+        else
+          valid_index[i] = false;
       }
-      if (facies_ok == false) {
-        LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
-        well_valid = false;
-        facies_log_not_ok++;
-        TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
-      }
-      bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[i]);
-      if (monotonous == false) {
-        LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
-        well_valid = false;
-        upwards++;
-        TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
-      }
-
-      well_names[i]            = new_well.GetWellName();
-      well_synthetic_vs_log[i] = new_well.HasSyntheticVsLog();
-
-      if (read_ok == false) {
-        err_text += "Well format of file " + well_file_name + " not recognized.\n";
-      }
-      else if (well_valid == true) {
-
-        valid_index[i] = true;
-        SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[i], n_invalid_vs[i], n_invalid_rho[i]);
-        FilterLogs(new_well, model_settings);
-        LookForSyntheticVsLog(new_well, model_settings, rank_corr[i]);
-        CalculateDeviation(new_well, model_settings, dev_angle[i], full_inversion_simbox);
-
-        if (n_facies > 0)
-          CountFaciesInWell(new_well, full_inversion_simbox, n_facies, facies_nr, facies_count[i]);
-
-        wells.push_back(new_well);
-
-        if (model_settings->getFaciesLogGiven())
-          facies_log_wells[i] = true;
-      }
-      else
+      catch (NRLib::Exception & e) {
+        err_text += e.what();
         valid_index[i] = false;
+      }
 
     } //n_wells
 
@@ -1422,7 +1426,7 @@ bool CommonData::RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
     MergeCells("Vp  ", vp_resampled,    vp,    ii, istart, iend, print_to_screen);
     MergeCells("Vs  ", vs_resampled,    vs,    ii, istart, iend, print_to_screen);
     MergeCells("Rho ", rho_resampled,   rho,   ii, istart, iend, print_to_screen);
-    if (well.HasFaciesLog()) {
+    if (well.HasDiscLog("Facies")) {
       const std::vector<int>  & facies = well.GetDiscLog("Facies");
       MergeCellsDiscrete("Facies ", facies_resampled, facies, ii, istart, iend, print_to_screen);
     }
@@ -1462,7 +1466,7 @@ bool CommonData::RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
   well.RemoveContLog("Rho");
   well.AddContLog("Rho", rho_resampled);
 
-  if (well.HasFaciesLog()) {
+  if (well.HasDiscLog("Facies")) {
     well.RemoveDiscLog("Facies");
     well.AddDiscLog("Facies", facies_resampled);
   }
@@ -2351,13 +2355,19 @@ void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
 
 }
 
-void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
-                                    std::vector<std::string>        & log_names_from_user,
-                                    const std::vector<bool>         & inverse_velocity,
-                                    bool                              facies_log_given,
-                                    std::string                     & error_text) const
+void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_well,
+                                        std::vector<std::string>        & log_names_from_user,
+                                        const std::vector<bool>         & inverse_velocity,
+                                        bool                              facies_log_given,
+                                        int                               format,
+                                        std::string                     & error_text) const
 {
-
+  double xy_scale = 1.0;
+  double time_scale = 1.0;
+  if(format == NRLib::Well::NORSAR) {
+    xy_scale   = 1000.0; //From km to m
+    time_scale = 1000.0; //from s to ms
+  }
   const double factor_usfeet_to_meters = 304800.0;
 
   if (log_names_from_user.size() == 0) {
@@ -2375,19 +2385,45 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     }
   }
 
-  // RMS wells must have an x log
-  if (new_well.HasContLog("X")) {
-    new_well.AddContLog("X_pos", new_well.GetContLog("X"));
-    new_well.RemoveContLog("X");
-  }
+  //Process X and Y directions
+  std::string xy_log_name;
+  if (new_well.HasContLog("X"))
+    xy_log_name = "X";
+  else if (new_well.HasContLog("UTMX"))
+    xy_log_name = "UTMX";
+  else if (new_well.HasContLog("EASTING"))
+    xy_log_name = "EASTING";
   else {
-    error_text += "Could not find log 'X' in well file "+new_well.GetWellName()+".\n";
+    error_text += "Could not find valid log for x-coordinate in well file "+new_well.GetWellName()+". (Tried X, UTMX and EASTINGS.)\n";
+  }
+  if (xy_log_name.length() > 0) {
+    std::vector<double> x_log = new_well.GetContLog(xy_log_name);
+    if(xy_scale != 1.0) {
+      for(size_t i=0;i<x_log.size();i++)
+        x_log[i] *= xy_scale;
+    }
+    new_well.AddContLog("X_pos", x_log);
+    new_well.RemoveContLog(xy_log_name);
   }
 
-  // RMS wells must have a y log
-  if (new_well.HasContLog("Y")) {
-    new_well.AddContLog("Y_pos", new_well.GetContLog("Y"));
-    new_well.RemoveContLog("Y");
+  xy_log_name="";
+  if (new_well.HasContLog("Y"))
+    xy_log_name = "Y";
+  else if (new_well.HasContLog("UTMY"))
+    xy_log_name = "UTMY";
+  else if (new_well.HasContLog("NORTHING"))
+    xy_log_name = "NORTHING";
+  else {
+    error_text += "Could not find valid log for y-coordinate in well file "+new_well.GetWellName()+". (Tried Y, UTMY and NORTHING.)\n";
+  }
+  if (xy_log_name.length() > 0) {
+    std::vector<double> y_log = new_well.GetContLog(xy_log_name);
+    if(xy_scale != 1.0) {
+      for(size_t i=0;i<y_log.size();i++)
+        y_log[i] *= xy_scale;
+    }
+    new_well.AddContLog("Y_pos", y_log);
+    new_well.RemoveContLog(xy_log_name);
   }
   else {
     error_text += "Could not find log 'Y' in well file "+new_well.GetWellName()+".\n";
@@ -2397,7 +2433,12 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
   if (new_well.HasContLog("TWT")) {
-    new_well.AddContLog("Z_pos", new_well.GetContLog("TWT"));
+    std::vector<double> & z_log = new_well.GetContLog("TWT");
+    if(time_scale != 1.0) {
+      for(size_t i=0;i<z_log.size();i++)
+        z_log[i] *= time_scale;
+    }
+    new_well.AddContLog("Z_pos",z_log);
   }
   else {
     error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
@@ -2406,7 +2447,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
   int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
   const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
   for (size_t i = 0; i < z_tmp.size(); i++) {
-    if (z_tmp[i] != WELLMISSING)
+    if (new_well.IsMissing(z_tmp[i]) == false)
       nonmissing_data++;
   }
   new_well.SetNumberOfNonMissingData(nonmissing_data);
@@ -2420,7 +2461,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     std::vector<double> vp(vp_temp.size());
     if (inverse_velocity[0]) {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
-        if (vp_temp[i] != WELLMISSING)
+        if (new_well.IsMissing(vp_temp[i]) == false)
           vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
         else
           vp[i] = RMISSING;
@@ -2428,7 +2469,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     }
     else {
       for (unsigned int i=0; i<vp_temp.size(); i++) {
-        if (vp_temp[i] != WELLMISSING)
+        if (new_well.IsMissing(vp_temp[i]) == false)
           vp[i] = static_cast<double>(vp_temp[i]);
         else
           vp[i] = RMISSING;
@@ -2444,7 +2485,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     std::vector<double> vs(vs_temp.size());
     if (inverse_velocity[1]) {
       for (size_t i = 0; i < vs_temp.size(); i++) {
-        if (vs_temp[i] != WELLMISSING)
+        if (new_well.IsMissing(vs_temp[i]) == false)
           vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
         else
           vs[i] = RMISSING;
@@ -2452,7 +2493,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     }
     else {
       for (size_t i = 0; i < vs_temp.size(); i++) {
-        if (vs_temp[i] != WELLMISSING)
+        if (new_well.IsMissing(vs_temp[i]) == false)
           vs[i] = static_cast<double>(vs_temp[i]);
         else
           vs[i] = RMISSING;
@@ -2468,7 +2509,7 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
     std::vector<double> rho(rho_temp.size());
 
     for (size_t i = 0; i < rho_temp.size(); i++) {
-      if (rho_temp[i] != WELLMISSING)
+      if (new_well.IsMissing(rho_temp[i]) == false)
         rho[i] = static_cast<double>(rho_temp[i]);
       else
         rho[i] = RMISSING;
@@ -2480,19 +2521,33 @@ void CommonData::ProcessLogsRMSWell(NRLib::Well                     & new_well,
 
   // If defined, Facies is always entry 4 in the log name list
   if (facies_log_given) {
-    if (new_well.HasDiscLog(log_names_from_user[4])) {
+    if (new_well.HasDiscLog(log_names_from_user[4])) { //Only rms-wells so far.
+      new_well.SetFaciesMappingFromDiscLog(log_names_from_user[4]);
       const std::vector<int> & facies_tmp = new_well.GetDiscLog(log_names_from_user[4]);
       std::vector<int> facies(facies_tmp.size());
 
       for (size_t i = 0; i < facies_tmp.size(); i++) {
-        if (facies_tmp[i] != WELLMISSING)
+        if (new_well.IsMissing(facies_tmp[i]) == false)
           facies[i] = facies_tmp[i];
         else
           facies[i] = IMISSING;
       }
       new_well.RemoveDiscLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", facies);
+    }
+    else if (new_well.HasContLog(log_names_from_user[4])) {
+      const std::vector<double> & facies_tmp = new_well.GetContLog(log_names_from_user[4]);
+      std::vector<int> facies(facies_tmp.size());
 
+      for (size_t i = 0; i < facies_tmp.size(); i++) {
+        if (new_well.IsMissing(facies_tmp[i]) == false)
+          facies[i] = static_cast<int>(facies_tmp[i]);
+        else
+          facies[i] = IMISSING;
+      }
+      new_well.RemoveDiscLog(log_names_from_user[4]);
+      new_well.AddDiscLog("Facies", facies);
+      new_well.SetFaciesMappingFromDiscLog("Facies");
     }
   }
 }
@@ -2994,7 +3049,7 @@ CommonData::VsVpFromWells(int      i_interval,
                           double & vs_vp,
                           int    & N) const
 {
-  const std::vector<NRLib::Well> & wells = GetWells();
+  const std::vector<NRLib::Well *> & wells = GetWells();
   size_t n_wells = wells.size();
 
   for (size_t i = 0; i < n_wells; i++) {
@@ -3004,7 +3059,7 @@ CommonData::VsVpFromWells(int      i_interval,
     double mean_vs_vp = 0.0; // Average Vs/Vp for this well
     int    n_vs_vp    = 0; // Number of samples behind Vs/Vp estimate
 
-    FindMeanVsVp(wells[i], top, base, mean_vs_vp, n_vs_vp);
+    FindMeanVsVp(*(wells[i]), top, base, mean_vs_vp, n_vs_vp);
 
     N     += n_vs_vp;
     vs_vp += mean_vs_vp*n_vs_vp;
@@ -3205,11 +3260,11 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
       for (size_t w = 0; w < n_wells; w++) {
         if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
           double v0=model_settings->getAverageVelocity();
-          mapped_blocked_logs.find(wells_[w].GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
+          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
         }
         else {
-          mapped_blocked_logs.find(wells_[w].GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          mapped_blocked_logs.find(wells_[w].GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
+          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
         }
       }
     }
@@ -3465,22 +3520,29 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     }
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
-      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs);
-      const float lim_high  = 3.0f;
-      const float lim_low   = 0.33f;
-
-      if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
-          wavelet->multiplyRAmpByConstant(prescale);
+      std::string tmp_err_text;
+      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
+      if(tmp_err_text != "") {
+        err_text += tmp_err_text;
+        error = 1;
+      }
       else {
-        if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-            std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
-          if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
-            err_text += text;
-            error++;
-          }
-          else {
-            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-            TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+        const float lim_high  = 3.0f;
+        const float lim_low   = 0.33f;
+
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
+            wavelet->multiplyRAmpByConstant(prescale);
+        else {
+          if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
+              std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
+              err_text += text;
+              error++;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+            }
           }
         }
       }
@@ -4511,7 +4573,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                          const Simbox                                               & estimation_simbox,
-                                         std::vector<NRLib::Well>                                   & wells,
+                                         std::vector<NRLib::Well *>                                 & wells,
                                          std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                          std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                          std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
@@ -4534,9 +4596,9 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   try{
       LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in the outer estimation simbox:\n");
     for (unsigned int i=0; i<wells.size(); i++) {
-      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
+      BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
-      mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(), blocked_log));
+      mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
 
     }
   }
@@ -4564,7 +4626,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
 bool
 CommonData::BlockLogsForCorrelation(const ModelSettings                                        * const model_settings,
                                     const MultiIntervalGrid                                    * multiple_interval_grid,
-                                    std::vector<NRLib::Well>                                   & wells,
+                                    std::vector<NRLib::Well *>                                 & wells,
                                     std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                     std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                     std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
@@ -4579,8 +4641,8 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
     try{
       LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for correlation estimation:\n");
       for (unsigned int i = 0; i < wells.size(); i++) {
-        mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i].GetWellName(),
-          new BlockedLogsCommon(&wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid,
+        mapped_blocked_logs_for_correlation.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(),
+          new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid,
                                 model_settings->getRunFromPanel(), err_text)));
       }
     }
@@ -4601,7 +4663,7 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
 bool
 CommonData::BlockLogsForInversion(const ModelSettings                                        * const model_settings,
                                   const MultiIntervalGrid                                    * multiple_interval_grid,
-                                  std::vector<NRLib::Well>                                   & wells,
+                                  std::vector<NRLib::Well *>                                 & wells,
                                   std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                   std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                   std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
@@ -4617,8 +4679,8 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
 
       for (size_t j = 0; j < wells.size(); j++) {
-        blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j].GetWellName(),
-          new BlockedLogsCommon(&wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text)));
+        blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j]->GetWellName(),
+          new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text)));
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
@@ -4641,7 +4703,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         InputFiles                                    * input_files,
                                         const Simbox                                  * estimation_simbox,
                                         const Simbox                                  & inversion_simbox,
-                                        std::vector<NRLib::Well>                      & wells,
+                                        std::vector<NRLib::Well *>                    & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::vector<std::vector<SeismicStorage *> >   & seismic_data,
                                         const std::vector<NRLib::Matrix>              & reflection_matrix,
@@ -4679,12 +4741,12 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
   for (int w = 0 ; w < static_cast<int>(n_wells) ; w++) {
-    if (wells[w].IsDeviated())
+    if (wells[w]->IsDeviated())
       continue;
-    std::string well_name = wells[w].GetWellName();
+    std::string well_name = wells[w]->GetWellName();
     std::map<std::string, BlockedLogsCommon * >::iterator it = mapped_blocked_logs.find(well_name);
     if (it == mapped_blocked_logs.end()) {
-      err_text += "Blocked log not found for well  " + wells[w].GetWellName() + "\n";
+      err_text += "Blocked log not found for well  " + wells[w]->GetWellName() + "\n";
       break;
     }
     BlockedLogsCommon * bl = it->second;
@@ -4721,11 +4783,11 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
 
     delta_X = i_move*dx*cos(angle) - j_move*dy*sin(angle);
     delta_Y = i_move*dx*sin(angle) + j_move*dy*cos(angle);
-    MoveWell(wells[w], estimation_simbox,delta_X,delta_Y,k_move);
+    MoveWell(*(wells[w]), estimation_simbox,delta_X,delta_Y,k_move);
     // delete old blocked well and create new
     delete bl;
     mapped_blocked_logs.erase(it);
-    mapped_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, new BlockedLogsCommon(&wells[w], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
+    mapped_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, new BlockedLogsCommon(wells[w], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                                                                             estimation_simbox, model_settings->getRunFromPanel(), err_text) ) );
     if (err_text != "") {
       err_text += "The well " + well_name + " does not pass through the inversion area after optimization of the well location.\n";
@@ -4733,16 +4795,16 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
       return false;
     }
     LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
-    wells[w].GetWellName().c_str(), k_move, i_move, delta_X, j_move, delta_Y);
+    wells[w]->GetWellName().c_str(), k_move, i_move, delta_X, j_move, delta_Y);
   }
 
   for (int w = 0 ; w < static_cast<int>(n_wells) ; w++) {
     n_move_angles = model_settings->getNumberOfWellAngles(w);
 
-    if ( wells[w].IsDeviated()==true && n_move_angles > 0 ) {
+    if ( wells[w]->IsDeviated()==true && n_move_angles > 0 ) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well %7s is treated as deviated and can not be moved.\n",
-                                           wells[w].GetWellName().c_str());
-      TaskList::addTask("Well "+NRLib::ToString(wells[w].GetWellName())+" can not be moved. Remove <optimize-location-to> for this well");
+                                           wells[w]->GetWellName().c_str());
+      TaskList::addTask("Well "+NRLib::ToString(wells[w]->GetWellName())+" can not be moved. Remove <optimize-location-to> for this well");
     }
   }
 
@@ -5446,7 +5508,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
                 tot += static_cast<float>(facies_count[w][j]);
               }
 
-              LogKit::LogFormatted(LogKit::Low,"%-23s ",wells_[w].GetWellName().c_str());
+              LogKit::LogFormatted(LogKit::Low,"%-23s ",wells_[w]->GetWellName().c_str());
               for (int j = 0; j < n_facies; j++) {
                 float facies_prob = static_cast<float>(facies_count[w][j])/tot;
                 LogKit::LogFormatted(LogKit::Low," %12.4f",facies_prob);
@@ -5473,7 +5535,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
               float tot = 0.0;
               for (int j = 0; j < n_facies; j++)
                 tot += static_cast<float>(facies_count[w][j]);
-              LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells_[w].GetWellName().c_str());
+              LogKit::LogFormatted(LogKit::Medium,"%-23s ",wells_[w]->GetWellName().c_str());
               for (int j = 0; j < n_facies; j++) {
                 LogKit::LogFormatted(LogKit::Medium," %12d",facies_count[w][j]);
               }
@@ -6968,7 +7030,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
 bool CommonData::SetupBackgroundModel(ModelSettings                                              * model_settings,
                                       InputFiles                                                 * input_files,
-                                      const std::vector<NRLib::Well>                             & wells,
+                                      const std::vector<NRLib::Well *>                           & wells,
                                       std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                       std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
                                       MultiIntervalGrid                                          * multi_interval_grid,
@@ -7098,8 +7160,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             std::vector<std::string> cont_logs_to_be_blocked;
             std::vector<std::string> disc_logs_to_be_blocked;
 
-            const std::map<std::string,std::vector<double> > & cont_logs = wells[j].GetContLog();
-            const std::map<std::string,std::vector<int> >    & disc_logs = wells[j].GetDiscLog();
+            const std::map<std::string,std::vector<double> > & cont_logs = wells[j]->GetContLog();
+            const std::map<std::string,std::vector<int> >    & disc_logs = wells[j]->GetDiscLog();
 
             for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
               cont_logs_to_be_blocked.push_back(it->first);
@@ -7108,14 +7170,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               disc_logs_to_be_blocked.push_back(it->first);
             }
 
-            bg_blocked_log = new BlockedLogsCommon(&wells[j],
-                                                    cont_logs_to_be_blocked,
-                                                    disc_logs_to_be_blocked,
-                                                    bg_simbox,
-                                                    false,
-                                                    err_text);
+            bg_blocked_log = new BlockedLogsCommon(wells[j],
+                                                   cont_logs_to_be_blocked,
+                                                   disc_logs_to_be_blocked,
+                                                   bg_simbox,
+                                                   false,
+                                                   err_text);
 
-            std::string bg_well_name = "bg_" + wells[j].GetWellName();
+            std::string bg_well_name = "bg_" + wells[j]->GetWellName();
             bg_blocked_log->SetWellName(bg_well_name);
 
             bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
@@ -7836,7 +7898,7 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
 
 bool CommonData::SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                        const InputFiles                                            * input_files,
-                                       const std::vector<NRLib::Well>                              & wells,
+                                       const std::vector<NRLib::Well *>                            & wells,
                                        const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
                                        const std::vector<Simbox *>                                 & interval_simboxes,
                                        const std::vector<std::string>                              & facies_names,

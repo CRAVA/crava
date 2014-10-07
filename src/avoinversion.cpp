@@ -269,93 +269,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     computePostMeanResidAndFFTCov(modelGeneral_,
-                                  simbox_,
-                                  seismicParameters,
-                                  postAlpha_,
-                                  postBeta_,
-                                  postRho_,
-                                  errCorr_,
-                                  seisData_,
-                                  seisWavelet_,
-                                  errThetaCov_,
-                                  A_,
-                                  thetaDeg_,
-                                  ntheta_,
-                                  lowCut_,
-                                  highCut_,
-                                  wnc_,
-                                  nz_,
-                                  nzp_,
-                                  nyp_,
-                                  nxp_,
-                                  modelSettings->getNumberOfThreads(),
-                                  fileGrid_);
-
-  //Finish use of seisData, since we need the memory.
-  if ((outputGridsSeismic_ & IO::RESIDUAL) > 0)
-  {
-    if (!simbox_->getIsConstantThick())
-      multiplyDataByScaleWaveletAndWriteToFile("residuals");
-    else {
-      for (int l=0 ; l<ntheta_ ; l++) {
-        std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-        std::string sgriLabel = " Residuals for incidence angle "+angle;
-        std::string fileName  = IO::PrefixResiduals() + angle;
-        seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
-        seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
-        seisData_[l]->endAccess();
-      }
-    }
-  }
-
-  for(int i = 0 ; i < ntheta_ ; i++)
-    delete seisData_[i];
-  delete [] seisData_;
-
-  if (modelGeneral_->getVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
-    LogKit::WriteHeader("Setup time-to-depth relationship");
-    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");
-    postAlpha_->setAccessMode(FFTGrid::RANDOMACCESS);
-    postAlpha_->expTransf();
-    GridMapping       * tdMap      = modelGeneral_->getTimeDepthMapping();
-    const GridMapping * dcMap      = modelGeneral_->getTimeCutMapping();
-    const Simbox      * timeSimbox = simbox_;
-    if(dcMap != NULL)
-      timeSimbox = dcMap->getSimbox();
-
-    tdMap->setMappingFromVelocity(postAlpha_, timeSimbox);
-    postAlpha_->logTransf();
-    postAlpha_->endAccess();
-  }
-
-  //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
-  if (modelAVOdynamic_->getUseLocalNoise()) {
-    FFTGrid * postCovAlpha       = seismicParameters.GetCovAlpha();
-    FFTGrid * postCovBeta        = seismicParameters.GetCovBeta();
-    FFTGrid * postCovRho         = seismicParameters.GetCovRho();
-
-    seismicParameters.invFFTCovGrids();
-    seismicParameters.updatePriorVar();
-
-    postVar0_       = seismicParameters.getPriorVar0(); //Updated variables
-    postCovAlpha00_ = seismicParameters.createPostCov00(postCovAlpha);
-    postCovBeta00_  = seismicParameters.createPostCov00(postCovBeta);
-    postCovRho00_   = seismicParameters.createPostCov00(postCovRho);
-
-    seismicParameters.FFTCovGrids();
-
-    correctAlphaBetaRho(modelSettings_);
-  }
-
-  if (!doing4DInversion_) {
-    if (writePrediction_)
-      ParameterOutput::writeParameters(simbox_, modelGeneral_, modelSettings_, postAlpha_, postBeta_, postRho_,
-                                       outputGridsElastic_, fileGrid_, -1, false);
-
-    writeBWPredicted();
-  }
-
+                                  seismicParameters);
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
@@ -421,6 +335,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   delete spat_synt_well_filter;
 }
 
+
 AVOInversion::~AVOInversion()
 {
   delete [] thetaDeg_;
@@ -429,15 +344,9 @@ AVOInversion::~AVOInversion()
   delete [] signalVariance_;
   delete [] errorVariance_;
   delete [] dataVariance_;
-
-  delete postAlpha_;
-  delete postBeta_;
-  delete postRho_;
-
   if(fprob_ != NULL)
     delete fprob_;
-  if(errCorr_ != NULL)
-    delete errCorr_;
+  delete errCorr_;
 
   for (int i = 0;i<ntheta_;i++)
     delete[] errThetaCov_[i];
@@ -457,10 +366,10 @@ AVOInversion::~AVOInversion()
         }
       }
     }
-     delete sigmamdnew_;
-
+    delete sigmamdnew_;
   }
 }
+
 
 void
 AVOInversion::computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
@@ -892,6 +801,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
   double wall=0.0, cpu=0.0;
   TimeKit::getTime(wall,cpu);
+  int i,j,k,l;
 
   fftw_complex * kW          = new fftw_complex[ntheta_];
 
@@ -942,15 +852,11 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete diff2Operator;
   diff3Operator->fft1DInPlace();
 
-  Wavelet1D ** errorSmooth  = new Wavelet1D * [ntheta];
-  Wavelet1D ** errorSmooth3 = new Wavelet1D * [ntheta];
+  Wavelet1D ** errorSmooth  = new Wavelet1D*[ntheta_];
+  Wavelet1D ** errorSmooth2 = new Wavelet1D*[ntheta_];
+  Wavelet1D ** errorSmooth3 = new Wavelet1D*[ntheta_];
 
-  makeErrorSmooth(errorSmooth,
-                  errorSmooth3,
-                  seisData,
-                  seisWavelet,
-                  thetaDeg,
-                  ntheta);
+  int cnxp  = nxp_/2+1;
 
   for (l = 0; l < ntheta_ ; l++)
   {
@@ -977,8 +883,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
     delete errorSmooth2[l];
   }
-
-
   delete[] errorSmooth2;
 
   meanVp_->setAccessMode(FFTGrid::READANDWRITE);
@@ -1012,15 +916,14 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   postCrCovVpRho->setAccessMode(FFTGrid::READ);
   postCrCovVsRho->setAccessMode(FFTGrid::READ);
 
-  postAlpha->setAccessMode(FFTGrid::READANDWRITE);
-  postBeta ->setAccessMode(FFTGrid::READANDWRITE);
-  postRho  ->setAccessMode(FFTGrid::READANDWRITE);
-
-  errCorr->fftInPlace();
-  errCorr->setAccessMode(FFTGrid::READ);
+  errCorr_->fftInPlace();
+  errCorr_->setAccessMode(FFTGrid::READ);
 
   // Computes the posterior mean first below the covariance is computed
   // To avoid to many grids in memory at the same time
+  double priorVarVp,justfactor;
+  int cholFlag;
+  float realFrequency;
 
   Wavelet1D** seisWaveletForNorm = new Wavelet1D*[ntheta_];
   for (l = 0; l < ntheta_; l++)
@@ -1033,20 +936,13 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nBuilding posterior distribution:");
-  float monitorSize = std::max(1.0f, static_cast<float>(nzp)*0.02f);
+  float monitorSize = std::max(1.0f, static_cast<float>(nzp_)*0.02f);
   float nextMonitor = monitorSize;
   std::cout
     << "\n  0%       20%       40%       60%       80%      100%"
     << "\n  |    |    |    |    |    |    |    |    |    |    |  "
     << "\n  ^";
 
-#ifdef PARALLEL
-  if (fileGrid) {
-    n_threads = 1; // Parallelization doesn't work when using FFTFileGrid due to disk access.
-  }
-  int  chunk_size = 1;
-#pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
-#endif
   for (k = 0; k < nzp_; k++)
   {
     realFrequency = static_cast<float>((nz_*1000.0f)/(simbox_->getlz()*nzp_)*std::min(k,nzp_-k)); // the physical frequency
@@ -1131,87 +1027,47 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
           ijkRes[l]  = ijkData[l];
         }
 
-        fftw_complex ijkErrCorr;
+        seismicParameters.getNextParameterCovariance(parVar);
+        bool invert_frequency = realFrequency > lowCut_*simbox_->getMinRelThick() &&  realFrequency < highCut_;
 
-        if (fileGrid) {
-          ijkMean[0] = postAlpha->getNextComplex();
-          ijkMean[1] = postBeta ->getNextComplex();
-          ijkMean[2] = postRho  ->getNextComplex();
+        priorVarVp = parVar[0][0].re;
 
-          for (int l = 0 ; l < ntheta ; l++) {
-            ijkData[l] = seisData[l]->getNextComplex();
-            ijkRes[l]  = ijkData[l];
+        getNextErrorVariance(errVar, errMult1, errMult2, errMult3, ntheta_, wnc_, errThetaCov_, invert_frequency);
+
+        if(invert_frequency){
+          lib_matrProdCpx(K, parVar , ntheta_, 3 ,3, KS);              //  KS is defined here
+          lib_matrProdAdjointCpx(KS, K, ntheta_, 3 ,ntheta_, margVar); // margVar = (K)S(K)' is defined here
+          lib_matrAddMatCpx(errVar, ntheta_,ntheta_, margVar);         // errVar  is added to margVar = (WDA)S(WDA)'  + errVar
+
+          cholFlag=lib_matrCholCpx(ntheta_,margVar);                   // Choleskey factor of margVar is Defined
+
+          if(cholFlag==0)
+          { // then it is ok else posterior is identical to prior
+
+            lib_matrAdjoint(KS,ntheta_,3,KScc);                        //  WDAScc is adjoint of WDAS
+            lib_matrAXeqBMatCpx(ntheta_, margVar, KS, 3);              // redefines WDAS
+            lib_matrProdCpx(KScc,KS,3,ntheta_,3,reduceVar);            // defines reduceVar
+            //double hj=1000000.0;
+            //if(reduceVar[0][0].im!=0)
+            // hj = MAXIM(reduceVar[0][0].re/reduceVar[0][0].im,-reduceVar[0][0].re/reduceVar[0][0].im); //NBNB DEBUG
+            lib_matrSubtMatCpx(reduceVar,3,3,parVar);                  // redefines parVar as the posterior solution
+
+            lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkDataMean); //  defines content of ijkDataMean
+            lib_matrSubtVecCpx(ijkDataMean, ntheta_, ijkData);         //  redefines content of ijkData
+
+            lib_matrProdAdjointMatVecCpx(KS,ijkData,3,ntheta_,ijkAns); // defines ijkAns
+
+            lib_matrAddVecCpx(ijkAns, 3,ijkMean);                      // redefines ijkMean
+            lib_matrProdMatVecCpx(K,ijkMean, ntheta_, 3, ijkData);     // redefines ijkData
+            lib_matrSubtVecCpx(ijkData, ntheta_,ijkRes);               // redefines ijkRes
           }
-          ijkErrCorr = errCorr->getNextComplex();
 
-          seismicParameters.getNextParameterCovariance(parVar, modelGeneral->getIs4DActive());
-        }
-        else {
-          ijkMean[0] = postAlpha->getComplexValue(i, j, k, true);
-          ijkMean[1] = postBeta ->getComplexValue(i, j, k, true);
-          ijkMean[2] = postRho  ->getComplexValue(i, j, k, true);
-
-          for (int l = 0 ; l < ntheta ; l++) {
-            ijkData[l] = seisData[l]->getComplexValue(i, j, k, true);
-            ijkRes[l]  = ijkData[l];
+          // quality control DEBUG
+          if(priorVarVp*4 < ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)
+          {
+            justfactor = sqrt(ijkAns[0].re*ijkAns[0].re + ijkAns[0].re*ijkAns[0].re)/sqrt(priorVarVp);
           }
-          ijkErrCorr = errCorr->getComplexValue(i, j, k, true);
-
-          seismicParameters.getParameterCovariance(parVar, i, j, k, modelGeneral->getIs4DActive());
         }
-
-        if (invert_frequency) {
-          invertSeismicData(parVar,
-                            ijkMean,
-                            ijkData,
-                            ijkDataMean,
-                            ijkRes,
-                            ijkAns,
-                            ijkErrCorr,
-                            errMult1,
-                            errMult2,
-                            errMult3,
-                            K,
-                            KS,
-                            KScc,
-                            margVar,
-                            reduceVar,
-                            errVar,
-                            errThetaCov,
-                            ntheta,
-                            wnc);
-        }
-
-        if (fileGrid) {
-          for (int l=0 ; l<ntheta ; l++) {
-            seisData[l]     ->setNextComplex(ijkRes[l]);
-          }
-          postAlpha         ->setNextComplex(ijkMean[0]);
-          postBeta          ->setNextComplex(ijkMean[1]);
-          postRho           ->setNextComplex(ijkMean[2]);
-          postCovAlpha      ->setNextComplex(parVar[0][0]);
-          postCovBeta       ->setNextComplex(parVar[1][1]);
-          postCovRho        ->setNextComplex(parVar[2][2]);
-          postCrCovAlphaBeta->setNextComplex(parVar[0][1]);
-          postCrCovAlphaRho ->setNextComplex(parVar[0][2]);
-          postCrCovBetaRho  ->setNextComplex(parVar[1][2]);
-        }
-        else {
-          for (int l=0 ; l<ntheta ; l++) {
-            seisData[l]     ->setComplexValue(i, j, k, ijkRes[l]   , true);
-          }
-          postAlpha         ->setComplexValue(i, j, k, ijkMean[0]  , true);
-          postBeta          ->setComplexValue(i, j, k, ijkMean[1]  , true);
-          postRho           ->setComplexValue(i, j, k, ijkMean[2]  , true);
-          postCovAlpha      ->setComplexValue(i, j, k, parVar[0][0], true);
-          postCovBeta       ->setComplexValue(i, j, k, parVar[1][1], true);
-          postCovRho        ->setComplexValue(i, j, k, parVar[2][2], true);
-          postCrCovAlphaBeta->setComplexValue(i, j, k, parVar[0][1], true);
-          postCrCovAlphaRho ->setComplexValue(i, j, k, parVar[0][2], true);
-          postCrCovBetaRho  ->setComplexValue(i, j, k, parVar[1][2], true);
-        }
-      }
-    }
 
         postVp_ ->setNextComplex(ijkMean[0]);
         postVs_ ->setNextComplex(ijkMean[1]);
@@ -1227,21 +1083,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
           seisData_[l]->setNextComplex(ijkRes[l]);
       }
     }
-    delete [] KScc;
-    delete [] parVar;
-    delete [] reduceVar;
-
-    for(int i = 0; i < ntheta; i++) {
-      delete [] K[i];
-      delete [] KS[i];
-      delete [] margVar[i] ;
-      delete [] errVar[i] ;
-    }
-    delete [] K;
-    delete [] KS;
-    delete [] margVar;
-    delete [] errVar;
-
     // Log progress
     if (k+1 >= static_cast<int>(nextMonitor))
     {
@@ -1277,10 +1118,8 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   for (l=0;l<ntheta_;l++)
     seisData_[l]->endAccess();
 
-  delete diff1Operator;
-  delete diff3Operator;
-
-  for(int i = 0; i < ntheta; i++)
+  //Finish use of seisData_, since we need the memory.
+  if((outputGridsSeismic_ & IO::RESIDUAL) > 0)
   {
     if(simbox_->getIsConstantThick() != true)
       multiplyDataByScaleWaveletAndWriteToFile("residuals");
@@ -1319,22 +1158,16 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   //NBNB Anne Randi: Skaler traser ihht notat fra Hugo
   if (modelAVOdynamic_->GetUseLocalNoise()) {
     seismicParameters.invFFTCovGrids();
-  for (int l = 0; l < ntheta ; l++)
-  {
-    seisData_[l]->setAccessMode(FFTGrid::READANDWRITE);
+    seismicParameters.updatePriorVar();
 
     postVar0_     = seismicParameters.getPriorVar0(); //Updated variables
     postCovVp00_  = seismicParameters.createPostCov00(postCovVp);
     postCovVs00_  = seismicParameters.createPostCov00(postCovVs);
     postCovRho00_ = seismicParameters.createPostCov00(postCovRho);
 
-    std::string angle    = NRLib::ToString(thetaDeg[l], 1);
-    std::string fileName = std::string("ErrorSmooth_") + angle + IO::SuffixGeneralData();
-    errorSmooth3[l]->printToFile(fileName);
-    errorSmooth3[l]->fft1DInPlace();
+    seismicParameters.FFTCovGrids();
     correctVpVsRho(modelSettings_);
   }
-}
 
   if (doing4DInversion_==false) {
     if(writePrediction_ == true ) {
@@ -1343,17 +1176,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       seismicParameters.SetPostRho(postRho_);
     }
 
-    // defines content of K=WDA
-    fillkW(k, kW, seisWavelet);
-
-    lib_matrProdScalVecCpx(kD, kW, n);
-    lib_matrProdDiagCpxR(kW, A, n, 3, K);         // set (WDA) K
-
-    // defines error-term multipliers
-    fillkWNorm(k, errMult1, seisWaveletForNorm);  // set (kWNorm) errMult1
-    fillkWNorm(k, errMult2, errorSmooth3);        // set (kWD3Norm) errMult2
-    lib_matrFillOnesVecCpx(errMult3, n);          // set errMult3
-    delete [] kW;
+    writeBWPredicted();
   }
   //delete [] seisData_;
   delete [] kW;
@@ -1378,36 +1201,14 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     delete errorSmooth[i];
     delete seisWaveletForNorm[i];
   }
-}
 
-void
-Crava::invertSeismicData(fftw_complex **& parVar,      // Filled in method
-                         fftw_complex  *& ijkMean,     // Filled in method
-                         fftw_complex   * ijkData,
-                         fftw_complex   * ijkDataMean,
-                         fftw_complex   * ijkRes,
-                         fftw_complex   * ijkAns,
-                         fftw_complex     ijkErrCorr,
-                         fftw_complex  *& errMult1,
-                         fftw_complex  *& errMult2,
-                         fftw_complex  *& errMult3,
-                         fftw_complex  ** K,
-                         fftw_complex  ** KS,
-                         fftw_complex  ** KScc,
-                         fftw_complex  ** margVar,
-                         fftw_complex  ** reduceVar,
-                         fftw_complex  ** errVar,
-                         double        ** errThetaCov,
-                         int              n,           // ntheta
-                         float            wnc)
-{
-  getNextErrorVariance(errVar,
-                       errMult1,
-                       errMult2,
-                       errMult3,
-                       ijkErrCorr,
-                       errThetaCov,
-                       n, wnc);
+  delete[] K;
+  delete[] KS;
+  delete[] margVar;
+  delete[] errVar  ;
+  delete[] errorSmooth3;
+  delete[] errorSmooth;
+  delete[] seisWaveletForNorm;
 
   for (i = 0; i < 3; i++)
   {
@@ -1415,7 +1216,14 @@ Crava::invertSeismicData(fftw_complex **& parVar,      // Filled in method
     delete[] parVar[i] ;
     delete[] reduceVar[i];
   }
+  delete[] KScc;
+  delete[] parVar;
+  delete[] reduceVar;
+
+  Timings::setTimeInversion(wall,cpu);
+  return(0);
 }
+
 
 //--------------------------------------------------------------------
 void
@@ -1429,8 +1237,7 @@ AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
                                    bool             invert_frequency) const
 {
   fftw_complex ijkErrLam;
-  ijkErrLam.re = static_cast<float>(sqrt(ijkErrCorr.re * ijkErrCorr.re));
-  ijkErrLam.im = 0.0;
+  fftw_complex ijkTmp;
 
   ijkTmp = errCorr_->getNextComplex();
 
@@ -1453,10 +1260,6 @@ AVOInversion::getNextErrorVariance(fftw_complex **& errVar,
           errVar[l][m].im  = float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
           errVar[l][m].im += float( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
         }
-      }
-      else {
-        errVar[l][m].im  = static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult1[l].re * errMult1[m].im + errMult1[l].im * errMult1[m].re));
-        errVar[l][m].im += static_cast<float>( 0.5*(1.0-wnc)*errThetaCov[l][m] * ijkErrLam.re * (-errMult2[l].re * errMult2[m].im + errMult2[l].im * errMult2[m].re));
       }
     }
   }

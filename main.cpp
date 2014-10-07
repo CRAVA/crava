@@ -300,7 +300,6 @@ int main(int argc, char** argv)
           int  eventType;
           int  eventIndex;
           modelGeneral->GetTimeLine()->ReSet();
-      }
 
           double time;
           int time_index = 0;
@@ -310,7 +309,7 @@ int main(int argc, char** argv)
                 modelGeneral->AdvanceTime(time_index, seismicParametersIntervals[i_interval], modelSettings);
                 time_index++;
             }
-            bool failed;
+            bool failed = false;
             switch(eventType) {
             case TimeLine::AVO : {
               LogKit::LogFormatted(LogKit::Low,"\nAVO inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
@@ -325,21 +324,22 @@ int main(int argc, char** argv)
             }
             case TimeLine::TRAVEL_TIME : {
               LogKit::LogFormatted(LogKit::Low,"\nTravel time inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
-              failed = doTimeLapseTravelTimeInversion(modelSettings,
-                                                      modelGeneral,
-                                                      inputFiles,
-                                                      eventIndex,
-                                                      seismicParametersIntervals[i_interval]);
+              //failed = doTimeLapseTravelTimeInversion(modelSettings,
+              //                                        modelGeneral,
+              //                                        modelTravelTimeStatic,
+              //                                        inputFiles,
+              //                                        eventIndex,
+              //                                        seismicParametersIntervals[i_interval]);
               break;
             }
             case TimeLine::GRAVITY : {
               LogKit::LogFormatted(LogKit::Low,"\nGravimetric inversion, time lapse "+ CommonData::ConvertIntToString(time_index) +"..\n");
-              failed = doTimeLapseGravimetricInversion(modelSettings,
-                                                        modelGeneral,
-                                                        modelGravityStatic,
-                                                        common_data,
-                                                        eventIndex,
-                                                        seismicParametersIntervals[i_interval]);
+              //failed = doTimeLapseGravimetricInversion(modelSettings,
+              //                                          modelGeneral,
+              //                                          modelGravityStatic,
+              //                                          common_data,
+              //                                          eventIndex,
+              //                                          seismicParametersIntervals[i_interval]);
               break;
             }
             default :

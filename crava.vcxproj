@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -395,12 +395,6 @@
     <ClCompile Include="src\wavelet3D.cpp" />
     <ClCompile Include="src\waveletfilter.cpp" />
     <ClCompile Include="libs\nrlib\well\well.cpp" />
-    <ClCompile Include="src\welldata.cpp">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\xmlmodelfile.cpp" />
     <ClCompile Include="libs\boost\system\error_code.cpp" />
     <ClCompile Include="libs\boost\filesystem\operations.cpp" />
@@ -1461,7 +1455,6 @@
     <ClInclude Include="src\wavelet1D.h" />
     <ClInclude Include="src\wavelet3D.h" />
     <ClInclude Include="src\waveletfilter.h" />
-    <ClInclude Include="src\welldata.h" />
     <ClInclude Include="src\xmlmodelfile.h" />
     <ClInclude Include="libs\boost\cerrno.hpp" />
     <ClInclude Include="libs\boost\filesystem\config.hpp" />

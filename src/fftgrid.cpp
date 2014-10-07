@@ -122,18 +122,6 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   }
 }
 
-FFTGrid::~FFTGrid()
-{
-  if (rvalue_!=NULL)
-  {
-    if(add_==true)
-      nGrids_ = nGrids_ - 1;
-    fftw_free(rvalue_);
-    FFTMemUse_ -= rsize_ * sizeof(fftw_real);
-    LogKit::LogFormatted(LogKit::DebugLow,"\nFFTGrid Destructor: nGrids_ = %d",nGrids_);
-  }
-}
-
 FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
@@ -316,13 +304,6 @@ FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
         setRealValue(i,j,k,value,true);
       }
     }
-
-    fftw_free(rAmpData);
-    fftw_free(rAmpFine);
-
-    //fftwnd_destroy_plan(fftplan1); // Crashes with parallelization
-    //fftwnd_destroy_plan(fftplan2); // Crashes with parallelization
-
   }
   endAccess();
 }
@@ -341,38 +322,7 @@ FFTGrid::~FFTGrid()
   }
 }
 
-  float z0_shift    = z0_grid - z0_data;
-  float inv_dz_fine = 1.0f/dz_fine;
 
-  int n_grid = static_cast<int>(grid_trace.size());
-
-  for (int k = 0 ; k < n_grid ; k++) {
-    int refk = getZSimboxIndex(k);
-    float dl = (z0_shift + static_cast<float>(refk)*dz_grid)*inv_dz_fine;
-    int   l1 = static_cast<int>(floor(dl));
-    int   l2 = static_cast<int>(ceil(dl));
-
-    if (l2 < 0 || l1 > n_fine - 1) {
-      grid_trace[k] = 0.0f;
-    }
-    else {
-      if (l1 < 0) {
-        grid_trace[k] = rAmpFine[l2];
-      }
-      else if (l2 > n_fine - 1) {
-        grid_trace[k] = rAmpFine[l1];
-      }
-      else if (l1 == l2) {
-        grid_trace[k] = rAmpFine[l1];
-      }
-      else {
-        float w1 = ceil(dl) - dl;
-        float w2 = dl - floor(dl);
-        grid_trace[k] = w1*rAmpFine[l1] + w2*rAmpFine[l2];
-      }
-    }
-  }
-}
 
 void
 FFTGrid::addTrendToTrace(std::vector<float> & grid_trace,
@@ -1891,14 +1841,16 @@ FFTGrid::consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp)
 
 
 void
-FFTGrid::writeFile(const std::string       & fName,
-                   const std::string       & subDir,
-                   const Simbox            * simbox,
-                   const std::string         label,
-                   const float               z0,
-                   const GridMapping       * depthMap,
-                   const TraceHeaderFormat & thf,
-                   bool padding)
+FFTGrid::writeFile(const std::string              & fName,
+                   const std::string              & subDir,
+                   const Simbox                   * simbox,
+                   const std::string                label,
+                   const float                      z0,
+                   const GridMapping              * depthMap,
+                   const TraceHeaderFormat        & thf,
+                   bool                             padding,
+                   bool                             scientific_format,
+                   const std::vector<std::string> & headerText)
 {
   std::string fileName = IO::makeFullFileName(subDir, fName);
 
@@ -1908,7 +1860,7 @@ FFTGrid::writeFile(const std::string       & fName,
       if((formatFlag_ & IO::STORM) > 0)
         FFTGrid::writeStormFile(fileName, simbox, false, padding);
       if((formatFlag_ & IO::ASCII) > 0)
-        FFTGrid::writeStormFile(fileName, simbox, true, padding);
+        FFTGrid::writeStormFile(fileName, simbox, true, padding, false, scientific_format);
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((formatFlag_ & IO::SEGY) >0)

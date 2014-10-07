@@ -69,7 +69,8 @@ Wavelet1D(const ModelSettings * modelSettings,
   float         findGlobalScaleForGivenWavelet(const ModelSettings                              * modelSettings,
                                                const Simbox                                     * simbox,
                                                SeismicStorage                                   * seismic_data,
-                                               const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs);
+                                               const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                               std::string                                      & err_txt);
 
   float         calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,
                                                 const Simbox                                     * estimation_simbox,

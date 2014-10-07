@@ -6651,7 +6651,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
 
   // Check facies names. At leas one rock needs to be given prior probebility
   // Find facies names
-  std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb();
+  std::string name = modelSettings_->getIntervalName(0); //Only one zone for 4D currently.
+  std::map<std::string, float> facies_probabilities = modelSettings_->getPriorFaciesProb(name);
   std::map<std::string, std::string> facies_cubes   = inputFiles_->getPriorFaciesProbFile();
   std::vector<std::string> all_facies_names;
 

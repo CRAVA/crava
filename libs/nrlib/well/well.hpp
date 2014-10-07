@@ -53,6 +53,9 @@ namespace NRLib {
     /// Destructor
     ~Well();
 
+    static Well * ReadWell(const std::string & file_name,
+                           int               & well_format);
+
     /// Check existence of discrete log
     bool HasDiscLog(const std::string & name) const;
     /// Check existence of continuous log
@@ -72,11 +75,6 @@ namespace NRLib {
     std::vector<int> & GetDiscLog(const std::string& name);
     /// Return discrete logs
     const std::vector<int> & GetDiscLog(const std::string& name) const;
-
-    /// Read a well from a file-name
-    void ReadWell(const std::string              & file_name,
-                  bool                           & read_ok,
-                  const std::string              & facies_log = "");
 
     /// Add a continuous log
     /// Replaces the log if there is already a log with the given name.
@@ -137,8 +135,6 @@ namespace NRLib {
     /// Return all discrete logs
     const std::map<std::string,std::vector<int> > & GetDiscLog() const { return disc_log_; };
     /// Facies
-    bool                                  HasFaciesLog()  const  { return has_facies_log_                      ;}
-    /// Get number of facies
     int                                   GetNFacies()    const  { return static_cast<int>(facies_map_.size()) ;}
     /// Map integer log to facies name
     const std::map<int, std::string>  &   GetFaciesMap()  const  { return facies_map_                          ;}
@@ -154,6 +150,10 @@ namespace NRLib {
 
     /// Set number of data
     void SetNumberOfData(int n_data)  {n_data_ = n_data ;}
+
+    void SetFaciesMappingFromDiscLog(const std::string & name) {facies_map_ = GetDiscNames(name);}
+
+    virtual const std::map<int, std::string> GetDiscNames(const std::string& log_name) const;
 
     const unsigned int GetNumberOfNonMissingData()  const {return n_data_nonmissing_ ;}
 
@@ -171,7 +171,7 @@ namespace NRLib {
 
     bool HasSyntheticVsLog(void)           const { return(real_vs_log_)==0              ;}
 
-    //bool getUseForBackgroundTrend(void)     const { return(use_for_background_trend_ > 0)    ;}
+    enum WELL_FILE_FORMAT {RMS=0, NORSAR = 1, LAS = 2};
 
   protected:
     // Number of time data including WELLMISSING values
@@ -198,7 +198,6 @@ namespace NRLib {
     /// Parameter from ModelGeneral
     bool                        is_deviated_;
     /// Facies variables
-    bool                        has_facies_log_;
     std::map<int, std::string>  facies_map_;
 
     int                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings

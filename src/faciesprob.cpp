@@ -555,8 +555,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
 {
   int nDimensions = 0;
 
-  const std::vector<double> trend1 = spat_synt_well_filter->GetTrend1();
-  const std::vector<double> trend2 = spat_synt_well_filter->GetTrend2();
+  std::vector<double> trend1;
+  std::vector<double> trend2;
 
   if ((trend1_min>trend1_max) || (trend2_min > trend2_max)) {
     throw NRLib::Exception("Facies probabilities: The given trend minimum value is larger than the trend maximum value");
@@ -582,9 +582,16 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   //it is not possible to have a trend2 but no trend1
   }else if(trend2.size() == 1 && trend1.size() > 1){
     nDimensions = 4;
-    // if trend2max==trend1min and trend1max==trend1min
+    trend1.resize(nBinsTrend_+1);
+    trend2.resize(1,trend2_min);
+    trend1BinSize_ = (trend1_max - trend1_min)/nBinsTrend_;
+    for (int i=0; i<nBinsTrend_+1; i++){
+      trend1[i] = trend1_min + i*trend1BinSize_ - trend1BinSize_/10;
+    }
   }
   else {
+    trend1.resize(1,trend1_min);
+    trend2.resize(1,trend2_min);
     nDimensions = 3;
   }
 

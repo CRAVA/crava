@@ -21,6 +21,31 @@ DistributionWithTrendStorage::DistributionWithTrendStorage()
 DistributionWithTrendStorage::~DistributionWithTrendStorage()
 {
 }
+
+
+DistributionWithTrend *
+DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
+                                                            const std::vector<std::string>          & trend_cube_parameters,
+                                                            const std::vector<std::vector<double> > & trend_cube_sampling,
+                                                            std::string                             & errTxt)
+{
+  const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy when not estimatin.
+  const std::vector<std::vector<double> >   dummy_s1;
+  const std::vector<std::vector<double> >   dummy_s2;
+  const int                                 dummy_output_other = -999;
+  DistributionWithTrend * result = GenerateDistributionWithTrend(path,
+                                                                 trend_cube_parameters,
+                                                                 trend_cube_sampling,
+                                                                 dummy_blocked_logs,
+                                                                 dummy_s1,
+                                                                 dummy_s2,
+                                                                 dummy_output_other,
+                                                                 "dummy",
+                                                                 errTxt);
+  return(result);
+}
+
+
 //--------------------------------------------------------------//
 
 DeltaDistributionWithTrendStorage::DeltaDistributionWithTrendStorage()

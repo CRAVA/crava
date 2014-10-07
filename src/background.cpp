@@ -333,9 +333,9 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                                                 model_settings->getBackgroundVario(),
                                                 model_settings->getDebugFlag());
 
-    MakeKrigedBackground(kriging_data_vp,  bg_vp,  trend_vp,  simbox, covGrid2D, "Vp");
-    MakeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs");
-    MakeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho");
+    MakeKrigedBackground(kriging_data_vp,  bg_vp,  trend_vp,  simbox, covGrid2D, "Vp",model_settings->getNumberOfThreads());
+    MakeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs",model_settings->getNumberOfThreads());
+    MakeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho",model_settings->getNumberOfThreads());
 
     delete &covGrid2D;
   }
@@ -2044,10 +2044,9 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
                                  NRLib::Grid<float>               * bg_grid,
                                  std::vector<double>              & trend,
                                  const Simbox                     * simbox,
-                                 const CovGrid2D                  & covGrid2D,
+                                 const CovGrid2D                  & cov_grid_2D,
                                  const std::string                & type,
-                                 int                                n_threads,
-                                 bool                               isFile) const
+                                 int                                n_threads) const
 {
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::Low,text);
@@ -2061,18 +2060,13 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
   const double lx   = simbox->getlx();
   const double ly   = simbox->getly();
 
-  bgGrid = ModelGeneral::createFFTGrid(nx, ny, nz, nxp, nyp, nzp, isFile);
-  bgGrid->createRealGrid();
-  bgGrid->setType(FFTGrid::PARAMETER);
-  bgGrid->setAccessMode(FFTGrid::WRITE);
-
   //
   // Store a surface for each layer (needed for parallelization)
   //
   Surface tmp(x0, y0, lx, ly, nx, ny, RMISSING);
   std::vector<Surface> surfaces(0);
-  surfaces.reserve(nzp);
-  for (int k=0 ; k<nzp ; k++)
+  surfaces.reserve(nz);
+  for (int k=0 ; k<nz ; k++)
     surfaces.push_back(tmp);
 
   float monitor_size = std::max(1.0f, static_cast<float>(nz)*0.02f);
@@ -2088,12 +2082,12 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
 #pragma omp parallel for schedule(dynamic, chunk_size) num_threads(n_threads)
 #endif
 
-  for (int k=0 ; k<nzp ; k++) {
+  for (int k=0 ; k<nz ; k++) {
     // Set trend for layer
     surfaces[k].Assign(trend[k]);
 
     // Kriging of layer
-    Kriging2D::krigSurface(surfaces[k], krigingData[k], covGrid2D);
+    Kriging2D::krigSurface(surfaces[k], kriging_data[k], cov_grid_2D);
 
 
     // Log progress
@@ -2105,14 +2099,13 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
   }
 
   // Set layers in background model from surface
-  for (int k=0 ; k<nzp ; k++) {
+  for (int k=0 ; k<nz ; k++) {
     for (int j = 0; j < ny; j++) {
       for (int i = 0 ; i < nx ; i++) {
         bg_grid->SetValue(i, j, k, static_cast<float>(surfaces[k](i,j)));
       }
     }
   }
-
 }
 
 //---------------------------------------------------------------------------

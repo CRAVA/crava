@@ -122,9 +122,9 @@ public:
   std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
   std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
 
-  int                                    GetNRealSeismicData()               { return real_seismic_data_.size()                                       ;}
-  int                                    GetNCpp()                           { return cpp_.size()                                                     ;}
-  int                                    GetNFaciesProb()                    { return facies_prob_.size()                                             ;}
+  int                                    GetNRealSeismicData()               { return static_cast<int>(real_seismic_data_.size())                     ;}
+  int                                    GetNCpp()                           { return static_cast<int>(cpp_.size())                                   ;}
+  int                                    GetNFaciesProb()                    { return static_cast<int>(facies_prob_.size())                           ;}
 
   int                                    GetNAngles()                        { return n_angles_                                                       ;}
 

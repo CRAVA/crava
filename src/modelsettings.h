@@ -187,7 +187,6 @@ public:
   bool                             getUseFilterForFaciesProb()          const { return useFilterForProb_                          ;}
   bool                             getFaciesLogGiven(void)              const { return faciesLogGiven_                            ;}
   bool                             getPorosityLogGiven(void)            const { return porosityLogGiven_                          ;}
-  const std::map<std::string,float>& getPriorFaciesProb(void)           const { return priorFaciesProb_                           ;}
   const std::map<std::string,float>& getVolumeFractionsProb(void)       const { return volumeFractionProb_                        ;}
   int                              getIsPriorFaciesProbGiven(void)      const { return priorFaciesProbGiven_                      ;}
   bool                             getDepthDataOK(void)                 const { return depthDataOk_                               ;}
@@ -240,9 +239,6 @@ public:
   double                           getRMSTemporalCorrelationRangeAbove()const { return RMSTemporalCorrRangeAbove_                 ;}
   double                           getRMSTemporalCorrelationRangeBelow()const { return RMSTemporalCorrRangeBelow_                 ;}
 
-  std::map<std::string, float>     getVpVsRatioIntervals()              const { return vpvs_ratio_interval_                       ;}
-  std::map<std::string, std::map<std::string, float> > getPriorFaciesProbInterval() const { return priorFaciesProbInterval_       ;}
-  std::map<std::string, std::map<std::string, float> > getVolumeFractionsProbInterval() const { return volumefractionInterval_   ;}
   std::map<std::string, float>                         getPriorFaciesProb(std::string interval_name)                    const { return priorFaciesProb_.find(interval_name)->second                ;}
   const std::map<std::string, std::map<std::string, float> > & getPriorFaciesProbs()                                    const { return priorFaciesProb_                                            ;}
   std::map<std::string, float>                         getVolumeFractionsProb(std::string interval_name)                const { return volumeFraction_.find(interval_name)->second                 ;}

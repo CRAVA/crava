@@ -130,6 +130,16 @@ private:
   void                   SetComplexVector(NRLib::ComplexVector & V,
                                           fftw_complex         * v);
 
+  void                   getNextErrorVariance(fftw_complex **& errVar,
+                                              fftw_complex   * errMult1,
+                                              fftw_complex   * errMult2,
+                                              fftw_complex   * errMult3,
+                                              int              ntheta,
+                                              float            wnc,
+                                              double        ** errThetaCov,
+                                              bool             invert_frequency) const;
+
+
   bool               fileGrid_;         // is true if is storage is on file
   const Simbox     * simbox_;           // the simbox
   int                nx_;               // dimensions of the problem

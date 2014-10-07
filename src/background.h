@@ -236,7 +236,8 @@ private:
                                     std::vector<double>              & trend,
                                     const Simbox                     * simbox,
                                     const CovGrid2D                  & cov_grid_2D,
-                                    const std::string                & type) const;
+                                    const std::string                & type,
+                                    int                                n_threads) const;
 
   //void         makeTrendZone(const std::vector<double> & trend,
   //                           StormContGrid             & trend_zone) const;

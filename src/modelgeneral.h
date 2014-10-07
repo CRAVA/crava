@@ -86,7 +86,6 @@ public:
 
   void              AdvanceTime(int time_step, SeismicParametersHolder & seismicParameters,ModelSettings* modelSettings);
   void              LastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* modelSettings);
-  void              Dump4Dparameters(ModelSettings* modelSettings, std::string identifyer, int timestep);
   void              DumpSeismicParameters(ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
 
   void              WriteToFile(const Simbox        * simbox,
@@ -100,8 +99,22 @@ public:
   void              setTimeSimbox(Simbox * new_timeSimbox);
 
   void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
-  void              dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=false);
-  void              dumpSeismicParameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,SeismicParametersHolder &  current_state);
+  void              Dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=true);
+
+  void                      mergeState4D(SeismicParametersHolder &  seismicParameters);
+  void                      updateState4D(SeismicParametersHolder &  seismicParameters);
+
+  void                      updateState4DWithSingleParameter(FFTGrid * EPost,
+                                                             FFTGrid * CovPost,
+                                                             int       parameterNumber);
+
+  void                      updateState4DMu(FFTGrid * mu_vp_static,
+                                            FFTGrid * mu_vs_static,
+                                            FFTGrid * mu_rho_static,
+                                            FFTGrid * mu_vp_dynamic,
+                                            FFTGrid * mu_vs_dynamic,
+                                            FFTGrid * mu_rho_dynamic);
+
 
 private:
 

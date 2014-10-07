@@ -11,7 +11,6 @@
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
 #include "src/modelgeneral.h"
-#include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/simbox.h"
 #include "src/covgridseparated.h"

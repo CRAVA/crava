@@ -357,7 +357,7 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
   header_lines[2] = "x-axis is Vp, and y-axis is Vs.";
   header_lines[3] = "Vertical axis is physical density, starting from "+NRLib::ToString(z_min)+".";
   header_lines[4] = "Physical density is scaled by a factor of 1000.";
-  expDens.writeFile(fileName, "", volume, "NO_LABEL", z_min, NULL, NULL,
+  expDens.writeFile(fileName, "", volume, "NO_LABEL", static_cast<float>(z_min), NULL,
                     TraceHeaderFormat(TraceHeaderFormat::SEISWORKS), false, scientific_format, header_lines);
 }
 

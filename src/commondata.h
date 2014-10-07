@@ -41,8 +41,8 @@ public:
   const Simbox                                                       & GetFullInversionSimbox()                         const { return full_inversion_simbox_                         ;}
   const Simbox                                                       & GetOutputSimbox()                                const { return output_simbox_                                 ;}
         Simbox                                                       & GetOutputSimbox()                                      { return output_simbox_                                 ;}
-  const std::vector<NRLib::Well>                                     & GetWells()                                       const { return wells_                                         ;}
-        std::vector<NRLib::Well>                                     & GetWells()                                             { return wells_                                         ;}
+  const std::vector<NRLib::Well *>                                   & GetWells()                                       const { return wells_                                         ;}
+        std::vector<NRLib::Well *>                                   & GetWells()                                             { return wells_                                         ;}
   const MultiIntervalGrid                                            * GetMultipleIntervalGrid()                        const { return multiple_interval_grid_                        ;}
   MultiIntervalGrid                                                  * GetMultipleIntervalGrid(void)                          { return multiple_interval_grid_                        ;}
 
@@ -208,7 +208,7 @@ private:
                                            InputFiles                                    * input_files,
                                            const Simbox                                  * estimation_simbox,
                                            const Simbox                                  & inversion_simbox,
-                                           std::vector<NRLib::Well>                      & wells,
+                                           std::vector<NRLib::Well *>                    & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                            std::vector<std::vector<SeismicStorage *> >   & seismic_data,
                                            const std::vector<NRLib::Matrix>              & reflection_matrix,
@@ -288,7 +288,7 @@ private:
   bool               ReadWellData(ModelSettings                           * model_settings,
                                   Simbox                                  * full_inv_simbox,
                                   InputFiles                              * input_files,
-                                  std::vector<NRLib::Well>                & wells,
+                                  std::vector<NRLib::Well *>              & wells,
                                   std::vector<bool>                       & facies_log_wells,
                                   std::vector<std::string>                & log_names,
                                   std::vector<int>                        & facies_nr,
@@ -302,7 +302,7 @@ private:
 
   bool               BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                              const Simbox                                               & estimation_simbox,
-                                             std::vector<NRLib::Well>                                   & wells,
+                                             std::vector<NRLib::Well *>                                 & wells,
                                              std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                              std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
@@ -310,7 +310,7 @@ private:
 
   bool               BlockLogsForCorrelation(const ModelSettings                                        * const model_settings,
                                              const MultiIntervalGrid                                    * multiple_interval_grid,
-                                             std::vector<NRLib::Well>                                   & wells,
+                                             std::vector<NRLib::Well *>                                 & wells,
                                              std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                              std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
@@ -318,7 +318,7 @@ private:
 
 bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
                                            const MultiIntervalGrid                                    * multiple_interval_grid,
-                                           std::vector<NRLib::Well>                                   & wells,
+                                           std::vector<NRLib::Well *>                                 & wells,
                                            std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                            std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                            std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
@@ -384,11 +384,12 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                            bool                       facies_log_given,
                                            std::string              & error_text) const;
 
-  void               ProcessLogsRMSWell(NRLib::Well                     & new_well,
-                                        std::vector<std::string>        & log_names_from_user,
-                                        const std::vector<bool>         & inverse_velocity,
-                                        bool                              facies_log_given,
-                                        std::string                     & error_text) const;
+  void               ProcessLogsGeneralWell(NRLib::Well                     & new_well,
+                                            std::vector<std::string>        & log_names_from_user,
+                                            const std::vector<bool>         & inverse_velocity,
+                                            bool                              facies_log_given,
+                                            int                               format,
+                                            std::string                     & error_text) const;
   int                CheckWellAgainstSimbox(const Simbox      * simbox,
                                             const NRLib::Well & well) const;
 
@@ -715,7 +716,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   bool               SetupBackgroundModel(ModelSettings                                              * model_settings,
                                           InputFiles                                                 * input_files,
-                                          const std::vector<NRLib::Well>                             & wells,
+                                          const std::vector<NRLib::Well *>                           & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                           std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
                                           MultiIntervalGrid                                          * multi_interval_grid,
@@ -772,7 +773,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   bool               SetupPriorCorrelation(const ModelSettings                                         * model_settings,
                                            const InputFiles                                            * input_files,
-                                           const std::vector<NRLib::Well>                              & wells,
+                                           const std::vector<NRLib::Well *>                            & wells,
                                            const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
                                            const std::vector<Simbox *>                                 & interval_simboxes,
                                            const std::vector<std::string>                              & facies_names,
@@ -935,7 +936,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   // Well logs
   std::vector<std::string>                                     log_names_;
-  std::vector<NRLib::Well>                                     wells_;
+  std::vector<NRLib::Well* >                                   wells_;
 
   // Blocked well logs
   std::map<std::string, BlockedLogsCommon *>                   mapped_blocked_logs_;                 ///< Blocked logs with estimation simbox

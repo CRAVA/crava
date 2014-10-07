@@ -231,9 +231,6 @@
     <ClCompile Include="src\waveletfilter.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\welldata.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\xmlmodelfile.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1229,9 +1226,6 @@
     <ClInclude Include="src\waveletfilter.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\welldata.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\xmlmodelfile.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
@@ -1733,9 +1727,6 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
       <Filter>Header Files\rplib</Filter>
     </ClInclude>
-    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\commondata.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
@@ -1836,6 +1827,9 @@
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
     <ClInclude Include="libs\nrlib\random\randomgenerator.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>

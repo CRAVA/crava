@@ -40,7 +40,7 @@ namespace NRLib {
     /// Construct RMSWell from general well.
     RMSWell(const Well& wellobj);
     /// Get the discnames for discrete log with index
-    const std::map<int, std::string> & GetDiscNames(const std::string& log_name) const;
+    const std::map<int, std::string> GetDiscNames(const std::string& log_name) const;
     /// Write well to file
     void WriteToFile(const std::string& filename);
 

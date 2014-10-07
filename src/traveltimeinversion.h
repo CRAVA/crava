@@ -26,6 +26,10 @@ class GridMapping;
 class TravelTimeInversion
 {
 public:
+  TravelTimeInversion();
+
+  //Keeping it dummy for now.
+  /*
   TravelTimeInversion(ModelGeneral            * modelGeneral,
                       const ModelSettings     * modelSettings,
                       int                       vintage,
@@ -408,6 +412,7 @@ private:
                                              const std::vector<std::string> & initial_horizon_names,
                                              const std::vector<std::string> & push_down_names) const;
 
+*/
 };
 
 #endif

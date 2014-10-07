@@ -43,7 +43,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   //n_blocks_with_data_.resize(1,0);
 
   // FACIES
-  if (well_data->HasFaciesLog()) {
+  if (well_data->HasDiscLog("Facies")) {
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
@@ -130,7 +130,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   bool failed = false;
 
   // FACIES
-  if (well_data->HasFaciesLog()) {
+  if (well_data->HasDiscLog("Facies")) {
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
@@ -275,7 +275,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   dz_                           = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
 
   // FACIES
-  if (well_data->HasFaciesLog()) {
+  if (well_data->HasDiscLog("Facies")) {
     facies_log_defined_ = true;
     facies_map_ = well_data->GetFaciesMap();
   }
@@ -506,7 +506,7 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
 
       // Discrete logs
       if (facies_log_defined)
-        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked);
+        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), facies_blocked);
 
       (void) discrete_raw_logs;
       (void) discrete_logs_blocked;
@@ -639,7 +639,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
       // Discrete logs
       if (facies_log_defined)
-        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, facies_map.size(), facies_blocked);
+        BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), facies_blocked);
 
       (void) discrete_logs_raw_logs;
       (void) discrete_logs_blocked;
@@ -3297,7 +3297,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     std::exit(1);
   }
 
-  int n_facies                 = facies_map_.size();
+  int n_facies                 = static_cast<int>(facies_map_.size());
   bool got_facies              = (n_facies > 0);
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() != 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);
@@ -3547,7 +3547,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   std::string log_file_name = IO::makeFullFileName(IO::PathToWells(), log_base_name);
   std::string only_name     = NRLib::RemovePath(log_file_name);
 
-  int n_facies = facies_blocked_.size();
+  int n_facies = static_cast<int>(facies_blocked_.size());
 
   bool got_facies              = (n_facies > 0);
   bool got_facies_prob         = (facies_prob_.size() > 0);

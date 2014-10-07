@@ -123,7 +123,8 @@ public:
   virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
                                                const Simbox                * /*simbox*/,
                                                SeismicStorage              * /*seismic_data*/,
-                                               const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/) {return 1.0f;}
+                                               const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
+                                               std::string                 & /*err_txt*/) {return 1.0f;}
 
   // for noise estimation
   virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*estimation_simbox*/,

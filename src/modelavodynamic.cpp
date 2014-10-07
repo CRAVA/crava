@@ -386,55 +386,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   for (int l = 0; l < number_of_angles_; l++) {
     model_variance_[l]  = wd_corr_mvar[l]*param_var[l];
     signal_variance_[l] = error_variance_[l] + model_variance_[l];
-  // check if local noise is set for some angles.
-  bool localNoiseSet = false;
-  std::vector<bool> useRickerWavelet = modelSettings->getUseRickerWavelet(thisTimeLapse_);
-  for (int i=0 ; i < numberOfAngles_ ; i++) {
-    float angle = float(angle_[i]*180.0/M_PI);
-    LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-    if (modelSettings->getForwardModeling()==false)
-      seisCube[i]->setAccessMode(FFTGrid::RANDOMACCESS);
-
-    if (modelSettings->getWaveletDim(i) == Wavelet::ONE_D)
-      error += process1DWavelet(modelSettings,
-                                inputFiles,
-                                timeSimbox,
-                                seisCube,
-                                wells,
-                                waveletEstimInterval,
-                                reflectionMatrix[i],
-                                errText,
-                                wavelet[i],
-                                i,
-                                useRickerWavelet[i]);
-    else
-      error += process3DWavelet(modelSettings,
-                                inputFiles,
-                                timeSimbox,
-                                seisCube,
-                                wells,
-                                waveletEstimInterval,
-                                reflectionMatrix[i],
-                                errText,
-                                wavelet[i],
-                                i,
-                                refTimeGradX,
-                                refTimeGradY,
-                                tGradX,
-                                tGradY);
-
-    if(localNoiseScale_[i]!=NULL)
-      localNoiseSet = true;
-    if(modelSettings->getForwardModeling()==false) // else, no seismic data
-      seisCube[i]->endAccess();
-  } // end i (angles)
-
-  if(localNoiseSet==true) {
-    for(int i=0;i<numberOfAngles_;i++)
-      if(localNoiseScale_[i]==NULL)
-        localNoiseScale_[i] = new Grid2D(timeSimbox->getnx(),
-                                         timeSimbox->getny(),
-                                         1.0);
   }
 
   std::vector<bool> match_energies = model_settings->getMatchEnergies(this_timelapse_);

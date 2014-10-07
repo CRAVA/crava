@@ -235,12 +235,11 @@ RMSWell::RMSWell(const Well& wellobj)
   }
 }
 
-const std::map<int, std::string> &
+const std::map<int, std::string>
 RMSWell::GetDiscNames(const std::string& log_name) const
 {
   return (discnames_.find(log_name)->second);
 }
-
 
 void RMSWell::WriteToFile(const std::string& filename)
 {

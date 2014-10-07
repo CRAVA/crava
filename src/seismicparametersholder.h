@@ -142,11 +142,15 @@ public:
 
   float                  * getPriorCorrTFiltered(int nz, int nzp) const;
 
-  fftw_real              * computeCircCorrT(const std::vector<float> & priorCorrT,
-                                            const int                & minIntFq,
-                                            const int                & nzp) const;
 
-  fftw_real              * extractParamCorrFromCovAlpha(int nzp) const;
+
+  fftw_real                   * computeCircCorrT(const std::vector<float> & priorCorrT,
+                                                 const int                & minIntFq,
+                                                 const int                & nzp) const;
+
+  fftw_real                   * extractParamCorrFromCovAlpha(int nzp) const;
+
+  NRLib::Matrix                 getPriorVar0(void) const;
 
   fftw_real                   * ComputeCircAutoCov(const std::vector<double>            & auto_cov_pos, // positive lags
                                                    const std::vector<double>            & auto_cov_neg, // negative lags
@@ -160,37 +164,27 @@ public:
 
   void                          printPriorVariances(void) const;
 
-  void                     getParameterCovariance(fftw_complex **& parVar,
-                                                  int              i,
-                                                  int              j,
-                                                  int              k,
-                                                  bool             doing4D) const;
+  void                          printPostVariances(const NRLib::Matrix & postVar0) const;
 
-  void                     findParameterVariances(fftw_complex **& parVar,
-                                                  fftw_complex     ii,
-                                                  fftw_complex     jj,
-                                                  fftw_complex     kk,
-                                                  fftw_complex     ij,
-                                                  fftw_complex     ik,
-                                                  fftw_complex     jk,
-                                                  bool             doing4D) const;
+  void                          getNextParameterCovariance(fftw_complex **& parVar) const;
 
-  //void                          writeFilePriorCorrT(fftw_real   * priorCorrT,
-  //                                                  const int   & nzp,
-  //                                                  const float & dt) const;
+  void                          writeFilePriorVariances(const ModelSettings      * modelSettings,
+                                                        const std::vector<float> & priorCorrT,
+                                                        const Surface            * priorCorrXY,
+                                                        const float              & dt) const;
 
-  void                     writeFilePriorCorrT(fftw_real   * priorCorrT,
-                                               const int   & nzp,
-                                               const float & dt) const;
+  void                          findParameterVariances(fftw_complex **& parVar,
+                                                       fftw_complex     ii,
+                                                       fftw_complex     jj,
+                                                       fftw_complex     kk,
+                                                       fftw_complex     ij,
+                                                       fftw_complex     ik,
+                                                       fftw_complex     jk,
+                                                       bool             doing4D) const;
 
-  //void                          writeFilePostVariances(const NRLib::Matrix      & postVar0,
-  //                                                     const std::vector<float> & postCovVp00,
-  //                                                     const std::vector<float> & postCovVs00,
-  //                                                     const std::vector<float> & postCovRho00) const;
+  void                          writeFilePostCovGrids(Simbox const * simbox) const;
 
-  //void                          writeFilePostCovGrids(Simbox const * simbox) const;
-
-  void                     writeFilePostCovGrids(Simbox const * simbox) const;
+  std::vector<float>            createPostCov00(FFTGrid * postCov) const;
 
   void                          releaseGrids();
 
@@ -199,7 +193,7 @@ public:
   void                          releaseExpGrids() const;
 
 private:
-  void                     createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
+  void                          createCorrGrids(int nx, int ny, int nz, int nxp, int nyp, int nzp, bool fileGrid);
 
   void                          InitializeCorrelations(bool                                  cov_estimated,
                                                        const Surface                       * priorCorrXY,
@@ -233,9 +227,11 @@ private:
 
   void                          makeCorrXYPosDef(Surface         & priorCorrXY);
 
-  void                     writeFilePostCorrT(const std::vector<float> & postCov,
-                                              const std::string        & subDir,
-                                              const std::string        & baseName) const;
+  float                         getOrigin(FFTGrid * grid) const;
+
+  void                          writeFilePostCorrT(const std::vector<float> & postCov,
+                                                   const std::string        & subDir,
+                                                   const std::string        & baseName) const;
 
   //void                          writeFilePostCorrT(const std::vector<float> & postCov,
   //                                                 const std::string        & subDir,

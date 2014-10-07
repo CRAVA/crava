@@ -90,11 +90,11 @@ private:
   ModelGeneral * modelGeneral_;
 
   void MakeUpscalingKernel(ModelSettings * modelSettings,
-                           Simbox        * fullTimeSimbox);
+                           const Simbox  * fullTimeSimbox);
 
   void MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled);
 
-  void SetUpscaledPaddingSize(ModelSettings * modelSettings);
+  void SetUpscaledPaddingSize(const Simbox * fullTimeSimbox);
 
 };
 

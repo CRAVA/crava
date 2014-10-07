@@ -501,18 +501,16 @@ SeismicParametersHolder::FFTCovGrids()
 }
 
 //--------------------------------------------------------------------------------------------------
-void SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar,
-                                                         bool             doing4D) const
+void
+SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar) const
 {
-  fftw_complex ii = covAlpha_      ->getNextComplex();
-  fftw_complex jj = covBeta_       ->getNextComplex();
-  fftw_complex kk = covRho_        ->getNextComplex();
-  fftw_complex ij = crCovAlphaBeta_->getNextComplex();
-  fftw_complex ik = crCovAlphaRho_ ->getNextComplex();
-  fftw_complex jk = crCovBetaRho_  ->getNextComplex();
 
-  findParameterVariances(parVar, ii, jj, kk, ij, ik, jk, doing4D);
-}
+  fftw_complex ii;
+  fftw_complex jj;
+  fftw_complex kk;
+  fftw_complex ij;
+  fftw_complex ik;
+  fftw_complex jk;
 
   fftw_complex iiTmp = covVp_     ->getNextComplex();
   fftw_complex jjTmp = covVs_     ->getNextComplex();
@@ -521,86 +519,60 @@ void SeismicParametersHolder::getNextParameterCovariance(fftw_complex **& parVar
   fftw_complex ikTmp = crCovVpRho_->getNextComplex();
   fftw_complex jkTmp = crCovVsRho_->getNextComplex();
 
-  fftw_complex ii = covAlpha_      ->getComplexValue(i, j, k, true);
-  fftw_complex jj = covBeta_       ->getComplexValue(i, j, k, true);
-  fftw_complex kk = covRho_        ->getComplexValue(i, j, k, true);
-  fftw_complex ij = crCovAlphaBeta_->getComplexValue(i, j, k, true);
-  fftw_complex ik = crCovAlphaRho_ ->getComplexValue(i, j, k, true);
-  fftw_complex jk = crCovBetaRho_  ->getComplexValue(i, j, k, true);
+  if(priorVar0_(0,0) != 0)
+    iiTmp.re = iiTmp.re / static_cast<float>(priorVar0_(0,0));
 
-  findParameterVariances(parVar, ii, jj, kk, ij, ik, jk, doing4D);
-}
+  if(priorVar0_(1,1) != 0)
+    jjTmp.re = jjTmp.re / static_cast<float>(priorVar0_(1,1));
 
-//---------------------------------------------------------------------------------------------------
-void SeismicParametersHolder::findParameterVariances(fftw_complex **& parVar,
-                                                     fftw_complex     ii,
-                                                     fftw_complex     jj,
-                                                     fftw_complex     kk,
-                                                     fftw_complex     ij,
-                                                     fftw_complex     ik,
-                                                     fftw_complex     jk,
-                                                     bool             doing4D) const
-{
-  if (doing4D) {
-    parVar[0][0].re = sqrt(ii.re*ii.re+ii.im*ii.im); // assures positive and real diagonal
-    parVar[0][0].im = 0.0f;
-    parVar[1][1].re = sqrt(jj.re*jj.re+jj.im*jj.im);
-    parVar[1][1].im = 0.0f;
-    parVar[2][2].re = sqrt(kk.re*kk.re+kk.im*kk.im);
-    parVar[2][2].im = 0.0f;
-  }
-  else {
-    ii = getParameterCovariance(priorVar0_, 0, 0, ii);
-    jj = getParameterCovariance(priorVar0_, 1, 1, jj);
-    kk = getParameterCovariance(priorVar0_, 2, 2, kk);
-    ij = getParameterCovariance(priorVar0_, 0, 1, ij);
-    ik = getParameterCovariance(priorVar0_, 0, 2, ik);
-    jk = getParameterCovariance(priorVar0_, 1, 2, jk);
+  if(priorVar0_(2,2) != 0)
+    kkTmp.re = kkTmp.re / static_cast<float>(priorVar0_(2,2));
 
-    parVar[0][0] = ii;
-    parVar[1][1] = jj;
-    parVar[2][2] = kk;
-  }
+  if(priorVar0_(0,1) != 0)
+    ijTmp.re = ijTmp.re / static_cast<float>(priorVar0_(0,1));
 
-  parVar[0][0] = ii;
-  parVar[1][1] = jj;
-  parVar[2][2] = kk;
+  if(priorVar0_(0,2) != 0)
+    ikTmp.re = ikTmp.re / static_cast<float>(priorVar0_(0,2));
 
-  parVar[0][1].re =  ij.re;
-  parVar[0][1].im =  ij.im;
-  parVar[1][0].re =  ij.re;
+  if(priorVar0_(1,2) != 0)
+    jkTmp.re = jkTmp.re / static_cast<float>(priorVar0_(1,2));
+
+  ii.re = float( sqrt(iiTmp.re * iiTmp.re));
+  ii.im = 0.0;
+  jj.re = float( sqrt(jjTmp.re * jjTmp.re));
+  jj.im = 0.0;
+  kk.re = float( sqrt(kkTmp.re * kkTmp.re));
+  kk.im = 0.0;
+  ij.re = float( sqrt(ijTmp.re * ijTmp.re));
+  ij.im = 0.0;
+  ik.re = float( sqrt(ikTmp.re * ikTmp.re));
+  ik.im = 0.0;
+  jk.re = float( sqrt(jkTmp.re * jkTmp.re));
+  jk.im = 0.0;
+
+  parVar[0][0].re = ii.re * static_cast<float>(priorVar0_(0,0));
+  parVar[0][0].im = ii.im;
+
+  parVar[1][1].re = jj.re * static_cast<float>(priorVar0_(1,1));
+  parVar[1][1].im = jj.im;
+
+  parVar[2][2].re = kk.re * static_cast<float>(priorVar0_(2,2));
+  parVar[2][2].im = kk.im;
+
+  parVar[0][1].re = ij.re * static_cast<float>(priorVar0_(0,1));
+  parVar[0][1].im = ij.im;
+  parVar[1][0].re = ij.re * static_cast<float>(priorVar0_(0,1));
   parVar[1][0].im = -ij.im;
 
-  parVar[0][2].re =  ik.re;
-  parVar[0][2].im =  ik.im;
-  parVar[2][0].re =  ik.re;
+  parVar[0][2].re = ik.re * static_cast<float>(priorVar0_(0,2));
+  parVar[0][2].im = ik.im;
+  parVar[2][0].re = ik.re * static_cast<float>(priorVar0_(0,2));
   parVar[2][0].im = -ik.im;
 
-  parVar[1][2].re =  jk.re;
-  parVar[1][2].im =  jk.im;
-  parVar[2][1].re =  jk.re;
+  parVar[1][2].re = jk.re * static_cast<float>(priorVar0_(1,2));
+  parVar[1][2].im = jk.im;
+  parVar[2][1].re = jk.re * static_cast<float>(priorVar0_(1,2));
   parVar[2][1].im = -jk.im;
-}
-
-//--------------------------------------------------------------------
-fftw_complex
-SeismicParametersHolder::getParameterCovariance(const NRLib::Matrix & prior_var,
-                                                const int           & i,
-                                                const int           & j,
-                                                fftw_complex        complex_variable)
-{
-  if (prior_var(i, j) != 0)
-    complex_variable.re = complex_variable.re / static_cast<float>(prior_var(i, j));
-
-  fftw_complex ii;
-  ii.re = float( sqrt(complex_variable.re * complex_variable.re) );
-  ii.im = 0.0;
-
-  fftw_complex var;
-  var.re = ii.re * static_cast<float>(prior_var(i, j));
-  var.im = ii.im;
-
-  return var;
 }
 
 
@@ -1190,169 +1162,6 @@ SeismicParametersHolder::createPostCov00(FFTGrid * postCov) const
 
   postCov->endAccess();
   return postCov00;
-}
-//--------------------------------------------------------------------
-void
-SeismicParametersHolder::updateWithSingleParameter(FFTGrid  *Epost, FFTGrid *CovPost, int parameterNumber)
-{
-  // parameterNumber: 0 = VpCurrent, 1=VsCurrent 2 = RhoCurrent,
-  LogKit::LogFormatted(LogKit::Low, "\nUpdating SeismicParametersHolder with posterior of single parameter...");
-  // initializing
-
-
-  muAlpha_->setAccessMode(FFTGrid::READANDWRITE);
-  muBeta_->setAccessMode(FFTGrid::READANDWRITE);
-  muRho_->setAccessMode(FFTGrid::READANDWRITE);
-
-
-  assert(Epost->getIsTransformed());
-  Epost->setAccessMode(FFTGrid::READ);
-
-  covAlpha_->setAccessMode(FFTGrid::READANDWRITE);
-  covBeta_->setAccessMode(FFTGrid::READANDWRITE);
-  covRho_->setAccessMode(FFTGrid::READANDWRITE);
-  crCovAlphaBeta_->setAccessMode(FFTGrid::READANDWRITE);
-  crCovAlphaRho_->setAccessMode(FFTGrid::READANDWRITE);
-  crCovBetaRho_->setAccessMode(FFTGrid::READANDWRITE);
-
-  assert(CovPost->getIsTransformed());
-  CovPost->setAccessMode(FFTGrid::READ);
-
-  int nzp = Epost->getNzp();
-  int nyp = Epost->getNyp();
-  int cnxp = Epost->getCNxp();
-
-  fftw_complex*  muFullPrior=new fftw_complex[3];
-  fftw_complex*  muFullPosterior=new fftw_complex[3];
-  fftw_complex   muCurrentPrior;
-  fftw_complex   muCurrentPosterior;
-  double   sigmaCurrentPrior ;
-  double   sigmaCurrentPosterior ;
-
-  fftw_complex** sigmaFullPrior          = new fftw_complex*[3];
-  fftw_complex** sigmaFullPosterior      = new fftw_complex*[3];
-  fftw_complex*  sigmaFullVsCurrentPrior = new fftw_complex[3];
-
-  for(int i=0;i<3;i++)
-  {
-    sigmaFullPrior[i]          = new fftw_complex[3];
-    sigmaFullPosterior[i]      = new fftw_complex[3];
-  }
-
-  for (int k = 0; k < nzp; k++) {
-    for (int j = 0; j < nyp; j++) {
-      for (int i = 0; i < cnxp; i++) {
-         // reading from grids
-         muFullPrior[0] = muAlpha_->getNextComplex();
-         muFullPrior[1] = muBeta_->getNextComplex();
-         muFullPrior[2] = muRho_->getNextComplex();
-
-
-         sigmaFullPrior[0][0] = covAlpha_->getNextComplex();
-         sigmaFullPrior[0][1] = crCovAlphaBeta_->getNextComplex();
-         sigmaFullPrior[0][2] = crCovAlphaRho_->getNextComplex();
-         sigmaFullPrior[1][1] = covBeta_->getNextComplex();
-         sigmaFullPrior[1][2] = crCovBetaRho_->getNextComplex();
-         sigmaFullPrior[2][2] = covRho_->getNextComplex();
-
-
-         // compleating matrixes
-         for(int l=0;l<3;l++)
-           for(int m=l+1;m<3;m++)
-           {
-             sigmaFullPrior[m][l].re = sigmaFullPrior[l][m].re;
-             sigmaFullPrior[m][l].im = -sigmaFullPrior[l][m].im;
-           }
-
-         // getting Prior for Parameter
-          muCurrentPrior=muFullPrior[parameterNumber];
-          sigmaCurrentPrior = static_cast<double>(sigmaFullPrior[parameterNumber][parameterNumber].re);
-         // getting posterior for Parameter
-         muCurrentPosterior = Epost->getNextComplex();
-         sigmaCurrentPosterior=static_cast<double>(CovPost->getNextComplex().re);
-
-         // getting correlation between Parameter and others
-         for(int l=0;l<3;l++){
-             sigmaFullVsCurrentPrior[l] =  sigmaFullPrior[l][parameterNumber];
-         }
-
-         if((sigmaCurrentPrior*0.9999 > sigmaCurrentPosterior) ){ // compute only when the posteriorvariance has been reduced
-           // This is the computations
-           if(sigmaCurrentPosterior <= 0.0)
-             sigmaCurrentPosterior=0.0001*sigmaCurrentPrior; // Robustify computations against numerical errors
-
-           double sigmaD = sigmaCurrentPrior*(sigmaCurrentPrior/(sigmaCurrentPrior-sigmaCurrentPosterior));
-
-           fftw_complex d;
-           d.re =  muCurrentPrior.re + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.re -  muCurrentPrior.re)));
-           d.im =  muCurrentPrior.im + static_cast<float>((sigmaD/sigmaCurrentPrior)*(static_cast<double>(muCurrentPosterior.im -  muCurrentPrior.im)));
-
-           for(int l=0;l<3;l++)
-           {
-              muFullPosterior[l].re =  muFullPrior[l].re + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.re-muCurrentPrior.re))/sigmaD);
-              muFullPosterior[l].re+=                    - static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.im-muCurrentPrior.im))/sigmaD);
-
-              muFullPosterior[l].im = muFullPrior[l].im + static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].re*(d.im-muCurrentPrior.im))/sigmaD);
-              muFullPosterior[l].im +=                    static_cast<float>(static_cast<double>(sigmaFullVsCurrentPrior[l].im*(d.re-muCurrentPrior.re))/sigmaD);
-           }
-
-           for(int l=0;l<3;l++)
-             for(int m=0;m<3;m++)
-             {
-                sigmaFullPosterior[l][m].re = sigmaFullPrior[l][m].re - static_cast<float>(static_cast<double>(( sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].re+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].im))/sigmaD);
-                sigmaFullPosterior[l][m].im = sigmaFullPrior[l][m].im - static_cast<float>(static_cast<double>((-sigmaFullVsCurrentPrior[l].re*sigmaFullVsCurrentPrior[m].im+sigmaFullVsCurrentPrior[l].im*sigmaFullVsCurrentPrior[m].re))/sigmaD);
-             }
-         }else
-         {
-           lib_matrCopyCpx(sigmaFullPrior, 3, 3, sigmaFullPosterior);
-
-           for(int l=0;l<3;l++)
-              muFullPosterior[l]= muFullPrior[l];
-         }
-
-        // writing to grids
-         covAlpha_      ->setNextComplex(  sigmaFullPosterior[0][0]);
-         crCovAlphaBeta_->setNextComplex(  sigmaFullPosterior[0][1]);
-         crCovAlphaRho_ ->setNextComplex(  sigmaFullPosterior[0][2]);
-         covBeta_       ->setNextComplex(  sigmaFullPosterior[1][1]);
-         crCovBetaRho_  ->setNextComplex(  sigmaFullPosterior[1][2]);
-         covRho_        ->setNextComplex(  sigmaFullPosterior[2][2]);
-
-         muAlpha_->setNextComplex( muFullPosterior[0]);
-         muBeta_->setNextComplex( muFullPosterior[1]);
-         muRho_->setNextComplex( muFullPosterior[2]);
-      }
-    }
-  }
-
-  Epost->endAccess();
-  CovPost->endAccess();
-
-  muAlpha_->endAccess();
-  muBeta_->endAccess();
-  muRho_->endAccess();
-
-  covAlpha_->endAccess();
-  covBeta_->endAccess();
-  covRho_->endAccess();
-  crCovAlphaBeta_->endAccess();
-  crCovAlphaRho_->endAccess();
-  crCovBetaRho_->endAccess();
-
-  for(int i=0;i<3;i++)
-  {
-    delete [] sigmaFullPrior[i];
-    delete [] sigmaFullPosterior[i];
-  }
-
-  delete [] muFullPrior;
-  delete [] muFullPosterior;
-
-  delete [] sigmaFullPrior;
-  delete [] sigmaFullPosterior;
-  delete [] sigmaFullVsCurrentPrior;
-  LogKit::LogFormatted(LogKit::Low, "done.\n");
-
 }
 
 void SeismicParametersHolder::releaseGrids()

@@ -16,6 +16,9 @@
 #include "src/simbox.h"
 #include "src/gravimetricinversion.h"
 
+#include "src/doinversion.h"
+
+
 void setupStaticModels(ModelGeneral            *& modelGeneral,
                        ModelAVOStatic          *& modelAVOstatic,
                        //ModelGravityStatic      *& modelGravityStatic,
@@ -79,11 +82,14 @@ bool doTimeLapseAVOInversion(ModelSettings           * modelSettings,
   }
 
   delete modelAVOdynamic;
-  if(modelSettings->getDebugLevel()>0)
-    modelGeneral->dumpSeismicParameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  seismicParameters);
-  modelGeneral->updateState4D(seismicParameters);
-  if(modelSettings->getDebugLevel()>0)
-    modelGeneral->dump4Dparameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  true);
+
+  if(modelSettings->getDo4DInversion() == true) {
+    if(modelSettings->getDebugLevel()>0)
+      modelGeneral->DumpSeismicParameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  seismicParameters);
+    modelGeneral->updateState4D(seismicParameters);
+    if(modelSettings->getDebugLevel()>0)
+      modelGeneral->Dump4Dparameters(const_cast<ModelSettings*>(modelSettings),"_AfterAVO",vintage ,  true);
+  }
   return(failedLoadingModel);
 }
 
@@ -100,17 +106,14 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
   modelTravelTimeDynamic = new ModelTravelTimeDynamic(modelSettings,
                                                       inputFiles,
                                                       modelTravelTimeStatic,
-                                                      modelGeneral->getTimeSimbox(),
+                                                      modelGeneral->GetSimbox(),
                                                       vintage);
 
   bool failedLoadingModel = modelTravelTimeDynamic == NULL || modelTravelTimeDynamic->getFailed();
 
   if(failedLoadingModel == false) {
-    TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(modelGeneral,
-                                                                          modelSettings,vintage,
-                                                                          modelTravelTimeStatic,
-                                                                          modelTravelTimeDynamic,
-                                                                          seismicParameters);
+    //NBNB Not activated yet.
+    TravelTimeInversion * travel_time_inversion = new TravelTimeInversion(); //modelGeneral,modelSettings,vintage,modelTravelTimeStatic,modelTravelTimeDynamic,seismicParameters
 
     delete travel_time_inversion;
   }
@@ -139,47 +142,8 @@ doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
   bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->GetFailed();
 
    if(failedLoadingModel == false) {
-
-    GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
-                                                                           modelGravityStatic,
-                                                                           modelGravityDynamic,
-                                                                           seismicParameters);
-
-    delete gravimetricInversion;
-  }
-
-  delete modelGravityDynamic;
-
-  return(failedLoadingModel);
-}
-
-bool
-doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
-                                ModelGeneral            * modelGeneral,
-                                ModelGravityStatic      * modelGravityStatic,
-                                CommonData              * commonData,
-                                int                     & vintage,
-                                SeismicParametersHolder & seismicParameters)
-{
-  ModelGravityDynamic * modelGravityDynamic = NULL;
-
-  modelGravityDynamic = new ModelGravityDynamic(modelSettings,
-                                                modelGravityStatic,
-                                                modelGeneral->GetSimbox(),
-                                                commonData,
-                                                vintage,
-                                                seismicParameters);
-
-  bool failedLoadingModel = modelGravityDynamic == NULL || modelGravityDynamic->GetFailed();
-
-   if(failedLoadingModel == false) {
-
-    GravimetricInversion * gravimetricInversion = new GravimetricInversion(modelGeneral,
-                                                                           modelGravityStatic,
-                                                                           modelGravityDynamic,
-                                                                           seismicParameters,
-                                                                           modelSettings);
-
+    //NBNB Not activated yet.
+    GravimetricInversion * gravimetricInversion = new GravimetricInversion(); //modelGeneral,modelGravityStatic,modelGravityDynamic,seismicParameters
     delete gravimetricInversion;
   }
 

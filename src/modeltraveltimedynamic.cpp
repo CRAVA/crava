@@ -309,7 +309,7 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
   //
   // Make new simbox
   //
-  simbox_below_ = new Simbox(timeSimbox);
+  simbox_below_ = new Simbox(*timeSimbox);
 
   double dz      = static_cast<double>(lz / n_layers);
   double z_shift = 0;
@@ -319,10 +319,10 @@ ModelTravelTimeDynamic::setupSimboxBelow(const Simbox  * timeSimbox,
   if ((otherOutput & IO::EXTRA_SURFACES) > 0 && (outputDomain & IO::TIMEDOMAIN) > 0) {
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Below_Reservoir";
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Below_Reservoir";
-    simbox_below_->writeTopBotGrids(topSurf,
-                                    baseSurf,
-                                    IO::PathToBackground(),
-                                    outputFormat);
+//    simbox_below_->writeTopBotGrids(topSurf,
+//                                    baseSurf,
+//                                    IO::PathToBackground(),
+//                                    outputFormat);
     simbox_below_->setTopBotName(topSurf, baseSurf, outputFormat);
 
   }
@@ -342,8 +342,12 @@ ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox        * timeSimbox,
   float dx  = static_cast<float>(timeSimbox->getdx());
   float dy  = static_cast<float>(timeSimbox->getdy());
 
-  int   nx  = modelSettings->getNXpad();
-  int   ny  = modelSettings->getNYpad();
+  //NBNB Next two lines should be active, but gave errors, so leave with dummies until activation.
+  //int   nx  = modelSettings->getNXpad();
+  //int   ny  = modelSettings->getNYpad();
+  int nx=-1;
+  int ny=-1;
+
 
   Surface * grid = new Surface(0, 0, dx * nx, dy * ny, nx, ny, RMISSING);
 

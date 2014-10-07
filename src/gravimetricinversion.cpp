@@ -28,6 +28,11 @@
 #include <string>
 #include <algorithm>
 
+GravimetricInversion::GravimetricInversion()
+{
+}
+
+/*
 GravimetricInversion::GravimetricInversion(ModelGeneral            *  modelGeneral,
                                            ModelGravityStatic      *  modelGravityStatic,
                                            ModelGravityDynamic     *& modelGravityDynamic,
@@ -957,3 +962,4 @@ void
   // Dump synthetic data and full size matrix
   NRLib::WriteVectorToFile("Synthetic_data.txt",  synthetic_data);
 }
+*/

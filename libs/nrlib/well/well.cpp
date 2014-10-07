@@ -24,6 +24,9 @@
 #include <string>
 
 #include "well.hpp"
+#include "norsarwell.hpp"
+#include "laswell.hpp"
+#include "rmswell.hpp"
 #include "../iotools/stringtools.hpp"
 
 #include "nrlib/iotools/logkit.hpp"
@@ -50,14 +53,6 @@ Well::Well(const std::string & name,
 }
 
 
-Well::Well(const std::string & file_name,
-           bool              & read_ok,
-           const std::string & facies_log)
-{
-  ReadWell(file_name, read_ok, facies_log);
-}
-
-
 Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
            const std::map<std::string,std::vector<int> >    & disc_log,
            const std::string                                & well_name)
@@ -70,60 +65,30 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
 }
 
 Well::~Well(){
-
 }
 
-
-void
-Well::ReadWell(const std::string              & file_name,
-               bool                           & read_ok,
-               const std::string              & facies_log)
+Well *
+Well::ReadWell(const std::string & file_name,
+               int               & well_format)
 {
-  if(file_name.find(".nwh",0) != std::string::npos) {
-    NRLib::NorsarWell well(file_name);
+  Well * well;
+  if(well_format == NORSAR || file_name.find(".nwh",0) != std::string::npos) {
+    well = new NorsarWell(file_name);
     std::string name = NRLib::RemovePath(file_name);
-    name = NRLib::ReplaceExtension(name, "");
-    well_name_ = name;
-    cont_log_  = well.GetContLog();
-    n_data_    = well.GetNData();
-    disc_log_  = well.GetDiscLog();
-    read_ok    = true;
-
-    x_pos0_ = well.GetXPosOrigin()*1000;
-    y_pos0_ = well.GetYPosOrigin()*1000;
-
-    //Norsar wells has its own missing value in the well-log
-    SetMissing(well.GetContMissing());
-
-    // assume that facies logs from norsar wells are not used
-    has_facies_log_ = false;
+    well->SetWellName(NRLib::ReplaceExtension(name, ""));
+    well_format = NORSAR;
+    return(well);
   }
-  else if(file_name.find(".rms",0) != std::string::npos || file_name.find(".txt",0) != std::string::npos) {
-    NRLib::RMSWell well(file_name);
-    well_name_ = well.GetWellName();
-    n_data_    = well.GetNData();
-    cont_log_  = well.GetContLog();
-    disc_log_  = well.GetDiscLog();
-    x_pos0_    = well.GetXPos0();
-    y_pos0_    = well.GetYPos0();
-
-    std::map<int, std::string> facies_map;
-    if(well.HasDiscLog(facies_log))
-      facies_map = well.GetDiscNames(facies_log);
-
-    if(facies_map.size() > 0){
-      has_facies_log_ = true;
-      facies_map_ = facies_map;
-    }
-    else{
-      has_facies_log_ = false;
-    }
-    read_ok = true;
+  if(well_format == LAS || file_name.find(".las",0) != std::string::npos) {
+    well = new LasWell(file_name);
+    well_format = LAS;
   }
-  else
-    read_ok = false;
+  else {
+    well = new RMSWell(file_name);
+    well_format = RMS;
+  }
+  return(well);
 }
-
 
 void
 Well::AddContLog(const std::string& name, const std::vector<double>& log)
@@ -352,4 +317,21 @@ size_t Well::GetContLogLength(const std::string& logname) const
   assert(item != cont_log_.end());
 
   return (item->second).size();
+}
+
+const std::map<int, std::string>
+Well::GetDiscNames(const std::string& log_name) const
+{
+  std::map<std::string, std::vector<int> >::const_iterator item = disc_log_.find(log_name);
+  assert(item != disc_log_.end());
+  const std::vector<int>& log = item->second;
+  std::map<int, std::string> name_map;
+  for(size_t i=0;i<log.size();i++) {
+    if(IsMissing(log[i]) == false) {
+      std::string name(NRLib::ToString(log[i]));
+      if(name_map.find(log[i]) == name_map.end())
+        name_map.insert(std::pair<int, std::string> (log[i], name));
+    }
+  }
+  return(name_map);
 }

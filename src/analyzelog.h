@@ -7,7 +7,6 @@
 
 #include "src/simbox.h"
 #include "src/modelsettings.h"
-#include "src/welldata.h"
 #include "nrlib/grid/grid.hpp"
 #include "nrlib/well/well.hpp"
 #include "src/multiintervalgrid.h"
@@ -30,7 +29,7 @@ public:
              const ModelSettings                                     * model_settings,
              std::string                                             & err_txt);*/
 
-  Analyzelog(const std::vector<NRLib::Well>                          & wells,
+  Analyzelog(const std::vector<NRLib::Well *>                        & wells,
              const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
              const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
              //const std::vector<std::vector<NRLib::Grid<float> > >    & background_max_Hz,
@@ -81,7 +80,7 @@ private:
   */
 
     void          EstimateCorrelation(const ModelSettings                                      * model_settings,
-                                      const std::vector<NRLib::Well>                           & wells,
+                                      const std::vector<NRLib::Well *>                         & wells,
                                       const std::vector<std::string>                           & well_names,
                                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
                                       const std::vector<Simbox *>                              & interval_simboxes,

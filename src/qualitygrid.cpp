@@ -25,7 +25,7 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
 : wellValue_(0)
 {
 
-  const int nWells = blocked_wells.size();
+  const int nWells = static_cast<int>(blocked_wells.size());
 
   wellValue_.resize(nWells);
 
@@ -52,11 +52,7 @@ QualityGrid::QualityGrid(const std::vector<double>                    pValue,
     LogKit::LogFormatted(LogKit::Low, "The value used for weighting under <seismic-quality-grid> is " + NRLib::ToString(value_) + ", this is an average from all fit values from wells.\n");
  }
 
-  generateProbField(grid, wells, simbox, modelSettings);
-
-  std::string fileName = "Seismic_Quality_Grid";
-  ParameterOutput::writeToFile(simbox, modelGeneral, modelSettings, grid, fileName, "");
-
+  generateProbField(grid, blocked_wells, simbox, modelSettings);
 
   seismicParameters.SetQualityGrid(grid);
 }
@@ -68,11 +64,11 @@ void QualityGrid::generateProbField(FFTGrid                                   *&
 {
   const int nz = simbox->getnz();
 
-  Vario * vario = modelSettings->getBackgroundVario();
-  CovGrid2D & cov = makeCovGrid2D(simbox, vario);
+  Vario * vario = model_settings->getBackgroundVario();
+  CovGrid2D & cov = MakeCovGrid2D(simbox, vario);
 
-  if(modelSettings->getSeismicQualityGridRange() != RMISSING) {
-    float range1 = static_cast<float>(modelSettings->getSeismicQualityGridRange());
+  if(model_settings->getSeismicQualityGridRange() != RMISSING) {
+    float range1 = static_cast<float>(model_settings->getSeismicQualityGridRange());
     float range2 = range1;
     float angle = vario->getAngle();
     std::string type = vario->getType();
@@ -87,15 +83,12 @@ void QualityGrid::generateProbField(FFTGrid                                   *&
       float power = vario_tmp->getPower();
       vario_new = new GenExpVario(power, range1, range2, angle);
     }
-    cov = makeCovGrid2D(simbox, vario_new);
+    cov = MakeCovGrid2D(simbox, vario_new);
   }
 
   std::vector<KrigingData2D> krigingData(nz);
 
   setupKrigingData2D(krigingData, blocked_wells, simbox);
-
-  Vario * vario = model_settings->getBackgroundVario();
-  const CovGrid2D & cov = MakeCovGrid2D(simbox, vario);
 
   const bool isFile = model_settings->getFileGrid();
 

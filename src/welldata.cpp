@@ -63,12 +63,7 @@ WellData::WellData(const std::string & wellFileName,
   bool                             porosityLogGiven = modelSettings->getPorosityLogGiven();
 
   errTxt_="";
-  if(wellFileName.find(".nwh",0) != std::string::npos)
-    readNorsarWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
-  else if(wellFileName.find(".las",0) != std::string::npos)
-    readLASWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
-  else
-    readRMSWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
+  readWell(wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven);
 }
 
 //----------------------------------------------------------------------------
@@ -232,7 +227,7 @@ WellData::readRMSWell(const std::string              & wellFileName,
     std::getline(file,dummyStr);
     tokenLine = NRLib::GetTokens(dummyStr);
 
-    int nrec = tokenLine.size();
+    int nrec = static_cast<int>(tokenLine.size());
     if (nrec != 3 + nlog) {
       std::string text;
       text += std::string("\nERROR: Reading of well \'") + wellFileName + "\' failed for log record ";
@@ -489,30 +484,31 @@ WellData::readNorsarWell(const std::string              & wellFileName,
 
 
 void
-WellData::readLASWell(const std::string              & wellFileName,
-                      const std::vector<std::string> & logNames,
-                      const std::vector<bool>        & inverseVelocity,
-                      bool                             porosityLogGiven,
-                      bool                             faciesLogGiven)
+WellData::readWell(const std::string              & wellFileName,
+                   const std::vector<std::string> & logNames,
+                   const std::vector<bool>        & inverseVelocity,
+                   bool                             porosityLogGiven,
+                   bool                             faciesLogGiven)
 {
   error_ = 0;
   wellfilename_ = wellFileName;
   try
   {
-    NRLib::LasWell well(wellFileName);
-    well.MakeLogsUppercase();
-    processNRLibWell(well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, false);
-    if(errTxt_ == "") {
-      xpos0_ = xpos_[0];
-      ypos0_ = ypos_[0];
-      wellname_ = well.GetWellName();
-    }
+    int format = -1;
+    NRLib::Well * well = NRLib::Well::ReadWell(wellFileName, format);
+    well->MakeLogsUppercase();
+    bool norsar_well = false;
+    if(format == NRLib::Well::NORSAR)
+      norsar_well = true;
+    processNRLibWell(*well, wellFileName, logNames, inverseVelocity, porosityLogGiven, faciesLogGiven, norsar_well);
   }
   catch (NRLib::Exception & e) {
     errTxt_ += "Error: " + NRLib::ToString(e.what());
     error_ = 1;
   }
 }
+
+
 
 void
 WellData::processNRLibWell(const NRLib::Well              & well,
@@ -523,6 +519,13 @@ WellData::processNRLibWell(const NRLib::Well              & well,
                            bool                             faciesLogGiven,
                            bool                             norsarWell)
 {
+  double scale = 1.0;
+  if(norsarWell == true)
+    scale = 1000.0;
+
+  xpos0_ = xpos_[0]*scale;
+  ypos0_ = ypos_[0]*scale;
+  wellname_ = well.GetWellName();
 
   int nVar = 4;       // z,alpha,beta,rho
 
@@ -631,9 +634,6 @@ WellData::processNRLibWell(const NRLib::Well              & well,
     else
       md_       = NULL;
 
-    double scale = 1.0;
-    if(norsarWell == true)
-      scale = 1000.0;
     int ind   = 0;
     for(size_t i=0;i<logs[0]->size();i++) {
       // check that the time variable is ok
