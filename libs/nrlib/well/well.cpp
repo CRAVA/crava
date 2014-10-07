@@ -64,7 +64,8 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
-Well::~Well(){
+Well::~Well()
+{
 }
 
 Well *
