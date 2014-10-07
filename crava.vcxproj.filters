@@ -93,9 +93,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\analyzelog.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -121,9 +118,6 @@
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\covgridseparated.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\crava.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\cravatrend.cpp">
@@ -235,9 +229,6 @@
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\waveletfilter.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\welldata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\xmlmodelfile.cpp">
@@ -975,6 +966,48 @@
     <ClCompile Include="src\commondata.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\seismicstorage.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\blockedlogscommon.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libs\nrlib\well\well.cpp">
+      <Filter>Source Files\libs\nrlib</Filter>
+    </ClCompile>
+    <ClCompile Include="src\multiintervalgrid.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\intervalsimbox.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gravimetricinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitydynamic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modelgravitystatic.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\avoinversion.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cravaresult.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\spatialrealwellfilter.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\spatialsyntwellfilter.cpp">
+      <Filter>Source Files\src</Filter>
+    </ClCompile>
     <ClCompile Include="src\blockedlogsforrockphysics.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1080,9 +1113,6 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\covgridseparated.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\crava.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\cravatrend.h">
@@ -1194,9 +1224,6 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\waveletfilter.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\welldata.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\xmlmodelfile.h">
@@ -1700,10 +1727,46 @@
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h">
       <Filter>Header Files\rplib</Filter>
     </ClInclude>
-    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\commondata.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\seismicstorage.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\blockedlogscommon.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="src\multiintervalgrid.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\intervalsimbox.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gravimetricinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitydynamic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modelgravitystatic.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\avoinversion.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cravaresult.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\spatialrealwellfilter.h">
+      <Filter>Header Files\src No. 1</Filter>
+    </ClInclude>
+    <ClInclude Include="src\spatialsyntwellfilter.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\blockedlogsforrockphysics.h">
@@ -1764,6 +1827,9 @@
       <Filter>Header Files\rplib\fluid</Filter>
     </ClInclude>
     <ClInclude Include="libs\nrlib\random\randomgenerator.hpp">
+      <Filter>Header Files\libs\nrlib</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\nrlib\tinyxml\tinyxml.h">
       <Filter>Header Files\libs\nrlib</Filter>
     </ClInclude>
   </ItemGroup>

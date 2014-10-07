@@ -254,6 +254,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="libs\nrlib\random\betawithendmass.cpp" />
+    <ClCompile Include="libs\nrlib\well\rmswell.cpp" />
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp" />
     <ClCompile Include="libs\nrlib\well\laswell.cpp" />
     <ClCompile Include="libs\nrlib\random\randomgenerator.cpp" />
@@ -287,6 +288,7 @@
     </ClCompile>
     <ClCompile Include="src\background.cpp" />
     <ClCompile Include="src\blockedlogs.cpp" />
+    <ClCompile Include="src\blockedlogscommon.cpp" />
     <ClCompile Include="src\blockedlogsforrockphysics.cpp" />
     <ClCompile Include="src\blockedlogsforzone.cpp" />
     <ClCompile Include="src\box.cpp">
@@ -305,7 +307,7 @@
     <ClCompile Include="src\correlatedrocksamples.cpp" />
     <ClCompile Include="src\covgrid2d.cpp" />
     <ClCompile Include="src\covgridseparated.cpp" />
-    <ClCompile Include="src\crava.cpp">
+    <ClCompile Include="src\avoinversion.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -329,6 +331,7 @@
     <ClCompile Include="src\gravimetricinversion.cpp" />
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
+    <ClCompile Include="src\intervalsimbox.cpp" />
     <ClCompile Include="src\io.cpp" />
     <ClCompile Include="src\kriging2d.cpp" />
     <ClCompile Include="src\krigingadmin.cpp">
@@ -346,6 +349,7 @@
     <ClCompile Include="src\modelgravitystatic.cpp" />
     <ClCompile Include="src\modelsettings.cpp" />
     <ClCompile Include="src\modeltraveltimedynamic.cpp" />
+    <ClCompile Include="src\multiintervalgrid.cpp" />
     <ClCompile Include="src\modeltraveltimestatic.cpp" />
     <ClCompile Include="src\parameteroutput.cpp" />
     <ClCompile Include="src\posteriorelasticpdf.cpp" />
@@ -354,15 +358,19 @@
     <ClCompile Include="src\posteriorelasticpdf4d.cpp" />
     <ClCompile Include="src\program.cpp" />
     <ClCompile Include="src\qualitygrid.cpp" />
+    <ClCompile Include="src\cravaresult.cpp" />
     <ClCompile Include="src\rmstrace.cpp" />
     <ClCompile Include="src\rockphysicsinversion4d.cpp" />
     <ClCompile Include="src\seismicparametersholder.cpp" />
+    <ClCompile Include="src\seismicstorage.cpp" />
     <ClCompile Include="src\simbox.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="src\spatialrealwellfilter.cpp" />
+    <ClCompile Include="src\spatialsyntwellfilter.cpp" />
     <ClCompile Include="src\spatialwellfilter.cpp" />
     <ClCompile Include="src\state4d.cpp" />
     <ClCompile Include="src\surfacefrompoints.cpp" />
@@ -387,12 +395,6 @@
     <ClCompile Include="src\wavelet3D.cpp" />
     <ClCompile Include="src\waveletfilter.cpp" />
     <ClCompile Include="libs\nrlib\well\well.cpp" />
-    <ClCompile Include="src\welldata.cpp">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
     <ClCompile Include="src\xmlmodelfile.cpp" />
     <ClCompile Include="libs\boost\system\error_code.cpp" />
     <ClCompile Include="libs\boost\filesystem\operations.cpp" />
@@ -1372,12 +1374,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libs\nrlib\random\betawithendmass.hpp" />
+    <ClInclude Include="libs\nrlib\well\rmswell.hpp" />
     <ClInclude Include="libs\nrlib\random\dSFMT.h" />
     <ClInclude Include="libs\nrlib\well\laswell.hpp" />
     <ClInclude Include="libs\nrlib\random\randomgenerator.hpp" />
     <ClInclude Include="rplib\betaendmassdistributionwithtrend.h" />
     <ClInclude Include="rplib\distributionsdryrockwalton.h" />
     <ClInclude Include="rplib\dryrockwalton.h" />
+    <ClInclude Include="src\blockedlogscommon.h" />
     <ClInclude Include="rplib\table_rho.h" />
     <ClInclude Include="rplib\table_rho1.h" />
     <ClInclude Include="rplib\table_rho2.h" />
@@ -1390,12 +1394,18 @@
     <ClInclude Include="rplib\table_vp_3.h" />
     <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
-    <ClInclude Include="src\modeltraveltimestatic.h" />
-    <ClInclude Include="src\rmstrace.h" />
     <ClInclude Include="src\gravimetricinversion.h" />
+    <ClInclude Include="src\intervalsimbox.h" />
     <ClInclude Include="src\modelgravitydynamic.h" />
     <ClInclude Include="src\modelgravitystatic.h" />
+    <ClInclude Include="src\multiintervalgrid.h" />
+    <ClInclude Include="src\cravaresult.h" />
+    <ClInclude Include="src\modeltraveltimestatic.h" />
+    <ClInclude Include="src\rmstrace.h" />
     <ClInclude Include="src\rockphysicsinversion4d.h" />
+    <ClInclude Include="src\seismicstorage.h" />
+    <ClInclude Include="src\spatialrealwellfilter.h" />
+    <ClInclude Include="src\spatialsyntwellfilter.h" />
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
     <ClInclude Include="src\background.h" />
@@ -1406,7 +1416,7 @@
     <ClInclude Include="src\correlatedrocksamples.h" />
     <ClInclude Include="src\covgrid2d.h" />
     <ClInclude Include="src\covgridseparated.h" />
-    <ClInclude Include="src\crava.h" />
+    <ClInclude Include="src\avoinversion.h" />
     <ClInclude Include="src\cravatrend.h" />
     <ClInclude Include="src\definitions.h" />
     <ClInclude Include="src\doinversion.h" />
@@ -1445,7 +1455,6 @@
     <ClInclude Include="src\wavelet1D.h" />
     <ClInclude Include="src\wavelet3D.h" />
     <ClInclude Include="src\waveletfilter.h" />
-    <ClInclude Include="src\welldata.h" />
     <ClInclude Include="src\xmlmodelfile.h" />
     <ClInclude Include="libs\boost\cerrno.hpp" />
     <ClInclude Include="libs\boost\filesystem\config.hpp" />

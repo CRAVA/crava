@@ -19,10 +19,8 @@
 #include "nrlib/iotools/logkit.hpp"
 
 #include "src/modelsettings.h"
-#include "src/blockedlogs.h"
 #include "src/definitions.h"
 #include "src/wavelet1D.h"
-#include "src/welldata.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
@@ -37,26 +35,28 @@ Wavelet1D::Wavelet1D()
 }
 
 
-Wavelet1D::Wavelet1D(const Simbox                 * simbox,
-                     const FFTGrid                * seisCube,
-                     std::vector<WellData *>        wells,
-                     const std::vector<Surface *> & estimInterval,
-                     const ModelSettings          * modelSettings,
-                     const float                  * reflCoef,
-                     int                            iAngle,
-                     int                          & errCode,
-                     std::string                  & errTxt)
+Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
+                     SeismicStorage                                   * seismic_data,
+                     std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
+                     const std::vector<Surface *>                     & estimInterval,
+                     const ModelSettings                              * modelSettings,
+                     const NRLib::Matrix                              & reflection_matrix,
+                     int                                                iAngle,
+                     int                                              & errCode,
+                     std::string                                      & errTxt,
+                     bool                                               writing)
   : Wavelet(1)
 {
-  LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
+  if (writing)
+    LogKit::LogFormatted(LogKit::Medium,"  Estimating 1D wavelet from seismic data and (nonfiltered) blocked wells\n");
 
-  coeff_[0]   = reflCoef[0];
-  coeff_[1]   = reflCoef[1];
-  coeff_[2]   = reflCoef[2];
+  coeff_[0]   = static_cast<float>(reflection_matrix(iAngle,0));
+  coeff_[1]   = static_cast<float>(reflection_matrix(iAngle,1));
+  coeff_[2]   = static_cast<float>(reflection_matrix(iAngle,2));
   dz_         = static_cast<float>(simbox->getdz());
   nz_         = simbox->getnz();
-  theta_      = seisCube->getTheta();
-  nzp_        = seisCube->getNzp();
+  theta_      = seismic_data->GetAngle();
+  nzp_        = simbox->GetNZpad();
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
@@ -89,21 +89,31 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
   fftw_complex ** wavelet_c = reinterpret_cast<fftw_complex**>(wavelet_r);
 
   std::vector<float>  dzWell(nWells);
-  for(int i=0;i<nWells;i++) {
+
+  int i = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
     cpp_r[i]           = new fftw_real[rnzp_];
     synt_seis_r[i]     = new fftw_real[rnzp_];
-    for(int j=0;j<rnzp_;j++) {
+
+    for (int j=0; j < rnzp_; j++) {
       cpp_r[i][j]       = 0;
       synt_seis_r[i][j] = 0;
     }
+
     seis_r[i]                   = new fftw_real[rnzp_];
     cor_cpp_r[i]                = new fftw_real[rnzp_];
     ccor_seis_cpp_r[i]          = new fftw_real[rnzp_];
     wavelet_r[i]                = new fftw_real[rnzp_];
 
-    const std::vector<int> ipos = wells[i]->getBlockedLogsOrigThick()->getIposVector();
-    const std::vector<int> jpos = wells[i]->getBlockedLogsOrigThick()->getJposVector();
-    dzWell[i]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
+
+    dzWell[i]                     = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+
+    i++;
   }
 
   std::vector<float> z0(nWells);              // Needed to block syntSeis
@@ -114,33 +124,39 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
   // Loop over wells and create a blocked well and blocked seismic
   //
   int nUsedWells = 0;
-  for (int w = 0 ; w < nWells ; w++) {
-    if (wells[w]->getUseForWaveletEstimation()) {
-      LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",wells[w]->getWellname().c_str());
 
-      BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+  int w = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if(blocked_log->GetUseForWaveletEstimation()) {
+      if (writing)
+        LogKit::LogFormatted(LogKit::Medium,"  Well :  %s\n",blocked_log->GetWellName().c_str());
+
       //
       // Block seismic data for this well
       //
-      std::vector<float> seisLog(bl->getNumberOfBlocks());
-      bl->getBlockedGrid(seisCube, &seisLog[0]);
-      float maxAmp = 0.0f;
-      for (int i = 0 ; i < bl->getNumberOfBlocks() ; i++) {
+      std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
+      blocked_log->GetBlockedGrid(seismic_data, simbox, seisLog);
+
+      double maxAmp = 0.0;
+      for (int i = 0 ; i < blocked_log->GetNumberOfBlocks(); i++) {
         maxAmp = std::max(maxAmp, std::abs(seisLog[i]));
       }
       if (maxAmp == 0.0f) {
         errCode = 1;
-        errTxt  += "The seismic data in stack " + NRLib::ToString(iAngle) + " have zero amplitudes in well \'"+wells[w]->getWellname()+"\'.\n";
+        errTxt  += "The seismic data in stack " + NRLib::ToString(iAngle) + " have zero amplitudes in well \'"+blocked_log->GetWellName()+"\'.\n";
       }
 
       //
       // Check seismic data outside estimation interval missing
       //
       if (estimInterval.size() > 0) {
-        const std::vector<double> xPos = bl->getXposVector();
-        const std::vector<double> yPos = bl->getYposVector();
-        const std::vector<double> zPos = bl->getZposVector();
-        for (int k = 0 ; k < bl->getNumberOfBlocks() ; k++) {
+        const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+        const std::vector<double> & yPos = blocked_log->GetYposBlocked();
+        const std::vector<double> & zPos = blocked_log->GetZposBlocked();
+        for (int k = 0 ; k < blocked_log->GetNumberOfBlocks(); k++) {
           const double zTop  = estimInterval[0]->GetZ(xPos[k],yPos[k]);
           const double zBase = estimInterval[1]->GetZ(xPos[k],yPos[k]);
           if ( (zPos[k] - 0.5*dz_) < zTop || (zPos[k] + 0.5*dz_) > zBase)
@@ -150,54 +166,58 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
-      std::vector<float> alpha(nz_);
-      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
-      std::vector<float> beta(nz_);
-      bl->getVerticalTrend(bl->getBeta(), &beta[0]);
-      std::vector<float> rho(nz_);
-      bl->getVerticalTrend(bl->getRho(), &rho[0]);
-      std::vector<float> seisData(nz_);
-      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+
+      //Alpha: Vp, Beta: Vs
+      std::vector<double> vp(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), vp);
+      std::vector<double> vs(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), vs);
+      std::vector<double> rho(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
+      std::vector<double> seisData(nz_);
+      blocked_log->GetVerticalTrend(seisLog, seisData);
       std::vector<bool> hasData(nz_);
       for (int k = 0 ; k < nz_ ; k++)
-        hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
+        hasData[k] = seisData[k] != RMISSING && vp[k] != RMISSING && vs[k] != RMISSING && rho[k] != RMISSING;
       //
       // Find continuous part of data
       //
       int start,length;
-      bl->findContiniousPartOfData(hasData, nz_, start, length);
+      blocked_log->FindContinuousPartOfData(hasData, nz_, start, length);
+
       if(length*dz_ > waveletTaperLength ) { // must have enough data
         nUsedWells++;
-        bl->fillInCpp(coeff_, start, length, cpp_r[w], nzp_);
+        blocked_log->FillInCpp(coeff_, start, length, cpp_r[w], nzp_);
         fileName = "cpp_1";
         printVecToFile(fileName, cpp_r[w], nzp_);  // Debug
         Utils::fft(cpp_r[w], cpp_c[w], nzp_);
-        bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
         fileName = "seis_1";
         printVecToFile(fileName, seis_r[w], nzp_); // Debug
         Utils::fft(seis_r[w], seis_c[w], nzp_);
-        bl->estimateCor(cpp_c[w], cpp_c[w], cor_cpp_c[w], cnzp_);
+        blocked_log->EstimateCor(cpp_c[w], cpp_c[w], cor_cpp_c[w], cnzp_);
         Utils::fftInv(cor_cpp_c[w], cor_cpp_r[w], nzp_);
-        bl->estimateCor(cpp_c[w], seis_c[w], ccor_seis_cpp_c[w], cnzp_);
+        blocked_log->EstimateCor(cpp_c[w], seis_c[w], ccor_seis_cpp_c[w], cnzp_);
         Utils::fftInv(ccor_seis_cpp_c[w], ccor_seis_cpp_r[w], nzp_);
         Utils::fftInv(cpp_c[w], cpp_r[w], nzp_);
         Utils::fftInv(seis_c[w], seis_r[w], nzp_);
         wellWeight[w] = length*dzWell[w]*(cor_cpp_r[w][0]+cor_cpp_r[w][1]);// Gives most weight to long datasets with
-                                                                       // large reflection coefficients
-        z0[w] = static_cast<float> (bl->getZpos()[0]);
+                                                                           // large reflection coefficients
+        z0[w] = static_cast<float> (blocked_log->GetZposBlocked()[0]);
         sampleStart[w] = start;
         sampleStop[w]  = start + length;
       }
       else {
         std::string coarseWell;
-        if(bl->getNumberOfBlocks() < nz_)
+        if(blocked_log->GetNumberOfBlocks() < nz_)
           coarseWell = "The reason for this may be that the well log has coarser sampling than the modelling grid.\n";
-        LogKit::LogMessage(LogKit::Warning, "\nWarning: Well " + wells[w]->getWellname() +
+        LogKit::LogMessage(LogKit::Warning, "\nWarning: Well " + blocked_log->GetWellName() +
                                             " was not used in wavelet estimation. Longest continuous log interval was " +
                                             NRLib::ToString(length*dz_) + " ms while a length of " +
                                             NRLib::ToString(waveletTaperLength) + "ms is needed.\n"+coarseWell);
       }
     }
+    w++;
   }
 
   if(nUsedWells == 0) {
@@ -208,8 +228,7 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     std::vector<float> shiftWell(nWells);
     float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
     multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-    for(int w=0;w<nWells;w++)
-    {
+    for(int w=0; w < nWells;w++) {
       if(wellWeight[w]>0)
         adjustLowfrequency(ccor_seis_cpp_r[w], dzWell[w],  nzp_, waveletTaperLength);
     }
@@ -248,7 +267,12 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
       }
     }
 
-    for (int w=0;w<nWells;w++) { // gets syntetic seismic with estimated wavelet
+    // gets syntetic seismic with estimated wavelet
+    int w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
+
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
       fileName = "waveletShift";
@@ -264,13 +288,17 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
 
-      std::vector<float> syntSeis(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+      std::vector<double> synt_seis;
       if (wellWeight[w] > 0) {
-        for (int i = sampleStart[w] ; i < sampleStop[w] ; i++)
-          syntSeis[i] = synt_seis_r[w][i];
-        wells[w]->getBlockedLogsOrigThick()->setLogFromVerticalTrend(&syntSeis[0], z0[w], dzWell[w], nz_,
-                                                                     "WELL_SYNTHETIC_SEISMIC", iAngle);
+        synt_seis.resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
+        for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
+          synt_seis[i] = synt_seis_r[w][i];
+
+        blocked_log->SetLogFromVerticalTrend(synt_seis, blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
+                                             z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
+
       }
+      w++;
     }
 
     float scaleOpt = findOptimalWaveletScale(synt_seis_r, seis_r, nWells, nzp_, wellWeight);
@@ -278,7 +306,9 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
     waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-    LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+
+    if (writing)
+      LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
 
     if (waveletLength_ < 50.0) {
       LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
@@ -296,23 +326,31 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
 
     norm_ = findNorm();
 
-    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmp_
+    //Writing well wavelets to file. Using writeWaveletToFile, so manipulating rAmpz_
     fftw_real * trueAmp = rAmp_;
     float       truedDz = dz_;
     rAmp_               = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
     cAmp_               = reinterpret_cast<fftw_complex *>(rAmp_);
-    for(int w=0; w<nWells; w++) {
-      if (wells[w]->getUseForWaveletEstimation() &&
-          ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+
+    w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      const BlockedLogsCommon * blocked_log = iter->second;
+
+      if(blocked_log->GetUseForWaveletEstimation() &&
+        ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
+
         dz_ = dzWell[w];
         for(int i = 0 ; i < nzp_ ; i++)
           rAmp_[i] = wellWavelets[w][i];
-        std::string wellname(wells[w]->getWellname());
+        std::string wellname(blocked_log->GetWellName());
         NRLib::Substitute(wellname,"/","_");
         NRLib::Substitute(wellname," ","_");
         fileName = IO::PrefixWellWavelet() + wellname + "_";
+        if (writing)
           writeWaveletToFile(fileName, 1.0f,true);
       }
+      w++;
     }
 
     fftw_free(rAmp_);
@@ -320,7 +358,7 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
     cAmp_ = reinterpret_cast<fftw_complex *>(rAmp_);
     dz_   = truedDz;
 
-    if(ModelSettings::getDebugLevel() > 1)
+    if(ModelSettings::getDebugLevel() > 1 && writing == true)
       writeDebugInfo(seis_r, cor_cpp_r, ccor_seis_cpp_r, cpp_r, nWells);
 
     if (scaleOpt == RMISSING) {
@@ -347,13 +385,13 @@ Wavelet1D::Wavelet1D(const Simbox                 * simbox,
 }
 
 
-Wavelet1D::Wavelet1D(const std::string & fileName,
-            int                 fileFormat,
-            const ModelSettings     * modelSettings,
-            const float             * reflCoef,
-            float               theta,
-            int               & errCode,
-            std::string       & errText)
+Wavelet1D::Wavelet1D(const std::string   & fileName,
+                     int                   fileFormat,
+                     const ModelSettings * modelSettings,
+                     const float         * reflCoef,
+                     float                 theta,
+                     int                 & errCode,
+                     std::string         & errText)
   : Wavelet(fileName, fileFormat, modelSettings, reflCoef, theta, 1, errCode, errText)
 {
 }
@@ -371,7 +409,7 @@ Wavelet1D::Wavelet1D(int difftype,
 {
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
-  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_       = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_       = RMISSING;
   int i;
@@ -422,7 +460,7 @@ Wavelet1D::Wavelet1D(Wavelet * wavelet,
 {
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   int i;
 
@@ -484,9 +522,9 @@ Wavelet1D::~Wavelet1D()
 
 Wavelet1D::Wavelet1D(const ModelSettings * modelSettings,
                      const float         * reflCoef,
-                     float           theta,
-                     float           peakFrequency,
-                     int           & errCode)
+                     float                 theta,
+                     float                 peakFrequency,
+                     int                 & errCode)
   : Wavelet(modelSettings, reflCoef, theta, 1, peakFrequency, errCode)
 {
 }
@@ -594,17 +632,17 @@ Wavelet1D::adjustForAmplitudeEffect(double multiplyer, double Halpha)
 }
 
 float
-Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings     * modelSettings,
-                                          const Simbox            * simbox,
-                                          const FFTGrid           * seisCube,
-                                          std::vector<WellData *> & wells,
-                                          std::string             & errTxt)
+Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings                              * modelSettings,
+                                          const Simbox                                     * simbox,
+                                          SeismicStorage                                   * seismic_data,
+                                          const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                          std::string                                      & errTxt)
 {
   int nWells          = modelSettings->getNumberOfWells();
 //The reason why the next three variables are not taken from the class variables is that this function is called
 //before resample in Model::processWavelets. This means that at this point nz_, nzp_ and rnzp_ are not properly set.
   int nz              = simbox->getnz();
-  int nzp             = seisCube->getNzp();
+  int nzp             = seismic_data->GetNz();
   int rnzp            = 2*(nzp/2+1);
 
   fftw_real ** cpp_r  = new fftw_real*[nWells];
@@ -623,34 +661,36 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings     * modelSetting
   //
   // Loop over wells and create a blocked well and blocked seismic
   //
-  for (int w = 0 ; w < nWells ; w++)  {
-    if (wells[w]->getUseForWaveletEstimation()) {
-      BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+  int w = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if(blocked_log->GetUseForWaveletEstimation()) {
       //
       // Block seismic data for this well
       //
-      std::vector<float> seisLog(wells[w]->getBlockedLogsOrigThick()->getNumberOfBlocks());
-      bl->getBlockedGrid(seisCube, &seisLog[0]);
+      std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
+      blocked_log->GetBlockedGrid(seismic_data, simbox, seisLog);
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
       std::vector<bool>  hasData(nz);
-      std::vector<float> seisData(nz);
-      std::vector<float> alpha(nz);
-      std::vector<float> beta(nz);
-      std::vector<float> rho(nz);
-      bl->getVerticalTrend(&seisLog[0]   , &seisData[0]);
-      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
-      bl->getVerticalTrend(bl->getBeta() , &beta[0]);
-      bl->getVerticalTrend(bl->getRho()  , &rho[0]);
+      std::vector<double> seisData(nz);
+      std::vector<double> alpha(nz);
+      std::vector<double> beta(nz);
+      std::vector<double> rho(nz);
+      blocked_log->GetVerticalTrend(seisLog, seisData);
+      blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), alpha);
+      blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), beta);
+      blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
 
       for (int k = 0 ; k < nz; k++)
-        hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
-
+        hasData[k] = seisData[k] != RMISSING && blocked_log->GetVpBlocked()[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
       int start,length;
-      bl->findContiniousPartOfData(hasData,nz,start,length);
-      bl->fillInCpp(coeff_,start,length,cpp_r[w],nzp);
-      bl->fillInSeismic(&seisData[0],start,length,seis_r[w],nzp);
+      blocked_log->FindContinuousPartOfData(hasData, nz, start, length);
+      blocked_log->FillInCpp(coeff_, start, length, cpp_r[w], nzp);
+      blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp);
 
       for(int i=0;i<nzp;i++) {
         if(std::abs(cpp_r[w][i]) > maxCpp)
@@ -659,6 +699,7 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings     * modelSetting
           maxSeis = std::abs(seis_r[w][i]);
       }
     }
+    w++;
   }
 
   for(int i=0;i<nWells;i++) {
@@ -684,26 +725,26 @@ Wavelet1D::findGlobalScaleForGivenWavelet(const ModelSettings     * modelSetting
   return scale1;
 }
 
-
 float
-Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
-                                           const FFTGrid         * seisCube,
-                                           std::vector<WellData *> wells,
-                                           const ModelSettings   * modelSettings,
-                                           std::string           & errText,
-                                           int                   & error,
-                                           int                     number,
-                                           Grid2D               *& noiseScaled,
-                                           Grid2D               *& shiftGrid,
-                                           Grid2D               *& gainGrid,
-                                           float                   SNRatio,
-                                           float                   waveletScale,
-                                           bool                    doEstimateSNRatio,
-                                           bool                    doEstimateGlobalScale,
-                                           bool                    doEstimateLocalNoise,
-                                           bool                    doEstimateLocalShift,
-                                           bool                    doEstimateLocalScale,
-                                           bool                    doEstimateWavelet)
+Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                                     * inversion_simbox,
+                                           const Simbox                                     * estimation_simbox,
+                                           const std::vector<std::vector<double> >          & seis_logs,
+                                           const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                           const ModelSettings                              * modelSettings,
+                                           std::string                                      & errText,
+                                           int                                              & error,
+                                           int                                                number,
+                                           Grid2D                                          *& noiseScaled,
+                                           Grid2D                                          *& shiftGrid,
+                                           Grid2D                                          *& gainGrid,
+                                           float                                              SNRatio,
+                                           float                                              waveletScale,
+                                           bool                                               doEstimateSNRatio,
+                                           bool                                               doEstimateGlobalScale,
+                                           bool                                               doEstimateLocalNoise,
+                                           bool                                               doEstimateLocalShift,
+                                           bool                                               doEstimateLocalScale,
+                                           bool                                               doEstimateWavelet)
 {
   LogKit::LogFormatted(LogKit::Medium,"\n  Estimating/checking noise from seismic data and (nonfiltered) blocked wells\n");
 
@@ -712,7 +753,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   int         nWells              = modelSettings->getNumberOfWells();
   bool        estimateSomething   = doEstimateLocalShift || doEstimateLocalScale || doEstimateLocalNoise
                                       || doEstimateGlobalScale || doEstimateSNRatio || doEstimateWavelet;
-
   //Noise estimation
   fftw_real    ** cpp_r           = new fftw_real*[nWells];
   fftw_complex ** cpp_c           = reinterpret_cast<fftw_complex**>(cpp_r);
@@ -731,15 +771,20 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
 
   std::vector<float>  dzWell(nWells);
 
-  for(int w=0; w<nWells; w++) {
+  int w = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
     cpp_r[w]                    = new fftw_real[rnzp_];
     seis_r[w]                   = new fftw_real[rnzp_];
     cor_seis_synt_r[w]          = new fftw_real[rnzp_];
     wavelet_r[w]                = new fftw_real[rnzp_];
     synt_r[w]                   = new fftw_real[rnzp_];
-    const std::vector<int> ipos = wells[w]->getBlockedLogsOrigThick()->getIposVector();
-    const std::vector<int> jpos = wells[w]->getBlockedLogsOrigThick()->getJposVector();
-    dzWell[w]                   = static_cast<float>(simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    const std::vector<int> & ipos = blocked_log->GetIposVector();
+    const std::vector<int> & jpos = blocked_log->GetJposVector();
+    dzWell[w]                   = static_cast<float>(estimation_simbox->getRelThick(ipos[0],jpos[0])) * dz_;
+    w++;
   }
   //
   // Loop over wells and create a blocked well and blocked seismic
@@ -748,42 +793,49 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   std::vector<float> errVarWell (nWells, 0.0f);
   std::vector<float> shiftWell  (nWells, 0.0f);
   std::vector<int>   nActiveData(nWells, 0);
-  for (int w = 0 ; w < nWells ; w++) {
-    if (wells[w]->getUseForWaveletEstimation()) {
-      BlockedLogs * bl = wells[w]->getBlockedLogsOrigThick();
+
+  w = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    if(blocked_log->GetUseForWaveletEstimation()) {
       //
       // Block seismic data for this well
       //
-      std::vector<float> seisLog(bl->getNumberOfBlocks());
-      bl->getBlockedGrid(seisCube, &seisLog[0]);
+
+      //std::vector<double> seisLog(blocked_log->GetNumberOfBlocks());
+      //blocked_log->GetBlockedGrid(seismic_data, simbox, seisLog);
+
       //
       // Extract a one-value-for-each-layer array of blocked logs
       //
-      std::vector<float> alpha(nz_);
-      bl->getVerticalTrend(bl->getAlpha(), &alpha[0]);
-      std::vector<float> beta(nz_);
-      bl->getVerticalTrend(bl->getBeta(), &beta[0]);
-      std::vector<float> rho(nz_);
-      bl->getVerticalTrend(bl->getRho(), &rho[0]);
-      std::vector<float> seisData(nz_);
-      bl->getVerticalTrend(&seisLog[0], &seisData[0]);
+      std::vector<double> vp(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetVpBlocked(), vp);
+      std::vector<double> vs(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetVsBlocked(), vs);
+      std::vector<double> rho(nz_);
+      blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), rho);
+      std::vector<double> seisData(nz_);
+      blocked_log->GetVerticalTrend(seis_logs[w], seisData);
       std::vector<bool> hasData(nz_);
       for (int k = 0 ; k < nz_ ; k++)
-        hasData[k] = seisData[k] != RMISSING && alpha[k] != RMISSING && beta[k] != RMISSING && rho[k] != RMISSING;
+        hasData[k] = seisData[k] != RMISSING && vp[k] != RMISSING && vs[k] != RMISSING && rho[k] != RMISSING;
 
       int start,length;
-      bl->findContiniousPartOfData(hasData, nz_, start, length);
+      blocked_log->FindContinuousPartOfData(hasData, nz_, start, length);
 
       if(length * dz_ > waveletLength_) { // must have enough data
-        bl->fillInCpp(coeff_, start, length, cpp_r[w], nzp_);  // fills in reflection coefficients
+        blocked_log->FillInCpp(coeff_, start, length, cpp_r[w], nzp_);  // fills in reflection coefficients
         Utils::fft(cpp_r[w], cpp_c[w], nzp_);
         fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]); // fills inn wavelet
         Utils::fft(wavelet_r[w], wavelet_c[w], nzp_);
         convolve(cpp_c[w], wavelet_c[w], synt_c[w], cnzp_);
-        bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
         Utils::fft(seis_r[w], seis_c[w], nzp_);
-        bl->estimateCor(synt_c[w], seis_c[w], cor_seis_synt_c[w], cnzp_);
+        blocked_log->EstimateCor(synt_c[w], seis_c[w], cor_seis_synt_c[w], cnzp_);
         Utils::fftInv(cor_seis_synt_c[w], cor_seis_synt_r[w], nzp_);
+
         //Estimate shift. Do not run if shift given, use given shift.
         float shift = findBulkShift(cor_seis_synt_r[w],
                                     dzWell[w],
@@ -793,7 +845,8 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
         shiftWell[w] = shift;
         Utils::fftInv(synt_c[w], synt_r[w], nzp_);
         shiftReal(-shift/dzWell[w], synt_r[w], nzp_);
-        bl->fillInSeismic(&seisData[0], start, length, seis_r[w], nzp_);
+        blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
+
         if(ModelSettings::getDebugLevel() > 0) {
           std::string fileName;
           fileName = "seismic_Well_" + NRLib::ToString(w+1) + "_" + angle;
@@ -810,9 +863,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       }
       else {
         LogKit::LogFormatted(LogKit::Low, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
-                             wells[w]->getWellname().c_str(), length*dz_, waveletLength_);
+                             blocked_log->GetWellName().c_str(), length*dz_, waveletLength_);
       }
     }
+    w++;
   }
   float globalScale = waveletScale;
 
@@ -826,19 +880,19 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
   float optScale;
   if (doEstimateLocalScale || doEstimateGlobalScale) {
     optScale = findOptimalWaveletScale(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale);
-    if (doEstimateGlobalScale) {
+
+    if (!doEstimateGlobalScale)
+      optScale = globalScale;
+    else {
       scale(optScale);
       for (int i=0 ; i < nWells ; i++)
         scaleOptWell[i] /= optScale;
-    }
-    else {
-      optScale = globalScale;
     }
   }
   // local scale given means gain !=NULL
   else if (doEstimateLocalNoise && gainGrid != NULL) {
     optScale = globalScale; // Global scale must be given if local scale is given
-    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, wells, simbox);
+    findLocalNoiseWithGainGiven(synt_r, seis_r, nWells, nzp_, dataVarWell, errOptScale, errWell, scaleOptWell, errWellOptScale, gainGrid, mapped_blocked_logs, estimation_simbox);
   }
   else {
     optScale = globalScale;
@@ -920,32 +974,45 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
     LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
     LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
-    for(int w=0; w<nWells; w++) {
+
+    w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      const BlockedLogsCommon * blocked_log = iter->second;
+
       if(nActiveData[w]>0) {
         SNOptimalGlobal[w] = dataVarWell[w]/(errWell[w]*errWell[w]);
         SNOptimalLocal[w]  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);
         LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n",
-                             wells[w]->getWellname().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
-                             optScale,SNOptimalGlobal[w],scaleOptWell[w],SNOptimalLocal[w]);
+              blocked_log->GetWellName().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
+              optScale,SNOptimalGlobal[w],scaleOptWell[w],SNOptimalLocal[w]);
       }
       else
-        LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             -      -           -      -\n",wells[w]->getWellname().c_str());
+        LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             -      -           -      -\n",blocked_log->GetWellName().c_str());
+
+      w++;
     }
   }
 
   if (estimateSomething) {
     float minLocalGain = 0.3334f;
     float maxLocalGain = 3.0f;
-    for(int w=0 ; w < nWells ; w++) {
+
+    w = 0;
+    for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+      const BlockedLogsCommon * blocked_log = iter->second;
+
       if((scaleOptWell[w] >= maxLocalGain || scaleOptWell[w] <= minLocalGain) && nActiveData[w]>0) {
         std::string text;
-        text  = "\nWARNING: An optimal local gain cannot be established for well "+wells[w]->getWellname()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
+        text  = "\nWARNING: An optimal local gain cannot be established for well "+ blocked_log->GetWellName()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
         text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalGain,2)+", "+NRLib::ToString(maxLocalGain,2)+">.\n";
         LogKit::LogFormatted(LogKit::Warning, text);
         if (doEstimateWavelet) {
-          TaskList::addTask("Well "+wells[w]->getWellname()+" should not be used in the wavelet estimation for angle stack "+angle+".");
+          TaskList::addTask("Well "+ blocked_log->GetWellName()+" should not be used in the wavelet estimation for angle stack "+angle+".");
         }
       }
+      w++;
     }
   }
 
@@ -955,10 +1022,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     //
     Vario  * localWaveletVario     = modelSettings->getLocalWaveletVario();
     const CovGrid2D cov(localWaveletVario,
-                        simbox->getnx(),
-                        simbox->getny(),
-                        simbox->getdx(),
-                        simbox->getdy());
+                        inversion_simbox->getnx(),
+                        inversion_simbox->getny(),
+                        inversion_simbox->getdx(),
+                        inversion_simbox->getdy());
 
     if (ModelSettings::getDebugLevel() > 0) {
       std::string baseName = std::string("Local_Wavelet_Correlation") + IO::SuffixAsciiIrapClassic();
@@ -967,10 +1034,10 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
     }
 
     if (doEstimateLocalShift)
-      estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, simbox,wells, nWells);
+      estimateLocalShift(cov, shiftGrid, shiftWell, nActiveData, inversion_simbox, mapped_blocked_logs);
 
     if (doEstimateLocalScale)
-      estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, simbox,wells, nWells);
+      estimateLocalGain(cov, gainGrid, scaleOptWell, 1.0, nActiveData, inversion_simbox, mapped_blocked_logs);
 
     if (doEstimateLocalNoise) {
       float errStdLN;
@@ -981,72 +1048,58 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox          * simbox,
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale
         for(int w=0 ; w < nWells ; w++)
           errVarWell[w] = sqrt(errVarWell[w]);
-        estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, simbox,wells, nWells);
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, inversion_simbox, mapped_blocked_logs);
       }
       else if (doEstimateGlobalScale==true && doEstimateLocalScale==false) // global wavelet scale
-        estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, simbox,wells, nWells);
+        estimateLocalNoise(cov, noiseScaled, errStdLN,errWell, nActiveData, inversion_simbox, mapped_blocked_logs);
       else
-        estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, simbox,wells, nWells);
+        estimateLocalNoise(cov, noiseScaled, errStdLN, errWellOptScale, nActiveData, inversion_simbox, mapped_blocked_logs);
     }
   }
 
   float empSNRatio = dataVar/(errStd*errStd);
-  if (doEstimateSNRatio) {
-    for (int w=0 ; w < nWells ; w++) {
-      if ((SNOptimalLocal[w]  > 0.0 && SNOptimalLocal[w]  < minSNRatio) ||
-          (SNOptimalGlobal[w] > 0.0 && SNOptimalGlobal[w] < minSNRatio)) {
-        errText += "Invalid S/N ratio calculated for well \'"+wells[w]->getWellname()+"\'.\n";
-        error += 1;
-        LogKit::LogFormatted(LogKit::Error,"\nERROR: Well \'%s\' has an unacceptable S/N ratio (less than %.1f).\n",
-                             wells[w]->getWellname().c_str(),minSNRatio);
-      }
-    }
-    if (empSNRatio < minSNRatio) {
-      LogKit::LogFormatted(LogKit::Error,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::Error,"\n       than %.1f are not acceptable. Wells with poor S/N ratio can be omitted from the",minSNRatio);
-      LogKit::LogFormatted(LogKit::Error,"\n       wavelet estimation using the <use-for-wavelet-estimation> keyword.\n\n");
-      errText += "Invalid S/N ratio obtained for the angle-gather of "+angle+" degrees.\n";
-      error += 1;
-    }
-    else {
-      LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
-    }
-  }
+    if (doEstimateSNRatio==true)
+    LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else
   {
-    if (nWells > 0) {
-      for (int w=0 ; w < nWells ; w++) {
-        if ((SNOptimalLocal[w]  > 0.0 && SNOptimalLocal[w]  < minSNRatio) ||
-            (SNOptimalGlobal[w] > 0.0 && SNOptimalGlobal[w] < minSNRatio)) {
-          TaskList::addTask("Check well \'"+wells[w]->getWellname()+"'. Bad S/N ratio detected for angle stack "+NRLib::ToString(angle,1)+"\n");
-          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Well \'%s\' has an unacceptable S/N ratio (less than %.1f).\n",
-                               wells[w]->getWellname().c_str(),minSNRatio);
-        }
-      }
-
+    if(nWells > 0) {
       LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
       LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
       float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
       float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
+      if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
+        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
+      if (SNRatio < minSN)
+        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
+      else
+        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(maxSN,1)+"\n");
+      }
+    }
+  }
 
-      if ((SNRatio < minSN || SNRatio > maxSN) && doEstimateWavelet) {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the S/N ratio given in the model file and the calculated S/N ratio is too large.\n");
-        TaskList::addTask("Compare the estimated and given S/N ratios for angle stack "+NRLib::ToString(angle,1)+". The difference is too large.\n");
-        if (SNRatio < minSN)
-          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Consider increasing the S/N ratio in model file to "+NRLib::ToString(minSN,1)+"\n");
-        else
-          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Consider decreasing the S/N ratio in model file to "+NRLib::ToString(maxSN,1)+"\n");
-      }
-      if (empSNRatio < minSNRatio) {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-        LogKit::LogFormatted(LogKit::Warning,"\n         than %.1f are not acceptable. Wells with poor S/N ratio can be omitted from the",minSNRatio);
-        LogKit::LogFormatted(LogKit::Warning,"\n         wavelet estimation using the <use-for-wavelet-estimation> keyword.\n\n");
-        TaskList::addTask("Check the wavelet for angle stack "+NRLib::ToString(angle,1)+". A poor S/N ratio has been detected.\n");
-      }
+  if (empSNRatio < minSNRatio) {
+    if (doEstimateSNRatio) {
+      LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::Warning,"\n       than %.2f are not acceptable. The signal-to-noise ratio was not reliably estimated",minSNRatio);
+      LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
+      LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
+      LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
+
+      errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+angle+" degrees.\n";
+      error += 1;
+    }
+    else {
+      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+      LogKit::LogFormatted(LogKit::Warning,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+      LogKit::LogFormatted(LogKit::Warning,"\n         wells, these wells should not have been included in the wavelet estimation. If");
+      LogKit::LogFormatted(LogKit::Warning,"\n         they indeed were omitted, you can avoid this warning by specifying");
+      LogKit::LogFormatted(LogKit::Warning,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");
+      TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
     }
   }
   return empSNRatio;
 }
+
 
 float
 Wavelet1D::findOptimalWaveletScale(fftw_real               ** synt_seis_r,
@@ -1178,18 +1231,18 @@ Wavelet1D::findOptimalWaveletScale(fftw_real                ** synt_seis_r,
 }
 
 void
-Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
-                                     fftw_real                ** seis_r,
-                                     int                         nWells,
-                                     int                         nzp,
-                                     const std::vector<float>  & wellWeight,
-                                     float                     & err,
-                                     std::vector<float>        & errWell,
-                                     std::vector<float>        & scaleOptWell,
-                                     std::vector<float>        & errWellOptScale,
-                                     Grid2D                    * gain,
-                                     std::vector<WellData *>     wells,
-                                     const Simbox              * simbox) const
+Wavelet1D::findLocalNoiseWithGainGiven(fftw_real                                       ** synt_seis_r,
+                                       fftw_real                                       ** seis_r,
+                                       int                                                nWells,
+                                       int                                                nzp,
+                                       const std::vector<float>                         & wellWeight,
+                                       float                                            & err,
+                                       std::vector<float>                               & errWell,
+                                       std::vector<float>                               & scaleOptWell,
+                                       std::vector<float>                               & errWellOptScale,
+                                       Grid2D                                           * gain,
+                                       const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                       const Simbox                                     * simbox) const
 {
   double *scale = new double[nWells];
   float error = 0.0;
@@ -1205,11 +1258,14 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
 
   float minSeisAmp = static_cast<float> (1e-7);
   int totCount=0;
-  const double *x, *y;
-  int nData;
-  for(int i=0;i<nWells;i++) {
-    x = wells[i]->getXpos(nData);
-    y = wells[i]->getYpos(nData);
+
+  int i = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
+    const std::vector<double> & x = blocked_log->GetXposBlocked();
+    const std::vector<double> & y = blocked_log->GetYposBlocked();
     int ix, iy;
     simbox->getIndexes(x[0],y[0],ix,iy);
     //scale[i] = gain->GetZ(x[0],y[0]);
@@ -1230,6 +1286,7 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
         error+=resNorm[i];
       }
     }//if
+    i++;
   }
 
   float optValue=error;
@@ -1260,13 +1317,12 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real              ** synt_seis_r,
 }
 
 void
-Wavelet1D::estimateLocalShift(const CovGrid2D          & cov,
-                              Grid2D                  *& shift,
-                              const std::vector<float> & shiftWell,
-                              const std::vector<int>   & nActiveData,
-                              const Simbox             * simbox,
-                              std::vector<WellData *>    wells,
-                              int                        nWells)
+Wavelet1D::estimateLocalShift(const CovGrid2D                                  & cov,
+                              Grid2D                                          *& shift,
+                              const std::vector<float>                         & shiftWell,
+                              const std::vector<int>                           & nActiveData,
+                              const Simbox                                     * simbox,
+                              const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs)
 {
   //
   // NBNB-PAL: Since slightly deviated wells are accepted, we should
@@ -1278,19 +1334,24 @@ Wavelet1D::estimateLocalShift(const CovGrid2D          & cov,
   //
   KrigingData2D shiftData;
 
-  for(int i=0;i<nWells;i++) {
+  int i = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
     if(nActiveData[i]>0)  {
       //
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
-      const double * xPos = bl->getXpos();
-      const double * yPos = bl->getYpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetYposBlocked();
       int xInd, yInd;
+
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       shiftData.addData(xInd,yInd,shiftWell[i]);
     }
+    i++;
   }
   shiftData.findMeanValues();
 
@@ -1307,33 +1368,36 @@ Wavelet1D::estimateLocalShift(const CovGrid2D          & cov,
 }
 
 void
-Wavelet1D::estimateLocalGain(const CovGrid2D           & cov,
-                             Grid2D                   *& gain,
-                             const std::vector<float>  & scaleOptWell,
-                             float                       globalScale,
-                             const std::vector<int>    & nActiveData,
-                             const Simbox              * simbox,
-                             std::vector<WellData *>     wells,
-                             int                         nWells)
+Wavelet1D::estimateLocalGain(const CovGrid2D                                  & cov,
+                             Grid2D                                          *& gain,
+                             const std::vector<float>                         & scaleOptWell,
+                             float                                              globalScale,
+                             const std::vector<int>                           & nActiveData,
+                             const Simbox                                     * simbox,
+                             const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs)
 {
   //
   // Collect data for kriging
   //
   KrigingData2D gainData;
 
-  for(int i=0;i<nWells;i++) {
+  int i = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
     if(nActiveData[i]>0)  {
       //
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
-      const double * xPos = bl->getXpos();
-      const double * yPos = bl->getYpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetYposBlocked();
       int xInd, yInd;
       simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
       gainData.addData(xInd,yInd,scaleOptWell[i]);
     }
+    i++;
   }
   gainData.findMeanValues();
 
@@ -1350,33 +1414,36 @@ Wavelet1D::estimateLocalGain(const CovGrid2D           & cov,
 
 // Estimate local scaled noise
 void
-Wavelet1D::estimateLocalNoise(const CovGrid2D          & cov,
-                              Grid2D                  *& noiseScaled,
-                              float                      globalNoise,
-                              const std::vector<float> & errWellOptScale,
-                              const std::vector<int>   & nActiveData,
-                              const Simbox             * simbox,
-                              std::vector<WellData *>    wells,
-                              int                        nWells)
+Wavelet1D::estimateLocalNoise(const CovGrid2D                                  & cov,
+                              Grid2D                                          *& noiseScaled,
+                              float                                              globalNoise,
+                              const std::vector<float>                         & errWellOptScale,
+                              const std::vector<int>                           & nActiveData,
+                              const Simbox                                     * simbox,
+                              const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs)
 {
   //
   // Collect data for kriging
   //
   KrigingData2D noiseData;
 
-  for(int i=0;i<nWells;i++) {
+  int i = 0;
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
+    const BlockedLogsCommon * blocked_log = iter->second;
+
     if(nActiveData[i]>0)  {
       //
       // Coordinates for data point must be chosed from blocked
       // logs and not from wells
       //
-      BlockedLogs * bl = wells[i]->getBlockedLogsOrigThick();
-      const double * xPos = bl->getXpos();
-      const double * yPos = bl->getYpos();
+      const std::vector<double> & xPos = blocked_log->GetXposBlocked();
+      const std::vector<double> & yPos = blocked_log->GetYposBlocked();
       int xInd, yInd;
-      simbox->getIndexes(xPos[0],yPos[0],xInd,yInd);
-      noiseData.addData(xInd,yInd,errWellOptScale[i]/globalNoise);
+      simbox->getIndexes(xPos[0], yPos[0], xInd, yInd);
+      noiseData.addData(xInd, yInd, errWellOptScale[i]/globalNoise);
     }
+    i++;
   }
   noiseData.findMeanValues();
 
@@ -1565,11 +1632,11 @@ Wavelet1D::adjustLowfrequency(fftw_real                * vec_r,
 
 void
 Wavelet1D::findWavelet(fftw_real               ** ccor_seis_cpp_r,
-                      fftw_real               ** cor_cpp_r,
-                      fftw_real               ** wavelet_r,
-                      const std::vector<float> & wellWeight,
-                      int                        nWells,
-                      int                        nt)
+                       fftw_real               ** cor_cpp_r,
+                       fftw_real               ** wavelet_r,
+                       const std::vector<float> & wellWeight,
+                       int                        nWells,
+                       int                        nt)
 {
   fftw_complex* c_sc,*c_cc,*wav;
 

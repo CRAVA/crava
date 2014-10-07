@@ -1574,7 +1574,7 @@ void BlockedLogs::estimateCor(fftw_complex * var1_c,
   }
 }
 
-void BlockedLogs::findContiniousPartOfData(const std::vector<bool> & hasData,
+void BlockedLogs::findContinuousPartOfData(const std::vector<bool> & hasData,
                                            int                       nz,
                                            int                     & start,
                                            int                     & length) const
@@ -1702,7 +1702,7 @@ void BlockedLogs::findOptimalWellLocation(FFTGrid                   ** seisCube,
   for(i = 0 ; i < nLayers_ ; i++) {
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
   }
-  findContiniousPartOfData(hasData,nLayers_,start,length);
+  findContinuousPartOfData(hasData,nLayers_,start,length);
 
   for( j=0; j<nAngles; j++ ){
     seis_r[j]              = new fftw_real[rnzp];
@@ -1996,7 +1996,7 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
   for(l = 0; l < nAngles; l++){
     for(j = -yEx; j <= yEx; j++){
       for(i = -xEx; i <= xEx; i++){
-        seisTrace = seisCube[l]->getRealTrace2(i0, j0);
+        seisTrace = seisCube[l]->getRealTrace(i0, j0);
 
         smoothTrace(seisTrace);
         //if(j == 0 ){
@@ -2008,7 +2008,7 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
         ztopW =  timeSimbox->getTop(i0,j0);
         findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
 
-        seisTrace = seisCube[l]->getRealTrace2(i0+i, j0+j);
+        seisTrace = seisCube[l]->getRealTrace(i0+i, j0+j);
         smoothTrace(seisTrace);
         if(i==0){
           for(size_t s = 0; s < seisTrace.size(); s++)
@@ -2028,13 +2028,13 @@ void BlockedLogs::findSeismicGradient(const FFTGrid     * const * seisCube,
             zShift[(i+2) + (j+2)*nZx + k*(nZx*nZx)] = computeShift(zPeak,zPeakWell,zpos_[k]);
           else{
             //well has changed lateral position and we adapt to the new well position
-            seisTrace = seisCube[l]->getRealTrace2(ipos_[k],jpos_[k]);
+            seisTrace = seisCube[l]->getRealTrace(ipos_[k],jpos_[k]);
             smoothTrace(seisTrace);
             dzW = timeSimbox->getdz(ipos_[k],jpos_[k]);
             ztopW = timeSimbox->getTop(ipos_[k],jpos_[k]);
             findPeakTrace(seisTrace, zPeakWell, peakWell, bWell, dzW, ztopW);
 
-            seisTrace = seisCube[l]->getRealTrace2(ipos_[k]+i, jpos_[k]+j);
+            seisTrace = seisCube[l]->getRealTrace(ipos_[k]+i, jpos_[k]+j);
             smoothTrace(seisTrace);
             dz = timeSimbox->getdz(ipos_[k]+i, jpos_[k]+j);
             ztop = timeSimbox->getTop(ipos_[k]+i, jpos_[k]+j);
@@ -2467,7 +2467,7 @@ void BlockedLogs::generateSyntheticSeismic(const float   * const * reflCoef,
   for( i=0 ; i<nLayers_; i++ )
     hasData[i] = alphaVert[i] != RMISSING && betaVert[i] != RMISSING && rhoVert[i] != RMISSING;
 
-  findContiniousPartOfData(hasData,nLayers_,start,length);
+  findContinuousPartOfData(hasData,nLayers_,start,length);
 
   float scale = static_cast<float>(timeSimbox->getRelThick(ipos_[0], jpos_[0]));
 

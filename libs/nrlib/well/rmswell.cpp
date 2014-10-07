@@ -55,9 +55,9 @@ RMSWell::RMSWell(const std::string& filename)
   nlog = ReadNext<int>(file, line);          // read number of logs
   DiscardRestOfLine(file, line, false);
   lognames_.resize(nlog+3);
-  lognames_[0] = "x";
-  lognames_[1] = "y";
-  lognames_[2] = "z";
+  lognames_[0] = "X";
+  lognames_[1] = "Y";
+  lognames_[2] = "Z";
 
   int ident;
   std::string identstr;
@@ -72,23 +72,32 @@ RMSWell::RMSWell(const std::string& filename)
   for (size_t i = 0; i < nlog; i++) {
     getline(file,dummy);
     std::istringstream ist(dummy);
-    lognames_[i+3] = ReadNext<std::string>(ist, line);
-    token = ReadNext<std::string>(ist, line);
-    if (token=="DISC") { // discrete log
-      isDiscrete_[i+3] = true;
-      std::map<int, std::string> disc;
-      while(ReadNextToken(ist,token,line)) {
-        ident = ParseType<int>(token);
-        identstr = ReadNext<std::string>(ist, line);
-        disc.insert(std::pair<int, std::string> (ident, identstr));
+    lognames_[i+3] = NRLib::Uppercase(ReadNext<std::string>(ist, line));
+
+    //token = ReadNext<std::string>(ist, line); //H Error if line only containts log-name (test_case 19).
+    ReadNextToken(ist, token, line);
+
+    if (token != "") {
+      if (token=="DISC") { // discrete log
+        isDiscrete_[i+3] = true;
+        std::map<int, std::string> disc;
+        while(ReadNextToken(ist,token,line)) {
+          ident = ParseType<int>(token);
+          identstr = ReadNext<std::string>(ist, line);
+          disc.insert(std::pair<int, std::string> (ident, identstr));
+        }
+        discnames_[lognames_[i+3]] = disc;
+        j++;
       }
-      discnames_[lognames_[i+3]] = disc;
-      j++;
+      else {
+        isDiscrete_[i+3] = false;
+        unit_[k] = token;
+        scale_[k] = ReadNext<std::string>(ist, line);
+        k++;
+      }
     }
     else {
       isDiscrete_[i+3] = false;
-      unit_[k] = token;
-      scale_[k] = ReadNext<std::string>(ist, line);
       k++;
     }
   }
@@ -98,17 +107,26 @@ RMSWell::RMSWell(const std::string& filename)
   std::vector<std::vector<int> > disclogs(ndisc);
   std::vector<std::vector<double> > contlogs(ncont);
 
-  while(getline(file,dummy)) {
+  int count = 0;
+
+  while(NRLib::CheckEndOfFile(file)==false && getline(file,dummy)) {
+    count ++;
     std::istringstream ist(dummy);
     contlogs[0].push_back(ReadNext<double>(ist, line)); //x
     contlogs[1].push_back(ReadNext<double>(ist, line)); //y
     contlogs[2].push_back(ReadNext<double>(ist, line)); //z
+
     j = 0;
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
-        disclogs[j].push_back(ReadNext<int>(ist, line));
-        j++;
+        double dummy = ReadNext<double>(ist, line); //H Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
+        if(IsMissing(dummy) == false)
+          disclogs[j].push_back(static_cast<int>(dummy));
+        else
+          disclogs[j].push_back(GetIntMissing());
+
+         j++;
       }
       else {
         contlogs[k].push_back(ReadNext<double>(ist, line));
@@ -132,6 +150,12 @@ RMSWell::RMSWell(const std::string& filename)
      k++;
    }
   }
+
+  // Find n_data including WELLMISSING values
+  unsigned int n_data = GetContLog("TWT").size();
+  this->SetNumberOfData(n_data);
+  SetXPos0(xpos0_);
+  SetYPos0(ypos0_);
 }
 
 
@@ -211,12 +235,11 @@ RMSWell::RMSWell(const Well& wellobj)
   }
 }
 
-const std::map<int, std::string> &
+const std::map<int, std::string>
 RMSWell::GetDiscNames(const std::string& log_name) const
 {
   return (discnames_.find(log_name)->second);
 }
-
 
 void RMSWell::WriteToFile(const std::string& filename)
 {

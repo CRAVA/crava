@@ -51,14 +51,13 @@ public:
   void         writeFile(const std::string              & fileName,
                          const std::string              & subDir,
                          const Simbox                   * simbox,
-                         const std::string                sgriLabel = "NO_LABEL",
-                         const float                      z0        = 0.0,
-                         const GridMapping              * depthMap  = NULL,
-                         const GridMapping              * timeMap   = NULL,
-                         const TraceHeaderFormat        & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                         bool                             padding   = false,
+                         const std::string                sgriLabel         = "NO_LABEL",
+                         const float                      z0                = 0.0,
+                         const GridMapping              * depthMap          = NULL,
+                         const TraceHeaderFormat        & thf               = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                         bool                             padding           = false,
                          bool                             scientific_format = false,
-                         const std::vector<std::string> & headerText = std::vector<std::string>());  //Use this instead of the ones below.
+                         const std::vector<std::string> & headerText        = std::vector<std::string>());
   void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                               bool padding = false, bool flat = false, bool scientific_format = false);
   int          writeSegyFile(const std::string & fileName, const Simbox * simbox, float z0,

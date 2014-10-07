@@ -11,7 +11,6 @@
 #include "src/krigingadmin.h"
 #include "src/fftgrid.h"
 #include "src/modelgeneral.h"
-#include "src/welldata.h"
 #include "src/bwellpt.h"
 #include "src/simbox.h"
 #include "src/covgridseparated.h"
@@ -207,7 +206,7 @@ void CKrigingAdmin::KrigAll(Gamma gamma, bool doSmoothing) {
 
 }
 
-void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho,
+void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& trendRho, SeismicParametersHolder & seismicParameters,
                             bool trendsAlreadySubtracted, int debugflag, bool doSmoothing) {
   Require(!trendAlpha.getIsTransformed()
           && !trendBeta.getIsTransformed()
@@ -238,8 +237,8 @@ void CKrigingAdmin::KrigAll(FFTGrid& trendAlpha, FFTGrid& trendBeta, FFTGrid& tr
         }
       }
     }
-    blockGrid->writeFile("BlockGrid",IO::PathToInversionResults(), &simbox_);
-    delete blockGrid;
+
+    seismicParameters.SetBlockGrid(blockGrid);
   }
 
   trendAlpha_ = &trendAlpha;
@@ -350,7 +349,7 @@ void CKrigingAdmin::KrigBlock(Gamma gamma)
         // set kriging vector
         SetKrigVector(kVec, gamma);
 
-        // kriging
+        // kriging;
         float result = pGrid->getRealValue(i_, j_, k_);
         if (result == RMISSING) {
           noRMissing_++;
@@ -380,7 +379,7 @@ FFTGrid* CKrigingAdmin::CreateValidGrid() const
 {
   //FFTGrid* pGrid = new FFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
   //                             simbox_.getnx(), simbox_.getny(), simbox_.getnz());
-  FFTGrid* pGrid = ModelGeneral::createFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
+  FFTGrid* pGrid = ModelGeneral::CreateFFTGrid(simbox_.getnx(), simbox_.getny(), simbox_.getnz(),
                                                simbox_.getnx(), simbox_.getny(), simbox_.getnz(), false);
   pGrid->fillInConstant(-1.0f, false);
   pGrid->setAccessMode(FFTGrid::RANDOMACCESS);
@@ -1259,6 +1258,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
       NRLib::CholeskySolve(ppMatrix2, ppInv);
     }
     catch (NRLib::Exception & e) {
+      (void) e;
       robustify = true;
     }
     counter++;

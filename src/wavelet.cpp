@@ -25,8 +25,6 @@
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
 #include "src/modelsettings.h"
-#include "src/blockedlogs.h"
-#include "src/welldata.h"
 #include "src/definitions.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
@@ -36,6 +34,8 @@
 Wavelet::Wavelet(int dim)
   : cnzp_(0),
     rnzp_(0),
+    rAmp_(NULL),
+    cAmp_(NULL),
     theta_(0),
     dz_(1.0),
     nz_(0),
@@ -52,7 +52,9 @@ Wavelet::Wavelet(int dim)
 
 Wavelet::Wavelet(int       dim,
                  Wavelet * wavelet)
-  : theta_(wavelet->getTheta()),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
     nzp_(wavelet->getNzp()),
@@ -72,7 +74,7 @@ Wavelet::Wavelet(int       dim,
 
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   if(isReal_)
@@ -87,15 +89,17 @@ Wavelet::Wavelet(int       dim,
 }
 
 
-Wavelet::Wavelet(const std::string & fileName,
-                 int                 fileFormat,
-                 const ModelSettings     * modelSettings,
-                 const float             * reflCoef,
-                 float               theta,
-                 int                 dim,
-                 int               & errCode,
-                 std::string       & errText)
-  : theta_(theta),
+Wavelet::Wavelet(const std::string   & fileName,
+                 int                   fileFormat,
+                 const ModelSettings * modelSettings,
+                 const float         * reflCoef,
+                 float                 theta,
+                 int                   dim,
+                 int                 & errCode,
+                 std::string         & errText)
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(theta),
     inFFTorder_(false),
     isReal_(true),
     dim_(dim),
@@ -108,7 +112,7 @@ Wavelet::Wavelet(const std::string & fileName,
   coeff_[2]       = reflCoef[2];
   switch (fileFormat) {
   case JASON:
-    WaveletReadJason(fileName, errCode, errText);
+    WaveletReadJason(fileName, errCode, rAmp_, cAmp_, dz_, nz_, cz_, nzp_,cnzp_,rnzp_, norm_, errText);
     break;
   case NORSAR:
     WaveletReadNorsar(fileName, errCode, errText);
@@ -127,13 +131,16 @@ Wavelet::Wavelet(const std::string & fileName,
     }//end for i
   }
 }
-Wavelet::Wavelet(const ModelSettings     * modelSettings,
-                 const float             * reflCoef,
-                 float               theta,
-                 int                 dim,
-                 float               peakFrequency,
-                 int               & errCode)
-  : theta_(theta),
+
+Wavelet::Wavelet(const ModelSettings * modelSettings,
+                 const float         * reflCoef,
+                 float                 theta,
+                 int                   dim,
+                 float                 peakFrequency,
+                 int                 & errCode)
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(theta),
     inFFTorder_(false),
     isReal_(true),
     dim_(dim),
@@ -153,20 +160,14 @@ Wavelet::Wavelet(const ModelSettings     * modelSettings,
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
   double t;
   for (int i = 0; i < nz_; ++i) {
     t = (i-cz_) * dz_;
     rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
-    /*
-         t = i * dz_;
-        rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
-        if(i>0)
-        rAmp_[nz_-i] = static_cast<fftw_real>(Ricker(-t, peakFrequency));
-        */
-     }
+  }
 
 
   formats_       = modelSettings->getWaveletFormatFlag();
@@ -181,14 +182,14 @@ Wavelet::Wavelet(const ModelSettings     * modelSettings,
         rAmp_[i]=RMISSING;
     }//end for i
   }
-  printToFile("ricker20.txt",true);
-
 }
 
 Wavelet::Wavelet(int /*difftype */,
                  int nz,
                  int nzp)
-  : theta_(RMISSING),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(RMISSING),
     dz_(RMISSING),
     nz_(nz),
     nzp_(nzp),
@@ -202,7 +203,9 @@ Wavelet::Wavelet(int /*difftype */,
 
 Wavelet::Wavelet(Wavelet * wavelet,
                  int     /*  difftype */)
-  : theta_(wavelet->getTheta()),
+  : rAmp_(NULL),
+    cAmp_(NULL),
+    theta_(wavelet->getTheta()),
     dz_(wavelet->getDz()),
     nz_(wavelet->getNz()),
     nzp_(wavelet->getNzp()),
@@ -226,7 +229,7 @@ Wavelet::setupAsVector(int nz, int nzp)
   nzp_  = nzp;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
   coeff_[0] = 0;
@@ -241,6 +244,8 @@ Wavelet::~Wavelet()
   if(gainGrid_!=NULL)
     delete gainGrid_;
   fftw_free(rAmp_);
+  //delete [] rAmp_;
+  //delete    cAmp_;
 }
 
 void Wavelet::fft1DInPlace()
@@ -424,7 +429,7 @@ Wavelet::resample(float dz,
   int cnzp  =  nzp/2 + 1;
   int rnzp  =  2*cnzp;
 
-  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp ));
+  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*rnzp )); //new fftw_real[rnzp];
 
   float z;
   for(int k=0; k < rnzp; k++) {
@@ -433,19 +438,23 @@ Wavelet::resample(float dz,
         z = static_cast<float>( dz*k );
       else
         z = static_cast<float>( dz*(k-nzp) );
+
       wlet[k] = getWaveletValue(z, rAmp_ , cz_, nz_, dz_);
     }
     else
       wlet[k] =RMISSING;
   }
-  fftw_free( rAmp_);
+  //fftw_free( rAmp_);
 
   double norm2 = 0.0;
   for(int k=0; k < nzp; k++)
     norm2 += static_cast<double> (wlet[k]*wlet[k]);
   norm_       = static_cast<float>(sqrt( norm2));
 
+
   rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
+  //if (cAmp_ != NULL)
+  //  delete [] cAmp_;
   cAmp_       = reinterpret_cast<fftw_complex*>(rAmp_);
   nzp_        = nzp;
   rnzp_       = rnzp;
@@ -461,6 +470,35 @@ Wavelet::resample(float dz,
     writeWaveletToFile(fileName, dzOut,false);
   }
 }
+
+void
+Wavelet::shiftFromFFTOrder()
+{
+  assert(isReal_);
+  assert(inFFTorder_);
+
+  fftw_real * wlet  = static_cast<fftw_real *>(fftw_malloc( sizeof(fftw_real)*nzp_ ));//new fftw_real[nzp_];
+
+  int index = 0;
+  float z;
+  for (int i = nzp_/2; i < nzp_; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_);
+    index++;
+  }
+  for (int i = 0; i < nzp_/2; i++) {
+    z = static_cast<float> (dz_*i);
+    wlet[index] = getWaveletValue(z, rAmp_ , cz_, nzp_, dz_);
+    index++;
+  }
+
+  rAmp_ = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
+  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
+
+  inFFTorder_ = false;
+  cz_         = nzp_/2+1;
+}
+
 
 void
 Wavelet::multiplyRAmpByConstant(float c)
@@ -511,12 +549,12 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
   //This gives inconsistency if a wavelet is read and written.
   //Make consistent by truncating wavelet to writing range before interpolation.
   int     activeCells = int(floor(waveletLength_/2/dz_));
-  float * remember    = new float[nzp_];
-  for(int i=activeCells+1;i<=nz_;i++) {
+  float * remember    = new float[nzp_ + 1]; //H Added +1. Error delete [] remember if nz = nzp.
+  int     first_kill  = activeCells+1;      //First cell to be set to 0.
+  int     last_kill   = nzp_-activeCells-1; //Last cell to be set to 0.
+  for(int i=first_kill;i<=last_kill;i++) {
     remember[i]        = rAmp_[i];
     rAmp_[i]           = 0;
-    remember[nzp_-i] = rAmp_[nzp_-i];
-    rAmp_[nzp_-i]    = 0;
   }
   float          T            = nzp_*dz_;
   int            nzpNew       = int(ceil(T/approxDz - 0.5));
@@ -542,7 +580,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     }
   }
   invFFT1DInPlace();
-  for(int i=activeCells+1;i<=nz_;i++) {
+  for(int i=first_kill;i<=last_kill;i++) {
     rAmp_[i] = remember[i];
     rAmp_[nzp_-i] = remember[nzp_-i];
   }
@@ -577,11 +615,11 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
       double muteFac=(fabs(sumNeg)-fabs(sumTot))/fabs(sumNeg);
       for(int i=halfLength ; i > 0 ; i--)
         if( waveletNew_r[nzpNew-i] < 0 )
-          waveletNew_r[nzpNew-i]*=muteFac;
+          waveletNew_r[nzpNew-i]*=static_cast<fftw_real>(muteFac);
 
       for(int i=0;i<=halfLength;i++)
         if( waveletNew_r[i]  < 0 )
-           waveletNew_r[i]*=muteFac;
+           waveletNew_r[i]*=static_cast<fftw_real>(muteFac);
 
     }else
     {
@@ -590,11 +628,11 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
       double muteFac=(sumPos-fabs(sumTot))/sumPos;
       for(int i=halfLength ; i > 0 ; i--)
         if( waveletNew_r[nzpNew-i] > 0 )
-          waveletNew_r[nzpNew-i]*=muteFac;
+          waveletNew_r[nzpNew-i]*=static_cast<fftw_real>(muteFac);
 
       for(int i=0;i<=halfLength;i++)
         if( waveletNew_r[i]  > 0 )
-           waveletNew_r[i]*=muteFac;
+           waveletNew_r[i]*=static_cast<fftw_real>(muteFac);
 
     }
   }
@@ -816,7 +854,7 @@ Wavelet::findNormWithinFrequencyBand(float loCut ,float hiCut ) const
 
   assert(!isReal_);
 
-  float dOmega = 1.0f/(nzp_*dz_*0.001f);
+  float dOmega = static_cast<float>(1.0/(nzp_*dz_*0.001));
   int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
   int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
 
@@ -839,7 +877,7 @@ Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut )
   // for consistency we use the norm in real (time) domain
   assert(!isReal_);
 
-  float dOmega = 1.0f/(nzp_*dz_*0.001f);
+  float dOmega = static_cast<float>(1.0/(nzp_*dz_*0.001));
   int loI = std::max<int>(0,static_cast<int>(floor(loCut/dOmega)));
   int hiI = std::min<int>(cnzp_,static_cast<int>(ceil(hiCut/dOmega)));
 
@@ -859,9 +897,9 @@ Wavelet::nullOutsideFrequencyBand(float loCut ,float hiCut )
 
   double norm2=0;
   for(int i=loI;i<hiI;i++)
-    norm2 += static_cast<double> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
+    norm2 += static_cast<float> (2.0*fac*(cAmp_[i].re*cAmp_[i].re+cAmp_[i].im*cAmp_[i].im));
   if(loI==0)
-      norm2 -=fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im);
+      norm2 -=static_cast<float> (fac*(cAmp_[0].re*cAmp_[0].re+cAmp_[0].im*cAmp_[0].im));
 
   setNorm(static_cast<float>(sqrt(norm2)));
 }
@@ -879,7 +917,7 @@ Wavelet::averageWavelets(const std::vector<std::vector<fftw_real> > & wavelet_r,
                          float                                        dzOut) const
 {
   // assumes dz[w] < dzOut for all w
-  fftw_real* wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real)));
+  fftw_real * wave= static_cast<fftw_real*>(fftw_malloc(rnzp_*sizeof(fftw_real))); //new fftw_real[rnzp_];
   for(int i=0; i<nzp; i++)
     wave[i] = 0.0; // initialize
 
@@ -1070,6 +1108,22 @@ Wavelet::printVecToFile(const std::string & fileName,
   }
 }
 
+void
+Wavelet::printVecDoubleToFile(const std::string & fileName,
+                              double            * vec,
+                              int                 nzp) const
+{
+  if( ModelSettings::getDebugLevel() > 0) {
+    std::string fName = fileName + IO::SuffixGeneralData();
+    fName = IO::makeFullFileName(IO::PathToWavelets(), fName);
+    std::ofstream file;
+    NRLib::OpenWrite(file,fName);
+    for(int i=0;i<nzp;i++)
+      file << vec[i] << "\n";
+    file.close();
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //////////PRIVATE MEMBER METHODS//////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1173,8 +1227,18 @@ Wavelet::getLocalGainFactor(int i,
 void
 Wavelet::WaveletReadJason(const std::string & fileName,
                           int               & errCode,
-                          std::string       & errText)
+                          fftw_real        *& rAmp,
+                          fftw_complex     *& cAmp,
+                          float             & dz,
+                          int               & nz,
+                          int               & cz,
+                          int               & nzp,
+                          int               & cnzp,
+                          int               & rnzp,
+                          float             & norm,
+                          std::string       & errText) const
 {
+  assert(rAmp_ == NULL && cAmp_ == NULL);
   std::ifstream file;
   NRLib::OpenRead(file,fileName);
   std::string dummyStr;
@@ -1211,7 +1275,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
 
-  dz_ = NRLib::ParseType<float>(dummyStr);
+  dz  = NRLib::ParseType<float>(dummyStr);
 
   if (NRLib::CheckEndOfFile(file)) {
     errText += "Error: End of file "+fileName+" premature.\n";
@@ -1223,14 +1287,14 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
 
-  nz_ = NRLib::ParseType<int>(dummyStr);
-  cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
-  nzp_  = nz_;
-  cnzp_ = nzp_/2+1;
-  rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
-  cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-  norm_ = RMISSING;
+  nz  = NRLib::ParseType<int>(dummyStr);
+  cz    =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
+  nzp   = nz_;
+  cnzp  = nzp_/2+1;
+  rnzp  = 2*cnzp_;
+  rAmp  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
+  cAmp  = reinterpret_cast<fftw_complex*>(rAmp);
+  norm  = RMISSING;
 
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
@@ -1240,7 +1304,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
+    rAmp[i] = NRLib::ParseType<float>(dummyStr);
   }
   file.close();
 }
@@ -1332,7 +1396,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
 
@@ -1357,3 +1421,10 @@ Wavelet::Ricker(double t, float peakF)
    return (1 - 2*c) * exp(-c);
 }
 
+void
+Wavelet::SetReflectionCoeffs(const NRLib::Matrix & reflCoef, int i)
+{
+  coeff_[0] = static_cast<float>(reflCoef(i,0));
+  coeff_[1] = static_cast<float>(reflCoef(i,1));
+  coeff_[2] = static_cast<float>(reflCoef(i,2));
+}

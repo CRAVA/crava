@@ -2186,7 +2186,7 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default 6.0 Hz
  \elist
 
-\subsubsection{\hbracket{multizone-model}}\newkw{multizone-model}
+\subsubsection{\hbracket{multizone-model} (REMOVED)}\newkw{multizone-model}
  \slist
    \item \Description  Information about the multizone background model
    \item \Argument Elements containing information about the multizone background model
@@ -2316,7 +2316,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsection{\hbracket{temporal-correlation}}\newkw{temporal-correlation}
  \slist
-   \item \Description File name for the temporal correlation file. The file is an ascii file. Usually, this file comes from an earlier run of \crava. Cannot be used in combination with \kw{temporal-correlation-range}.
+   \item \Description File name for the temporal correlation file. The file is an ascii file. Usually, this file comes from an earlier run of \crava. Cannot be used in combination with \kw{temporal-correlation-range}, \kw{parameter-autocovariance} or \kw{multiple-intervals}.
    \item \Argument File name
    \item \Default
  \elist
@@ -2330,17 +2330,38 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsection{\hbracket{parameter-correlation}}\newkw{parameter-correlation}
  \slist
-   \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density.
+   \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density. Cannot be used in combination with \kw{parameter-autocovariance}.
    It is most common to use a file resulting from an earlier run of \crava, and the file might look like this:
 
   \begin{verbatim}
-    0.001171   0.000786   0.000046
-  	0.000786   0.001810  -0.000395
-  	0.000046  -0.000395   0.000530
+  0.001171   0.000786   0.000046
+  0.000786   0.001810  -0.000395
+  0.000046  -0.000395   0.000530
   \end{verbatim}
    \item \Argument File name
    \item \Default
  \elist
+ 
+\subsection{\hbracket{parameter-autocovariance}}\newkw{parameter-autocovariance}
+ \slist
+   \item \Description File name for the parameter autocovariance file. The file is an ascii file, containing covariance matrices between Vp, Vs and density for each lag. This cannot be used in combination with \kw{parameter-correlation} and \kw{temporal-correlation} or \kw{temporal-correlation-range}. Parameter and temporal correlations are integrated in this autocovariance, where \kw{parameter-correlation} is equal to the first lag.
+   It is most common to use a file resulting from an earlier run of \crava, and the first two lags in a file might look like this:
+
+  \begin{verbatim}
+  dz = 4.32
+  i = 0:
+   0.0026682400  0.0017649470  0.0005514660 
+   0.0017649470  0.0026489375 -0.0002818111 
+   0.0005514660 -0.0002818111  0.0007756864 
+
+  i = 1:
+   0.0014685779  0.0008918178  0.0003006959 
+   0.0010523574  0.0014839220 -0.0002266622 
+   0.0002532785 -0.0002192851  0.0004530772 
+  \end{verbatim}
+   \item \Argument File name
+   \item \Default
+ \elist 
 
 \subsection{\hbracket{correlation-direction}}\newkw{correlation-direction}
  \slist
@@ -2351,7 +2372,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsubsection{\hbracket{top-surface}}\rnewkw{top-surface}{cd-top-surface}
  \slist
-   \item \Description Standard surface file giving the top correlation direction for the inversion. Cannot be used at the same time as \rkw{interval}{cd-interval} or with \kw{base-conform} set to 'yes'.
+   \item \Description Standard surface file giving the top correlation direction for the inversion. Cannot be used at the same time as \rkw{interval}{cd-interval} or with \kw{top-conform} set to 'yes'.
    \item \Argument File name
    \item \Default
  \elist

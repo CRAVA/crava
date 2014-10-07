@@ -78,7 +78,7 @@ public:
   void                      fillInCpp(const float * coeff,int start,int length,fftw_real* cpp_r,int nzp);
   void                      fillInSeismic(float* seismicData,int start,int length,fftw_real* seis_r,int nzp) const;
   void                      estimateCor(fftw_complex* var1_c,fftw_complex* var2_c,fftw_complex* ccor_1_2_c,int cnzp) const;
-  void                      findContiniousPartOfData(const std::vector<bool> & hasData,int nz,int &start,int &length) const;
+  void                      findContinuousPartOfData(const std::vector<bool> & hasData,int nz,int &start,int &length) const;
   void                      findOptimalWellLocation(FFTGrid                   ** seisCube,
                                                     Simbox                     * timeSimbox,
                                                     float                     ** reflCoef,

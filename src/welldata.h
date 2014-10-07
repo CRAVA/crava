@@ -93,6 +93,11 @@ private:
                                   const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
   void                readNorsarWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
                                      const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
+  void                readWell(const std::string              & wellFileName,
+                               const std::vector<std::string> & logNames,
+                               const std::vector<bool>        & inverseVelocity,
+                               bool                             porosityLogGiven,
+                               bool                             faciesLogGiven);
   void                readLASWell(const std::string & wellFileName, const std::vector<std::string> & logNames,
                                   const std::vector<bool>  & inverseVelocity, bool porosityLogGiven, bool faciesLogGiven);
   void                processNRLibWell(const NRLib::Well              & well,

@@ -28,9 +28,9 @@ TimeEvolution::TimeEvolution(int                                     i_max,
 
 std::vector<std::vector<std::vector<double> > >
 
-  TimeEvolution::returnCorrelatedSample(int                                   i_max,
-                                      TimeLine                              & time_line,
-                                      const std::vector<DistributionsRock*> & dist_rock)
+  TimeEvolution::returnCorrelatedSample(int                                         i_max,
+                                        TimeLine                                  & time_line,
+                                        const std::vector<DistributionsRock*>     & dist_rock)
 {
   CorrelatedRockSamples correlated_rock_samples;
   std::vector<std::vector<std::vector<double> > > sample= correlated_rock_samples.CreateSamplesExtended(i_max, time_line, dist_rock);

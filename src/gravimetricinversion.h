@@ -21,6 +21,9 @@ class State4D;
 class GravimetricInversion
 {
 public:
+  GravimetricInversion();
+
+  /*
   GravimetricInversion(ModelGeneral            * modelGeneral,
                        ModelGravityStatic      * modelGravityStatic,
                        ModelGravityDynamic     *& modelGravityDynamic,
@@ -68,6 +71,8 @@ private:
 
 
    std::vector<std::vector<std::vector<int> > > lag_index_;   // class variable for faster access
+
+   */
 };
 
 #endif

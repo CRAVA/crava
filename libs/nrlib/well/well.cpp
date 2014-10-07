@@ -24,14 +24,22 @@
 #include <string>
 
 #include "well.hpp"
+#include "norsarwell.hpp"
+#include "laswell.hpp"
+#include "rmswell.hpp"
 #include "../iotools/stringtools.hpp"
+
+#include "nrlib/iotools/logkit.hpp"
+#include "nrlib/iotools/stringtools.hpp"
+#include "nrlib/surface/surface.hpp"
+//#include "src/definitions.h"
 
 using namespace NRLib;
 
 Well::Well()
 {
   well_rmissing_ = -999.0;
-  well_imissing_  = -999;
+  well_imissing_ = -999;
 }
 
 
@@ -45,7 +53,6 @@ Well::Well(const std::string & name,
 }
 
 
-
 Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
            const std::map<std::string,std::vector<int> >    & disc_log,
            const std::string                                & well_name)
@@ -57,10 +64,31 @@ Well::Well(const std::map<std::string,std::vector<double> > & cont_log,
   well_imissing_  = -999;
 }
 
+Well::~Well(){
+}
 
-Well::~Well()
-{}
-
+Well *
+Well::ReadWell(const std::string & file_name,
+               int               & well_format)
+{
+  Well * well;
+  if(well_format == NORSAR || file_name.find(".nwh",0) != std::string::npos) {
+    well = new NorsarWell(file_name);
+    std::string name = NRLib::RemovePath(file_name);
+    well->SetWellName(NRLib::ReplaceExtension(name, ""));
+    well_format = NORSAR;
+    return(well);
+  }
+  if(well_format == LAS || file_name.find(".las",0) != std::string::npos) {
+    well = new LasWell(file_name);
+    well_format = LAS;
+  }
+  else {
+    well = new RMSWell(file_name);
+    well_format = RMS;
+  }
+  return(well);
+}
 
 void
 Well::AddContLog(const std::string& name, const std::vector<double>& log)
@@ -68,15 +96,37 @@ Well::AddContLog(const std::string& name, const std::vector<double>& log)
   cont_log_[name] = log;
 }
 
+void
+Well::AddContLogSeismicResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_seismic_resolution_[name] = log;
+}
+
+void
+Well::AddContLogBackgroundResolution(const std::string& name, const std::vector<double>& log)
+{
+  cont_log_background_resolution_[name] = log;
+}
+
+
+bool Well::HasDiscLog(const std::string& name) const{
+  std::map<std::string, std::vector<int> >::const_iterator it = disc_log_.find(name);
+  if(it != disc_log_.end()){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
 
 bool
 Well::HasContLog(const std::string& name) const
 {
-  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
-  if(item != cont_log_.end())
-    return(true);
+  //std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  if(cont_log_.find(name) != cont_log_.end())
+    return true;
   else
-    return(false);
+    return false;
 }
 
 
@@ -88,11 +138,43 @@ Well::GetContLog(const std::string& name)
   return item->second;
 }
 
+std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name)
+{
+  std::map<std::string, std::vector<double> >::iterator item = cont_log_background_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
 
 const std::vector<double>&
 Well::GetContLog(const std::string& name) const
 {
   std::map<std::string, std::vector<double> >::const_iterator item = cont_log_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogSeismicResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_seismic_resolution_.find(name);
+  assert(item != cont_log_.end());
+  return item->second;
+}
+
+const std::vector<double>&
+Well::GetContLogBackgroundResolution(const std::string& name) const
+{
+  std::map<std::string, std::vector<double> >::const_iterator item = cont_log_background_resolution_.find(name);
   assert(item != cont_log_.end());
   return item->second;
 }
@@ -235,4 +317,21 @@ size_t Well::GetContLogLength(const std::string& logname) const
   assert(item != cont_log_.end());
 
   return (item->second).size();
+}
+
+const std::map<int, std::string>
+Well::GetDiscNames(const std::string& log_name) const
+{
+  std::map<std::string, std::vector<int> >::const_iterator item = disc_log_.find(log_name);
+  assert(item != disc_log_.end());
+  const std::vector<int>& log = item->second;
+  std::map<int, std::string> name_map;
+  for(size_t i=0;i<log.size();i++) {
+    if(IsMissing(log[i]) == false) {
+      std::string name(NRLib::ToString(log[i]));
+      if(name_map.find(log[i]) == name_map.end())
+        name_map.insert(std::pair<int, std::string> (log[i], name));
+    }
+  }
+  return(name_map);
 }

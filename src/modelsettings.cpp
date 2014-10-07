@@ -32,13 +32,15 @@ ModelSettings::ModelSettings(void)
     estimateSNRatio_(0),
     estimateLocalNoise_(0),
     estimateGlobalWaveletScale_(0),
+    multiple_intervals_(false),
     constBackValue_(3),
     indBGTrend_(0),
     indWavelet_(0),
     indFacies_(0),
     indRockPhysics_(0),
     logNames_(6),
-    inverseVelocity_(2)
+    inverseVelocity_(2),
+    min_blocks_with_data_for_corr_estim_(100)
 {
   lateralCorr_                = new GenExpVario(1, 1000, 1000);
   backgroundVario_            = new GenExpVario(1, 2000, 2000);
@@ -55,21 +57,21 @@ ModelSettings::ModelSettings(void)
   //
   // The original ranges were provided by Nam Hoai Pham (Statoil/25.09.2007)
   //
-  alpha_min_               =  1300.0f;   // Nam: 1800
-  alpha_max_               =  7000.0f;   // Nam: 6000
-  beta_min_                =   200.0f;   // Nam:  800
-  beta_max_                =  4200.0f;   // Nam: 3000
+  vp_min_                  =  1300.0f;   // Nam: 1800
+  vp_max_                  =  7000.0f;   // Nam: 6000
+  vs_min_                  =   200.0f;   // Nam:  800
+  vs_max_                  =  4200.0f;   // Nam: 3000
   rho_min_                 =     1.4f;   // Nam:  1.5
   rho_max_                 =     3.3f;   // Nam:  3.0
 
-  var_alpha_min_           =   5.e-4f;
-  var_alpha_max_           = 250.e-4f;
-  var_beta_min_            =  10.e-4f;
-  var_beta_max_            = 500.e-4f;
+  var_vp_min_              =   5.e-4f;
+  var_vp_max_              = 250.e-4f;
+  var_vs_min_              =  10.e-4f;
+  var_vs_max_              = 500.e-4f;
   var_rho_min_             =   2.e-4f;
   var_rho_max_             = 100.e-4f;
 
-  vp_vs_ratio_             = RMISSING;
+  //vp_vs_ratio_             = RMISSING;
   vp_vs_ratio_from_wells_  =    false;
   vp_vs_ratio_min_         =     1.4f;
   vp_vs_ratio_max_         =     3.0f;
@@ -109,9 +111,9 @@ ModelSettings::ModelSettings(void)
   yPadFac_                 =      0.0;
   zPadFac_                 =      0.0;
 
-  nxPad_                   = IMISSING;
-  nyPad_                   = IMISSING;
-  nzPad_                   = IMISSING;
+  //nxPad_                   = IMISSING;
+  //nyPad_                   = IMISSING;
+  //nzPad_                   = IMISSING;
 
   estimateXYPadding_       =     true;
   estimateZPadding_        =     true;
@@ -125,7 +127,9 @@ ModelSettings::ModelSettings(void)
   time_dTop_               = RMISSING;
   time_lz_                 = RMISSING;
   time_dz_                 = RMISSING;
-  time_nz_                 = IMISSING;
+  //time_nz_                 = IMISSING;
+  //time_nz_[""]             = IMISSING;
+
   velocityFromInv_         =    false;
 
   areaILXL_                = std::vector<int>(0);
@@ -191,42 +195,65 @@ ModelSettings::ModelSettings(void)
 
   seed_                    =        0;
   number_of_threads_       =        0;
+
+  erosion_priority_top_surface_ = 1; //H
+
+  //intervalTopConformCorrelation_[""]  = false;
+  //intervalBaseConformCorrelation_[""] = false;
+
 }
 
 ModelSettings::~ModelSettings(void)
 {
-  for(size_t i = 0; i<angularCorr_.size(); i++)
+  for(size_t i = 0; i<angularCorr_.size(); i++){
     delete angularCorr_[i];
+    angularCorr_[i] = NULL;
+  }
 
-  if (lateralCorr_ != NULL)
+  if (lateralCorr_ != NULL){
     delete lateralCorr_;
+    lateralCorr_ = NULL;
+  }
 
-  if (backgroundVario_ != NULL)
+  if (backgroundVario_ != NULL){
     delete backgroundVario_;
+    backgroundVario_ = NULL;
+  }
 
-  if (localWaveletVario_ != NULL)
+  if (localWaveletVario_ != NULL){
     delete localWaveletVario_;
+    localWaveletVario_ = NULL;
+  }
 
   for (size_t i = 0; i < timeLapseTravelTimeLateralCorrelation_.size(); i++) {
     if (timeLapseTravelTimeLateralCorrelation_[i] != NULL)
       delete timeLapseTravelTimeLateralCorrelation_[i];
   }
 
-  if(geometry_ != NULL)
+  if(geometry_ != NULL) {
     delete geometry_;
+    geometry_ = NULL;
+  }
 
-  if(geometry_ != NULL)
+  if(geometry_ != NULL){
     delete geometry_full_;
+    geometry_full_ = NULL;
+  }
 
-  if(traceHeaderFormat_ != NULL)
-    delete traceHeaderFormat_;
 
-  if(traceHeaderFormatOutput_ != NULL)
+  delete traceHeaderFormat_;
+  traceHeaderFormat_ = NULL;
+
+  if(traceHeaderFormatOutput_ != NULL){
     delete traceHeaderFormatOutput_;
+    traceHeaderFormatOutput_ = NULL;
+  }
 
   for(size_t i=0; i<timeLapseLocalTHF_.size(); i++) {
-    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++)
+    for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++){
       delete timeLapseLocalTHF_[i][j];
+      timeLapseLocalTHF_[i][j] = NULL;
+    }
   }
 
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
@@ -249,6 +276,7 @@ ModelSettings::~ModelSettings(void)
     std::vector<DistributionWithTrendStorage *> vintageStorage = it->second;
     for(size_t i=0; i<vintageStorage.size(); i++) {
       delete vintageStorage[i];
+      vintageStorage[i] = NULL;
     }
   }
 

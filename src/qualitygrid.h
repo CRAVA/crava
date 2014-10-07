@@ -10,33 +10,34 @@
 class ModelSettings;
 class KrigingData2D;
 class CovGrid2D;
-class WellData;
 class Simbox;
 class FFTGrid;
 class Vario;
 class ModelGeneral;
+class BlockedLogsCommon;
+class SeismicParametersHolder;
 
 class QualityGrid
 {
 
 public:
-  QualityGrid(const std::vector<double>   pValue,
-              std::vector<WellData *>     wells,
-              const Simbox              * simbox,
-              const ModelSettings       * modelSettings,
-              ModelGeneral              * modelGeneral);
+
+  QualityGrid(const std::vector<double>                    pValue,
+              std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+              const Simbox                               * simbox,
+              const ModelSettings                        * modelSettings,
+              SeismicParametersHolder                    & seismicParameters);
 
 private:
 
-  void generateProbField(FFTGrid               *& grid,
-                         std::vector<WellData *> wells,
-                         const Simbox          * simbox,
-                         const ModelSettings   * modelSettings) const;
+  void generateProbField(FFTGrid                                 *& grid,
+                         std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                         const Simbox                             * simbox,
+                         const ModelSettings                      * modelSettings) const;
 
-  void setupKrigingData2D(std::vector<KrigingData2D> & krigingData,
-                          std::vector<WellData *>      wells,
-                          const Simbox               * simbox,
-                          const int                    nWells) const;
+  void setupKrigingData2D(std::vector<KrigingData2D>                 & krigingData,
+                          std::map<std::string, BlockedLogsCommon *> & blocked_wells,
+                          const Simbox                               * simbox) const;
 
   void makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
                            FFTGrid                   *& grid,
@@ -44,8 +45,7 @@ private:
                            const CovGrid2D            & cov,
                            const bool                   isFile) const;
 
-
-  CovGrid2D & makeCovGrid2D(const Simbox * simbox,
+  CovGrid2D & MakeCovGrid2D(const Simbox * simbox,
                             Vario  * vario) const;
 
 

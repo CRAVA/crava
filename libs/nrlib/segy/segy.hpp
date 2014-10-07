@@ -32,6 +32,8 @@
 #include "../segy/segygeometry.hpp"
 #include "../segy/segytrace.hpp"
 
+#include "../stormgrid/stormcontgrid.hpp"
+
 namespace NRLib {
 
 const int segyIMISSING = -99999;
@@ -75,6 +77,13 @@ public:
       float                     dz,
       const TextualHeader     & ebcdicHeader,
       const TraceHeaderFormat & traceHeaderFormat = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+
+ /// Constructor for writing of segy from storm cube
+ SegY(const StormContGrid     * storm_grid,
+      float                     z0,
+      const std::string       & file_name = "",
+      bool                      write_to_file = true,
+      const TraceHeaderFormat & trace_header_format = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
 
   ~SegY();
 
@@ -165,6 +174,7 @@ public:
   size_t                    GetNTraces() const { return n_traces_ ;}
   size_t                    GetNz()      const { return nz_       ;}
   float                     GetDz()      const { return dz_       ;}
+  float                     GetTop()     const { return z0_       ;}
 
   enum                      OutsideModes{MISSING, ZERO, CLOSEST};
 
@@ -177,6 +187,8 @@ public:
                                              const TraceHeaderFormat * traceHeaderFormat = NULL);
   TraceHeaderFormat         GetTraceHeaderFormat(){return trace_header_format_;};
   static TraceHeaderFormat  FindTraceHeaderFormat(const std::string & fileName);
+
+  SegYTrace *              getTrace(int i) {return traces_[i];};
 
 private:
   //void                      ebcdicHeader(std::string& outstring);               ///<

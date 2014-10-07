@@ -11,9 +11,11 @@
 #include "src/definitions.h"
 #include "lib/utils.h"
 
+#include "src/seismicstorage.h"
+#include "src/blockedlogscommon.h"
+
 class Simbox;
 class FFTGrid;
-class WellData;
 class ModelSettings;
 class Wavelet1D;
 
@@ -79,6 +81,8 @@ public:
                          int   nz,
                          int   nzp);
 
+  void          shiftFromFFTOrder();
+
   void          multiplyRAmpByConstant(float c);
   void          setupAsVector(int nz, int nzp);
 
@@ -116,16 +120,17 @@ public:
 
 
 
-  virtual float findGlobalScaleForGivenWavelet(const ModelSettings      * /*modelSettings*/,
-                                               const Simbox             * /*simbox*/,
-                                               const FFTGrid            * /*seisCube*/,
-                                               std::vector<WellData *>  & /*wells*/,
-                                               std::string              & /*errTxt*/) {return 1.0f;}
+  virtual float findGlobalScaleForGivenWavelet(const ModelSettings         * /*modelSettings*/,
+                                               const Simbox                * /*simbox*/,
+                                               SeismicStorage              * /*seismic_data*/,
+                                               const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
+                                               std::string                 & /*err_txt*/) {return 1.0f;}
 
   // for noise estimation
-  virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*simbox*/,
-                                                const FFTGrid         * /*seisCube*/,
-                                                std::vector<WellData *> /*wells*/,
+  virtual float calculateSNRatioAndLocalWavelet(const Simbox          * /*estimation_simbox*/,
+                                                const Simbox          * /*inversion_simbox*/,
+                                                const std::vector<std::vector<double> >          & /*seis_logs*/,
+                                                const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                                 const ModelSettings   * /*modelSettings*/,
                                                 std::string           & /*errText*/,
                                                 int                   & /*error*/,
@@ -143,8 +148,8 @@ public:
                                                 bool                    /*estimateWavelet*/) {return 1.0f;}
 
   virtual float calculateSNRatio(const Simbox                             * /*simbox*/,
-                                 const FFTGrid                            * /*seisCube*/,
-                                 const std::vector<WellData *>            & /*wells*/,
+                                 SeismicStorage                           * /*seismic_data*/,
+                                 const std::map<std::string, BlockedLogsCommon *> & /*mapped_blocked_logs*/,
                                  const ModelSettings                      * /*modelSettings*/,
                                  std::string                              & /*errText*/,
                                  int                                      & /*error*/,
@@ -157,14 +162,17 @@ public:
                                  bool                                       /*estimateSNRatio*/,
                                  bool                                       /*estimateWavelet*/) {return 1.0f;}
 
- float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
- void           nullOutsideFrequencyBand(float loCut ,float hiCut );
- float          findNorm() const;
+  float          findNormWithinFrequencyBand(float loCut ,float hiCut ) const;
+  void           nullOutsideFrequencyBand(float loCut ,float hiCut );
+  float          findNorm() const;
+  void           SetReflectionCoeffs(const NRLib::Matrix & reflCoef, int i);
+  bool           getInFFTOrder()     const { return inFFTorder_ ;}
+  //Grid2D       * getGainGrid()       const { return gainGrid_   ;}
+  //Grid2D       * getShiftGrid()      const { return shiftGrid_  ;}
 
 protected:
   float          getTheta()          const {return theta_;}
   int            getCz()             const {return cz_;}
-  bool           getInFFTOrder()     const {return inFFTorder_;}
   float          getWaveletLength()  const {return waveletLength_;}
 
   void           doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and scale
@@ -187,6 +195,10 @@ protected:
   void           printVecToFile(const std::string                       & fileName,
                                 fftw_real                               * vec ,
                                 int                                       nzp) const;
+
+  void           printVecDoubleToFile(const std::string                       & fileName,
+                                      double                                  * vec,
+                                      int                                       nzp) const;
 
 
   fftw_real*     averageWavelets(const std::vector<std::vector<float> > & wavelet_r,
@@ -256,7 +268,16 @@ private:
 
   void           WaveletReadJason(const std::string           & fileName,
                                   int                         & errCode,
-                                  std::string                 & errText);
+                                  fftw_real                  *& rAmp,
+                                  fftw_complex               *& cAmp,
+                                  float                       & dz,
+                                  int                         & nz,
+                                  int                         & cz,
+                                  int                         & nzp,
+                                  int                         & cnzp,
+                                  int                         & rnzp,
+                                  float                       & norm,
+                                  std::string                 & errText) const;
 
   void           WaveletReadNorsar(const std::string          & fileName,
                                    int                        & errCode,

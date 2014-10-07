@@ -13,7 +13,7 @@
 #include "src/waveletfilter.h"
 #include "src/wavelet1D.h"
 
-class BlockedLogs;
+//class BlockedLogs;
 class Wavelet1D;
 
 class Wavelet3D : public Wavelet {
@@ -25,9 +25,12 @@ public:
             const NRLib::Grid2D<float>                 & refTimeGradY,
             const std::vector<std::vector<double> >    & tGradX,
             const std::vector<std::vector<double> >    & tGradY,
-            const FFTGrid                              * seisCube,
+            SeismicStorage                             * seismic_data,
+            //const FFTGrid                              * seisCube,
             const ModelSettings                        * modelSettings,
-            const std::vector<WellData *>              & wells,
+            std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+            //const std::vector<BlockedLogsCommon *>     &  blocked_logs,
+            //const std::vector<WellData *>              & wells,
             const Simbox                               * simBox,
             const float                                * reflCoef,
             int                                          angle_index,
@@ -62,8 +65,11 @@ public:
   float                  GetLocalDepthGradientY(int i, int j){ return structureDepthGradY_(i,j);}
 
   float                  calculateSNRatio(const Simbox                             * simbox,
-                                          const FFTGrid                            * seisCube,
-                                          const std::vector<WellData *>            & wells,
+                                          SeismicStorage                           * seismic_data,
+                                          const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                          //const std::vector<BlockedLogsCommon *>     blocked_logs,
+                                          //const FFTGrid                            * seisCube,
+                                          //const std::vector<WellData *>            & wells,
                                           const ModelSettings                      * modelSettings,
                                           std::string                              & errText,
                                           int                                      & error,
@@ -78,10 +84,13 @@ public:
 
 private:
   void                   findLayersWithData(const std::vector<Surface *> & estimInterval,
-                                            BlockedLogs                  * bl,
-                                            const FFTGrid                * seisCube,
-                                            const std::vector<float>     & az,
-                                            const std::vector<float>     & bz,
+                                            BlockedLogsCommon            * blocked_log,
+                                            //BlockedLogs                  * bl,
+                                            SeismicStorage               * seismic_data,
+                                            //const FFTGrid                * seisCube,
+                                            const Simbox                 * simBox,
+                                            const std::vector<double>    & az,
+                                            const std::vector<double>    & bz,
                                             std::vector<bool>            & hasWellData) const;
 
   double                 findPhi(float a,
@@ -97,16 +106,16 @@ private:
                                              const std::vector<float>               & wellWavelet,
                                              const std::vector<float>               & dVec) const;
 
-  std::vector<fftw_real> adjustCpp(BlockedLogs              * bl,
-                                   const std::vector<float> & az,
-                                   const std::vector<float> & bz,
-                                   std::vector<float>       & Halpha,
-                                   int                        start,
-                                   int                        length,
-                                   const std::string        & wellname,
-                                   const std::string        & angle) const;
+  std::vector<fftw_real> adjustCpp(BlockedLogsCommon         * blocked_log,
+                                   const std::vector<double> & az,
+                                   const std::vector<double> & bz,
+                                   std::vector<float>        & Halpha,
+                                   int                         start,
+                                   int                         length,
+                                   const std::string         & wellname,
+                                   const std::string         & angle) const;
 
-  void                   calculateGradients(BlockedLogs                * bl,
+  void                   calculateGradients(BlockedLogsCommon          * blocked_log,
                                             const std::vector<int>     & iPos,
                                             const std::vector<int>     & jPos,
                                             const NRLib::Grid2D<float> & refTimeGradX,
@@ -114,10 +123,10 @@ private:
                                             const std::vector<double>  & tGradX,
                                             const std::vector<double>  & tGradY,
                                             float                        v0,
-                                            std::vector<float>         & az,
-                                            std::vector<float>         & bz,
-                                            std::vector<float>         & at0,
-                                            std::vector<float>         & bt0) const;
+                                            std::vector<double>        & az,
+                                            std::vector<double>        & bz,
+                                            std::vector<double>        & at0,
+                                            std::vector<double>        & bt0) const;
 
 
 

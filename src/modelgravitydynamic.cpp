@@ -117,10 +117,10 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   // Building gravity matrix for each time vintage, using updated mean Vp in generating the grid.
   double gamma = 6.67384e-11; // units: m^3/(kg*s^2)
 
-  Simbox * fullSizeTimeSimbox = modelGeneral_     ->getTimeSimbox();
+  const Simbox * fullSizeTimeSimbox = modelGeneral_->GetSimbox();
 
   // Use vp_current, found in Seismic parameters holder.
-  FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMuAlpha());  // for upscaling
+  FFTGrid * expMeanAlpha      = new FFTGrid(seismicParameters.GetMeanVp());   // for upscaling
   FFTGrid * meanAlphaFullSize = new FFTGrid(expMeanAlpha);                    // for full size matrix
 
   int nx = fullSizeTimeSimbox->getnx();
@@ -165,10 +165,11 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
   if(meanAlphaFullSize->getIsTransformed())
     meanAlphaFullSize->invFFTInPlace();
 
+  /* NBNB Not activated yet.
   float sigma_squared = GravimetricInversion::GetSigmaForTransformation(seismicParameters.GetCovAlpha());
   GravimetricInversion::MeanExpTransform(expMeanAlpha,      sigma_squared);
   GravimetricInversion::MeanExpTransform(meanAlphaFullSize, sigma_squared);
-
+  */
 
   //Smooth (convolve) and subsample
   FFTGrid * upscalingKernel_conj = modelGravityStatic->GetUpscalingKernel();
@@ -182,8 +183,9 @@ void ModelGravityDynamic::BuildGMatrix(ModelGravityStatic      * modelGravitySta
 
   expMeanAlpha->multiply(upscalingKernel_conj);  // Now is expMeanAlpha smoothed
 
-  FFTGrid * upscaledMeanAlpha;
-  GravimetricInversion::Subsample(upscaledMeanAlpha, expMeanAlpha, nx_upscaled, ny_upscaled, nz_upscaled, nxp_upscaled, nyp_upscaled, nzp_upscaled);
+  FFTGrid * upscaledMeanAlpha = NULL;
+  //NBNB Following line not activated yet
+  //GravimetricInversion::Subsample(upscaledMeanAlpha, expMeanAlpha, nx_upscaled, ny_upscaled, nz_upscaled, nxp_upscaled, nyp_upscaled, nzp_upscaled);
 
   upscaledMeanAlpha->invFFTInPlace();
 

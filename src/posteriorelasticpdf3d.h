@@ -35,7 +35,7 @@ public:
                         const std::vector<double>                   & d2, // second dimension of data points
                         const std::vector<double>                   & d3, // third dimension of data points
                         const std::vector<int>                      & t1, // fourth dimension (trend parameters)
-                        const std::vector<std::vector<double> >     & v,  // Transformation of elastic variables from 3D to 2D
+                        const NRLib::Matrix                         & v,  // Transformation of elastic variables from 3D to 2D
                         const double                     *const*const sigma, // Gaussian smoothing kernel in 2D
                         int                                           n1,    // resolution of density grid in elastic dimension 1
                         int                                           n2,    // resolution of density grid in elastic dimension 2
@@ -120,7 +120,7 @@ private:
   double dz_;
 
   void SetupSmoothingGaussian3D(FFTGrid                 * smoother,
-                                const double *const*const sigmainv);
+                                const NRLib::Matrix     & sigmainv);
 
   void SetupSmoothingGaussian2D(FFTGrid    * smoother,
                                 double    ** sigmainv,

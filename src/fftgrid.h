@@ -25,55 +25,13 @@ public:
 
   FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp);
   FFTGrid(FFTGrid * fftGrid, bool expTrans = false);
+  FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp);
+  FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp);
   FFTGrid() {} //Dummy constructor needed for FFTFileGrid
   virtual ~FFTGrid();
 
   void setType(int cubeType) {cubetype_ = cubeType;}
   void setAngle(float angle) {theta_ = angle;}
-
-  void                 fillInData(const Simbox      * timeSimbox,
-                                  StormContGrid     * grid,
-                                  const SegY        *  segy,
-                                  float               smooth_length,
-                                  int                 n_threads,
-                                  int               & missingTracesSimbox,
-                                  int               & missingTracesPadding,
-                                  int               & deadTracesSimbox,
-                                  const std::string & parName,
-                                  std::string       & errTxt,
-                                  bool                scale = false,
-                                  bool                is_segy = true);
-
-  void                 makeTraceFromStormGrid(StormContGrid      * grid,
-                                              std::vector<float> & data_trace,
-                                              bool               & missing,
-                                              float              & z0_data,
-                                              float              & dz_data,
-                                              float              & dz_min,
-                                              float                xf,
-                                              float                yf);
-
-  void                 extrapolateAtEnds(std::vector<float> & data_trace,
-                                         size_t             & max_extrap_start,
-                                         size_t             & max_extrap_end);
-
-  void                 removeTrendFromTrace(std::vector<float> & data_trace,
-                                            float                trend_first,
-                                            float                trend_last);
-
-  void                 smoothTraceInGuardZone(std::vector<float> & data_trace,
-                                              float                dz_data,
-                                              float                smooth_length);
-
-  void                 resampleTrace(const std::vector<float> & data_trace,
-                                     const rfftwnd_plan       & fftplan1,
-                                     const rfftwnd_plan       & fftplan2,
-                                     fftw_real                * rAmpData,
-                                     fftw_real                * rAmpFine,
-                                     int                        cnt,
-                                     int                        rnt,
-                                     int                        cmt,
-                                     int                        rmt);
 
   void                 addTrendToTrace(std::vector<float> & grid_trace,
                                        float                trend_first,
@@ -119,6 +77,11 @@ public:
                                      float           gradI,
                                      float           gradJ);
 
+  void                 FillInLateralCorr(const Surface   * prior_corr_xy,
+                                         const fftw_real * circ_auto_cov,
+                                         float             grad_I,
+                                         float             grad_J);
+
   void                 fillInParamCorr(const Surface   * priorCorrXY,
                                        const fftw_real * circCorrT,
                                        float             gradI,
@@ -144,7 +107,7 @@ public:
   virtual int          SetNextComplex(std::complex<double> & v);// Accessmode write/readandwrite
   virtual int          setNextReal(float);                      // Accessmode write/readandwrite
   float                getRealValue(int i, int j, int k, bool extSimbox = false) const;  // Accessmode randomaccess
-  float                getRealValueCyclic(int i, int j, int k);
+  float                getRealValueCyclic(int i, int j, int k) const;
   float                getRealValueInterpolated(int i, int j, float kindex, bool extSimbox = false);
   fftw_complex         getComplexValue(int i, int j, int k, bool extSimbox = false) const;
   virtual int          setRealValue(int i, int j, int k, float value, bool extSimbox = false);  // Accessmode randomaccess
@@ -162,7 +125,7 @@ public:
 
   virtual void         add(FFTGrid* fftGrid);                   // No mode/randomaccess
   virtual void         addScalar(float scalar);                 // No mode/randomaccess, only for real grids
-  virtual void         subtract(FFTGrid* fftGrid);              // No mode/randomaccess
+  virtual void         subtract(FFTGrid* fftGrid);                   // No mode/randomaccess
   virtual void         changeSign();                   // No mode/randomaccess
   virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
   virtual void         conjugate();                             // No mode/randomaccess
@@ -199,14 +162,13 @@ public:
   virtual void         writeFile(const std::string              & fileName,
                                  const std::string              & subDir,
                                  const Simbox                   * simbox,
-                                 const std::string                sgriLabel = "NO_LABEL",
-                                 const float                      z0        = 0.0,
-                                 const GridMapping              * depthMap  = NULL,
-                                 const GridMapping              * timeMap   = NULL,
-                                 const TraceHeaderFormat        & thf       = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-                                 bool                             padding   = false,
+                                 const std::string                sgriLabel         = "NO_LABEL",
+                                 const float                      z0                = 0.0,
+                                 const GridMapping              * depthMap          = NULL,
+                                 const TraceHeaderFormat        & thf               = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+                                 bool                             padding           = false,
                                  bool                             scientific_format = false,
-                                 const std::vector<std::string> & headerText = std::vector<std::string>());
+                                 const std::vector<std::string> & headerText        = std::vector<std::string>());
   //Use this instead of the ones below.
   virtual void         writeStormFile(const std::string & fileName, const Simbox * simbox, bool ascii = false,
                                       bool padding = false, bool flat = false, bool scientific_format = false);//No mode/randomaccess
@@ -248,7 +210,7 @@ public:
   float                getDistToBoundary(int i, int n , int np);
   virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
-  std::vector<float>   getRealTrace2(int i, int j) const;
+  std::vector<float>   getRealTrace(int i, int j) const;
 
 
   static void          reportFFTMemoryAndWait(const std::string & msg) {

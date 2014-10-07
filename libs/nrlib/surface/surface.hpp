@@ -44,6 +44,8 @@ namespace NRLib {
 
     virtual void      Add(A c) = 0;
 
+    virtual void      Multiply(A c) = 0;
+
     virtual A         Min() const = 0;
     virtual A         Max() const = 0;
 
@@ -76,6 +78,10 @@ namespace NRLib {
 
     void Add(A c) {
       z_ += c;
+    }
+
+    void Multiply(A c) {
+      z_ *= c;
     }
 
     A Min() const {return(z_);}
