@@ -51,7 +51,7 @@ namespace NRLib {
          const std::string                                 & well_name);
 
     /// Destructor
-    ~Well();
+    virtual ~Well();
 
     static Well * ReadWell(const std::string & file_name,
                            int               & well_format);
