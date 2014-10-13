@@ -69,7 +69,7 @@ DistributionsSolidStorage::CreateDistributionsSolidMix(const int                
     }
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -236,7 +236,7 @@ TabulatedVelocitySolidStorage::GenerateDistributionsSolid(const int             
         errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -449,7 +449,7 @@ TabulatedModulusSolidStorage::GenerateDistributionsSolid(const int              
         errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -854,7 +854,7 @@ DEMSolidStorage::GenerateDistributionsSolid(const int                           
     }
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;

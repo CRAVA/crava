@@ -573,9 +573,12 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   bool               SetupRockPhysics(const ModelSettings                                           * model_settings,
                                       const InputFiles                                              * input_files,
                                       const MultiIntervalGrid                                       * multiple_interval_grid,
+                                      const Simbox                                                  & estimation_simbox,
                                       const std::vector<CravaTrend>                                 & trend_cubes,
-                                      const std::map<std::string, BlockedLogsCommon *>              & mapped_blocked_logs,
+                                      //const std::map<std::string, BlockedLogsCommon *>              & mapped_blocked_logs,
+                                      std::vector<NRLib::Well *>                                    & wells,
                                       std::map<std::string, std::vector<DistributionWithTrend *> >  & reservoir_variables,
+                                      std::map<std::string, std::vector<DistributionsRock *> >      & rock_distributions,
                                       std::string                                                   & error_text) const;
 
   void               PrintExpectationAndCovariance(const std::vector<double>   & expectation,

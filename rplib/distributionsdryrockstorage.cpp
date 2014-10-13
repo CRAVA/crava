@@ -89,7 +89,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
       }
     }
 
-    const std::vector<std::vector<float> >  dummy_blocked_logs;
+    const std::vector<std::vector<double> > dummy_blocked_logs;
     const std::vector<std::vector<double> > dummy_s1;
     const std::vector<std::vector<double> > dummy_s2;
     const int                               dummy_output_other = -999;
@@ -168,7 +168,7 @@ DistributionsDryRockStorage::CreateDistributionsDryRockMix(const int            
         alpha[i] = 1;
     }
 
-    const std::vector<std::vector<float> >  dummy_blocked_logs;
+    const std::vector<std::vector<double> > dummy_blocked_logs;
     const std::vector<std::vector<double> > dummy_s1;
     const std::vector<std::vector<double> > dummy_s2;
     const int                               dummy_output_other = -999;
@@ -442,7 +442,7 @@ TabulatedVelocityDryRockStorage::GenerateDistributionsDryRock(const int         
         errTxt += "<correlation-vs-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -701,7 +701,7 @@ TabulatedModulusDryRockStorage::GenerateDistributionsDryRock(const int          
         errTxt += "<correlation-shear-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -1156,7 +1156,7 @@ DEMDryRockStorage::GenerateDistributionsDryRock(const int                       
     }
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -1346,7 +1346,7 @@ GenerateDistributionsDryRock(const int                                          
   int n_vintages_porosity                 = static_cast<int>(distr_porosity_.size());
   int n_vintages_coord_number             = static_cast<int>(distr_coord_number_.size());
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;

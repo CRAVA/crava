@@ -14,6 +14,7 @@
 #include "src/fftgrid.h"
 #include "src/seismicstorage.h"
 
+class CravaTrend;
 class MultiIntervalGrid;
 
 class BlockedLogsCommon{
@@ -38,6 +39,11 @@ public:
   // Constructor for wavelet estimation blocking
   BlockedLogsCommon(const NRLib::Well   * well_data,
                     const StormContGrid & stormgrid);
+
+  // Constructor for blocked logs for rock physics
+  BlockedLogsCommon(const NRLib::Well   * well_data,
+                    const Simbox        * simbox,
+                    const CravaTrend    & trend_cubes);
 
   //Copy constructor
   BlockedLogsCommon(const BlockedLogsCommon & logs);
@@ -113,8 +119,8 @@ public:
   const std::vector<double>            & GetVsPredicted(void)  const { return continuous_logs_predicted_.find("Vs")->second                           ;}
   const std::vector<double>            & GetRhoPredicted(void) const { return continuous_logs_predicted_.find("Rho")->second                          ;}
 
-  const std::vector<double>            & GetVpForFacies(void)  const { return vp_for_facies_                                                          ;}
-  const std::vector<double>            & GetRhoForFacies(void) const { return rho_for_facies_                                                         ;}
+  const std::vector<double>            & GetVpFaciesFiltered(void)  const { return vp_facies_filtered_                                                ;}
+  const std::vector<double>            & GetRhoFaciesFiltered(void) const { return rho_facies_filtered_                                               ;}
 
   const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
   const std::vector<double>            & GetFaciesProb(int facies)     const { return facies_prob_.find(facies)->second                               ;}
@@ -174,6 +180,22 @@ public:
                                                         int                        i_offset = 0,
                                                         int                        j_offset = 0) const;
 
+  std::vector<double>                    GetVpForFacies(const std::string & facies_name);
+
+  std::vector<double>                    GetVsForFacies(const std::string & facies_name);
+
+  std::vector<double>                    GetRhoForFacies(const std::string & facies_name);
+
+  std::vector<double>                    GetPorosityForFacies(const std::string & facies_name);
+
+  std::vector<double>                    GetBulkForFacies(const std::string & facies_name);
+
+  std::vector<double>                    GetShearForFacies(const std::string & facies_name);
+
+  const std::vector<double>            & GetS1(void) {return s1_;}
+
+  const std::vector<double>            & GetS2(void) {return s2_;}
+
 
   //SET FUNCTIONS --------------------------------
 
@@ -190,8 +212,8 @@ public:
   void                                   SetFaciesProb(int facies, std::vector<double> log)             { facies_prob_.insert(std::pair<int, std::vector<double> >(facies, log))      ;}
   void                                   SetCpp(int angle, std::vector<double> log)                     { cpp_.insert(std::pair<int, std::vector<double> >(angle, log))               ;}
 
-  void                                   SetVpForFacies(std::vector<double> vp_for_facies)              { vp_for_facies_  = vp_for_facies                                             ;}
-  void                                   SetRhoForFacies(std::vector<double> rho_for_facies)            { rho_for_facies_ = rho_for_facies                                            ;}
+  void                                   SetVpFaciesFiltered(std::vector<double> vp_facies)             { vp_facies_filtered_  = vp_facies                                             ;}
+  void                                   SetRhoFaciesFiltered(std::vector<double> rho_facies)           { rho_facies_filtered_ = rho_facies                                            ;}
 
   void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log))     ;}
   void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log))     ;}
@@ -453,6 +475,7 @@ private:
 
   void    FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
                                    std::vector<int>              & b_ind,
+                                   const int                     & n_layers,
                                    int                           & first_M,
                                    int                           & last_M,
                                    unsigned int                  & n_blocks,
@@ -622,6 +645,25 @@ private:
   void    UpdateLog(std::vector<int>                              & data,
                     const std::vector<std::pair<size_t, size_t> > & intervals) const;
 
+  void    FindTrendPositions(const std::vector<int> & i_pos,
+                             const std::vector<int> & j_pos,
+                             const std::vector<int> & k_pos,
+                             const int              & n_blocks,
+                             const CravaTrend       & trend_cubes,
+                             std::vector<double>    & s1,
+                             std::vector<double>    & s2);
+
+  void    AssignToFacies(const std::vector<double>         & well_log,
+                         const std::vector<int>            & facies_log,
+                         const std::vector<int>            & facies_numbers,
+                         std::vector<std::vector<double> > & blocked_log) const;
+
+  void    CalculateBulkShear(const int                         & n_blocks,
+                             const int                         & n_facies,
+                             std::vector<std::vector<double> > & bulk_modulus,
+                             std::vector<std::vector<double> > & shear_modulus);
+
+
   // CLASS VARIABLES -----------------------------
 
   std::map<std::string, int>                  n_layers_adjusted_per_interval_;   // Number of layers per interval using dz from the first interval everywhere
@@ -633,8 +675,6 @@ private:
 
   std::map<int, std::string>                  facies_map_;
   bool                                        facies_log_defined_;
-  //std::vector<int>   facies_numbers_;
-  //std::vector<int>   facies_;
 
   // Blocked values
   std::vector<double>                         x_pos_blocked_;  // Blocked x position
@@ -678,8 +718,8 @@ private:
   std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
   std::map<int, std::vector<double> >         facies_prob_;                ///< Map between facies and facies prob
 
-  std::vector<double>                         vp_for_facies_;
-  std::vector<double>                         rho_for_facies_;
+  std::vector<double>                         vp_facies_filtered_;         //Vp filtered from spatialwellfilter
+  std::vector<double>                         rho_facies_filtered_;
 
   int                                         n_angles_;                  ///< Number of AVA stacks
 
@@ -708,6 +748,17 @@ private:
   int                                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
   int                                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
   int                                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
+
+  //Variables used for rockphysics
+  std::vector<std::string>                    facies_names_;
+  std::vector<std::vector<double> >           vp_for_facies_;             ///< Vector facies, vector n_blocks
+  std::vector<std::vector<double> >           vs_for_facies_;             ///< Raw logs (log-domain)
+  std::vector<std::vector<double> >           rho_for_facies_;            ///<
+  std::vector<std::vector<double> >           porosity_for_facies_;       ///<
+  std::vector<std::vector<double> >           bulk_modulus_;             ///<
+  std::vector<std::vector<double> >           shear_modulus_;            ///< Logs calculated from vp_, vs_ and rho_
+  std::vector<double>                         s1_;                       ///< Trend positions corresponding to the first trend cube, same for all facies
+  std::vector<double>                         s2_;                       ///< Trend positions corresponding to the second trend cube, same for all facies
 
 };
 #endif

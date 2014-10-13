@@ -917,7 +917,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     }
 
     //ForFacies logs (vp, rho)
-    bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpForFacies().size() > 0;
+    bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpFaciesFiltered().size() > 0;
     if (got_vp_rho_fac_log) {
       LogKit::LogFormatted(LogKit::Low,"\n    vp rho fac log... ");
       std::vector<double> vp_for_facies_final(n_blocks);
@@ -927,15 +927,15 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       //Get well logs, missing values are interpolated
       for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpForFacies());
-        CopyWellLog(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoForFacies());
+        CopyWellLog(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
+        CopyWellLog(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
       }
 
       ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
       ResampleLog(rho_for_facies_final, rho_for_facies_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
 
-      blocked_log_final->SetVpForFacies(vp_for_facies_final);
-      blocked_log_final->SetRhoForFacies(rho_for_facies_final);
+      blocked_log_final->SetVpFaciesFiltered(vp_for_facies_final);
+      blocked_log_final->SetRhoFaciesFiltered(rho_for_facies_final);
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 

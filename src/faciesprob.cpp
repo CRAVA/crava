@@ -2434,8 +2434,8 @@ void FaciesProb::setNeededLogsSpatial(std::map<std::string, BlockedLogsCommon *>
           //Vs log here is mainly dummy, but must be at correct level.
           b = blocked_log->GetVsHighCutBackground()[i];
           if(useFilter == true) {
-            a = blocked_log->GetVpForFacies()[i];
-            r = blocked_log->GetRhoForFacies()[i];
+            a = blocked_log->GetVpFaciesFiltered()[i];
+            r = blocked_log->GetRhoFaciesFiltered()[i];
           }
           else {
             a = blocked_log->GetVpPredicted()[i];
