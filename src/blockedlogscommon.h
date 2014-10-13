@@ -242,7 +242,8 @@ public:
                                                        int                   start,
                                                        int                   length,
                                                        fftw_real           * seis_r,
-                                                       int                   nzp) const;
+                                                       int                   nzp,
+                                                       bool                  top_value=false) const; //If true, get value at top of cell instead of center.
 
   void                                   SetSeismicGradient(double                            v0,
                                                             const NRLib::Grid2D<float>   &    structure_depth_grad_x,

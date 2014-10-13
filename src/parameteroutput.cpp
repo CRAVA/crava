@@ -9,6 +9,8 @@
 #include "src/simbox.h"
 #include "src/gridmapping.h"
 #include "src/io.h"
+#include "lib/utils.h"
+#include "fft/include/fftw.h"
 
 void
 ParameterOutput::WriteParameters(const Simbox        * simbox,
@@ -434,6 +436,7 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
             file_name,
             IO::PathToInversionResults(),
             simbox,
+            false,
             sgri_label,
             seismic_start_time,
             time_depth_mapping,
@@ -467,6 +470,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const std::string       & f_name,
                            const std::string       & sub_dir,
                            const Simbox            * simbox,
+                           bool                      is_seismic,
                            const std::string         label,
                            const float               z0,
                            const GridMapping       * depth_map,
@@ -479,19 +483,30 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
   int domain_flag       = model_settings->getOutputGridDomain();
 
   if (format_flag > 0) {//Output format specified.
+    StormContGrid * output = NULL;
+    if(is_seismic == true) {
+      output = new StormContGrid(*storm_grid);
+      SeismicShift(output);
+    }
+    else
+      output = storm_grid;
+
+    NRLib::Volume * output_vol = output;
+    *output_vol = *simbox;
+
     if ((domain_flag & IO::TIMEDOMAIN) > 0) {
       if ((format_flag & IO::STORM) > 0) {
         const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, false);
-        storm_grid->SetFormat(NRLib::StormContGrid::STORM_BINARY);
+        output->SetFormat(NRLib::StormContGrid::STORM_BINARY);
         std::string file_name_storm = file_name + IO::SuffixStormBinary();
-        storm_grid->WriteToFile(file_name_storm, header, false);
+        output->WriteToFile(file_name_storm, header, false);
       }
 
       if ((format_flag & IO::ASCII) > 0) {
-        storm_grid->SetFormat(NRLib::StormContGrid::STORM_ASCII);
+        output->SetFormat(NRLib::StormContGrid::STORM_ASCII);
         const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, true);
         std::string file_name_ascii = file_name + IO::SuffixGeneralData();
-        storm_grid->WriteToFile(file_name_ascii, header, true);
+        output->WriteToFile(file_name_ascii, header, true);
       }
 
       //SEGY, SGRI CRAVA are never resampled in time.
@@ -499,11 +514,12 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+file_name_segy+"...");
 
-        SegY * segy = new SegY(storm_grid,
+        SegY * segy = new SegY(output,
                                z0,
                                file_name_segy,
                                true, //Write to file
-                               thf);
+                               thf,
+                               is_seismic);
 
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
@@ -514,7 +530,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_header = file_name + IO::SuffixSgriHeader();
 
         LogKit::LogFormatted(LogKit::Low,"\nWriting SGRI header file "+ file_name_header + "...");
-        storm_grid->WriteToSgriFile(file_name_sgri, file_name_header, label, simbox->getdz());
+        output->WriteToSgriFile(file_name_sgri, file_name_header, label, simbox->getdz());
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
       }
@@ -542,22 +558,22 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         }
         if ((format_flag & IO::STORM) > 0) {
           std::string file_name_storm = depth_name + IO::SuffixStormBinary();
-          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, false);
-          storm_grid->WriteToFile(file_name_storm, header, false);
+          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, false);
+          output->WriteToFile(file_name_storm, header, false);
         }
         if ((format_flag & IO::ASCII) > 0) {
           std::string file_name_ascii = depth_name + IO::SuffixGeneralData();
-          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK(), false, true);
-          storm_grid->WriteToFile(file_name_ascii, header, true);
+          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, true);
+          output->WriteToFile(file_name_ascii, header, true);
         }
         if ((format_flag & IO::SEGY) >0) {
           //makeDepthCubeForSegy(depth_map->getSimbox(),depth_name);
-          StormContGrid * storm_cube_depth = new StormContGrid(*depth_map->getSimbox(), storm_grid->GetNI(), storm_grid->GetNJ(), storm_grid->GetNK());
+          StormContGrid * storm_cube_depth = new StormContGrid(*depth_map->getSimbox(), output->GetNI(), output->GetNJ(), output->GetNK());
 
-          for (size_t i = 0; i < storm_grid->GetNI(); i++) {
-            for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
-              for (size_t k = 0; k < storm_grid->GetNK(); k++) {
-                (*storm_cube_depth)(i, j, k) = storm_grid->GetValue(i, j, k);
+          for (size_t i = 0; i < output->GetNI(); i++) {
+            for (size_t j = 0; j < output->GetNJ(); j++) {
+              for (size_t k = 0; k < output->GetNK(); k++) {
+                (*storm_cube_depth)(i, j, k) = output->GetValue(i, j, k);
               }
             }
           }
@@ -577,7 +593,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         // Writes also segy in depth if required
-        WriteResampledStormCube(storm_grid, depth_map, depth_name, simbox, format_flag, z0);
+        WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0);
       }
     }
   }
@@ -638,3 +654,20 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
   }
   delete outgrid;
 }
+
+
+void
+ParameterOutput::SeismicShift(NRLib::Grid<float> * grid)
+{
+  for(int i=0;i<grid->GetNI();i++) {
+    for(int j=0;j<grid->GetNJ();j++) {
+      std::vector<fftw_real> trace(grid->GetNK());
+      for(int k=0;k<grid->GetNK();k++)
+        trace[k] = (*grid)(i,j,k);
+      Utils::ShiftTrace(trace);
+      for(int k=0;k<grid->GetNK();k++)
+        (*grid)(i,j,k) = trace[k];
+    }
+  }
+}
+

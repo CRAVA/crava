@@ -2824,9 +2824,11 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
-  for (i = start; i < start+length-1; i++) {
-    double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
-    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]), coeff);
+  //Make reflection coefficients consistent with seismic data indexes. Seismic data at index i is the response at top of cell i, so
+  //the reflection coefficients in a cell must also be associated with the top of the cell.
+  for (i = start+1; i < start+length; i++) {
+    double ei1 = ComputeElasticImpedance(vp_vert[i-1],   static_cast<float>(vs_vert[i-1]),  static_cast<float>(rho_vert[i-1]),   coeff);
+    double ei2 = ComputeElasticImpedance(vp_vert[i], static_cast<float>(vs_vert[i]),static_cast<float>(rho_vert[i]), coeff);
     cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
@@ -3000,7 +3002,8 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
                                       int                     start,
                                       int                     length,
                                       fftw_real             * seis_r,
-                                      int                     nzp) const
+                                      int                     nzp,
+                                      bool                    top_value) const
 {
   int i;
   for (i=0; i<nzp; i++)
@@ -3008,13 +3011,9 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 
   for (i=start; i<start+length; i++)
     seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
-/*
-  int lTregion = 3;
-  int* modify  = getIndexPrior(start,lTregion,nzp);
-  int* conditionto = getIndexPost(start-1,lTregion,nzp);
-  //NBNB Odd: interpolate endpoints?
-*/
 
+  if(top_value == true)
+    Utils::ShiftTrace(&(seis_r[start]),length, false);
 }
 
 //--------------------------------------------------------------------------------------
@@ -3046,7 +3045,7 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & bloc
     double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
 
     int j=0;
-    while (b<a && j<nz) {
+    while (b<=a && j<nz) {
       b += dzVt;
       j++;
     }
@@ -3088,24 +3087,34 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
   {
     std::vector<double> blocked_log(n_blocks_);
 
-    SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
-                            vertical_trend, z0, dz, nz);
-
-    if (type == "VP_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-    else if (type == "VS_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
-    else if (type == "RHO_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
-    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+    if(type == "ACTUAL_SYNTHETIC_SEISMIC") {
+      std::vector<fftw_real> trace(vertical_trend.size());
+      for(size_t i=0;i<vertical_trend.size();i++)
+        trace[i] = static_cast<float>(vertical_trend[i]);
+      Utils::ShiftTrace(&(trace[0]), trace.size());
+      std::vector<double> v_trend(vertical_trend.size());
+      for(size_t i=0;i<blocked_log.size();i++)
+        v_trend[i] = static_cast<double>(trace[i]);
+      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                              v_trend, z0, dz, nz);
       if (actual_synt_seismic_data_.size() == 0)
         actual_synt_seismic_data.resize(n_angles_); // nAngles is set along with real_seismic_data_
       actual_synt_seismic_data[i_angle] = blocked_log;
     }
     else {
-      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
-                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
-      exit(1);
+      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                              vertical_trend, z0, dz, nz);
+      if (type == "VP_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
+      else if (type == "VS_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
+      else if (type == "RHO_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
+      else {
+        LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
+                             "\" in BlockedLogs::setLogFromVerticalTrend()\n");
+        exit(1);
+      }
     }
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {

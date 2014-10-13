@@ -181,7 +181,8 @@ public:
                                 int                   grid_type,
                                 bool                  scale    = false,
                                 bool                  is_segy  = true,
-                                bool                  is_storm = false) const;
+                                bool                  is_storm = false,
+                                bool                  is_seismic = false) const;
 
   void               GetCorrGradIJ(float         & corr_grad_I,
                                    float         & corr_grad_J,

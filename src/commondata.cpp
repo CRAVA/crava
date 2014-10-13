@@ -60,165 +60,166 @@ CommonData::CommonData(ModelSettings * model_settings,
   // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, err_text);
 
-  // 2. Setup of multiple interval grid
-  bool multi_failed = false;
-  multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
-  setup_multigrid_ = !multi_failed;
+  if(outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
+    // 2. Setup of multiple interval grid
+    bool multi_failed = false;
+    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
+    setup_multigrid_ = !multi_failed;
 
-  // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
-  if (multiple_interval_grid_->GetNIntervals() == 1) {
-    const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
-    full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
-  }
-  //Set up simbox for writing
-  SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, multiple_interval_grid_);
+    // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
+    if (multiple_interval_grid_->GetNIntervals() == 1) {
+      const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
+      full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
+    }
+    //Set up simbox for writing
+    SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, multiple_interval_grid_);
 
-  // 3. read seismic data and create estimation simbox.
-  read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
+    // 3. read seismic data and create estimation simbox.
+    read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
-  // 4. read well data
-  read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, facies_nr_wells_,
-                            facies_names_wells_, model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
+    // 4. read well data
+    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, facies_nr_wells_,
+                              facies_names_wells_, model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
 
-  // 5. block wells for estimation
-  // if well position is to be optimized or
-  // if wavelet/noise should be estimated or
-  // if correlations should be estimated
-  if (wells_.size() > 0) {
-    if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
-      block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                             discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
+    // 5. block wells for estimation
+    // if well position is to be optimized or
+    // if wavelet/noise should be estimated or
+    // if correlations should be estimated
+    if (wells_.size() > 0) {
+      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
+        block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                               discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
-      //Block wells to output simbox
-      block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
-  }
-  else
-    block_wells_ = true;
+        //Block wells to output simbox
+        block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
+    }
+    else
+      block_wells_ = true;
 
-  // 6. Temporary reflection matrix and wavelet
-  setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
-  if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
-    temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, reflection_matrix_, err_text);
+    // 6. Temporary reflection matrix and wavelet
+    setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
+    if (model_settings->getOptimizeWellLocation() && read_seismic_ && setup_reflection_matrix_)
+      temporary_wavelet_ = SetupTemporaryWavelet(model_settings, seismic_data_, temporary_wavelets_, reflection_matrix_, err_text);
 
-  // 7. Optimization of well location
-  if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
-    optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
-  if (!model_settings->getOptimizeWellLocation())
-    optimize_well_location_ = true;
+    // 7. Optimization of well location
+    if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
+      optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
+    if (!model_settings->getOptimizeWellLocation())
+      optimize_well_location_ = true;
 
-  //Block wells for inversion purposes, ok now that moving of wells is done.
-  inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
-                                                 discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
+    //Block wells for inversion purposes, ok now that moving of wells is done.
+    inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+                                                   discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
 
-  // 9. Trend Cubes
-  if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
-    setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, &full_inversion_simbox_, trend_cubes_, err_text);
-  }
+    // 9. Trend Cubes
+    if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
+      setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, &full_inversion_simbox_, trend_cubes_, err_text);
+    }
 
-  // 10. Rock Physics
-  if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
-    if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
-      if (setup_trend_cubes_) {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
-                                                          mapped_blocked_logs_, reservoir_variables_, err_text);
+    // 10. Rock Physics
+    if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
+      if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
+        if (setup_trend_cubes_) {
+          setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                                                            mapped_blocked_logs_, reservoir_variables_, err_text);
+        }
+      }
+      else {
+          setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
+                                                            mapped_blocked_logs_, reservoir_variables_, err_text);
       }
     }
-    else {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, trend_cubes_,
-                                                          mapped_blocked_logs_, reservoir_variables_, err_text);
-    }
-  }
 
-  // 11. Setup of prior facies probabilities
-  if (setup_multigrid_) {
-    if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
-      if (read_wells_)
+    // 11. Setup of prior facies probabilities
+    if (setup_multigrid_) {
+      if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
+        if (read_wells_)
+          setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
+                                                                   facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
+      }
+      else
         setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
                                                                  facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
     }
-    else
-      setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                               facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
-  }
 
-  // 12. Setup of background model
-  if (setup_multigrid_) {
-    if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
-      if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
+    // 12. Setup of background model
+    if (setup_multigrid_) {
+      if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
+        if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
+          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+        else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
+          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+      }
+      else //Not estimation
         setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
-                                                       multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
-      else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
-                                                       multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                      multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
     }
-    else //Not estimation
-      setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
-                                                    multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
-  }
 
 
-  // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-  if (block_wells_ && optimize_well_location_)
-    wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_,
-                                        global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
-                                        reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
+    // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
+    if (block_wells_ && optimize_well_location_)
+      wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_,
+                                          global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
+                                          reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
-  // 13. Setup of prior correlation
-  if (read_seismic_) {
-    if (model_settings->getEstimateCorrelations() == true) {
-      //Block wells for inversion purposes
-      correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
-                                                   discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
+    // 13. Setup of prior correlation
+    if (read_seismic_) {
+      if (model_settings->getEstimateCorrelations() == true) {
+        //Block wells for inversion purposes
+        correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
+                                                     discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
 
-      model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
-      if (read_wells_ && setup_multigrid_ && correlation_wells_) {
+        model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
+        if (read_wells_ && setup_multigrid_ && correlation_wells_) {
+          setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+                                                           multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
+                                                           background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
+                                                           prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+        }
+        else {
+          err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
+        }
+      }
+      else if(model_settings->getEstimationMode() == false) {
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
       }
-      else {
-        err_text += "Could not set up prior correlations in estimation mode, since this requires a correct setup of the grid and the wells.\n";
-      }
     }
-    else if(model_settings->getEstimationMode() == false) {
-      setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
-                                                       multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
-                                                       background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
-                                                       prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+    else {
+      err_text += "Could not set up prior correlations since this requires seismic data.\n";
+    }
+
+    if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
+      // 14. Set up TimeLine class
+      setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
+
+      // 15. Data for gravity inversion
+      setup_gravity_inversion_ = SetupGravityInversion(model_settings,
+                                                       input_files,
+                                                       observation_location_utmx_,
+                                                       observation_location_utmy_,
+                                                       observation_location_depth_,
+                                                       gravity_response_,
+                                                       gravity_std_dev_,
+                                                       err_text);
+
+      // 16. Data for Travel time Inversion
+      //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
+
+      // 17. Depth Conversion
+      if (model_settings->getDoDepthConversion())
+        setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
+
+      //Punkt o: diverse:
+      ReadAngularCorrelations(model_settings, angular_correlations_);
+      CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
     }
   }
-  else {
-    err_text += "Could not set up prior correlations since this requires seismic data.\n";
-  }
-
-  if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
-    // 14. Set up TimeLine class
-    setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
-
-    // 15. Data for gravity inversion
-    setup_gravity_inversion_ = SetupGravityInversion(model_settings,
-                                                     input_files,
-                                                     observation_location_utmx_,
-                                                     observation_location_utmy_,
-                                                     observation_location_depth_,
-                                                     gravity_response_,
-                                                     gravity_std_dev_,
-                                                     err_text);
-
-    // 16. Data for Travel time Inversion
-    //setup_traveltime_inversion_ = SetupTravelTimeInversion(model_settings, input_files, err_text);
-
-    // 17. Depth Conversion
-    if (model_settings->getDoDepthConversion())
-      setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
-
-    //Punkt o: diverse:
-    ReadAngularCorrelations(model_settings, angular_correlations_);
-    CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
-  }
-
 
   if (err_text != "") {
     LogKit::WriteHeader("Loading and processing data failed:");
@@ -441,8 +442,11 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     area_type = "Grid data";
     std::string tmp_err_text;
     SegyGeometry * geometry;
+    TraceHeaderFormat * thf = NULL;
+    if(model_settings->getNumberOfTraceHeaderFormats(0) > 0)
+      thf = model_settings->getTraceHeaderFormat(0,0);
     GetGeometryFromGridOnFile(grid_file,
-                              model_settings->getTraceHeaderFormat(0,0), //Trace header format is the same for all time lapses
+                              thf, //Trace header format is the same for all time lapses
                               geometry,
                               tmp_err_text);
     if (geometry!=NULL) {
@@ -3691,18 +3695,19 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   delete [] reflection_coefs;
 
-  //All wavelets from commondata should not be stored on fftorder.
-  if (wavelet_pre_resampling != NULL) {
-    delete wavelet;
-    wavelet = wavelet_pre_resampling;
-  }
-  else if (wavelet->getInFFTOrder()) { //Wavlet estimated
-    wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
-  }
+  if(error == 0) {
+    //All wavelets from commondata should not be stored on fftorder.
+    if (wavelet_pre_resampling != NULL) {
+      delete wavelet;
+      wavelet = wavelet_pre_resampling;
+    }
+    else if (wavelet->getInFFTOrder()) { //Wavlet estimated
+      wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
+    }
 
-  if (wavelet->getIsReal() == false)
-    wavelet->invFFT1DInPlace();
-
+    if (wavelet->getIsReal() == false)
+      wavelet->invFFT1DInPlace();
+  }
   return error;
 }
 
@@ -6143,11 +6148,12 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                             int                   grid_type,
                             bool                  scale,
                             bool                  is_segy,
-                            bool                  is_storm) const
+                            bool                  is_storm,
+                            bool                  is_seismic) const
 {
   //Resample to either a NRLib::Grid or a FFTGrid.
   //The one resampled to needs to be defined outside this function, and the other needs to be sent in as an empty grid.
-  float res_fac = 4.0; //Degree of refinement, must be integer.
+  float res_fac = 10.0; //Degree of refinement, must be integer.
 
   assert(grid_type != CTMISSING);
 
@@ -6266,6 +6272,8 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         //Get data_trace for this i and j.
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
+          if(is_seismic)
+            z0_data = z0_data-0.5*segy->GetDz();
         }
         else if (is_storm) {
           size_t i_in, j_in, k_in;
@@ -6334,6 +6342,8 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
+          if(is_seismic)
+            z0_grid += 0.5*dz;
 
           std::vector<float> grid_trace(nzp);
 

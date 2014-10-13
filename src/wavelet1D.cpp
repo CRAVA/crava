@@ -186,14 +186,17 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       blocked_log->FindContinuousPartOfData(hasData, nz_, start, length);
 
       if(length*dz_ > waveletTaperLength ) { // must have enough data
+        bool shift = true;
+        if(seismic_data->GetSeismicType() == SeismicStorage::SEGY)
+          shift = false;
         nUsedWells++;
         blocked_log->FillInCpp(coeff_, start, length, cpp_r[w], nzp_);
         fileName = "cpp_1";
         printVecToFile(fileName, cpp_r[w], nzp_);  // Debug
-        Utils::fft(cpp_r[w], cpp_c[w], nzp_);
-        blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp_);
+        blocked_log->FillInSeismic(seisData, start, length, seis_r[w], nzp_, shift);
         fileName = "seis_1";
         printVecToFile(fileName, seis_r[w], nzp_); // Debug
+        Utils::fft(cpp_r[w], cpp_c[w], nzp_);
         Utils::fft(seis_r[w], seis_c[w], nzp_);
         blocked_log->EstimateCor(cpp_c[w], cpp_c[w], cor_cpp_c[w], cnzp_);
         Utils::fftInv(cor_cpp_c[w], cor_cpp_r[w], nzp_);

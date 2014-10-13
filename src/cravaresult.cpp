@@ -1426,7 +1426,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
             StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled);
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
 
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               seismic_storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
@@ -1445,7 +1445,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
             StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
 
             if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[j], time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
             if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
               storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
 
@@ -1686,13 +1686,13 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
         if(((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
           (model_settings->getForwardModeling() == true))
-          ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, sgri_label);
+          ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
 
         sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
         file_name  = IO::PrefixSyntheticResiduals() + angle;
 
         if((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
-          ParameterOutput::WriteFile(model_settings, synt_residuals_[i], file_name, IO::PathToSeismicData(), &simbox, sgri_label);
+          ParameterOutput::WriteFile(model_settings, synt_residuals_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
       }
     }
 
@@ -2039,13 +2039,13 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
   std::string file_name_rho = IO::PrefixBackground() + "Rho";
 
   ExpTransf(background_vp_);
-  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
 
   ExpTransf(background_vs_);
-  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
 
   ExpTransf(background_rho_);
-  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
@@ -2154,7 +2154,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
           float value = fac*((k-nz)*impVec.getRAmp(0)+(nzp-k-1)*impVec.getRAmp(nz-1));
           impVec.setRAmp(value, k);
         }
-        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERFORWARDDIFF);
+        Wavelet1D resultVec(&impVec, Wavelet::FIRSTORDERBACKWARDDIFF);
         resultVec.fft1DInPlace();
 
         Wavelet1D * localWavelet = wavelets[l]->createLocalWavelet1D(i,j);
