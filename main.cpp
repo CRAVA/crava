@@ -359,15 +359,18 @@ int main(int argc, char** argv)
     if (n_intervals == 1)
       crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
-    if(modelSettings->getEstimationMode() == true) {
-      const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(0);
-      seismicParametersIntervals[0].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(0),
-                                                                    simbox->GetNXpad(),
-                                                                    simbox->GetNYpad(),
-                                                                    simbox->GetNZpad());
-      crava_result->AddBackgroundVp(seismicParametersIntervals[0].GetMeanVp());
-      crava_result->AddBackgroundVs(seismicParametersIntervals[0].GetMeanVs());
-      crava_result->AddBackgroundRho(seismicParametersIntervals[0].GetMeanRho());
+    if (modelSettings->getEstimationMode() == true) {
+
+      if (modelSettings->getEstimateBackground() == true && n_intervals == 1 && ((modelSettings->getOutputGridFormat() & IO::CRAVA) > 0)) {
+        const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(0);
+        seismicParametersIntervals[0].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(0),
+                                                                      simbox->GetNXpad(),
+                                                                      simbox->GetNYpad(),
+                                                                      simbox->GetNZpad());
+        crava_result->AddBackgroundVp(seismicParametersIntervals[0].GetMeanVp());
+        crava_result->AddBackgroundVs(seismicParametersIntervals[0].GetMeanVs());
+        crava_result->AddBackgroundRho(seismicParametersIntervals[0].GetMeanRho());
+      }
 
       crava_result->WriteEstimationResults(modelSettings,
                                            common_data);
