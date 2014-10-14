@@ -37,7 +37,8 @@ public:
                      std::vector<FFTGrid *> & post_vp_intervals,
                      MultiIntervalGrid      * multi_interval_grid,
                      const std::vector<int> & erosion_priorities,
-                     double                   dz_min);
+                     double                   dz_min,
+                     bool                     smooth = false);
 
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
                                const double             & dz_resampled,
@@ -52,6 +53,7 @@ public:
   void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
                           const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
                           MultiIntervalGrid                                              * multi_interval_grid,
+                          CommonData                                                     * common_data,
                           const Simbox                                                   * output_simbox);
 
   void CopyWellLog(std::vector<double>       & log_out,
@@ -162,10 +164,9 @@ public:
                                const Simbox                               & simbox,
                                const NRLib::Matrix                        & reflection_matrix);
 
-  //void WriteCravaGrids(ModelSettings           * model_settings,
-  //                     CommonData              * common_data,
-  //                     const Simbox            & output_simbox,
-  //                     SeismicParametersHolder & seismic_parameters_intervals);
+  void SmoothTraceIntervals(std::vector<float>     & trace,
+                            const std::vector<int> & intervals,
+                            double                   dz) const;
 
   //GET FUNCTIONS
 
