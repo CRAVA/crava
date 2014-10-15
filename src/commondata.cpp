@@ -8,6 +8,7 @@
 #include "src/commondata.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
+#include "src/wavelet.h"
 #include "src/wavelet1D.h"
 #include "src/wavelet3D.h"
 #include "nrlib/well/well.hpp"
@@ -161,8 +162,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
     if (block_wells_ && optimize_well_location_)
-      wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, local_noise_scales_,
-                                          global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
+      wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
+                                          local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
     // 13. Setup of prior correlation
@@ -3118,6 +3119,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                  std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
                                  std::vector<std::vector<SeismicStorage *> > & seismic_data,
                                  std::map<int, std::vector<Wavelet *> >      & wavelets,
+                                 std::vector<std::vector<Wavelet1D *> >      & well_wavelets,
                                  std::map<int, std::vector<Grid2D *> >       & local_noise_scales,
                                  std::map<int, std::vector<float> >          & global_noise_estimates,
                                  std::map<int, std::vector<float> >          & sn_ratios,
@@ -3142,6 +3144,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   wavelet_est_int_top = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
   wavelet_est_int_bot = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
   FindWaveletEstimationInterval(wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, err_text_tmp);
+  well_wavelets.resize(model_settings->getNumberOfAngles(0));
 
   if (err_text_tmp != "")
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
@@ -3308,6 +3311,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                   reflection_matrix[i],
                                   err_text,
                                   wavelets[i][j],
+                                  well_wavelets[j],
                                   shift_grids[i][j],
                                   gain_grids[i][j],
                                   local_noise_scale[j],
@@ -3436,6 +3440,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              const NRLib::Matrix                        & reflection_matrix,
                              std::string                                & err_text,
                              Wavelet                                   *& wavelet,
+                             std::vector<Wavelet1D *>                   & well_wavelets,
                              Grid2D                                    *& shift_grid,
                              Grid2D                                    *& gain_grid,
                              Grid2D                                    *& local_noise_scale, //local noise estimates?
@@ -3446,14 +3451,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              bool                                         estimate_wavelet,
                              bool                                         use_ricker_wavelet) const
 {
-  //assert (wavelet == NULL && local_noise_scale == NULL); //Erik N: *& means we get a memory leak if it is not NULL
   assert (wavelet == NULL && local_noise_scale == NULL && shift_grid == NULL && gain_grid == NULL); //Erik N: *& means we get a memory leak if it is not NULL
-  //Grid2D * local_shift = NULL;
-  //Grid2D * local_scale = NULL;
-  //shift_grid = NULL;
-  //gain_grid  = NULL;
-
-  //Since shift_grid and gain_grid isn't copied in the copy constructor, we store them separately and add them when we copy the wavelet (modelavodynamic and cravaresult).
 
   float * reflection_coefs = new float[3];
   reflection_coefs[0] = static_cast<float>(reflection_matrix(j_angle, 0));
@@ -3462,15 +3460,11 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   int error = 0;
   if (model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
     Surface help(input_files->getScaleFile(i_timelapse, j_angle));
-    //local_scale = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
-    //ResampleSurfaceToGrid2D(&help, local_scale, full_inversion_simbox);
     gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
     ResampleSurfaceToGrid2D(&help, gain_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
-    //local_shift = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
-    //ResampleSurfaceToGrid2D(&helpShift, local_shift, full_inversion_simbox);
     shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
     ResampleSurfaceToGrid2D(&helpShift, shift_grid, full_inversion_simbox);
   }
@@ -3490,9 +3484,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                             model_settings,
                             reflection_matrix,
                             j_angle,
+                            well_wavelets,
                             error,
                             err_text);
-
   }
   else { //Not estimation modus
     if (use_ricker_wavelet) {

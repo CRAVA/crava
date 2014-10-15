@@ -20,7 +20,6 @@
 
 #include "src/modelsettings.h"
 #include "src/definitions.h"
-#include "src/wavelet1D.h"
 #include "src/tasklist.h"
 #include "src/fftgrid.h"
 #include "src/simbox.h"
@@ -28,6 +27,8 @@
 #include "src/kriging2d.h"
 #include "src/krigingdata2d.h"
 #include "src/io.h"
+#include "src/wavelet1D.h"
+
 
 Wavelet1D::Wavelet1D()
  : Wavelet(1)
@@ -42,6 +43,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
                      const ModelSettings                              * modelSettings,
                      const NRLib::Matrix                              & reflection_matrix,
                      int                                                iAngle,
+                     std::vector<Wavelet1D *>                         & well_wavelet,
                      int                                              & errCode,
                      std::string                                      & errTxt,
                      bool                                               writing)
@@ -271,13 +273,13 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     }
 
     // gets syntetic seismic with estimated wavelet
+    well_wavelet.resize(nWells);
     int w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
-      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
-      BlockedLogsCommon * blocked_log = iter->second;
-
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
+      well_wavelet[w] = new Wavelet1D(wavelet_r[w], nz_, nzp_, dzWell[w], true);
+      well_wavelet[w]->shiftFromFFTOrder();
       fileName = "waveletShift";
       printVecToFile(fileName, wavelet_r[w], nzp_);
       Utils::fft(wavelet_r[w], wavelet_c[w], nzp_);
@@ -290,17 +292,6 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       printVecToFile(fileName, synt_seis_r[w], nzp_);
       fileName = "seis";
       printVecToFile(fileName, seis_r[w], nzp_);
-
-      std::vector<double> synt_seis;
-      if (wellWeight[w] > 0) {
-        synt_seis.resize(nz_, 0.0f); // Do not use RMISSING (fails in setLogFromVerticalTrend())
-        for (int i = sampleStart[w]; i < sampleStop[w] ; i++)
-          synt_seis[i] = synt_seis_r[w][i];
-
-        blocked_log->SetLogFromVerticalTrend(synt_seis, blocked_log->GetContLogsSeismicRes(), blocked_log->GetActualSyntSeismicData(), blocked_log->GetWellSyntSeismicData(),
-                                             z0[w], dzWell[w], nz_, "WELL_SYNTHETIC_SEISMIC", iAngle);
-
-      }
       w++;
     }
 
@@ -570,8 +561,28 @@ Wavelet1D::Wavelet1D(std::vector<float> vecReal,
   {
     rAmp_[i]= static_cast<fftw_real>(meanVal);
   }
-
 }
+
+
+Wavelet1D::Wavelet1D(fftw_real * vec,
+                     int         nz,
+                     int         nzp,
+                     double      dz,
+                     bool        fft_order)
+: Wavelet(1)
+{
+  setupAsVector( nz, nzp);
+  for(int i=0;i<nz;i++)
+    rAmp_[i] = vec[i];
+
+  for(int i=nz;i<nzp_;i++)
+    rAmp_[i]= 0;
+
+  dz_ = dz;
+
+  inFFTorder_ = true;
+}
+
 
 
 

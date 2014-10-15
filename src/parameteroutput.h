@@ -53,6 +53,8 @@ public:
                             const std::string       & f_name,
                             const std::string       & sub_dir,
                             const Simbox            * simbox,
+                            //Note: Used to mark synthetic seismic, where value in cell is actually value at top of cell.
+                            //Real seismic data when resampled are values at base of cell, and must be shifted an index before this is used.
                             bool                      is_seismic = false,
                             const std::string         label = "NO_LABEL",
                             const float               z0 = 0.0,

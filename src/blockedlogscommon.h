@@ -282,7 +282,8 @@ public:
                                                                   std::vector<Wavelet *> & wavelet,
                                                                   int                     nz,
                                                                   int                     nzp,
-                                                                  const Simbox          * timeSimbox);
+                                                                  const Simbox          * timeSimbox,
+                                                                  bool                    well_opt = false);
 
   void                                   SetLogFromGrid(FFTGrid   * grid,
                                                         int         i_angle,

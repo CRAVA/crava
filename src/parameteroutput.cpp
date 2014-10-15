@@ -659,13 +659,13 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
 void
 ParameterOutput::SeismicShift(NRLib::Grid<float> * grid)
 {
-  for(int i=0;i<grid->GetNI();i++) {
-    for(int j=0;j<grid->GetNJ();j++) {
+  for(size_t i=0;i<grid->GetNI();i++) {
+    for(size_t j=0;j<grid->GetNJ();j++) {
       std::vector<fftw_real> trace(grid->GetNK());
-      for(int k=0;k<grid->GetNK();k++)
+      for(size_t k=0;k<grid->GetNK();k++)
         trace[k] = (*grid)(i,j,k);
       Utils::ShiftTrace(trace);
-      for(int k=0;k<grid->GetNK();k++)
+      for(size_t k=0;k<grid->GetNK();k++)
         (*grid)(i,j,k) = trace[k];
     }
   }

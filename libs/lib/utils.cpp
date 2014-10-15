@@ -205,6 +205,19 @@ Utils::readUntilStop(int pos, std::string & in, std::string & out, std::string r
   }
 }
 
+void
+Utils::ShiftTrace(std::vector<double> & trace,
+                  bool        shift_up)
+{
+  std::vector<fftw_real> tmp_trace(trace.size());
+  for(size_t i=0;i<trace.size();i++)
+    tmp_trace[i] = static_cast<fftw_real>(trace[i]);
+  ShiftTrace(&(tmp_trace[0]), trace.size(), shift_up);
+  for(size_t i=0;i<trace.size();i++)
+    trace[i] = static_cast<double>(tmp_trace[i]);
+}
+
+
 
 void
 Utils::ShiftTrace(std::vector<fftw_real> & trace,

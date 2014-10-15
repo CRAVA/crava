@@ -109,9 +109,6 @@ CravaResult::~CravaResult()
   for (size_t i = 0; i < synt_seismic_data_.size(); i++) {
     delete synt_seismic_data_[i];
   }
-  for (size_t i = 0; i < synt_residuals_.size(); i++) {
-    delete synt_residuals_[i];
-  }
 
   if (background_vp_ != NULL) {
     delete background_vp_;
@@ -476,9 +473,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
     if (model_settings->getKrigingParameter() > 0)
-      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_, synt_seismic_data_, synt_residuals_);
+      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_, synt_seismic_data_);
     else
-      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_, post_vs_, post_rho_, synt_seismic_data_, synt_residuals_);
+      ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_, post_vs_, post_rho_, synt_seismic_data_);
   }
 
   LogKit::LogFormatted(LogKit::Low,"ok\nGenerate Synthetic Seismic Logs...");
@@ -844,29 +841,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
-    //In the end of CombineResult we set real seismic log from seismic data if we have estimation mode.
-    //An option is to skip this resampling and set these logs from seismic data in CombineResult if we have multiple intervals
-    //bool got_real_seismic_data = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData() > 0;
-    //if (got_real_seismic_data) {
-    //  LogKit::LogFormatted(LogKit::Low,"\n    real seis data... ");
-    //  int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNRealSeismicData();
-
-    //  for (int j = 0; j < n_angles; j++) {
-
-    //    std::vector<double> real_seismic_data_final(n_blocks);
-    //    std::vector<std::vector<double> > real_seismic_data_intervals(n_intervals_);
-
-    //    //Get well logs, missing values are interpolated
-    //    for (int i = 0; i < n_intervals_; i++) {
-    //      CopyWellLog(real_seismic_data_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j));
-    //    }
-
-    //    ResampleLog(real_seismic_data_final,  real_seismic_data_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-    //    blocked_log_final->SetRealSeismicData(j, real_seismic_data_final);
-    //  }
-    //  LogKit::LogFormatted(LogKit::Low,"ok");
-    //}
 
     //Facies prob
     bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
@@ -1314,111 +1288,84 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           int missing_traces_padding = 0;
           int dead_traces_simbox     = 0;
 
-          if (seismic_type == 0) { //SEGY
-
-            //Transforms segy to storm to use in ParamterOutput::WriteFile
-            SegY * segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
-
+          FFTGrid * fft_grid_resampled = NULL;
+          bool delete_fft_grid         = true;
+          if (seismic_type == 3) {
+            fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
+            delete_fft_grid = false;
+          }
+          else {
+            SegY * segy                     = NULL;
+            StormContGrid * storm           = NULL;
             NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
-            FFTGrid * fft_grid_resampled    = NULL;
-
+            bool is_segy                    = false;
+            bool is_storm                   = false;
+            if (seismic_type == 0) {//SEGY
+              segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
+              is_segy = true;
+            }
+            else if (seismic_type == 1 || seismic_type == 2) {//STORM/SGRI
+              storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
+              is_storm = true;
+            }
             if (write_crava_)
               fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
             else
               fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
-
             fft_grid_resampled->createRealGrid();
-
-            StormContGrid * storm_tmp  = NULL;
 
             common_data->FillInData(nrlib_grid,
                                     fft_grid_resampled,
                                     &simbox,
-                                    storm_tmp,
+                                    storm,
                                     segy,
                                     model_settings->getSmoothLength(),
                                     missing_traces_simbox,
                                     missing_traces_padding,
                                     dead_traces_simbox,
-                                    FFTGrid::DATA);
+                                    FFTGrid::DATA,
+                                    false,
+                                    is_segy,
+                                    is_storm,
+                                    true);
 
-            if (write_crava_) {
-              std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
-              fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
-            }
-
-            //From FFTGrid to StormGrid
-            StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled);
-
-            if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
-
-            if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
-              seismic_storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
-
-            if (storm_tmp != NULL)
-              delete storm_tmp;
-            //if (segy != NULL)
-            //  delete segy;
-            if (seismic_storm != NULL)
-              delete seismic_storm;
-            if (nrlib_grid != NULL)
-              delete nrlib_grid;
-
-          }
-          else if (seismic_type == 1 || seismic_type == 2) { //STORM/SGRI
-            StormContGrid * storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
-
-            if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              ParameterOutput::WriteFile(model_settings, storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
-            if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
-              storm->WriteCravaFile(file_name_synt, simbox.getIL0(), simbox.getXL0(), simbox.getILStepX(), simbox.getILStepY(), simbox.getXLStepX(), simbox.getXLStepY());
-
-            if (write_crava_) {
-
-              SegY * segy_tmp = NULL;
-              NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
-              FFTGrid * fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
-
-              common_data->FillInData(nrlib_grid,
-                                      fft_grid_resampled,
-                                      &simbox,
-                                      storm,
-                                      segy_tmp,
-                                      model_settings->getSmoothLength(),
-                                      missing_traces_simbox,
-                                      missing_traces_padding,
-                                      dead_traces_simbox,
-                                      FFTGrid::DATA);
-
-              if (nrlib_grid != NULL)
-                delete nrlib_grid;
-              if (fft_grid_resampled != NULL)
-                delete fft_grid_resampled;
-
-            }
-
-            //if (storm != NULL)
-            //  delete storm;
-          }
-          else { //FFTGrid
-
-            FFTGrid * fft_grid = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
-
-            if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-              fft_grid->writeFile(file_name_orig, IO::PathToSeismicData(), &simbox, sgri_label, offset[i], time_depth_mapping, *model_settings->getTraceHeaderFormatOutput());
-            if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
-              fft_grid->writeCravaFile(file_name_synt, &simbox);
-
-            if (write_crava_) {
-              std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
-              fft_grid->writeCravaFile(file_name_crava, &simbox);
-            }
-
-            //if (fft_grid != NULL)
-            //  delete fft_grid;
+            delete nrlib_grid;
           }
 
+          if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
+            std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
+            fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
+          }
+
+          StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
+
+          //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
+          for(int k=seismic_storm->GetNK()-1;k>0;k--) {
+            for(size_t j=0;j<seismic_storm->GetNJ();j++) {
+              for(size_t i=0;i<seismic_storm->GetNI();i++) {
+                (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
+              }
+            }
+          }
+
+          if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
+            ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
+
+          if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
+            StormContGrid residual(*(synt_seismic_data_[j]));
+            for(size_t k=0;k<seismic_storm->GetNK();k++) {
+              for(size_t j=0;j<seismic_storm->GetNJ();j++) {
+                for(size_t i=0;i<seismic_storm->GetNI();i++) {
+                  residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+                }
+              }
+            }
+
+            sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
+            std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
+
+            ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+          }
         }
       }
     }
@@ -1612,12 +1559,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         if(((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
           (model_settings->getForwardModeling() == true))
           ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
-
-        sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
-        file_name  = IO::PrefixSyntheticResiduals() + angle;
-
-        if((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0)
-          ParameterOutput::WriteFile(model_settings, synt_residuals_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
       }
     }
 
@@ -1871,7 +1812,8 @@ void CravaResult::WriteWells(const std::vector<NRLib::Well> & wells,
 
 StormContGrid *
 CravaResult::CreateStormGrid(const Simbox & simbox,
-                             FFTGrid      * fft_grid)
+                             FFTGrid      * fft_grid,
+                             bool           delete_fft)
 {
   if (fft_grid != NULL) {
     int nx = fft_grid->getNx();
@@ -1889,8 +1831,8 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
       }
     }
 
-    //Not needed anymore
-    delete fft_grid;
+    if(delete_fft)
+      delete fft_grid;
 
     return(storm);
   }
@@ -1932,7 +1874,8 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
 //}
 
 void CravaResult::CreateStormGrid(StormContGrid & grid_new,
-                                  FFTGrid       * fft_grid)
+                                  FFTGrid       * fft_grid,
+                                  bool            allow_delete)
 {
   int nx = grid_new.GetNI();
   int ny = grid_new.GetNJ();
@@ -1947,7 +1890,7 @@ void CravaResult::CreateStormGrid(StormContGrid & grid_new,
     }
   }
 
-  if (write_crava_ == false)
+  if (write_crava_ == false && allow_delete == true)
     delete fft_grid;
 }
 
@@ -2049,8 +1992,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
                                      StormContGrid                * vp,
                                      StormContGrid                * vs,
                                      StormContGrid                * rho,
-                                     std::vector<StormContGrid *> & synt_seismic_data,
-                                     std::vector<StormContGrid *> & synt_residuals)
+                                     std::vector<StormContGrid *> & synt_seismic_data)
 {
   LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
@@ -2058,8 +2000,6 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
   int ny = vp->GetNJ();
   int nz = vp->GetNK();
 
-  int nxp = simbox->GetNXpad();
-  int nyp = simbox->GetNYpad();
   int nzp = simbox->GetNZpad();
 
   std::vector<float> angles = model_settings->getAngle(0); //Synt seismic only for first vintage
@@ -2108,41 +2048,10 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
       }
     }
 
-    float theta_deg        = static_cast<float>(angles[l]*180.0/NRLib::Pi);
-    std::string angle      = NRLib::ToString(theta_deg, 1);
-    std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
-    std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
     if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
       (model_settings->getForwardModeling() == true))
       synt_seismic_data.push_back(imp);
 
-    if ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) {
-      StormContGrid * imp_residual = new StormContGrid(nx, ny, nz);
-
-      FFTGrid seis(nx, ny, nz, nxp, nyp, nzp);
-
-      std::string file_name = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+NRLib::ToString(l)+IO::SuffixCrava());
-      std::string err_text;
-      seis.readCravaFile(file_name, err_text);
-      if (err_text == "") {
-        seis.setAccessMode(FFTGrid::RANDOMACCESS);
-        for (int k = 0; k < nz; k++) {
-          for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-              float residual = seis.getRealValue(i, j, k) - imp->GetValue(i, j, k);
-              imp_residual->SetValue(i, j, k, residual);
-            }
-          }
-        }
-        sgri_label = "Residual computed from synthetic seismic for incidence angle " + angle;
-        file_name = IO::PrefixSyntheticResiduals() + angle;
-        synt_residuals.push_back(imp_residual);
-      }
-      else {
-        err_text += "\nFailed to read temporary stored seismic data.\n";
-        LogKit::LogMessage(LogKit::Error, err_text);
-      }
-    }
   }
 }
 
@@ -2217,47 +2126,42 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
                                           const NRLib::Matrix                        & reflection_matrix)
 {
   int n_angles = model_settings->getNumberOfAngles(0);
-
-  //Need to set angles in blocked_log before wavelet estimation
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    blocked_log->SetNAngles(n_angles);
-  }
-
-  std::vector<Surface *> wavelet_estim_interval;
-  std::string            err_text_tmp = "";
-  int                    error        = 0;
-
-  CommonData::FindWaveletEstimationInterval(common_data->GetWaveletEstIntTop(), common_data->GetWaveletEstIntBot(), wavelet_estim_interval, simbox, err_text_tmp);
-  const std::vector<bool> & estimate_wavelet = model_settings->getEstimateWavelet(0);
-
+  int nzp = simbox.GetNZpad();
+  int nz  = simbox.getnz();
+  std::vector<std::vector<Wavelet *> > wavelets(blocked_wells.size()); //First index is well, seoond is angle.
   for (int i = 0; i < n_angles; i++) {
-
-    if (estimate_wavelet[i] == true) {
-
-      //Adds well_synt_seismic_data to blocked_logs
-      Wavelet * wavelet_tmp = new Wavelet1D(&simbox,
-                                            common_data->GetSeismicDataTimeLapse(0)[i],
-                                            blocked_wells,
-                                            wavelet_estim_interval,
-                                            model_settings,
-                                            reflection_matrix,
-                                            i,
-                                            error,
-                                            err_text_tmp,
-                                            false);
-
-      delete wavelet_tmp;
+    std::vector<Wavelet1D *> angle_wavelets = common_data->GetWellWavelets(i);
+    for(size_t w=0;w<blocked_wells.size();w++) {
+      if(i==0)
+        wavelets[w].resize(n_angles);
+      if(angle_wavelets.size() == 0 || angle_wavelets[w] == NULL)
+        wavelets[w][i] = NULL;
+      else {
+        Wavelet1D * wavelet = new Wavelet1D(angle_wavelets[w]);
+        wavelet->resample(static_cast<float>(simbox.getdz()),
+                          simbox.getnz(),
+                          simbox.GetNZpad());
+        wavelets[w][i] = wavelet;
+      }
     }
   }
 
-  for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
-    if (wavelet_estim_interval[i] != NULL)
-      delete wavelet_estim_interval[i];
+  size_t w=0;
+  //Need to set angles in blocked_log before wavelet estimation
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
+    BlockedLogsCommon * blocked_log = it->second;
+    blocked_log->SetNAngles(n_angles);
+
+    if (blocked_log->GetIsDeviated() == false)
+      blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelets[w], nz, nzp, &simbox, true);
+    w++;
   }
 
+  for (int i = 0; i < n_angles; i++) {
+    for(size_t w=0;w<blocked_wells.size();w++) {
+      delete wavelets[w][i];
+    }
+  }
 }
 
 void CravaResult::SmoothTraceIntervals(std::vector<float>     & trace,

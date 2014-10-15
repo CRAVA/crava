@@ -62,6 +62,8 @@ public:
                          int           start,
                          std::string & find);
 
+  static void     ShiftTrace(std::vector<double> & trace, bool shift_up = true);
+
   static void     ShiftTrace(std::vector<fftw_real> & trace, bool shift_up = true);
 
   static void     ShiftTrace(fftw_real * trace,
