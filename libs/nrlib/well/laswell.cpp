@@ -66,6 +66,10 @@ LasWell::LasWell(const std::string & filename) :
     if(depth_increment_ == 0)
       depth_increment_ = GetContMissing();
   }
+  const std::map<std::string,std::vector<double> > & logs = GetContLog();
+  std::map<std::string,std::vector<double> >::const_iterator it = logs.begin();
+  int n_data = static_cast<int>(it->second.size());
+  this->SetNumberOfData(n_data);
 }
 
 void
@@ -286,6 +290,10 @@ LasWell::ParseWellToken(const std::string & token,
           depth_increment_ = val;
         else if(token == "NULL")
           SetMissing(val);
+        else if(token == "XWELL")
+          SetXPos0(val);
+        else if(token == "YWELL")
+          SetYPos0(val);
       }
       catch(NRLib::Exception & e) {
         err_txt += std::string(e.what())+" for keyword "+token+" under ~WELL INFORMATION in well "+GetWellName();

@@ -2367,6 +2367,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
                                         int                               format,
                                         std::string                     & error_text) const
 {
+  std::string tmp_error_text;
   double xy_scale = 1.0;
   double time_scale = 1.0;
   if(format == NRLib::Well::NORSAR) {
@@ -2380,178 +2381,132 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     log_names_from_user.push_back("DT");
     log_names_from_user.push_back("RHOB");
     log_names_from_user.push_back("DTS");
-    log_names_from_user.push_back("FACIES");
+    if(facies_log_given)
+      log_names_from_user.push_back("FACIES");
   }
 
   for (size_t i = 0; i < log_names_from_user.size(); i++) {
     // If the well does not contain the log specified by the user, return an error message
     if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
-      error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
     }
   }
 
   //Process X and Y directions
-  std::string xy_log_name;
+  std::string x_log_name;
   if (new_well.HasContLog("X"))
-    xy_log_name = "X";
+    x_log_name = "X";
   else if (new_well.HasContLog("UTMX"))
-    xy_log_name = "UTMX";
+    x_log_name = "UTMX";
   else if (new_well.HasContLog("EASTING"))
-    xy_log_name = "EASTING";
+    x_log_name = "EASTING";
   else {
-    error_text += "Could not find valid log for x-coordinate in well file "+new_well.GetWellName()+". (Tried X, UTMX and EASTINGS.)\n";
-  }
-  if (xy_log_name.length() > 0) {
-    std::vector<double> x_log = new_well.GetContLog(xy_log_name);
-    if(xy_scale != 1.0) {
-      for(size_t i=0;i<x_log.size();i++)
-        x_log[i] *= xy_scale;
-    }
-    new_well.AddContLog("X_pos", x_log);
-    new_well.RemoveContLog(xy_log_name);
+    tmp_error_text += "Could not find valid log for x-coordinate in well file "+new_well.GetWellName()+". (Tried X, UTMX and EASTINGS.)\n";
   }
 
-  xy_log_name="";
+  std::string y_log_name="";
   if (new_well.HasContLog("Y"))
-    xy_log_name = "Y";
+    y_log_name = "Y";
   else if (new_well.HasContLog("UTMY"))
-    xy_log_name = "UTMY";
+    y_log_name = "UTMY";
   else if (new_well.HasContLog("NORTHING"))
-    xy_log_name = "NORTHING";
+    y_log_name = "NORTHING";
   else {
-    error_text += "Could not find valid log for y-coordinate in well file "+new_well.GetWellName()+". (Tried Y, UTMY and NORTHING.)\n";
-  }
-  if (xy_log_name.length() > 0) {
-    std::vector<double> y_log = new_well.GetContLog(xy_log_name);
-    if(xy_scale != 1.0) {
-      for(size_t i=0;i<y_log.size();i++)
-        y_log[i] *= xy_scale;
-    }
-    new_well.AddContLog("Y_pos", y_log);
-    new_well.RemoveContLog(xy_log_name);
-  }
-  else {
-    error_text += "Could not find log 'Y' in well file "+new_well.GetWellName()+".\n";
+    tmp_error_text += "Could not find valid log for y-coordinate in well file "+new_well.GetWellName()+". (Tried Y, UTMY and NORTHING.)\n";
   }
 
-  //Store TWT as Z_pos
+    //Store TWT as Z_pos
   if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
-  if (new_well.HasContLog("TWT")) {
-    std::vector<double> & z_log = new_well.GetContLog("TWT");
-    if(time_scale != 1.0) {
-      for(size_t i=0;i<z_log.size();i++)
-        z_log[i] *= time_scale;
-    }
-    new_well.AddContLog("Z_pos",z_log);
-  }
-  else {
-    error_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
-  }
 
-  int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
-  const std::vector<double> & z_tmp = new_well.GetContLog("Z_pos");
-  for (size_t i = 0; i < z_tmp.size(); i++) {
-    if (new_well.IsMissing(z_tmp[i]) == false)
-      nonmissing_data++;
-  }
-  new_well.SetNumberOfNonMissingData(nonmissing_data);
+  if(tmp_error_text == "") {
+    const std::vector<double> & x_log = new_well.GetContLog(x_log_name);
+    const std::vector<double> & y_log = new_well.GetContLog(y_log_name);
+    const std::vector<double> & z_log = new_well.GetContLog(log_names_from_user[0]);
+    const std::vector<double> & vp    = new_well.GetContLog(log_names_from_user[1]);
+    const std::vector<double> & rho   = new_well.GetContLog(log_names_from_user[2]);
+    const std::vector<double> & vs    = new_well.GetContLog(log_names_from_user[3]);
 
-  // Time is always entry 0 in the log name list
-  // Time is always called 'TWT', so no need to rename it
-
-  // Vp is always entry 1 in the log name list and entry 0 in inverse_velocity
-  if (new_well.HasContLog(log_names_from_user[1])) {
-    const std::vector<double> & vp_temp = new_well.GetContLog(log_names_from_user[1]);
-    std::vector<double> vp(vp_temp.size());
-    if (inverse_velocity[0]) {
-      for (unsigned int i=0; i<vp_temp.size(); i++) {
-        if (new_well.IsMissing(vp_temp[i]) == false)
-          vp[i] = static_cast<double>(factor_usfeet_to_meters/vp_temp[i]);
-        else
-          vp[i] = RMISSING;
-      }
-    }
-    else {
-      for (unsigned int i=0; i<vp_temp.size(); i++) {
-        if (new_well.IsMissing(vp_temp[i]) == false)
-          vp[i] = static_cast<double>(vp_temp[i]);
-        else
-          vp[i] = RMISSING;
-      }
-    }
-    new_well.RemoveContLog(log_names_from_user[1]);
-    new_well.AddContLog("Vp", vp);
-  }
-
-  // Vs is always entry 3 in the log name list
-  if (new_well.HasContLog(log_names_from_user[3])) {
-    const std::vector<double> & vs_temp = new_well.GetContLog(log_names_from_user[3]);
-    std::vector<double> vs(vs_temp.size());
-    if (inverse_velocity[1]) {
-      for (size_t i = 0; i < vs_temp.size(); i++) {
-        if (new_well.IsMissing(vs_temp[i]) == false)
-          vs[i] = static_cast<double>(factor_usfeet_to_meters/vs_temp[i]);
-        else
-          vs[i] = RMISSING;
-      }
-    }
-    else {
-      for (size_t i = 0; i < vs_temp.size(); i++) {
-        if (new_well.IsMissing(vs_temp[i]) == false)
-          vs[i] = static_cast<double>(vs_temp[i]);
-        else
-          vs[i] = RMISSING;
-      }
-    }
-    new_well.RemoveContLog(log_names_from_user[3]);
-    new_well.AddContLog("Vs", vs);
-  }
-
-  // Rho is always entry 2 in the log name list
-  if (new_well.HasContLog(log_names_from_user[2])) {
-    const std::vector<double> & rho_temp = new_well.GetContLog(log_names_from_user[2]);
-    std::vector<double> rho(rho_temp.size());
-
-    for (size_t i = 0; i < rho_temp.size(); i++) {
-      if (new_well.IsMissing(rho_temp[i]) == false)
-        rho[i] = static_cast<double>(rho_temp[i]);
+    std::vector<int>    df_log;
+    std::vector<double> cf_log;
+    if(facies_log_given == true) {
+      if(new_well.HasDiscLog(log_names_from_user[4]))
+        df_log = new_well.GetDiscLog(log_names_from_user[4]);
       else
-        rho[i] = RMISSING;
+        cf_log = new_well.GetContLog(log_names_from_user[4]);
     }
 
+    std::vector<double> new_x;
+    std::vector<double> new_y;
+    std::vector<double> new_z;
+    std::vector<double> new_vp;
+    std::vector<double> new_vs;
+    std::vector<double> new_rho;
+    std::vector<int> new_facies;
+
+
+    for(size_t i=0;i<z_log.size();i++) {
+      if(new_well.IsMissing(z_log[i]) == false) {
+        new_x.push_back(x_log[i]*xy_scale);
+        new_y.push_back(y_log[i]*xy_scale);
+        new_z.push_back(z_log[i]*time_scale);
+
+        if(new_well.IsMissing(vp[i]))
+          new_vp.push_back(RMISSING);
+        else if (inverse_velocity[0])
+          new_vp.push_back(factor_usfeet_to_meters/vp[i]);
+        else
+          new_vp.push_back(vp[i]);
+
+        if(new_well.IsMissing(vs[i]))
+          new_vs.push_back(RMISSING);
+        else if (inverse_velocity[0])
+          new_vs.push_back(factor_usfeet_to_meters/vs[i]);
+        else
+          new_vs.push_back(vs[i]);
+
+        if(new_well.IsMissing(rho[i]))
+          new_rho.push_back(RMISSING);
+        else
+          new_rho.push_back(rho[i]);
+
+        if(df_log.size() > 0) {
+          if(new_well.IsMissing(df_log[i]))
+            new_facies.push_back(IMISSING);
+          else
+            new_facies.push_back(df_log[i]);
+        }
+        else if(cf_log.size() > 0) {
+          if(new_well.IsMissing(cf_log[i]))
+            new_facies.push_back(IMISSING);
+          else
+            new_facies.push_back(static_cast<int>(df_log[i]));
+        }
+      }
+    }
+    new_well.AddContLog("X_pos", new_x);
+    new_well.RemoveContLog(x_log_name);
+    new_well.AddContLog("Y_pos", new_y);
+    new_well.RemoveContLog(y_log_name);
+    new_well.AddContLog("Z_pos", new_z);
+    new_well.SetNumberOfNonMissingData(new_z.size());
+    new_well.SetNumberOfData(new_z.size());
+
+    new_well.RemoveContLog(log_names_from_user[1]);
+    new_well.AddContLog("Vp", new_vp);
+    new_well.RemoveContLog(log_names_from_user[3]);
+    new_well.AddContLog("Vs", new_vs);
     new_well.RemoveContLog(log_names_from_user[2]);
-    new_well.AddContLog("Rho", rho);
-  }
+    new_well.AddContLog("Rho", new_rho);
 
-  // If defined, Facies is always entry 4 in the log name list
-  if (facies_log_given) {
-    if (new_well.HasDiscLog(log_names_from_user[4])) { //Only rms-wells so far.
+    if(df_log.size() > 0) {
       new_well.SetFaciesMappingFromDiscLog(log_names_from_user[4]);
-      const std::vector<int> & facies_tmp = new_well.GetDiscLog(log_names_from_user[4]);
-      std::vector<int> facies(facies_tmp.size());
-
-      for (size_t i = 0; i < facies_tmp.size(); i++) {
-        if (new_well.IsMissing(facies_tmp[i]) == false)
-          facies[i] = facies_tmp[i];
-        else
-          facies[i] = IMISSING;
-      }
       new_well.RemoveDiscLog(log_names_from_user[4]);
-      new_well.AddDiscLog("Facies", facies);
+      new_well.AddDiscLog("Facies", new_facies);
     }
-    else if (new_well.HasContLog(log_names_from_user[4])) {
-      const std::vector<double> & facies_tmp = new_well.GetContLog(log_names_from_user[4]);
-      std::vector<int> facies(facies_tmp.size());
-
-      for (size_t i = 0; i < facies_tmp.size(); i++) {
-        if (new_well.IsMissing(facies_tmp[i]) == false)
-          facies[i] = static_cast<int>(facies_tmp[i]);
-        else
-          facies[i] = IMISSING;
-      }
-      new_well.RemoveDiscLog(log_names_from_user[4]);
-      new_well.AddDiscLog("Facies", facies);
+    else if (cf_log.size() > 0) {
+      new_well.RemoveContLog(log_names_from_user[4]);
+      new_well.AddDiscLog("Facies", new_facies);
       new_well.SetFaciesMappingFromDiscLog("Facies");
     }
   }
@@ -9870,22 +9825,23 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     }
   }
 
-  const std::string & top_WEI  = input_files->getWaveletEstIntFileTop(0);
-  const std::string & base_WEI = input_files->getWaveletEstIntFileBase(0);
+  if(model_settings->getEstimateWaveletNoise() == true) {
+    const std::string & top_WEI  = input_files->getWaveletEstIntFileTop(0);
+    const std::string & base_WEI = input_files->getWaveletEstIntFileBase(0);
 
-  if (top_WEI != "" || base_WEI != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
-    if (NRLib::IsNumber(top_WEI))
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_WEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_WEI+"\n");
+    if (top_WEI != "" || base_WEI != "") {
+      LogKit::LogFormatted(LogKit::Low,"\nWavelet estimation interval:\n");
+      if (NRLib::IsNumber(top_WEI))
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : %10.2f\n",atof(top_WEI.c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Start time                               : "+top_WEI+"\n");
 
-    if (NRLib::IsNumber(base_WEI))
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_WEI.c_str()));
-    else
-      LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_WEI+"\n");
+      if (NRLib::IsNumber(base_WEI))
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : %10.2f\n",atof(base_WEI.c_str()));
+      else
+        LogKit::LogFormatted(LogKit::Low,"  Stop time                                : "+base_WEI+"\n");
+    }
   }
-
   const std::string & top_FEI  = input_files->getFaciesEstIntFile(0);
   const std::string & base_FEI = input_files->getFaciesEstIntFile(1);
 
