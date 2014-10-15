@@ -8,6 +8,7 @@
 #include <string>
 
 #include "src/definitions.h"
+#include "libs/fft/include/fftw.h"
 
 //class FFTFileGrid;
 //class FFTGrid;
@@ -52,6 +53,9 @@ public:
                             const std::string       & f_name,
                             const std::string       & sub_dir,
                             const Simbox            * simbox,
+                            //Note: Used to mark synthetic seismic, where value in cell is actually value at top of cell.
+                            //Real seismic data when resampled are values at base of cell, and must be shifted an index before this is used.
+                            bool                      is_seismic = false,
                             const std::string         label = "NO_LABEL",
                             const float               z0 = 0.0,
                             const GridMapping       * depth_map = NULL,
@@ -129,5 +133,7 @@ private:
                                            const Simbox        * simbox,
                                            const int             format,
                                            float                 z0);
+
+  static void     SeismicShift(NRLib::Grid<float> * grid);
 };
 #endif

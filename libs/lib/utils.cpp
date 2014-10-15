@@ -204,3 +204,68 @@ Utils::readUntilStop(int pos, std::string & in, std::string & out, std::string r
     i++;
   }
 }
+
+void
+Utils::ShiftTrace(std::vector<double> & trace,
+                  bool        shift_up)
+{
+  std::vector<fftw_real> tmp_trace(trace.size());
+  for(size_t i=0;i<trace.size();i++)
+    tmp_trace[i] = static_cast<fftw_real>(trace[i]);
+  ShiftTrace(&(tmp_trace[0]), trace.size(), shift_up);
+  for(size_t i=0;i<trace.size();i++)
+    trace[i] = static_cast<double>(tmp_trace[i]);
+}
+
+
+
+void
+Utils::ShiftTrace(std::vector<fftw_real> & trace,
+                  bool        shift_up)
+{
+  ShiftTrace(&(trace[0]), trace.size(), shift_up);
+}
+
+
+void
+Utils::ShiftTrace(fftw_real * trace,
+                  size_t      n_data,
+                  bool        shift_up)
+{
+  size_t n_small   = 2*n_data;
+  size_t fft_small = ((n_small / 2) + 1)*2;
+  size_t n_large   = 2*n_small;
+  size_t fft_large = ((n_large / 2) + 1)*2;
+
+  std::vector<fftw_real> s_trace(fft_small,0);
+  fftw_complex * s_trace_c = reinterpret_cast<fftw_complex*>(&(s_trace[0]));
+
+  size_t i;
+  for(i=0;i<n_data;i++)
+    s_trace[i] = trace[i];
+  size_t change = n_data+n_data/2;
+
+  for(;i<change;i++)
+    s_trace[i] = s_trace[n_data-1]*(1+cos(NRLib::Pi*static_cast<double>(i-n_data)/static_cast<double>(change-1-n_data)));
+  for(;i<n_small;i++)
+    s_trace[i] = s_trace[0]*(1+cos(NRLib::Pi*static_cast<double>(n_small-1-i)/static_cast<double>(n_small-1-change)));
+
+  Utils::fft(&(s_trace[0]), s_trace_c, n_small);
+
+  std::vector<fftw_real> l_trace(fft_large,0);
+  fftw_complex * l_trace_c = reinterpret_cast<fftw_complex*>(&(l_trace[0]));
+  for(size_t i=0;i<fft_small;i++)
+    l_trace[i] = s_trace[i];
+
+  Utils::fftInv(l_trace_c,&(l_trace[0]), n_large);
+
+  if(shift_up == true){
+    for(size_t i=0;i<n_data;i++)
+      trace[i] = 2*l_trace[2*i+1];
+  }
+  else {
+    for(size_t i=1;i<n_data;i++)
+      trace[i] = 2*l_trace[2*i-1];
+    trace[0] = l_trace[n_large-1];
+  }
+}

@@ -150,7 +150,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                               FFTGrid::DATA,
                               scale,
                               is_segy,
-                              is_storm);
+                              is_storm,
+                              true);
 
       seis_cubes_[i]->endAccess();
 

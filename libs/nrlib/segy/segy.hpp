@@ -83,7 +83,8 @@ public:
       float                     z0,
       const std::string       & file_name = "",
       bool                      write_to_file = true,
-      const TraceHeaderFormat & trace_header_format = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS));
+      const TraceHeaderFormat & trace_header_format = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
+      bool                      is_seismic = false);
 
   ~SegY();
 
