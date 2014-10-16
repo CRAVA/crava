@@ -2422,7 +2422,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
   if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
 
-  if(tmp_error_text == "") {
+  if (tmp_error_text == "") {
     const std::vector<double> & x_log = new_well.GetContLog(x_log_name);
     const std::vector<double> & y_log = new_well.GetContLog(y_log_name);
     const std::vector<double> & z_log = new_well.GetContLog(log_names_from_user[0]);
@@ -2513,6 +2513,8 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
       new_well.SetFaciesMappingFromDiscLog("Facies");
     }
   }
+
+  error_text += tmp_error_text;
 }
 
 
@@ -4978,10 +4980,6 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
 
   //H-TODO: Do not allow trends with a z-component together with multizone.
 
-  //Rockphysics (blocked logs) are based on estimation simbox -> uses trend_cube(i,j,k).
-  
-  //Single zone: avoinversion interval_simbox(0) -> uses trend_cube(i,j,k).
-
   try {
     for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
       if (trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) { //Other options are handled inside CravaTrend
@@ -5060,6 +5058,13 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   std::string err_text = "";
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
+  //H-Temp fix for single interval
+  Simbox simbox;
+  if (n_intervals == 1)
+    simbox = *multiple_interval_grid->GetIntervalSimbox(0);
+  else
+    simbox = estimation_simbox;
+
   // rock physics data
   const std::vector<std::string>                    interval_names          = model_settings->getIntervalNames();
   const std::string                                 path                    = input_files->getInputDirectory();
@@ -5107,7 +5112,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
     if (n_wells > 0) {
       for (int i = 0; i < n_wells; i++) {
-        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &estimation_simbox, trend_cubes_[0]);
+        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0]);
       }
     }
 
@@ -5171,7 +5176,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
           std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
                                                                                      path,
                                                                                      trend_cube_parameters,
-                                                                                     trend_cube_sampling[0], //H-TODO i?
+                                                                                     trend_cube_sampling[0], //H-TODO interval i
                                                                                      blocked_logs_rock_physics,
                                                                                      rock_storage,
                                                                                      solid_storage,
@@ -6298,7 +6303,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
-          if(is_seismic)
+          if (is_seismic)
             z0_grid += 0.5*dz;
 
           std::vector<float> grid_trace(nzp);

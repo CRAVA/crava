@@ -5,7 +5,6 @@
 #include "src/cravatrend.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
-//#include "src/commondata.h"
 
 CravaTrend::CravaTrend()
 {
@@ -130,22 +129,3 @@ CravaTrend::GetSizeTrendCubes() const
 
   return gridSize;
 }
-
-//void
-//CravaTrend::writeToFile(const Simbox        * timeSimbox,
-//                        FFTGrid             * grid,
-//                        const std::string   & fileName,
-//                        const std::string   & sgriLabel)
-//{
-//
-//
-//  grid ->setAccessMode(FFTGrid::RANDOMACCESS);
-//
-//  grid->writeFile(fileName,
-//                  IO::PathToInversionResults(),
-//                  timeSimbox,
-//                  sgriLabel);
-//
-//  grid->endAccess();
-//
-//}
