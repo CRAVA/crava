@@ -29,7 +29,7 @@ DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string   
                                                             const std::vector<std::vector<double> > & trend_cube_sampling,
                                                             std::string                             & errTxt)
 {
-  const std::vector<std::vector<float> >    dummy_blocked_logs; // Use dummy when not estimatin.
+  const std::vector<std::vector<double> >   dummy_blocked_logs; // Use dummy when not estimatin.
   const std::vector<std::vector<double> >   dummy_s1;
   const std::vector<std::vector<double> >   dummy_s2;
   const int                                 dummy_output_other = -999;
@@ -111,7 +111,7 @@ DistributionWithTrend *
 DeltaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                  const std::vector<std::string>          & trend_cube_parameters,
                                                                  const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                                 const std::vector<std::vector<float> >  & blocked_logs,
+                                                                 const std::vector<std::vector<double> > & blocked_logs,
                                                                  const std::vector<std::vector<double> > & s1,
                                                                  const std::vector<std::vector<double> > & s2,
                                                                  const int                                 output_other,
@@ -213,7 +213,7 @@ DistributionWithTrend *
 NormalDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                   const std::vector<std::string>          & trend_cube_parameters,
                                                                   const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                                  const std::vector<std::vector<float> >  & blocked_logs,
+                                                                  const std::vector<std::vector<double> > & blocked_logs,
                                                                   const std::vector<std::vector<double> > & s1,
                                                                   const std::vector<std::vector<double> > & s2,
                                                                   const int                                 output_other,
@@ -334,7 +334,7 @@ DistributionWithTrend *
 BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                 const std::vector<std::string>          & trend_cube_parameters,
                                                                 const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                                const std::vector<std::vector<float> >  & blocked_logs,
+                                                                const std::vector<std::vector<double> > & blocked_logs,
                                                                 const std::vector<std::vector<double> > & s1,
                                                                 const std::vector<std::vector<double> > & s2,
                                                                 const int                                 output_other,
@@ -556,7 +556,7 @@ DistributionWithTrend *
 BetaEndMassDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string                       & path,
                                                                        const std::vector<std::string>          & trend_cube_parameters,
                                                                        const std::vector<std::vector<double> > & trend_cube_sampling,
-                                                                       const std::vector<std::vector<float> >  & blocked_logs,
+                                                                       const std::vector<std::vector<double> > & blocked_logs,
                                                                        const std::vector<std::vector<double> > & s1,
                                                                        const std::vector<std::vector<double> > & s2,
                                                                        const int                                 output_other,

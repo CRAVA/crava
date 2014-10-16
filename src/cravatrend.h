@@ -36,10 +36,6 @@ public:
   void SetTrendCubeSampling(int i, std::vector<double> sampling) { trend_cube_sampling_[i] = sampling ;}
 
 private:
-  //void                                         writeToFile(const Simbox        * timeSimbox,
-  //                                                         FFTGrid             * grid,
-  //                                                         const std::string   & fileName,
-  //                                                         const std::string   & sgriLabel);
 
   std::vector<NRLib::Grid<float> *>    trend_cubes_;               ///< Trend cubes used in rock phyiscs prior model
   std::vector<std::vector<double> >    trend_cube_sampling_;       ///< Common sampling for all trends, corresponding to min/max-values of the trend cubes

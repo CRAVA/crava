@@ -13,7 +13,8 @@ class DistributionsFluidStorage;
 class DistributionsRock;
 class DistributionsFluid;
 
-class BlockedLogsForRockPhysics;
+//class BlockedLogsForRockPhysics;
+class BlockedLogsCommon;
 
 class DistributionsRockStorage {
 public:
@@ -25,7 +26,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -37,7 +38,7 @@ protected:
                                                               const std::string                                               & path,
                                                               const std::vector<std::string>                                  & trend_cube_parameters,
                                                               const std::vector<std::vector<double> >                         & trend_cube_sampling,
-                                                              const std::vector<BlockedLogsForRockPhysics *>                  & blockedLogs,
+                                                              const std::vector<BlockedLogsCommon *>                          & blockedLogs,
                                                               const std::vector<std::string>                                  & constituent_label,
                                                               const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
                                                               const std::map<std::string, DistributionsRockStorage *>         & model_rock_storage,
@@ -66,7 +67,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -101,7 +102,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -132,7 +133,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -159,7 +160,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -186,7 +187,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -216,7 +217,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -246,7 +247,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -277,7 +278,7 @@ public:
                                                                      const std::string                                           & path,
                                                                      const std::vector<std::string>                              & trend_cube_parameters,
                                                                      const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                                     const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                                     const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                                      const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                                      const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                                      const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,

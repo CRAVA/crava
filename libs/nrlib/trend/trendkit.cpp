@@ -7,7 +7,7 @@
 
 namespace NRLib {
 
-void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_logs,
+void EstimateConstantTrend(const std::vector<std::vector<double> > & blocked_logs,
                            double                                  & trend)
 {
   int nWells  = static_cast<int>(blocked_logs.size());
@@ -36,8 +36,8 @@ void EstimateConstantTrend(const std::vector<std::vector<float> >  & blocked_log
   }
 }
 //-------------------------------------------------------------------------------
-void PreprocessData0D(const std::vector<std::vector<float> > & blocked_logs,
-                      std::vector<double>                    & y)
+void PreprocessData0D(const std::vector<std::vector<double> > & blocked_logs,
+                      std::vector<double>                     & y)
 {
   y.clear();
 
@@ -327,7 +327,7 @@ void EstimateTrend1D(const std::vector<double> & x,
 }
 //-------------------------------------------------------------------------------
 void PreprocessData1D(const std::vector<std::vector<double> > & s,
-                      const std::vector<std::vector<float> >  & blocked_logs,
+                      const std::vector<std::vector<double> > & blocked_logs,
                       const std::vector<double>               & trend_cube_sampling,
                       std::vector<double>                     & x,
                       std::vector<double>                     & y)
@@ -848,7 +848,7 @@ void EstimateTrend2D(const std::vector<double>         & x,
 //-------------------------------------------------------------------------------
 void PreprocessData2D(const std::vector<std::vector<double> > & s1,
                       const std::vector<std::vector<double> > & s2,
-                      const std::vector<std::vector<float> >  & blocked_logs,
+                      const std::vector<std::vector<double> > & blocked_logs,
                       const std::vector<std::vector<double> > & trend_cube_sampling,
                       std::vector<double>                     & x,
                       std::vector<double>                     & y,

@@ -16,7 +16,9 @@ class DistributionsSolid;
 class DistributionsFluid;
 class DistributionsDryRock;
 
-class BlockedLogsForRockPhysics;
+//class BlockedLogsForRockPhysics;
+
+class BlockedLogsCommon;
 
 
 void CheckVolumeConsistency(const std::vector<DistributionWithTrend *> & volume_fraction,
@@ -49,7 +51,7 @@ ReadRock(const int                                                   & n_vintage
          const std::string                                           & path,
          const std::vector<std::string>                              & trend_cube_parameters,
          const std::vector<std::vector<double> >                     & trend_cube_sampling,
-         const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+         const std::vector<BlockedLogsCommon *>                      & blockedLogs,
          const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
          const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
          const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -105,7 +107,7 @@ void CheckValuesInZeroOne(const std::vector<DistributionWithTrendStorage *> & te
                           const std::string                                 & path,
                           const std::vector<std::string>                    & trend_cube_parameters,
                           const std::vector<std::vector<double> >           & trend_cube_sampling,
-                          const std::vector<std::vector<float> >            & blocked_logs,
+                          const std::vector<std::vector<double> >           & blocked_logs,
                           std::string                                       & errTxt);
 
 void FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage * dist_with_trend,
@@ -116,8 +118,8 @@ void FindDoubleValueFromDistributionWithTrend(const DistributionWithTrendStorage
 
 void PreprocessDataForSpearmanCorrelation(const std::vector<std::vector<double> > & s1,
                                           const std::vector<std::vector<double> > & s2,
-                                          const std::vector<std::vector<float> >  & blocked_logs_x,
-                                          const std::vector<std::vector<float> >  & blocked_logs_y,
+                                          const std::vector<std::vector<double> > & blocked_logs_x,
+                                          const std::vector<std::vector<double> > & blocked_logs_y,
                                           DistributionWithTrend                   * distribution_with_trend_x,
                                           DistributionWithTrend                   * distribution_with_trend_y,
                                           std::vector<double>                     & x,

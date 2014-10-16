@@ -68,7 +68,7 @@ DistributionsFluidStorage::CreateDistributionsFluidMix(const int                
     }
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -187,7 +187,7 @@ TabulatedVelocityFluidStorage::GenerateDistributionsFluid(const int             
         errTxt += "<correlation-vp-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -320,7 +320,7 @@ TabulatedModulusFluidStorage::GenerateDistributionsFluid(const int              
         errTxt += "<correlation-bulk-density> should be in the interval [-1,1] in the tabulated model\n";
   }
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -629,7 +629,7 @@ BatzleWangFluidStorage::GenerateDistributionsFluid(const int                    
   int n_vintages_temperature = static_cast<int>(temperature_.size());
   int n_vintages_salinity    = static_cast<int>(salinity_.size());
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -753,7 +753,7 @@ CO2FluidStorage::GenerateDistributionsFluid(const int                           
   int n_vintages_pressure    = static_cast<int>(pressure_.size());
   int n_vintages_temperature = static_cast<int>(temperature_.size());
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;

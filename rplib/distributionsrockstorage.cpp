@@ -26,7 +26,8 @@
 #include "rplib/distributionsstoragekit.h"
 
 #include "src/modelsettings.h"
-#include "src/blockedlogsforrockphysics.h"
+//#include "src/blockedlogsforrockphysics.h"
+#include "src/blockedlogscommon.h"
 
 #include <typeinfo>
 
@@ -43,7 +44,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
                                                      const std::string                                               & path,
                                                      const std::vector<std::string>                                  & trend_cube_parameters,
                                                      const std::vector<std::vector<double> >                         & trend_cube_sampling,
-                                                     const std::vector<BlockedLogsForRockPhysics *>                  & blockedLogs,
+                                                     const std::vector<BlockedLogsCommon *>                          & blockedLogs,
                                                      const std::vector<std::string>                                  & constituent_label,
                                                      const std::vector<std::vector<DistributionWithTrendStorage *> > & constituent_volume_fraction,
                                                      const std::map<std::string, DistributionsRockStorage *>         & model_rock_storage,
@@ -73,7 +74,7 @@ DistributionsRockStorage::CreateDistributionsRockMix(const int                  
 
   FindSMinMax(trend_cube_sampling, s_min, s_max);
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -351,7 +352,7 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
                                                         const std::string                                           & path,
                                                         const std::vector<std::string>                              & trend_cube_parameters,
                                                         const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                        const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                        const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                         const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                         const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                         const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -383,29 +384,29 @@ TabulatedVelocityRockStorage::GenerateDistributionsRock(const int               
   // Use blockedLogs given facies
   int nWells = static_cast<int>(blockedLogs.size());
 
-  std::vector<std::vector<float> > vp_given_facies(nWells);
+  std::vector<std::vector<double> > vp_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    vp_given_facies[i] = blockedLogs[i]->getAlphaForFacies(rock_name_);
+    vp_given_facies[i] = blockedLogs[i]->GetVpForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > vs_given_facies(nWells);
+  std::vector<std::vector<double> > vs_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    vs_given_facies[i] = blockedLogs[i]->getBetaForFacies(rock_name_);
+    vs_given_facies[i] = blockedLogs[i]->GetVsForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > density_given_facies(nWells);
+  std::vector<std::vector<double> > density_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+    density_given_facies[i] = blockedLogs[i]->GetRhoForFacies(rock_name_);
   }
 
   std::vector<std::vector<double> > s1(nWells);
   for (int i=0; i<nWells; i++) {
-    s1[i] = blockedLogs[i]->getS1();
+    s1[i] = blockedLogs[i]->GetS1();
   }
 
   std::vector<std::vector<double> > s2(nWells);
   for (int i=0; i<nWells; i++) {
-    s2[i] = blockedLogs[i]->getS2();
+    s2[i] = blockedLogs[i]->GetS2();
   }
 
   for(int i=0; i<n_vintages_vp; i++) {
@@ -701,7 +702,7 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
                                                        const std::string                                           & path,
                                                        const std::vector<std::string>                              & trend_cube_parameters,
                                                        const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                                       const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                                       const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                        const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                        const std::map<std::string, DistributionsSolidStorage *>    & /*model_solid_storage*/,
                                                        const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -733,29 +734,29 @@ TabulatedModulusRockStorage::GenerateDistributionsRock(const int                
   // Use blockedLogs given facies
   int nWells = static_cast<int>(blockedLogs.size());
 
-  std::vector<std::vector<float> > bulk_given_facies(nWells);
+  std::vector<std::vector<double> > bulk_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    bulk_given_facies[i] = blockedLogs[i]->getBulkForFacies(rock_name_);
+    bulk_given_facies[i] = blockedLogs[i]->GetBulkForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > shear_given_facies(nWells);
+  std::vector<std::vector<double> > shear_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    shear_given_facies[i] = blockedLogs[i]->getShearForFacies(rock_name_);
+    shear_given_facies[i] = blockedLogs[i]->GetShearForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > density_given_facies(nWells);
+  std::vector<std::vector<double> > density_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+    density_given_facies[i] = blockedLogs[i]->GetRhoForFacies(rock_name_);
   }
 
   std::vector<std::vector<double> > s1(nWells);
   for (int i=0; i<nWells; i++) {
-    s1[i] = blockedLogs[i]->getS1();
+    s1[i] = blockedLogs[i]->GetS1();
   }
 
   std::vector<std::vector<double> > s2(nWells);
   for (int i=0; i<nWells; i++) {
-    s2[i] = blockedLogs[i]->getS2();
+    s2[i] = blockedLogs[i]->GetS2();
   }
 
   for(int i=0; i<n_vintages_bulk; i++) {
@@ -1040,7 +1041,7 @@ ReussRockStorage::GenerateDistributionsRock(const int                           
                                             const std::string                                           & path,
                                             const std::vector<std::string>                              & trend_cube_parameters,
                                             const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                            const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                            const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                             const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1114,7 +1115,7 @@ VoigtRockStorage::GenerateDistributionsRock(const int                           
                                             const std::string                                           & path,
                                             const std::vector<std::string>                              & trend_cube_parameters,
                                             const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                            const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                            const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                             const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                             const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                             const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1188,7 +1189,7 @@ HillRockStorage::GenerateDistributionsRock(const int                            
                                            const std::string                                           & path,
                                            const std::vector<std::string>                              & trend_cube_parameters,
                                            const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                           const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                           const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                            const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                            const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                            const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1278,7 +1279,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
                                           const std::string                                           & path,
                                           const std::vector<std::string>                              & trend_cube_parameters,
                                           const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                          const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
+                                          const std::vector<BlockedLogsCommon *>                      & /*blockedLogs*/,
                                           const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                           const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                           const std::map<std::string, DistributionsDryRockStorage *>  & /*model_dry_rock_storage*/,
@@ -1294,7 +1295,7 @@ DEMRockStorage::GenerateDistributionsRock(const int                             
   int n_inclusions = static_cast<int>(inclusion_volume_fraction_.size());
   int n_constituents = n_inclusions + 1;
 
-  const std::vector<std::vector<float> >  dummy_blocked_logs;
+  const std::vector<std::vector<double> > dummy_blocked_logs;
   const std::vector<std::vector<double> > dummy_s1;
   const std::vector<std::vector<double> > dummy_s2;
   const int                               dummy_output_other = -999;
@@ -1504,7 +1505,7 @@ GassmannRockStorage::GenerateDistributionsRock(const int                        
                                                const std::string                                           & path,
                                                const std::vector<std::string>                              & trend_cube_parameters,
                                                const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                               const std::vector<BlockedLogsForRockPhysics *>              & /*blockedLogs*/,
+                                               const std::vector<BlockedLogsCommon *>                      & /*blockedLogs*/,
                                                const std::map<std::string, DistributionsRockStorage *>     & /*model_rock_storage*/,
                                                const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1617,7 +1618,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
                                                const std::string                                           & path,
                                                const std::vector<std::string>                              & trend_cube_parameters,
                                                const std::vector<std::vector<double> >                     & trend_cube_sampling,
-                                               const std::vector<BlockedLogsForRockPhysics *>              & blockedLogs,
+                                               const std::vector<BlockedLogsCommon *>                      & blockedLogs,
                                                const std::map<std::string, DistributionsRockStorage *>     & model_rock_storage,
                                                const std::map<std::string, DistributionsSolidStorage *>    & model_solid_storage,
                                                const std::map<std::string, DistributionsDryRockStorage *>  & model_dry_rock_storage,
@@ -1717,34 +1718,34 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
 
   int nWells = static_cast<int>(blockedLogs.size());
 
-  std::vector<std::vector<float> > bulk_given_facies(nWells);
+  std::vector<std::vector<double> > bulk_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    bulk_given_facies[i] = blockedLogs[i]->getBulkForFacies(rock_name_);
+    bulk_given_facies[i] = blockedLogs[i]->GetBulkForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > shear_given_facies(nWells);
+  std::vector<std::vector<double> > shear_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    shear_given_facies[i] = blockedLogs[i]->getShearForFacies(rock_name_);
+    shear_given_facies[i] = blockedLogs[i]->GetShearForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > density_given_facies(nWells);
+  std::vector<std::vector<double> > density_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    density_given_facies[i] = blockedLogs[i]->getRhoForFacies(rock_name_);
+    density_given_facies[i] = blockedLogs[i]->GetRhoForFacies(rock_name_);
   }
 
-  std::vector<std::vector<float> > porosity_given_facies(nWells);
+  std::vector<std::vector<double> > porosity_given_facies(nWells);
   for(int i=0; i<nWells; i++) {
-    porosity_given_facies[i] = blockedLogs[i]->getPorosityForFacies(rock_name_);
+    porosity_given_facies[i] = blockedLogs[i]->GetPorosityForFacies(rock_name_);
   }
 
   std::vector<std::vector<double> > s1(nWells);
   for (int i=0; i<nWells; i++) {
-    s1[i] = blockedLogs[i]->getS1();
+    s1[i] = blockedLogs[i]->GetS1();
   }
 
   std::vector<std::vector<double> > s2(nWells);
   for (int i=0; i<nWells; i++) {
-    s2[i] = blockedLogs[i]->getS2();
+    s2[i] = blockedLogs[i]->GetS2();
   }
 
   bool logs_given = true;
@@ -1785,8 +1786,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     }
   }
 
-  std::vector<std::vector<float> > bulk_weight_given_facies(nWells);
-  std::vector<std::vector<float> > shear_weight_given_facies(nWells);
+  std::vector<std::vector<double> > bulk_weight_given_facies(nWells);
+  std::vector<std::vector<double> > shear_weight_given_facies(nWells);
 
   if(bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) {
 
@@ -1831,8 +1832,8 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
           DEMTools::CalcElasticParamsFromSeismicParams(vp_lower, vs_lower, rho_lower, bulk_lower, shear_lower);
           DEMTools::CalcElasticParamsFromSeismicParams(vp_upper, vs_upper, rho_upper, bulk_upper, shear_upper);
 
-          bulk_weight_given_facies[i][j]  = static_cast<float>((bulk_given_facies[i][j]  - bulk_lower)  / (bulk_upper  - bulk_lower));
-          shear_weight_given_facies[i][j] = static_cast<float>((shear_given_facies[i][j] - shear_lower) / (shear_upper - shear_lower));
+          bulk_weight_given_facies[i][j]  = (bulk_given_facies[i][j]  - bulk_lower)  / (bulk_upper  - bulk_lower);
+          shear_weight_given_facies[i][j] = (shear_given_facies[i][j] - shear_lower) / (shear_upper - shear_lower);
         }
       }
     }
