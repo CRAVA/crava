@@ -116,17 +116,19 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics() && model_settings->getTrendCubeParameters().size() > 0) {
     setup_trend_cubes_ = SetupTrendCubes(model_settings, input_files, multiple_interval_grid_, &full_inversion_simbox_, trend_cubes_, err_text);
   }
+  else
+    trend_cubes_.resize(multiple_interval_grid_->GetNIntervals());
 
   // 10. Rock Physics
   if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
     if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
       if (setup_trend_cubes_) {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_, //mapped_blocked_logs_,
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
                                                           wells_, reservoir_variables_, rock_distributions_, err_text);
       }
     }
     else {
-        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_, //mapped_blocked_logs_,
+        setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
                                                           wells_, reservoir_variables_, rock_distributions_, err_text);
     }
   }
@@ -5020,6 +5022,12 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
     }
   }
 
+  //H-TODO: Do not allow trends with a z-component together with multizone.
+
+  //Rockphysics (blocked logs) are based on estimation simbox -> uses trend_cube(i,j,k).
+  
+  //Single zone: avoinversion interval_simbox(0) -> uses trend_cube(i,j,k).
+
   try {
     for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
       if (trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) { //Other options are handled inside CravaTrend
@@ -5086,7 +5094,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                                   const MultiIntervalGrid                                       * multiple_interval_grid,
                                   const Simbox                                                  & estimation_simbox,
                                   const std::vector<CravaTrend>                                 & trend_cubes,
-                                  //const std::map<std::string, BlockedLogsCommon *>              & mapped_blocked_logs,
                                   std::vector<NRLib::Well *>                                    & wells,
                                   std::map<std::string, std::vector<DistributionWithTrend *> >  & reservoir_variables,
                                   std::map<std::string, std::vector<DistributionsRock *> >      & rock_distributions,
@@ -5095,7 +5102,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   LogKit::WriteHeader("Processing Rock Physics");
 
   (void) multiple_interval_grid;
-  //(void) mapped_blocked_logs;
 
   std::string err_text = "";
   int n_intervals = multiple_interval_grid->GetNIntervals();
@@ -5108,10 +5114,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   const std::vector<std::vector<float> >            dummy_blocked_logs;
   const std::map<std::string,
     std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
-
-  //
-  //reservoir_variables_.resize(n_trend_cubes);
-  //rock_distributions_.resize(n_trend_cubes);
 
   // generate distribution for each reservoir variable
   for (int i = 0; i < n_intervals; i++) { // the number of trend cubes is the same as the number of intervals
@@ -5150,9 +5152,9 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     // Block logs
     std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
     if (n_wells > 0) {
-      for (int i = 0; i < n_wells; i++)
-        //blocked_logs[i] = new BlockedLogsForRockPhysics(wells[i], estimation_simbox, trend_cubes_);
+      for (int i = 0; i < n_wells; i++) {
         blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &estimation_simbox, trend_cubes_[0]);
+      }
     }
 
     // map between reservoir variables and storage classes
@@ -7607,42 +7609,7 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
 
-        // If outside/If in the padding in x- and y-direction,
-        // set expectation equal to something at right scale
-        // (top value for closest edge)
-        // NBNB OK Can be made better linear interoplation between first and last value in i an j direction as well
-        //if (i >= nx || j >= ny) {
-        //  int indexI;
-        //  int indexJ;
-        //  indexI = (nx+nxp)/2 ? 0   : nx-1;
-        //  indexJ = (ny+nyp)/2 ? 0   : ny-1;
-        //  indexI = std::min(i,indexI);
-        //  indexJ = std::min(j,indexJ);
-
-        //  float vp_val  = top_vp(indexI,indexJ);
-        //  float vs_val  = top_vs(indexI,indexJ);
-        //  float rho_val = top_rho(indexI,indexJ);
-
-        //  vp.setNextReal(vpVal);
-        //  vs.setNextReal(vsVal);
-        //  rho.setNextReal(rhoVal);
-        //}
-
-        // If outside in z-direction, use linear interpolation between top and base values of the expectations
-        //else if (k >= nz) {
-        //  double t  = double(nzp-k+1)/(nzp-nz+1);
-        //  double vp_val =  top_vp(i,j)*t  + base_vp(i,j)*(1-t);
-        //  double vs_val =  top_vs(i,j)*t  + base_vs(i,j)*(1-t);
-        //  double rho_val = top_rho(i,j)*t + base_rho(i,j)*(1-t);
-
-        //  // Set interpolated values in expectation grids
-        //  vp.setNextReal(static_cast<float>(vp_val));
-        //  vs.setNextReal(static_cast<float>(vs_val));
-        //  rho.setNextReal(static_cast<float>(rho_val));
-        //}
-
-        // Otherwise use trend values to get expectation values for each facies from the rock
-        //else {
+        //Use trend values to get expectation values for each facies from the rock
         std::vector<double> trend_position = trend_cube.GetTrendPosition(i,j,k);
 
         std::vector<float> expectations(3, 0);  // Antar initialisert til 0.
@@ -7666,18 +7633,6 @@ void CommonData::GenerateRockPhysics3DBackground(const std::vector<Distributions
         value_tmp = expectations[2];
         rho->SetValue(i, j, k, value_tmp);
 
-        // Store top and base values of the expectations for later use in interpolation in the padded region.
-        //if (k==0) {
-        //  top_vp(i,j)  = expectations[0];
-        //  top_vs(i,j)  = expectations[1];
-        //  top_rho(i,j) = expectations[2];
-        //}
-        //else if (k==nz-1) {
-        //  base_vp(i,j)  = expectations[0];
-        //  base_vs(i,j)  = expectations[1];
-        //  base_rho(i,j) = expectations[2];
-        //}
-        //}
       }
     }
 

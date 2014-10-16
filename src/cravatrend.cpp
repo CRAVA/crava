@@ -9,6 +9,8 @@
 
 CravaTrend::CravaTrend()
 {
+  n_samples_      = 1000;
+  n_trend_cubes_  = 0;
 }
 
 CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
@@ -37,7 +39,6 @@ CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
       // 1 Trend cube from file ------------------------------------------------
       if(trend_cube_type[grid_number] == ModelSettings::CUBE_FROM_FILE) {
         // Do nothing
-        //trend_cube = trend_cubes[grid_number];
         trend_cube = new NRLib::Grid<float>(*trend_cubes[grid_number]);
       }
 
@@ -60,9 +61,9 @@ CravaTrend::CravaTrend(const Simbox                      * interval_simbox,
 
         LogKit::LogFormatted(LogKit::Low,"\nGenerating trend grid \'"+trend_cube_parameters[grid_number]+"\'\n");
 
-        for(int k=0; k<nz; k++) { //nzp
-          for(int j=0; j<ny; j++) { //nyp
-            for(int i=0; i<nx; i++) { //rnxp
+        for(int k=0; k<nz; k++) {
+          for(int j=0; j<ny; j++) {
+            for(int i=0; i<nx; i++) {
               // value is set to depth from simbox
               float value = static_cast<float>(interval_simbox->getTop(i,j) + interval_simbox->getdz(i,j)*k);
               trend_cube->SetValue(i, j, k, value);
