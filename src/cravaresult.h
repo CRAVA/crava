@@ -116,13 +116,15 @@ public:
                   const ModelSettings      * model_settings);
 
   StormContGrid * CreateStormGrid(const Simbox & simbox,
-                                  FFTGrid      * fft_grid);
+                                  FFTGrid      * fft_grid,
+                                  bool           delete_fft = true); //If true, delete FFT-grid
 
   //StormContGrid * CreateStormGrid(const Simbox       & simbox,
   //                                NRLib::Grid<float> * grid);
 
   void CreateStormGrid(StormContGrid & grid_new,
-                       FFTGrid       * fft_grid);
+                       FFTGrid       * fft_grid,
+                       bool            allow_delete = true); //If false, we are sure the fft-grid survives.
 
   void WriteBackgrounds(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
@@ -144,8 +146,7 @@ public:
                           StormContGrid                * vp,
                           StormContGrid                * vs,
                           StormContGrid                * rho,
-                          std::vector<StormContGrid *> & synt_seis_data,
-                          std::vector<StormContGrid *> & synt_residuals);
+                          std::vector<StormContGrid *> & synt_seis_data);
 
   StormContGrid * ComputeSeismicImpedance(StormContGrid       * vp,
                                           StormContGrid       * vs,
@@ -224,7 +225,6 @@ private:
   std::vector<StormContGrid *>                             simulations_seed2_;
 
   std::vector<StormContGrid *>                             synt_seismic_data_; //Vector angles
-  std::vector<StormContGrid *>                             synt_residuals_;
 
   StormContGrid                                          * block_grid_;
 

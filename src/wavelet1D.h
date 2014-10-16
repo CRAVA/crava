@@ -25,6 +25,7 @@ public:
             const ModelSettings                              * modelSettings,
             const NRLib::Matrix                              & reflCoef,
             int                                                iAngle,
+            std::vector<Wavelet1D *>                         & well_wavelet,
             int                                              & errCode,
             std::string                                      & errTxt,
             bool                                               writing = true);
@@ -39,7 +40,13 @@ public:
   Wavelet1D(Wavelet * wavelet);
 
   Wavelet1D(std::vector<float>   vec,
-          int                 nzp);
+            int                  nzp);
+
+  Wavelet1D(fftw_real * vec,
+            int         nz,
+            int         nzp,
+            double      dz,
+            bool        fft_order);
 
   Wavelet1D(Wavelet          * wavelet,
           int                 difftype);
@@ -50,9 +57,9 @@ public:
 
 Wavelet1D(const ModelSettings * modelSettings,
           const float         * reflCoef,
-          float           theta,
-          float           peakFrequency,
-          int           & errCode);
+          float                 theta,
+          float                 peakFrequency,
+          int                 & errCode);
 
   void   shiftAndScale(float shift, float scale);
   void   adjustForAmplitudeEffect(double multiplyer, double Halpha);

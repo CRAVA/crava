@@ -319,7 +319,8 @@ SegY::SegY(const StormContGrid     * storm_grid,
            float                     z0,
            const std::string       & file_name,
            bool                      write_to_file,
-           const TraceHeaderFormat & trace_header_format)
+           const TraceHeaderFormat & trace_header_format,
+           bool                      is_seismic)
 {
   rmissing_      = segyRMISSING;
   geometry_      = NULL;
@@ -350,6 +351,9 @@ SegY::SegY(const StormContGrid     * storm_grid,
 
   std::vector<float> data_vec;
   data_vec.resize(nz);
+  double z_shift = 0;
+  if(is_seismic == false)
+    z_shift = 0.5*dz_;
   float x, y, xt, yt, z;
   for (j = 0; j < ny; j++) {
     for (i = 0; i < nx; i++) {
@@ -361,8 +365,8 @@ SegY::SegY(const StormContGrid     * storm_grid,
 
       double z_bot      = storm_grid->GetBotSurface().GetZ(x,y);
       double z_top      = storm_grid->GetTopSurface().GetZ(x,y);
-      int    first_data = static_cast<int>(floor((z_top)/dz));
-      int    end_data   = static_cast<int>(floor((z_bot)/dz));
+      int    first_data = static_cast<int>(floor((z_top+z_shift)/dz));
+      int    end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
 
       if (end_data > nz) {
         printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, end_data);
@@ -373,7 +377,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
       }
 
       for (k = first_data; k < end_data; k++) {
-        z           = z0 + k*dz;
+        z           = z0 + k*dz + z_shift;
         data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
       }
       for (k = end_data; k < nz; k++) {

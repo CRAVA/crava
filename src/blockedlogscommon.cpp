@@ -2931,9 +2931,11 @@ void BlockedLogsCommon::FillInCpp(const float * coeff,
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 
-  for (i = start; i < start+length-1; i++) {
-    double ei1 = ComputeElasticImpedance(vp_vert[i],   static_cast<float>(vs_vert[i]),  static_cast<float>(rho_vert[i]),   coeff);
-    double ei2 = ComputeElasticImpedance(vp_vert[i+1], static_cast<float>(vs_vert[i+1]),static_cast<float>(rho_vert[i+1]), coeff);
+  //Make reflection coefficients consistent with seismic data indexes. Seismic data at index i is the response at top of cell i, so
+  //the reflection coefficients in a cell must also be associated with the top of the cell.
+  for (i = start+1; i < start+length; i++) {
+    double ei1 = ComputeElasticImpedance(vp_vert[i-1],   static_cast<float>(vs_vert[i-1]),  static_cast<float>(rho_vert[i-1]),   coeff);
+    double ei2 = ComputeElasticImpedance(vp_vert[i], static_cast<float>(vs_vert[i]),static_cast<float>(rho_vert[i]), coeff);
     cpp_r[i] =  static_cast<fftw_real>(ei2-ei1);
   }
 
@@ -3107,7 +3109,8 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
                                       int                     start,
                                       int                     length,
                                       fftw_real             * seis_r,
-                                      int                     nzp) const
+                                      int                     nzp,
+                                      bool                    top_value) const
 {
   int i;
   for (i=0; i<nzp; i++)
@@ -3115,13 +3118,9 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 
   for (i=start; i<start+length; i++)
     seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
-/*
-  int lTregion = 3;
-  int* modify  = getIndexPrior(start,lTregion,nzp);
-  int* conditionto = getIndexPost(start-1,lTregion,nzp);
-  //NBNB Odd: interpolate endpoints?
-*/
 
+  if(top_value == true)
+    Utils::ShiftTrace(&(seis_r[start]),length, false);
 }
 
 //--------------------------------------------------------------------------------------
@@ -3153,7 +3152,7 @@ void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & bloc
     double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
 
     int j=0;
-    while (b<a && j<nz) {
+    while (b<=a && j<nz) {
       b += dzVt;
       j++;
     }
@@ -3195,24 +3194,34 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
   {
     std::vector<double> blocked_log(n_blocks_);
 
-    SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
-                            vertical_trend, z0, dz, nz);
-
-    if (type == "VP_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
-    else if (type == "VS_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
-    else if (type == "RHO_SEISMIC_RESOLUTION")
-      cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
-    else if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
+    if(type == "ACTUAL_SYNTHETIC_SEISMIC") {
+      std::vector<fftw_real> trace(vertical_trend.size());
+      for(size_t i=0;i<vertical_trend.size();i++)
+        trace[i] = static_cast<float>(vertical_trend[i]);
+      Utils::ShiftTrace(&(trace[0]), trace.size());
+      std::vector<double> v_trend(vertical_trend.size());
+      for(size_t i=0;i<vertical_trend.size();i++)
+        v_trend[i] = static_cast<double>(trace[i]);
+      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                              v_trend, z0, dz, nz);
       if (actual_synt_seismic_data_.size() == 0)
         actual_synt_seismic_data.resize(n_angles_); // nAngles is set along with real_seismic_data_
       actual_synt_seismic_data[i_angle] = blocked_log;
     }
     else {
-      LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
-                           "\" in BlockedLogs::setLogFromVerticalTrend()\n");
-      exit(1);
+      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
+                              vertical_trend, z0, dz, nz);
+      if (type == "VP_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
+      else if (type == "VS_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
+      else if (type == "RHO_SEISMIC_RESOLUTION")
+        cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
+      else {
+        LogKit::LogFormatted(LogKit::Error,"\nUnknown log type \""+type+
+                             "\" in BlockedLogs::setLogFromVerticalTrend()\n");
+        exit(1);
+      }
     }
   }
   else if (type == "WELL_SYNTHETIC_SEISMIC") {
@@ -3224,8 +3233,15 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
           well_synt_seismic_data[i][j] = RMISSING; //Declare in case the wavelet is not estimated for all angles
       }
     }
+    std::vector<fftw_real> trace(vertical_trend.size());
+    for(size_t i=0;i<vertical_trend.size();i++)
+      trace[i] = static_cast<float>(vertical_trend[i]);
+    Utils::ShiftTrace(&(trace[0]), trace.size());
+    std::vector<double> v_trend(vertical_trend.size());
+    for(size_t i=0;i<vertical_trend.size();i++)
+      v_trend[i] = static_cast<double>(trace[i]);
     SetLogFromVerticalTrend(well_synt_seismic_data[i_angle], z_pos_blocked_, n_blocks_,
-                            vertical_trend, z0, dz, nz);
+                            v_trend, z0, dz, nz);
   }
 }
 
@@ -3284,6 +3300,8 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
     cpp_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
   else if (type == "SEISMIC_DATA") {
+    //Real seismic data is shfited up by half a cell to match inversion. Shift back
+    Utils::ShiftTrace(blocked_log,false);
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
   else if (type == "FACIES_PROB") {
@@ -3823,7 +3841,8 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
                                                  std::vector<Wavelet *>     & wavelet,
                                                  int                          nz,
                                                  int                          nzp,
-                                                 const Simbox               * simbox)
+                                                 const Simbox               * simbox,
+                                                 bool                         well_opt)
 {
   int          i, j;
   int          start, length;
@@ -3858,50 +3877,57 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
 
   int n_angles = static_cast<int>(wavelet.size());
   for (i=0; i < n_angles; i++) {
-    for (j=0; j < rnzp; j++) {
-      cpp_r[j] = 0;
-      synt_seis_r[j] = 0;
+    if(wavelet[i] != NULL) {
+      for (j=0; j < rnzp; j++) {
+        cpp_r[j] = 0;
+        synt_seis_r[j] = 0;
+      }
+      float * refl_coef = new float[3];
+      refl_coef[0] = static_cast<float>(reflection_matrix(i,0));
+      refl_coef[1] = static_cast<float>(reflection_matrix(i,1));
+      refl_coef[2] = static_cast<float>(reflection_matrix(i,2));
+      FillInCpp(refl_coef, start, length, cpp_r, nzp);
+      Utils::fft(cpp_r,cpp_c,nzp);
+      delete [] refl_coef;
+      local_wavelet = wavelet[i]->createLocalWavelet1D(i_pos_[0], j_pos_[0]);
+      local_wavelet->fft1DInPlace();
+     // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
+     // what about relative thickness ????
+     // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0])*Relativethikness... Need simbox;
+
+      for (j=0; j < cnzp; j++) {
+        cAmp =  local_wavelet->getCAmp(j, scale);
+        synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im;
+        synt_seis_c[j].im = cpp_c[j].im*cAmp.re - cpp_c[j].re*cAmp.im;
+      }
+
+      Utils::fftInv(synt_seis_c,synt_seis_r,nzp);
+
+      for (j=0; j<nz; j++)
+        synt_seis[j] = 0.0; // Do not use RMISSING (fails in setLogFromVerticalTrend())
+
+      for (j=start; j < start+length; j++)
+        synt_seis[j] = synt_seis_r[j];
+
+      SetNAngles(n_angles);
+      std::string log_type;
+      if(well_opt == true)
+        log_type = "WELL_SYNTHETIC_SEISMIC";
+      else
+        log_type = "ACTUAL_SYNTHETIC_SEISMIC";
+      SetLogFromVerticalTrend(synt_seis,
+                              cont_logs_seismic_resolution_,
+                              actual_synt_seismic_data_,
+                              well_synt_seismic_data_,
+                              z_pos_blocked_[0],
+                              dz_,
+                              nz,
+                              log_type,
+                              i);
+
+      //localWavelet->fft1DInPlace();
+      delete local_wavelet;
     }
-    float * refl_coef = new float[3];
-    refl_coef[0] = static_cast<float>(reflection_matrix(i,0));
-    refl_coef[1] = static_cast<float>(reflection_matrix(i,1));
-    refl_coef[2] = static_cast<float>(reflection_matrix(i,2));
-    FillInCpp(refl_coef, start, length, cpp_r, nzp);
-    Utils::fft(cpp_r,cpp_c,nzp);
-    delete [] refl_coef;
-    local_wavelet = wavelet[i]->createLocalWavelet1D(i_pos_[0], j_pos_[0]);
-    local_wavelet->fft1DInPlace();
-   // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0]);
-   // what about relative thickness ????
-   // float sf = wavelet[i]->getLocalStretch(ipos_[0],jpos_[0])*Relativethikness... Need simbox;
-
-    for (j=0; j < cnzp; j++) {
-      cAmp =  local_wavelet->getCAmp(j, scale);
-      synt_seis_c[j].re = cpp_c[j].re*cAmp.re + cpp_c[j].im*cAmp.im;
-      synt_seis_c[j].im = cpp_c[j].im*cAmp.re - cpp_c[j].re*cAmp.im;
-    }
-
-    Utils::fftInv(synt_seis_c,synt_seis_r,nzp);
-
-    for (j=0; j<nz; j++)
-      synt_seis[j] = 0.0; // Do not use RMISSING (fails in setLogFromVerticalTrend())
-
-    for (j=start; j < start+length; j++)
-      synt_seis[j] = synt_seis_r[j];
-
-    SetNAngles(n_angles);
-    SetLogFromVerticalTrend(synt_seis,
-                            cont_logs_seismic_resolution_,
-                            actual_synt_seismic_data_,
-                            well_synt_seismic_data_,
-                            z_pos_blocked_[0],
-                            dz_,
-                            nz,
-                            "ACTUAL_SYNTHETIC_SEISMIC",
-                            i);
-
-    //localWavelet->fft1DInPlace();
-    delete local_wavelet;
   }
 
   delete [] cpp_r;

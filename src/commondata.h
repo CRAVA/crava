@@ -25,6 +25,7 @@
 class MultiIntervalGrid;
 class CravaTrend;
 class BlockedLogsCommon;
+class Wavelet1D;
 
 class CommonData{
 public:
@@ -85,6 +86,7 @@ public:
   NRLib::Matrix                                                      & GetReflectionMatrixTimeLapse(int time_lapse)           { return reflection_matrix_[time_lapse]                 ;}
 
   std::vector<Wavelet *>                                             & GetWavelet(int time_lapse)                             { return wavelets_.find(time_lapse)->second             ;}
+  std::vector<Wavelet1D *>                                           & GetWellWavelets(int angle)                             { return well_wavelets_[angle]                          ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
 
   bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
@@ -181,7 +183,8 @@ public:
                                 int                   grid_type,
                                 bool                  scale    = false,
                                 bool                  is_segy  = true,
-                                bool                  is_storm = false) const;
+                                bool                  is_storm = false,
+                                bool                  is_seismic = false) const;
 
   void               GetCorrGradIJ(float         & corr_grad_I,
                                    float         & corr_grad_J,
@@ -424,6 +427,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                      std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
                                      std::vector<std::vector<SeismicStorage *> > & seismic_data,
                                      std::map<int, std::vector<Wavelet *> >      & wavelets,
+                                     std::vector<std::vector<Wavelet1D *> >      & well_wavelets,
                                      std::map<int, std::vector<Grid2D *> >       & local_noise_scale,
                                      std::map<int, std::vector<float> >          & global_noise_estimate,
                                      std::map<int, std::vector<float> >          & sn_ratio,
@@ -498,6 +502,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                       const NRLib::Matrix                        & reflection_matrix,
                                       std::string                                & err_text,
                                       Wavelet                                   *& wavelet,
+                                      std::vector<Wavelet1D *>                   & well_wavelets,
                                       Grid2D                                    *& shift_grid,
                                       Grid2D                                    *& gain_grid,
                                       Grid2D                                    *& local_noise_scale,
@@ -983,6 +988,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   std::string                                                  wavelet_est_int_bot_ ;
   std::vector<std::vector<Grid2D *> >                          shift_grids_; //vector timelapse, vector angles
   std::vector<std::vector<Grid2D *> >                          gain_grids_;  //vector timelapse, vector angles
+  std::vector<std::vector<Wavelet1D *> >                       well_wavelets_; //Optimal wavelets per well.
 
   std::vector<std::vector<double> >                            t_grad_x_;
   std::vector<std::vector<double> >                            t_grad_y_;
