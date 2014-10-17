@@ -285,7 +285,7 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
 
         double bandwidth = CalculateBandwidth(x, scale, 0.2);
 
-        if (CheckConfigurations1D(x, y, trend_sampling, bandwidth,errTxt)) {
+        if (CheckConfigurations1D(x, y, trend_cube_sampling[reference - 1], bandwidth,errTxt)) {
           EstimateTrend1D(x,
                           y,
                           trend_cube_sampling[reference - 1],
