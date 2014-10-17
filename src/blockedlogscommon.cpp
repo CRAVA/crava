@@ -393,10 +393,17 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
   std::vector<double> blocked_porosity;
   std::vector<int>    blocked_facies;
 
-  BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
-  BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
-  BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
-  BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
+  if (well->HasContLog("Vp"))
+    BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
+
+  if (well->HasContLog("Vs"))
+    BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
+
+  if (well->HasContLog("Rho"))
+    BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
+
+  if (well->HasContLog("Porosity"))
+    BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
   BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
 
