@@ -461,10 +461,6 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                             std::string   & err_text,
                                             bool            scale = false) const;
 
-  void               ProcessLogsNorsarWell(NRLib::Well                  & new_well,
-                                           std::string                  & error_text,
-                                           bool                         & failed) const;
-
   void               ProcessLogsRMSWell(NRLib::Well                     & new_well,
                                         std::string                     & error_text,
                                         bool                            & failed) const;

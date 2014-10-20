@@ -2102,7 +2102,6 @@ void CommonData::ApplyFilter(std::vector<double> & log_filtered,
   }
 }
 
-
 void CommonData::CutWell(std::string           well_file_name,
                          NRLib::Well         & well,
                          const NRLib::Volume & full_inversion_volume) const
