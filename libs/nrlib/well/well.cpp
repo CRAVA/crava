@@ -168,7 +168,7 @@ const std::vector<double>&
 Well::GetContLogSeismicResolution(const std::string& name) const
 {
   std::map<std::string, std::vector<double> >::const_iterator item = cont_log_seismic_resolution_.find(name);
-  assert(item != cont_log_.end());
+  assert(item != cont_log_seismic_resolution_.end());
   return item->second;
 }
 
@@ -176,7 +176,7 @@ const std::vector<double>&
 Well::GetContLogBackgroundResolution(const std::string& name) const
 {
   std::map<std::string, std::vector<double> >::const_iterator item = cont_log_background_resolution_.find(name);
-  assert(item != cont_log_.end());
+  assert(item != cont_log_background_resolution_.end());
   return item->second;
 }
 

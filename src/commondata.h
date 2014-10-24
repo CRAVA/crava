@@ -296,8 +296,6 @@ private:
                                   std::vector<std::string>                & log_names,
                                   std::vector<int>                        & facies_nr,
                                   std::vector<std::string>                & facies_names,
-                                  std::vector<std::vector<int> >          & facies_nr_wells,
-                                  std::vector<std::vector<std::string> >  & facies_names_wells,
                                   const std::vector<std::string>          & log_names_from_user,
                                   const std::vector<bool>                 & inverse_velocity,
                                   bool                                      facies_log_given,
@@ -992,8 +990,6 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   NRLib::Grid2D<float>                                         ref_time_grad_y_; ///< Time gradient in x-direction for reference time surface (t0)
 
   // Facies
-  std::vector<std::vector<int> >                               facies_nr_wells_;    ///< Facies Numbers per well.
-  std::vector<std::vector<std::string> >                       facies_names_wells_; ///< Facies Names per well
   std::vector<bool>                                            facies_log_wells_;   ///< True if this well has a facies log
 
   std::vector<std::string>                                     facies_names_; ///< Facies names combined for wells.
