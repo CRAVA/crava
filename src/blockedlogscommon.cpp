@@ -393,10 +393,17 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
   std::vector<double> blocked_porosity;
   std::vector<int>    blocked_facies;
 
-  BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
-  BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
-  BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
-  BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
+  if (well->HasContLog("Vp"))
+    BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
+
+  if (well->HasContLog("Vs"))
+    BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
+
+  if (well->HasContLog("Rho"))
+    BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
+
+  if (well->HasContLog("Porosity"))
+    BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
   BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
 
@@ -1297,7 +1304,11 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     x = x_pos_raw_logs[m];
     y = y_pos_raw_logs[m];
     z = z_pos_raw_logs[m];
-    n_well_log_obs_in_interval[multiple_interval_grid->WhichSimbox(x,y,z)]++;
+
+    //H Raw logs may be outside simbox
+    int simbox_number = multiple_interval_grid->WhichSimbox(x,y,z);
+    if (simbox_number > -1)
+      n_well_log_obs_in_interval[simbox_number]++;
   }
 
   //
@@ -1346,7 +1357,9 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   i_pos[b] = first_I;
   j_pos[b] = first_J;
   k_pos[b] = static_cast<int>(first_K*dz_rel[first_S]);
-  int i, j, k;
+  int i = 0;
+  int j = 0;
+  int k = 0;
   int max_m = 0;
   if (first_S_ == last_S_) {
     max_m = last_M_+1;                              // 1. If the last well obs is in interval number first_S_
@@ -1388,11 +1401,13 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       wl++;
       if (bInd[wl] != bInd[wl - 1]) {
         b++;
+        k = 0;
         interval_simboxes[s]->getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
         s_pos[b] = first_S_;
         i_pos[b] = i;
         j_pos[b] = j;
-        k_pos[b] = static_cast<int>(k*dz_rel[s]);
+
+        k_pos[b] = static_cast<int>(k*dz_rel[s]); //H-TODO k = IMISSING
       }
     }
   }
