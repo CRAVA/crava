@@ -311,7 +311,8 @@ private:
                                              std::vector<std::string>                                   & continuous_logs_to_be_blocked,
                                              std::vector<std::string>                                   & discrete_logs_to_be_blocked,
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
-                                             std::string                                                & err_text) const;
+                                             std::string                                                & err_text,
+                                             bool                                                         est_simbox = true) const;
 
   bool               BlockLogsForCorrelation(const ModelSettings                                        * const model_settings,
                                              const MultiIntervalGrid                                    * multiple_interval_grid,

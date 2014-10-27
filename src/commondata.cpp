@@ -89,16 +89,13 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
       SetLogsToBeBlocked(wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
-      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations()) {
-        LogKit::WriteHeader("Blocking wells for estimation");
+      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
-      }
 
       //Block wells to output simbox
-      LogKit::WriteHeader("Blocking wells for output simbox");
       block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
+                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
     }
     else
       block_wells_ = false;
@@ -4554,21 +4551,29 @@ void CommonData::SetLogsToBeBlocked(const std::vector<NRLib::Well *>  & wells,
   // Discrete parameters that are to be used in BlockedLogsCommon
 }
 
-bool CommonData::BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
-                                         const Simbox                                               & estimation_simbox,
-                                         std::vector<NRLib::Well *>                                 & wells,
-                                         std::vector<std::string>                                   & continuous_logs_to_be_blocked,
-                                         std::vector<std::string>                                   & discrete_logs_to_be_blocked,
-                                         std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
-                                         std::string                                                & err_text_common) const
+bool CommonData::BlockWellsForEstimation(const ModelSettings                        * const model_settings,
+                                         const Simbox                               & estimation_simbox,
+                                         std::vector<NRLib::Well *>                 & wells,
+                                         std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                         std::vector<std::string>                   & discrete_logs_to_be_blocked,
+                                         std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_common,
+                                         std::string                                & err_text_common,
+                                         bool                                         est_simbox) const
 {
-  //LogKit::WriteHeader("Blocking wells for estimation");
+  if (est_simbox)
+    LogKit::WriteHeader("Blocking wells for estimation");
+  else
+    LogKit::WriteHeader("Blocking wells for output simbox");
+
 
   std::string err_text = "";
 
   // Block logs to surrounding estimation simbox
   try {
+    if (est_simbox)
       LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in the outer estimation simbox:\n");
+    else
+      LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in output simbox:\n");
     for (unsigned int i = 0; i < wells.size(); i++) {
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
