@@ -88,13 +88,17 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if wavelet/noise should be estimated or
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
-      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
+      SetLogsToBeBlocked(wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
+      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations()) {
+        LogKit::WriteHeader("Blocking wells for estimation");
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
+      }
 
-        //Block wells to output simbox
-        block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
+      //Block wells to output simbox
+      LogKit::WriteHeader("Blocking wells for output simbox");
+      block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
     }
     else
       block_wells_ = false;
@@ -4531,6 +4535,24 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
   delete base_surface;
 }
 
+void CommonData::SetLogsToBeBlocked(const std::vector<NRLib::Well *>  & wells,
+                                    std::vector<std::string>          & continuous_logs_to_be_blocked,
+                                    std::vector<std::string>          & discrete_logs_to_be_blocked) const
+{
+  // Continuous parameters that are to be used in BlockedLogsCommon
+  continuous_logs_to_be_blocked.push_back("Vp");
+  continuous_logs_to_be_blocked.push_back("Vs");
+  continuous_logs_to_be_blocked.push_back("Rho");
+
+  for (size_t i = 0; i < wells.size(); i++) {
+    if (wells[i]->HasContLog("MD")) {
+      continuous_logs_to_be_blocked.push_back("MD");
+      break;
+    }
+  }
+
+  // Discrete parameters that are to be used in BlockedLogsCommon
+}
 
 bool CommonData::BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                          const Simbox                                               & estimation_simbox,
@@ -4540,23 +4562,14 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
                                          std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
                                          std::string                                                & err_text_common) const
 {
-  LogKit::WriteHeader("Blocking wells for estimation");
+  //LogKit::WriteHeader("Blocking wells for estimation");
 
-  std::string err_text                          = "";
-
-  // Continuous parameters that are to be used in BlockedLogsCommon
-  continuous_logs_to_be_blocked.push_back("Vp");
-  continuous_logs_to_be_blocked.push_back("Vs");
-  continuous_logs_to_be_blocked.push_back("Rho");
-  continuous_logs_to_be_blocked.push_back("MD");
-
-  // Discrete parameters that are to be used in BlockedLogsCommon
-
+  std::string err_text = "";
 
   // Block logs to surrounding estimation simbox
-  try{
+  try {
       LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in the outer estimation simbox:\n");
-    for (unsigned int i=0; i<wells.size(); i++) {
+    for (unsigned int i = 0; i < wells.size(); i++) {
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
@@ -4596,7 +4609,6 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
   // Block logs to interval simboxes for estimation
   LogKit::WriteHeader("Blocking wells for correlation");
   std::string err_text;
-  //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   if (model_settings->getEstimateCorrelations()) {
     try{
@@ -4636,7 +4648,6 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
   try {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
     for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
-      //const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
 
       for (size_t j = 0; j < wells.size(); j++) {
