@@ -3643,7 +3643,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   if (continuous_logs_blocked_.count("MD") == 0)
     md[0] = z_pos_blocked_[first_B_]*vert_scale;
   else
-    md[0] = GetMDBlocked()[first_B_]; //md_
+    md[0] = GetMDBlocked()[first_B_];
   double dmax = 0;
   double dmin = 1e+30;
   for (int i = first_B_+1; i <= last_B_; i++) {
@@ -3770,7 +3770,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
     *(log_files[f]) << "[See header (.nwh) file for log information]\n";
   }
 
-  const std::vector<double> & vp =  GetVpBlocked(); //replaced alpha_
+  const std::vector<double> & vp =  GetVpBlocked();
   const std::vector<double> & vs =  GetVsBlocked();
   const std::vector<double> & rho = GetRhoBlocked();
 
