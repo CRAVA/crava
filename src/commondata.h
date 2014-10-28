@@ -301,9 +301,10 @@ private:
                                   bool                                      facies_log_given,
                                   std::string                             & err_text) const;
 
-  void               SetLogsToBeBlocked(const std::vector<NRLib::Well *>  & wells,
-                                        std::vector<std::string>          & continuous_logs_to_be_blocked,
-                                        std::vector<std::string>          & discrete_logs_to_be_blocked) const;
+  void               SetLogsToBeBlocked(ModelSettings                    * model_settings,
+                                        const std::vector<NRLib::Well *> & wells,
+                                        std::vector<std::string>         & continuous_logs_to_be_blocked,
+                                        std::vector<std::string>         & discrete_logs_to_be_blocked) const;
 
   bool               BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
                                              const Simbox                                               & estimation_simbox,

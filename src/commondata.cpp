@@ -88,7 +88,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if wavelet/noise should be estimated or
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
-      SetLogsToBeBlocked(wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
+      SetLogsToBeBlocked(model_settings, wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
       if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
@@ -4532,21 +4532,34 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
   delete base_surface;
 }
 
-void CommonData::SetLogsToBeBlocked(const std::vector<NRLib::Well *>  & wells,
-                                    std::vector<std::string>          & continuous_logs_to_be_blocked,
-                                    std::vector<std::string>          & discrete_logs_to_be_blocked) const
+void CommonData::SetLogsToBeBlocked(ModelSettings                    * model_settings,
+                                    const std::vector<NRLib::Well *> & wells,
+                                    std::vector<std::string>         & continuous_logs_to_be_blocked,
+                                    std::vector<std::string>         & discrete_logs_to_be_blocked) const
 {
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked.push_back("Vp");
   continuous_logs_to_be_blocked.push_back("Vs");
   continuous_logs_to_be_blocked.push_back("Rho");
 
+  //MD-logs are only used for writing of norsar wells
+  if (model_settings->getWellFormatFlag() && IO::NORSARWELL) {
+    for (size_t i = 0; i < wells.size(); i++) {
+      if (wells[i]->HasContLog("MD")) {
+        continuous_logs_to_be_blocked.push_back("MD");
+        break;
+      }
+    }
+  }
+
+  //Add in porosity logs
   for (size_t i = 0; i < wells.size(); i++) {
-    if (wells[i]->HasContLog("MD")) {
-      continuous_logs_to_be_blocked.push_back("MD");
+    if (wells[i]->HasContLog("Porosity")) {
+      continuous_logs_to_be_blocked.push_back("Porosity");
       break;
     }
   }
+
 
   // Discrete parameters that are to be used in BlockedLogsCommon
 }
