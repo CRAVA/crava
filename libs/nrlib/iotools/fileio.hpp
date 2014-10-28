@@ -480,7 +480,6 @@ I NRLib::ReadAsciiArray(std::istream& stream, I begin, size_t n, int& line)
 template <typename I>
 I NRLib::ReadAsciiArrayFast(std::istream& stream, I begin, size_t n)
 {
-  typedef typename std::iterator_traits<I>::value_type T;
   for (size_t i = 0; i < n; ++i) {
     stream >> *begin;
     ++begin;
@@ -502,8 +501,6 @@ I NRLib::ReadAsciiArrayFast(std::istream& stream, I begin, size_t n)
 template <typename I>
 I NRLib::ReadAsciiArrayFastRestOfFile(std::istream& stream, I begin, size_t n)
 {
-  typedef typename std::iterator_traits<I>::value_type T;
-
   std::streampos pos = stream.tellg();
   stream.seekg(0, std::ios_base::end);
   std::streampos end = stream.tellg();

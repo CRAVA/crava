@@ -5810,8 +5810,6 @@ void
 CommonData::SetFaciesNamesFromRockPhysics(std::vector<std::string> & facies_names,
                                           std::vector<int>         & facies_nr) const
 {
-  typedef std::map<std::string, DistributionsRock *> mapType;
-
   int i = 0;
   for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
     facies_names.push_back(it->first);
