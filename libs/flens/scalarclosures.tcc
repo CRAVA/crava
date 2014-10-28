@@ -154,8 +154,6 @@ template <typename X, typename Y>
 void
 copy(const ScalarClosure<X> &x, VectorElement<Y> &_y)
 {
-    typedef typename Y::ElementType T;
-
     Y             &y = _y._vecImpl;
     Index::Engine &i = _y._index.engine();
 
@@ -185,8 +183,6 @@ template <typename X, typename Y>
 void
 copy(const ScalarClosure<X> &x, MatrixElement<Y> &_y)
 {
-    typedef typename Y::ElementType T;
-
     Y             &y = _y._matImpl;
     Index::Engine &i = _y._i.engine();
     Index::Engine &j = _y._j.engine();
