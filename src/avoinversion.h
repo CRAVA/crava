@@ -82,7 +82,7 @@ private:
                                        SpatialSyntWellFilter             * filteredSyntLogs,
                                        bool                                useFilter,
                                        SeismicParametersHolder           & seismicParameters);
-  void               computeFaciesProbFromRockPhysicsModel(SpatialWellFilter *filteredlogs, bool useFilter);
+
   void               doPredictionKriging(SeismicParametersHolder & seismicParameters);
   void               computeElasticImpedanceTimeCovariance(fftw_real       * eiCovT,
                                                            const float     * corrT,

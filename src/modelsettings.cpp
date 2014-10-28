@@ -38,6 +38,7 @@ ModelSettings::ModelSettings(void)
     indWavelet_(0),
     indFacies_(0),
     indRockPhysics_(0),
+    indFilter_(0),
     logNames_(6),
     inverseVelocity_(2),
     min_blocks_with_data_for_corr_estim_(100)

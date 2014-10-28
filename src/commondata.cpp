@@ -134,9 +134,11 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                             wells_, reservoir_variables_, rock_distributions_, err_text);
       }
     }
+    else
+      setup_estimation_rock_physics_ = true;
 
     // 11. Setup of prior facies probabilities
-    if (setup_multigrid_) {
+    if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
         if (read_wells_)
           setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
@@ -148,7 +150,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
 
     // 12. Setup of background model
-    if (setup_multigrid_) {
+    if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
@@ -164,13 +166,13 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-    if (block_wells_ && optimize_well_location_)
+    if (block_wells_ && optimize_well_location_ && setup_estimation_rock_physics_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
     // 13. Setup of prior correlation
-    if (read_seismic_) {
+    if (read_seismic_ && setup_estimation_rock_physics_) {
       if (model_settings->getEstimateCorrelations() == true) {
         //Block wells for inversion purposes
         correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
@@ -305,20 +307,17 @@ CommonData::~CommonData() {
     }
   }
 
-  // rock_distributions_
-  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-    for (size_t j = 0; rock_distributions_.find(it->first)->second.size(); j++) {
-      delete rock_distributions_.find(it->first)->second[j];
-      rock_distributions_.find(it->first)->second[j] = NULL;
-    }
+
+  for (std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    std::vector<DistributionsRock *> rock = it->second;
+    for (size_t i = 0; i < rock.size(); i++)
+      delete rock[i];
   }
 
-  // reservoir_variables_
-  for (std::map<std::string, std::vector<DistributionWithTrend *> >::const_iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    for (size_t j = 0; reservoir_variables_.find(it->first)->second.size(); j++) {
-      delete reservoir_variables_.find(it->first)->second[j];
-      reservoir_variables_.find(it->first)->second[j] = NULL;
-    }
+  for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    std::vector<DistributionWithTrend *> variable = it->second;
+    for (size_t i = 0; i < variable.size(); i++)
+      delete variable[i];
   }
 
   // temporary_wavelets_
@@ -5083,7 +5082,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
       std::vector<DistributionWithTrend *>          dist_vector(storage.size());
 
       for (size_t j = 0; j < storage.size(); j++) {
-        dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
+        if (storage[j]->GetEstimate() == true)
+          err_text += "Reservoir variables can not be estimated from wells.\n";
+        else
+          dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
       }
 
       reservoir_variables[it->first] = dist_vector;
@@ -5123,7 +5125,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     const std::map<std::string, DistributionsRockStorage    *>  rock_storage     = model_settings->getRockStorage();
 
     // Map reservoir variables for use in rocks to access resampling trigger.
-    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage;
+    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(1, std::vector<DistributionWithTrend *>(0));
     if (reservoir_variables.size() > 0) {
       size_t n_vintages = reservoir_variables.begin()->second.size();
       res_var_vintage.resize(n_vintages);
@@ -5198,7 +5200,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                 LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", t+1);
 
               //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-              rock[t]->CompleteTopLevelObject(res_var_vintage[t], tmp_err_txt);
+              std::vector<DistributionWithTrend *> reservoir_variable(0);
+              if (n_vintages > 0)
+                reservoir_variable = res_var_vintage[t];
+              rock[t]->CompleteTopLevelObject(reservoir_variable, tmp_err_txt);
 
               std::vector<bool> has_trends = rock[t]->HasTrend();
               bool              has_trend = false;
@@ -5344,11 +5349,15 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   if (tmp_err_text != "")
     err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
 
-  tmp_err_text = "";
-  FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
+  if (model_settings->getFaciesProbFromRockPhysics()== false) {
+    tmp_err_text = "";
+    FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
 
-  if (tmp_err_text != "")
-    err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+    if (tmp_err_text != "")
+      err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+  }
+  else
+    facies_estim_interval.resize(0);
 
   if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
     if (n_facies > 0) {
@@ -5674,7 +5683,7 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
   const int    ny             = full_inversion_simbox.getny();
 
   if (topFEI != "" && baseFEI != "") {
-    facies_estim_interval.resize(2);
+    facies_estim_interval.resize(2, NULL);
     try {
       if (NRLib::IsNumber(topFEI))
         facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
@@ -6234,7 +6243,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
           if(is_seismic)
-            z0_data = z0_data-0.5*segy->GetDz();
+            z0_data = z0_data - static_cast<float>(0.5) * segy->GetDz();
         }
         else if (is_storm) {
           size_t i_in, j_in, k_in;
@@ -6304,7 +6313,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
           if (is_seismic)
-            z0_grid += 0.5*dz;
+            z0_grid += static_cast<float>(0.5*dz);
 
           std::vector<float> grid_trace(nzp);
 
@@ -7973,8 +7982,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
         for (size_t i = 0; i < n_intervals; i++) {
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(interval_names[i]),
-                                             facies_names_,
+                                             prior_facies_[i],
                                              trend_cubes[i],
                                              prior_param_cov[i],
                                              err_text);
@@ -8442,8 +8450,7 @@ void CommonData::ValidateCovarianceMatrix(float               ** C,
 }
 
 void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                     const std::map<std::string, float>               & probability,
-                                                     const std::vector<std::string>                   & facies_names,
+                                                     const std::vector<float>                         & probability,
                                                      const CravaTrend                                 & trend_cubes,
                                                      NRLib::Matrix                                    & param_cov,
                                                      std::string                                      & err_txt) const{
@@ -8454,11 +8461,6 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
     err_txt += "No rock physics models associated with the inversion interval(s). \n";
     return;
   }
-
-  // order the facies prob vector after the facies_names vector
-  std::vector<float> facies_prob(facies_names.size());
-  for (unsigned int i=0; i<facies_names.size(); i++)
-    facies_prob[i] = probability.find(facies_names[i])->second;
 
   bool has_trend = false;
   for (size_t i=0; i<rock_distribution.size(); i++) {
@@ -8504,7 +8506,7 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
             NRLib::Grid2D<double> sigma_sum(3,3,0);
 
             CalculateCovarianceInTrendPosition(rock_distribution,
-                                               facies_prob,
+                                               probability,
                                                trend_position,
                                                sigma_sum);
 
@@ -8544,7 +8546,7 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
     NRLib::Grid2D<double> sigma_sum(3,3,0);
 
     CalculateCovarianceInTrendPosition(rock_distribution,
-                                       facies_prob,
+                                       probability,
                                        trend_position,
                                        sigma_sum);
 

@@ -141,22 +141,6 @@ ModelGeneral::~ModelGeneral(void)
   if (time_depth_mapping_!=NULL)
     delete time_depth_mapping_;
 
-  for (std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-    std::vector<DistributionsRock *> rock = it->second;
-    for (size_t i=0; i<rock.size(); i++)
-      delete rock[i];
-  }
-
-  for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    std::vector<DistributionWithTrend *> variable = it->second;
-    for (size_t i=0; i<variable.size(); i++)
-      delete variable[i];
-  }
-
-  // Erik N: Time line is deleted in common data
-  //if (time_line_ != NULL)
-  //  delete time_line_;
-
   delete random_gen_;
 }
 

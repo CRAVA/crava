@@ -806,8 +806,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                 double                                                  dz) const;
 
   void               CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                        const std::map<std::string, float>               & probability,
-                                                        const std::vector<std::string>                   & facies_names,
+                                                        const std::vector<float>                         & probability,
                                                         const CravaTrend                                 & trend_cubes,
                                                         NRLib::Matrix                                    & param_cov,
                                                         std::string                                      & err_txt) const;

@@ -152,12 +152,16 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         const std::map<std::string, DistributionsRock *>  rock_distributions  = modelGeneral_->GetRockDistributionTime0();
         const std::vector<std::string>                    facies_names        = modelGeneral_->GetFaciesNames();
 
-        //spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, seismicParameters.GetCovEstimated());
-        spat_synt_well_filter = new SpatialSyntWellFilter(nSyntWellsToBeFiltered, true); //H
-        spat_synt_well_filter->SetNumberOfSyntWellsToBeFiltered(nSyntWellsToBeFiltered);
-        spat_synt_well_filter->SetNumberOfSyntWellsPerCombinationOfTrendParams(nSyntWellsPerCombinationOfTrendParams);
-        spat_synt_well_filter->GenerateSyntWellData(rock_distributions, facies_names, trend_min, trend_max, simbox_->getdz(),
-                                                    nSyntWellsPerCombinationOfTrendParams, nBinsTrendVector, syntWellLength);
+        spat_synt_well_filter = new SpatialSyntWellFilter(rock_distributions,
+                                                          facies_names,
+                                                          trend_min,
+                                                          trend_max,
+                                                          nSyntWellsToBeFiltered,
+                                                          nSyntWellsPerCombinationOfTrendParams,
+                                                          simbox_->getdz(),
+                                                          nBinsTrendVector,
+                                                          syntWellLength,
+                                                          true); //H
       }
       // Create Real Well filter
       else
@@ -295,7 +299,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     if (modelAVOdynamic->GetUseLocalNoise()==true)
       activeAngles = modelAVOdynamic->GetNumberOfAngles();
 
-    if ((modelSettings->getEstimateFaciesProb() && modelSettings->getFaciesProbFromRockPhysics() == false) || do_filtering == true)
+    if ((modelSettings->getEstimateFaciesProb() || do_filtering == true ) && modelSettings->getFaciesProbFromRockPhysics() == false)
       spat_real_well_filter->doFiltering(modelGeneral->GetBlockedWells(),
                                          modelSettings->getNoVsFaciesProb(),
                                          activeAngles,
@@ -1794,7 +1798,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
                               modelGeneral_->GetPriorFacies(),
                               modelGeneral_->GetPriorFaciesCubes(),
                               likelihood,
-                              modelGeneral_->GetRockDistributionTime0(),
                               modelGeneral_->GetFaciesNames(),
                               modelAVOstatic_->GetFaciesEstimInterval(),
                               this,
@@ -1835,7 +1838,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
                               modelGeneral_->GetPriorFacies(),
                               modelGeneral_->GetPriorFaciesCubes(),
                               likelihood,
-                              modelGeneral_->GetRockDistributionTime0(),
                               modelGeneral_->GetFaciesNames(),
                               modelAVOstatic_->GetFaciesEstimInterval(),
                               this,
