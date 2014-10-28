@@ -4272,6 +4272,7 @@ XmlModelFile::parse2DTrend(TiXmlNode * node, const std::string & keyword, NRLib:
   legalCommands.push_back("file-name");
   legalCommands.push_back("reference-parameter-first-axis");
   legalCommands.push_back("reference-parameter-second-axis");
+  legalCommands.push_back("estimate");
 
   std::string first_reference = "";
   parseValue(root, "reference-parameter-first-axis", first_reference, errTxt);
@@ -5572,7 +5573,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
   int kLimit = 0;
-  if(parseValue(root, "z", kLimit, errTxt) == true) {
+  if(parseValue(root, "kriging-data-limit", kLimit, errTxt) == true) {
     if(modelSettings_->getKrigingParameter() >= 0)
       modelSettings_->setKrigingParameter(kLimit);
     else

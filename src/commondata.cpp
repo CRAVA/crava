@@ -88,13 +88,14 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if wavelet/noise should be estimated or
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
+      SetLogsToBeBlocked(model_settings, wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
       if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
-        //Block wells to output simbox
-        block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text);
+      //Block wells to output simbox
+      block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
     }
     else
       block_wells_ = false;
@@ -4531,32 +4532,62 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
   delete base_surface;
 }
 
-
-bool CommonData::BlockWellsForEstimation(const ModelSettings                                        * const model_settings,
-                                         const Simbox                                               & estimation_simbox,
-                                         std::vector<NRLib::Well *>                                 & wells,
-                                         std::vector<std::string>                                   & continuous_logs_to_be_blocked,
-                                         std::vector<std::string>                                   & discrete_logs_to_be_blocked,
-                                         std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_common,
-                                         std::string                                                & err_text_common) const
+void CommonData::SetLogsToBeBlocked(ModelSettings                    * model_settings,
+                                    const std::vector<NRLib::Well *> & wells,
+                                    std::vector<std::string>         & continuous_logs_to_be_blocked,
+                                    std::vector<std::string>         & discrete_logs_to_be_blocked) const
 {
-  LogKit::WriteHeader("Blocking wells for estimation");
-
-  std::string err_text                          = "";
-
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked.push_back("Vp");
   continuous_logs_to_be_blocked.push_back("Vs");
   continuous_logs_to_be_blocked.push_back("Rho");
-  continuous_logs_to_be_blocked.push_back("MD");
+
+  //MD-logs are only used for writing of norsar wells
+  if (model_settings->getWellFormatFlag() && IO::NORSARWELL) {
+    for (size_t i = 0; i < wells.size(); i++) {
+      if (wells[i]->HasContLog("MD")) {
+        continuous_logs_to_be_blocked.push_back("MD");
+        break;
+      }
+    }
+  }
+
+  //Add in porosity logs
+  for (size_t i = 0; i < wells.size(); i++) {
+    if (wells[i]->HasContLog("Porosity")) {
+      continuous_logs_to_be_blocked.push_back("Porosity");
+      break;
+    }
+  }
+
 
   // Discrete parameters that are to be used in BlockedLogsCommon
+}
 
+bool CommonData::BlockWellsForEstimation(const ModelSettings                        * const model_settings,
+                                         const Simbox                               & estimation_simbox,
+                                         std::vector<NRLib::Well *>                 & wells,
+                                         std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                         std::vector<std::string>                   & discrete_logs_to_be_blocked,
+                                         std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_common,
+                                         std::string                                & err_text_common,
+                                         bool                                         est_simbox) const
+{
+  if (est_simbox)
+    LogKit::WriteHeader("Blocking wells for estimation");
+  else
+    LogKit::WriteHeader("Blocking wells for output simbox");
+
+
+  std::string err_text = "";
 
   // Block logs to surrounding estimation simbox
-  try{
+  try {
+    if (est_simbox)
       LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in the outer estimation simbox:\n");
-    for (unsigned int i=0; i<wells.size(); i++) {
+    else
+      LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in output simbox:\n");
+    for (unsigned int i = 0; i < wells.size(); i++) {
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), err_text);
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
@@ -4596,7 +4627,6 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
   // Block logs to interval simboxes for estimation
   LogKit::WriteHeader("Blocking wells for correlation");
   std::string err_text;
-  //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   if (model_settings->getEstimateCorrelations()) {
     try{
@@ -4636,7 +4666,6 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
   try {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
     for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
-      //const Simbox * simbox = multiple_interval_grid->GetIntervalSimbox(i);
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
 
       for (size_t j = 0; j < wells.size(); j++) {
