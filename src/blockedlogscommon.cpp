@@ -1304,7 +1304,11 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     x = x_pos_raw_logs[m];
     y = y_pos_raw_logs[m];
     z = z_pos_raw_logs[m];
-    n_well_log_obs_in_interval[multiple_interval_grid->WhichSimbox(x,y,z)]++;
+
+    //H Raw logs may be outside simbox
+    int simbox_number = multiple_interval_grid->WhichSimbox(x,y,z);
+    if (simbox_number > -1)
+      n_well_log_obs_in_interval[simbox_number]++;
   }
 
   //
@@ -1353,7 +1357,9 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   i_pos[b] = first_I;
   j_pos[b] = first_J;
   k_pos[b] = static_cast<int>(first_K*dz_rel[first_S]);
-  int i, j, k;
+  int i = 0;
+  int j = 0;
+  int k = 0;
   int max_m = 0;
   if (first_S_ == last_S_) {
     max_m = last_M_+1;                              // 1. If the last well obs is in interval number first_S_
@@ -1395,11 +1401,13 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       wl++;
       if (bInd[wl] != bInd[wl - 1]) {
         b++;
+        k = 0;
         interval_simboxes[s]->getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
         s_pos[b] = first_S_;
         i_pos[b] = i;
         j_pos[b] = j;
-        k_pos[b] = static_cast<int>(k*dz_rel[s]);
+
+        k_pos[b] = static_cast<int>(k*dz_rel[s]); //H-TODO k = IMISSING
       }
     }
   }
@@ -3635,7 +3643,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   if (continuous_logs_blocked_.count("MD") == 0)
     md[0] = z_pos_blocked_[first_B_]*vert_scale;
   else
-    md[0] = GetMDBlocked()[first_B_]; //md_
+    md[0] = GetMDBlocked()[first_B_];
   double dmax = 0;
   double dmin = 1e+30;
   for (int i = first_B_+1; i <= last_B_; i++) {
@@ -3762,7 +3770,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
     *(log_files[f]) << "[See header (.nwh) file for log information]\n";
   }
 
-  const std::vector<double> & vp =  GetVpBlocked(); //replaced alpha_
+  const std::vector<double> & vp =  GetVpBlocked();
   const std::vector<double> & vs =  GetVsBlocked();
   const std::vector<double> & rho = GetRhoBlocked();
 

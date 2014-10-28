@@ -1123,7 +1123,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     seisData_[l]->endAccess();
 
   //Finish use of seisData_, since we need the memory.
-  if((outputGridsSeismic_ & IO::RESIDUAL) > 0)
+  if((outputGridsSeismic_ & IO::RESIDUAL) > 0) //H-TODO move this to cravaresult (CRA-742)
   {
     if(simbox_->getIsConstantThick() != true)
       multiplyDataByScaleWaveletAndWriteToFile("residuals");
