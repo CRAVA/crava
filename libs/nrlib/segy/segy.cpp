@@ -675,7 +675,12 @@ SegY::ReadAllTraces(const Volume * volume,
     for (k=0;k<6;k++)
       outsideBotMax[k] = outsideTopBot[k];
 
-  CheckTopBotError(outsideTopMax, outsideBotMax); //Throws exception if > 0.
+  try {
+    CheckTopBotError(outsideTopMax, outsideBotMax); //Throws exception if > 0.
+  }
+  catch (NRLib::Exception & e) {
+    throw Exception(e.what());
+  }
 
   int count = 0;
   for (unsigned int i=1 ; i<traces_.size() ; i++)
@@ -696,16 +701,16 @@ SegY::CheckTopBotError(const double * tE, const double * bE)
 {
   std::string text = "";
   if (tE[0] > 0.0) {
-    text+= "There is a region between the top surface of the inversion interval and the seismic data volume\n";
-    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(tE[2],0)+","+ToString(tE[3],0)+")\n";
-    text+= "where the surface z-value = "+ToString(tE[4],2)+" while the seismic start time = "+ToString(z0_,2)+". Please reduce\n";
+    text+= "There is a region between the top surface of the inversion interval and the seismic data volume \n";
+    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(tE[2],0)+","+ToString(tE[3],0)+") \n";
+    text+= "where the surface z-value = "+ToString(tE[4],2)+" while the seismic start time = "+ToString(z0_,2)+". Please reduce \n";
     text+= "the start time of your seismic data or lower the top surface "+ToString(tE[0],2)+"ms.\n";
   }
   if (bE[1] > 0.0) {
     double sMax = bE[5] - bE[1];
-    text+= "There is a region between the base surface of the inversion interval and the seismic data volume\n";
-    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(bE[2], 0)+","+ToString(bE[3], 0)+")\n";
-    text+= "where the surface z-value = "+ToString(bE[5], 2)+" while the seismic end time = "+ToString(sMax, 2)+". Please include\n";
+    text+= "There is a region between the base surface of the inversion interval and the seismic data volume \n";
+    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(bE[2], 0)+","+ToString(bE[3], 0)+") \n";
+    text+= "where the surface z-value = "+ToString(bE[5], 2)+" while the seismic end time = "+ToString(sMax, 2)+". Please include \n";
     text+= "more seismic data or heighten the base surface "+ToString(bE[1], 2)+"ms.\n";
   }
   if (text != "")

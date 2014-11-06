@@ -296,9 +296,6 @@ private:
                                   std::vector<std::string>                & log_names,
                                   std::vector<int>                        & facies_nr,
                                   std::vector<std::string>                & facies_names,
-                                  const std::vector<std::string>          & log_names_from_user,
-                                  const std::vector<bool>                 & inverse_velocity,
-                                  bool                                      facies_log_given,
                                   std::string                             & err_text) const;
 
   void               SetLogsToBeBlocked(ModelSettings                    * model_settings,
@@ -395,6 +392,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                             std::vector<std::string>        & log_names_from_user,
                                             const std::vector<bool>         & inverse_velocity,
                                             bool                              facies_log_given,
+                                            bool                              porosity_log_given,
                                             int                               format,
                                             std::string                     & error_text) const;
   int                CheckWellAgainstSimbox(const Simbox      * simbox,

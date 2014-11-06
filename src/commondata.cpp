@@ -80,8 +80,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
     // 4. read well data
-    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_,
-                               model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
+    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, err_text);
 
     // 5. block wells for estimation
     // if well position is to be optimized or
@@ -124,14 +123,15 @@ CommonData::CommonData(ModelSettings * model_settings,
       trend_cubes_.resize(multiple_interval_grid_->GetNIntervals());
 
     // 10. Rock Physics
-    if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
-      if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
-        if (setup_trend_cubes_) {
-          setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
-                                                            wells_, reservoir_variables_, rock_distributions_, err_text);
+    if (model_settings->getFaciesProbFromRockPhysics()) {
+      if (read_wells_ && setup_multigrid_) {
+        if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
+          if (setup_trend_cubes_) {
+            setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
+                                                              wells_, reservoir_variables_, rock_distributions_, err_text);
+          }
         }
-      }
-      else {
+        else
           setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
                                                             wells_, reservoir_variables_, rock_distributions_, err_text);
       }
@@ -196,9 +196,6 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
       }
-    }
-    else {
-      err_text += "Could not set up prior correlations since this requires seismic data.\n";
     }
 
     if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
@@ -781,10 +778,16 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           bool relative_padding = false;
           bool only_volume      = true;
 
-          segy->ReadAllTraces(&full_inversion_simbox,
-                              padding,
-                              only_volume,
-                              relative_padding);
+          try {
+            segy->ReadAllTraces(&full_inversion_simbox,
+                                padding,
+                                only_volume,
+                                relative_padding);
+          }
+          catch (NRLib::Exception & e) {
+            err_text += NRLib::ToString(e.what());
+          }
+
           segy->CreateRegularGrid(); //sets geometry
 
           segy->GetGeometry()->WriteGeometry();
@@ -1066,20 +1069,21 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
                               std::vector<std::string>                & log_names,
                               std::vector<int>                        & facies_nr,
                               std::vector<std::string>                & facies_names,
-                              const std::vector<std::string>          & log_names_from_user,
-                              const std::vector<bool>                 & inverse_velocity,
-                              bool                                      facies_log_given,
                               std::string                             & err_text_common) const
 {
   std::string err_text = "";
+
+  int                      n_wells             = model_settings->getNumberOfWells();
+  bool                     facies_log_given    = model_settings->getFaciesLogGiven();
+  bool                     porosity_log_given  = model_settings->getPorosityLogGiven();
+  std::vector<std::string> log_names_from_user = model_settings->getLogNames();
+  std::vector<bool>        inverse_velocity    = model_settings->getInverseVelocity();
 
   // Get all log names given by user
   for (size_t i = 0; i < log_names_from_user.size(); i++) {
     if (log_names_from_user[i] != "")
       log_names.push_back(log_names_from_user[i]);
   }
-
-  int n_wells  = model_settings->getNumberOfWells();
 
   if (n_wells == 0)
     return true;
@@ -1135,7 +1139,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
 
         //Process logs
         std::string tmp_err_text;
-        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, format, tmp_err_text);
+        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, porosity_log_given, format, tmp_err_text);
         err_text += tmp_err_text;
         if(tmp_err_text == "") {
           //Store facies names.
@@ -1151,6 +1155,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
           new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
           new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
+          new_well.SetUseForRockPhysics(model_settings->getIndicatorRockPhysics(i));
 
           //Check if well is valid
           bool well_valid = true;
@@ -2365,6 +2370,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
                                         std::vector<std::string>        & log_names_from_user,
                                         const std::vector<bool>         & inverse_velocity,
                                         bool                              facies_log_given,
+                                        bool                              porosity_log_given,
                                         int                               format,
                                         std::string                     & error_text) const
 {
@@ -2382,14 +2388,18 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     log_names_from_user.push_back("DT");
     log_names_from_user.push_back("RHOB");
     log_names_from_user.push_back("DTS");
-    if(facies_log_given)
+    if (facies_log_given)
       log_names_from_user.push_back("FACIES");
+    if (porosity_log_given)
+      log_names_from_user.push_back("POROSITY");
   }
 
   for (size_t i = 0; i < log_names_from_user.size(); i++) {
-    // If the well does not contain the log specified by the user, return an error message
-    if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
-      tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+    if (i < 5) { // No error message if porosity log is not given
+      // If the well does not contain the log specified by the user, return an error message
+      if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
+        tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      }
     }
   }
 
@@ -2430,11 +2440,19 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
 
     std::vector<int>    df_log;
     std::vector<double> cf_log;
-    if(facies_log_given == true) {
-      if(new_well.HasDiscLog(log_names_from_user[4]))
+    if (facies_log_given == true) {
+      if (new_well.HasDiscLog(log_names_from_user[4]))
         df_log = new_well.GetDiscLog(log_names_from_user[4]);
       else
         cf_log = new_well.GetContLog(log_names_from_user[4]);
+    }
+
+    std::vector<double> poro;
+    if (porosity_log_given == true) {
+      if (new_well.HasContLog(log_names_from_user[5]))
+        poro = new_well.GetContLog(log_names_from_user[5]);
+      else
+        poro.resize(z_log.size(), RMISSING);
     }
 
     std::vector<double> new_x;
@@ -2444,6 +2462,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     std::vector<double> new_vs;
     std::vector<double> new_rho;
     std::vector<int> new_facies;
+    std::vector<double> new_porosity;
 
 
     for(size_t i=0;i<z_log.size();i++) {
@@ -2483,6 +2502,13 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
           else
             new_facies.push_back(static_cast<int>(cf_log[i]));
         }
+
+        if (porosity_log_given == true) {
+          if (new_well.IsMissing(poro[i]))
+            new_porosity.push_back(RMISSING);
+          else
+            new_porosity.push_back(poro[i]);
+        }
       }
     }
     new_well.AddContLog("X_pos", new_x);
@@ -2501,7 +2527,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     new_well.AddContLog("Rho", new_rho);
 
     new_well.SetMissing(RMISSING);
-    if(df_log.size() > 0) {
+    if (df_log.size() > 0) {
       new_well.SetFaciesMappingFromDiscLog(log_names_from_user[4]);
       new_well.RemoveDiscLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", new_facies);
@@ -2510,6 +2536,11 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
       new_well.RemoveContLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", new_facies);
       new_well.SetFaciesMappingFromDiscLog("Facies");
+    }
+
+    if (porosity_log_given == true) {
+      new_well.RemoveContLog(log_names_from_user[5]);
+      new_well.AddContLog("Porosity", new_porosity);
     }
   }
 
@@ -4534,7 +4565,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 void CommonData::SetLogsToBeBlocked(ModelSettings                    * model_settings,
                                     const std::vector<NRLib::Well *> & wells,
                                     std::vector<std::string>         & continuous_logs_to_be_blocked,
-                                    std::vector<std::string>         & discrete_logs_to_be_blocked) const
+                                    std::vector<std::string>         & /*discrete_logs_to_be_blocked*/) const
 {
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked.push_back("Vp");
@@ -6037,10 +6068,15 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     float padding          = 2*guard_zone;
     bool  relative_padding = false;
 
-    segy->ReadAllTraces(volume,
-                        padding,
-                        only_volume,
-                        relative_padding);
+    try {
+      segy->ReadAllTraces(volume,
+                          padding,
+                          only_volume,
+                          relative_padding);
+    }
+    catch (NRLib::Exception & e) {
+      err_text += NRLib::ToString(e.what());
+    }
     segy->CreateRegularGrid();
 
   }
@@ -9583,7 +9619,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       if (model_settings->getFaciesLogGiven())
         LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",log_names[4].c_str());
       if (model_settings->getPorosityLogGiven())
-        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  log_names[5].c_str());
+        LogKit::LogFormatted(LogKit::Low,"  Porosity                                 : %10s\n",  log_names[5].c_str());
     }
     else
     {

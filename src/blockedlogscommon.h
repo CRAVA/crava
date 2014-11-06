@@ -143,6 +143,7 @@ public:
   bool                                   GetUseForWaveletEstimation(void)   const { return (use_for_wavelet_estimation_ > 0)                          ;}
   bool                                   GetUseForFiltering(void)           const { return (use_for_filtering_ > 0)                                   ;}
   bool                                   GetUseForBackgroundTrend(void)     const { return (use_for_background_trend_ > 0)                            ;}
+  bool                                   GetUseForRockPhysics(void)         const { return (use_for_rock_physics_ > 0)                                ;}
 
   double                                 GetDz(void)                        const { return dz_                                                        ;}
 
@@ -206,6 +207,7 @@ public:
   void                                   SetUseForBackgroundTrend(int use_for_background_trend)         { use_for_background_trend_     = use_for_background_trend     ;}
   void                                   SetUseForFiltering(int use_for_filtering)                      { use_for_filtering_            = use_for_filtering            ;}
   void                                   SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_   = use_for_wavelet_estimation   ;}
+  void                                   SetUseForRockPhysics(int use_for_rock_physics)                 { use_for_rock_physics_         = use_for_rock_physics         ;}
   void                                   SetWellName(std::string & well_name)                           { well_name_                    = well_name                    ;}
 
   void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
@@ -750,6 +752,7 @@ private:
   int                                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
   int                                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
   int                                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
+  int                                         use_for_rock_physics_;           //Uses the indicator enum from MOdelsettings
 
   //Variables used for rockphysics
   std::vector<std::string>                    facies_names_;

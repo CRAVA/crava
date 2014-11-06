@@ -1789,7 +1789,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<std::vector<double> > bulk_weight_given_facies(nWells);
   std::vector<std::vector<double> > shear_weight_given_facies(nWells);
 
-  if(bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) {
+  if ((bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) && tmpErrTxt == "") {
 
     // Calculate bulk- and shear-weights
 

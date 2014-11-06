@@ -425,6 +425,9 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setPorosityLogGiven(true);
   }
 
+  if (modelSettings_->getFaciesLogGiven() == false && modelSettings_->getPorosityLogGiven() == true)
+    errTxt += "Porosity logs can not be given if facies logs are not given in <well-data><log-names>.\n";
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
