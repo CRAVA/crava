@@ -519,6 +519,11 @@ Simbox::Simbox(const Simbox         * simbox,
       top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
       base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
     }
+
+    //H Always write surfaces on ascii-format
+    if (!(output_format & IO::ASCII))
+      output_format += IO::ASCII;
+
     WriteTopBaseSurfaceGrids(top_surf_name,
                              base_surf_name,
                              IO::PathToInversionResults(),

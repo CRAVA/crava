@@ -7743,6 +7743,10 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   if (interval_name != "")
     interval_name_out = "_" + interval_name;
 
+  //H Always write surfaces on ascii-format
+  if (!(output_format & IO::ASCII))
+    output_format += IO::ASCII;
+
   if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG" + interval_name_out;
     std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_BG" + interval_name_out;
@@ -7836,6 +7840,10 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   std::string interval_name_out = "";
   if (interval_name != "")
     interval_name_out = "_" + interval_name;
+
+  //H Always write surfaces on ascii-format
+  if (!(output_format & IO::ASCII))
+    output_format += IO::ASCII;
 
   if ((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_BG" + interval_name_out;
