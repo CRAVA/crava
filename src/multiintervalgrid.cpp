@@ -167,6 +167,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       int    output_grids_other   = model_settings->getOutputGridsOther();
       int    output_grids_seismic = model_settings->getOutputGridsSeismic();
 
+      //H Always write surfaces on ascii-format
+      if (!(output_format & IO::ASCII))
+        output_format += IO::ASCII;
+
       if ((output_domain & IO::TIMEDOMAIN) > 0) {
         std::string top_surf          = IO::PrefixSurface() + IO::PrefixTop() + interval_names_[i] + "_"  + IO::PrefixTime();
         std::string base_surf         = IO::PrefixSurface() + IO::PrefixBase() + interval_names_[i] + "_" + IO::PrefixTime();
