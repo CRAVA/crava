@@ -4079,6 +4079,7 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
   {
     std::string baseName = type + NRLib::ToString(angle_tmp, 1);
     help->Multiply(scale_factor);
+
     if (type==IO::PrefixLocalNoise())
       IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
     else
