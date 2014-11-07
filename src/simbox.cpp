@@ -328,11 +328,11 @@ base_eroded_surface_(NULL)
   setDepth(new_top_surface, new_base_surface, nz);
 
   if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
-    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Eroded_Extended";
-    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Eroded_Extended";
+    std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";
+    std::string base_surf_name = IO::PrefixSurface() + IO::PrefixBase() + interval_name + "_" + IO::PrefixTime() + "_Extended";
     if (interval_name == ""){
-      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Eroded_Extended";
-      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Eroded_Extended";
+      top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
+      base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
     }
     WriteTopBaseSurfaceGrids(top_surf_name,
                              base_surf_name,
@@ -519,10 +519,6 @@ Simbox::Simbox(const Simbox         * simbox,
       top_surf_name          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime() + "_Extended";
       base_surf_name         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime() + "_Extended";
     }
-
-    //H Always write surfaces on ascii-format
-    if (!(output_format & IO::ASCII))
-      output_format += IO::ASCII;
 
     WriteTopBaseSurfaceGrids(top_surf_name,
                              base_surf_name,

@@ -503,10 +503,6 @@ void GridMapping::setDepthSimbox(const Simbox * timeSimbox,
   simbox_ = new Simbox(*timeSimbox);
   simbox_->setDepth(*z0Grid_, *z1Grid_, nz);
 
-  //H Always write surfaces on ascii-format
-  if (!(outputFormat & IO::ASCII))
-    outputFormat += IO::ASCII;
-
   std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDepth();
   std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDepth();
   simbox_->WriteTopBaseSurfaceGrids(topSurf, baseSurf, IO::PathToInversionResults(), outputFormat);
