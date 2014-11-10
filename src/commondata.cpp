@@ -58,9 +58,9 @@ CommonData::CommonData(ModelSettings * model_settings,
   std::string err_text = "";
 
   forward_modeling_ = model_settings->getForwardModeling();
-
+  SegyGeometry * segy_geometry = NULL;
   // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
-  outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, err_text);
+  outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, segy_geometry, err_text);
 
   if (outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
     // 2. Setup of multiple interval grid
@@ -74,7 +74,8 @@ CommonData::CommonData(ModelSettings * model_settings,
       full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
     }
     //Set up simbox for writing
-    SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, multiple_interval_grid_);
+    SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, segy_geometry, multiple_interval_grid_);
+    delete segy_geometry; //Not needed anymore.
 
     // 3. read seismic data and create estimation simbox.
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
@@ -396,6 +397,7 @@ CommonData::~CommonData() {
 bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                             InputFiles      * input_files,
                                             Simbox          & full_inversion_simbox,
+                                            SegyGeometry   *& segy_geometry,
                                             std::string     & err_text_common) const {
 
   // parameters
@@ -599,7 +601,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
         if (ILXL_geometry != NULL) {
           if (full_inversion_simbox.isAligned(ILXL_geometry))
             full_inversion_simbox.setILXL(ILXL_geometry);
-          delete ILXL_geometry;
+          segy_geometry = ILXL_geometry;
         }
       }
 
@@ -630,10 +632,11 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   return true;
 }
 
-void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
-                                   const Simbox      & full_inversion_simbox,
-                                   ModelSettings     * model_settings,
-                                   MultiIntervalGrid * multi_interval_grid)
+void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
+                                   const Simbox       & full_inversion_simbox,
+                                   ModelSettings      * model_settings,
+                                   const SegyGeometry * segy_geometry,
+                                   MultiIntervalGrid  * multi_interval_grid)
 {
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
@@ -654,6 +657,8 @@ void CommonData::SetupOutputSimbox(Simbox            & output_simbox,
   std::string err_text_tmp = "";
   output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
+  if(segy_geometry != NULL)
+    output_simbox.setILXL(segy_geometry);
 }
 
 double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j)

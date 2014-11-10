@@ -316,6 +316,7 @@ SegY::SegY(const std::string       & fileName,
 }
 
 SegY::SegY(const StormContGrid     * storm_grid,
+           const SegyGeometry      * geometry,
            float                     z0,
            const std::string       & file_name,
            bool                      write_to_file,
@@ -330,8 +331,6 @@ SegY::SegY(const StormContGrid     * storm_grid,
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(storm_grid->GetNI());
   int ny = static_cast<int>(storm_grid->GetNJ());
-  SegyGeometry geometry(storm_grid->GetXMin(), storm_grid->GetYMin(), storm_grid->GetDX(), storm_grid->GetDY(),
-                        nx, ny, storm_grid->GetAngle());
   float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
   //float z0 = 0.0;
   int nz   = int(ceil((storm_grid->GetZMax())/dz));
@@ -347,7 +346,14 @@ SegY::SegY(const StormContGrid     * storm_grid,
     WriteMainHeader(header);
   }
 
-  SetGeometry(&geometry);
+  if(geometry == NULL) {
+    SegyGeometry dummy_geometry(storm_grid->GetXMin(), storm_grid->GetYMin(), storm_grid->GetDX(), storm_grid->GetDY(),
+                                nx, ny, storm_grid->GetAngle());
+    SetGeometry(&dummy_geometry);
+  }
+  else
+    SetGeometry(geometry);
+
 
   std::vector<float> data_vec;
   data_vec.resize(nz);
@@ -357,11 +363,10 @@ SegY::SegY(const StormContGrid     * storm_grid,
   float x, y, xt, yt, z;
   for (j = 0; j < ny; j++) {
     for (i = 0; i < nx; i++) {
-
-      xt = float((i+0.5)*geometry.GetDx());
-      yt = float((j+0.5)*geometry.GetDy());
-      x  = float(geometry.GetX0()+xt*geometry.GetCosRot()-yt*geometry.GetSinRot());
-      y  = float(geometry.GetY0()+yt*geometry.GetCosRot()+xt*geometry.GetSinRot());
+      xt = float((i+0.5)*geometry_->GetDx());
+      yt = float((j+0.5)*geometry_->GetDy());
+      x  = float(geometry_->GetX0()+xt*geometry_->GetCosRot()-yt*geometry_->GetSinRot());
+      y  = float(geometry_->GetY0()+yt*geometry_->GetCosRot()+xt*geometry_->GetSinRot());
 
       double z_bot      = storm_grid->GetBotSurface().GetZ(x,y);
       double z_top      = storm_grid->GetTopSurface().GetZ(x,y);
