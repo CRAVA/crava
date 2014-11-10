@@ -76,7 +76,6 @@ public:
   GridMapping                                                        * GetTimeDepthMapping()                                  { return time_depth_mapping_                            ;}
   bool                                                                 GetVelocityFromInversion()                             { return velocity_from_inversion_                       ;}
 
-  std::map<int, std::vector<Grid2D *> >                              & GetLocalNoiseScale()                                   { return local_noise_scales_                            ;}
   std::vector<Grid2D *>                                              & GetLocalNoiseScaleTimeLapse(int time_lapse)            { return local_noise_scales_.find(time_lapse)->second   ;}
   std::vector<SeismicStorage *>                                      & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}

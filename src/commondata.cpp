@@ -97,7 +97,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                     discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
     }
     else
-      block_wells_ = false;
+      block_wells_ = true;
 
     // 6. Temporary reflection matrix and wavelet
     setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
