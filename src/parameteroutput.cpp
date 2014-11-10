@@ -600,6 +600,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0);
       }
     }
+
+    //If seismic, the grid is copied
+    if (is_seismic == true) {
+      if (output != NULL)
+        delete output;
+    }
+
   }
 }
 

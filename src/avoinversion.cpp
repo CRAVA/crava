@@ -2300,6 +2300,7 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
     delete [] eigvec[i];
     delete [] sigmamdold[i];
     delete [] help[i];
+    delete [] sigmamdx[i];
   }
   delete [] eigvectrans;
   delete [] eigvalmat;
@@ -2308,9 +2309,6 @@ void AVOInversion::correctVpVsRho(ModelSettings * modelSettings)
   delete [] sigmamdold;
   delete [] error;
   delete [] help;
-
-  for (i=0;i<3;i++)
-    delete sigmamdx[i];
   delete [] sigmamdx;
 
 }

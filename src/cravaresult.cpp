@@ -299,18 +299,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, erosion_priorities, dz_output);
     LogKit::LogFormatted(LogKit::Low,"ok");
   }
-  //else { //H-TEST
-  //  for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
-
-  //    if (background_vp_intervals_[i] != NULL)
-  //      delete background_vp_intervals_[i];
-  //    if (background_vs_intervals_[i] != NULL)
-  //      delete background_vs_intervals_[i];
-  //    if (background_rho_intervals_[i] != NULL)
-  //      delete background_rho_intervals_[i];
-
-  //  }
-  //}
+  else { //These background grids are not used later if we are not going to write them to file
+    for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
+      if (background_vp_intervals_[i] != NULL)
+        delete background_vp_intervals_[i];
+      if (background_vs_intervals_[i] != NULL)
+        delete background_vs_intervals_[i];
+      if (background_rho_intervals_[i] != NULL)
+        delete background_rho_intervals_[i];
+    }
+  }
 
   //Covariance grids
   if (!model_settings->getForwardModeling()) {
@@ -484,15 +482,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   }
 
   if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
+    LogKit::LogFormatted(LogKit::Low,"\nCompute Synthetic Seismic and Residuals...");
     if (model_settings->getKrigingParameter() > 0)
       ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_, synt_seismic_data_);
     else
       ComputeSyntSeismic(model_settings, &output_simbox, wavelets_, post_vp_, post_vs_, post_rho_, synt_seismic_data_);
+    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
-  LogKit::LogFormatted(LogKit::Low,"ok\nGenerate Synthetic Seismic Logs...");
-
   //From CommonData::WaveletHandling
+  LogKit::LogFormatted(LogKit::Low,"\nGenerate Synthetic Seismic Logs...");
   GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
 
   //We need synt_seis from well wavelets, but it needs to be based on output simbox
@@ -1165,37 +1164,200 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                                CommonData              * common_data,
                                SeismicParametersHolder & seismic_parameters) //For crava-writing
 {
-  LogKit::LogFormatted(LogKit::Low,"\n\nWrite Results");
-
   //Results are combined to one grid in CombineResults first
-
   //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
+  //Estimation model: WriteEstimationResults
 
   const Simbox & simbox            = common_data->GetOutputSimbox();
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //Estimation model: All estimated parameters are written to file, regardless of output settings
-  if (model_settings->getEstimationMode()) {
+  //Write blocked wells
+  if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
     WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
 
-    //WriteWells(common_data->GetWells(), model_settings);
+    //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
+    //Do not write if multiple intervals is used
+    if (n_intervals_ == 1)
+      WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
-    WriteBackgrounds(model_settings,
-                     &simbox,
-                     background_vp_,
-                     background_vs_,
-                     background_rho_,
-                     time_depth_mapping,
-                     *model_settings->getTraceHeaderFormatOutput());
     LogKit::LogFormatted(LogKit::Low,"ok\n");
+  }
+  //if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
+  //  WriteWells(common_data->GetWells(), model_settings);
+  //}
+
+  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids...");
+
+    //From computePostMeanResidAndFFTCov()
+    ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
+                                      output_grids_elastic, -1, false);
 
     if (write_crava_) {
+      std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vp");
+      std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vs");
+      std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Rho");
+      seismic_parameters.GetPostVp()->writeCravaFile(file_name_vp,   &simbox);
+      seismic_parameters.GetPostVs()->writeCravaFile(file_name_vs,   &simbox);
+      seismic_parameters.GetPostRho()->writeCravaFile(file_name_rho, &simbox);
+    }
 
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Background CRAVA Grids...");
+    //From doPredictionKriging
+    if (model_settings->getKrigingParameter() > 0) {
+      ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_,
+                                        output_grids_elastic, -1, true);
+
+      if (write_crava_) {
+        std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vp_Kriged");
+        std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vs_Kriged");
+        std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Rho_Kriged");
+        seismic_parameters.GetPostVpKriged()->writeCravaFile(file_name_vp,   &simbox);
+        seismic_parameters.GetPostVsKriged()->writeCravaFile(file_name_vs,   &simbox);
+        seismic_parameters.GetPostRhoKriged()->writeCravaFile(file_name_rho, &simbox);
+      }
+    }
+
+    //From CKrigingAdmin::KrigAll
+    if (model_settings->getDebugFlag()) {
+      ParameterOutput::WriteFile(model_settings, block_grid_, "BlockGrid", IO::PathToInversionResults(), &simbox);
+
+      if (write_crava_) {
+        std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), "BlockGrid");
+        seismic_parameters.GetBlockGrid()->writeCravaFile(file_name, &simbox);
+      }
+    }
+
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
+  }
+
+  //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
+  if(model_settings->getForwardModeling() == false &&
+      ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
+      || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data...");
+
+    int n_timelapses = model_settings->getNumberOfTimeLapses();
+
+    for (int i = 0; i < n_timelapses; i ++) {
+
+      //H: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
+
+      int n_angles              = model_settings->getNumberOfAngles(i);
+      std::vector<float> angles = model_settings->getAngle(i);
+      std::vector<float> offset = model_settings->getLocalSegyOffset(i);
+
+      for (int j = 0; j < n_angles; j++) {
+        std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
+        std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
+        std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
+        if (offset.size() > 0 && offset[j] < 0)
+          offset[j] = model_settings->getSegyOffset(i);
+
+        std::string angle_synt     = NRLib::ToString(j);
+        std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
+
+        int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
+        int missing_traces_simbox  = 0;
+        int missing_traces_padding = 0;
+        int dead_traces_simbox     = 0;
+
+        FFTGrid * fft_grid_resampled = NULL;
+        bool delete_fft_grid         = true;
+        if (seismic_type == 3) {
+          fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
+          delete_fft_grid = false;
+        }
+        else {
+          SegY * segy                     = NULL;
+          StormContGrid * storm           = NULL;
+          NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
+          bool is_segy                    = false;
+          bool is_storm                   = false;
+          if (seismic_type == 0) {//SEGY
+            segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
+            is_segy = true;
+          }
+          else if (seismic_type == 1 || seismic_type == 2) {//STORM/SGRI
+            storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
+            is_storm = true;
+          }
+          if (write_crava_)
+            fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
+          else
+            fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
+          fft_grid_resampled->createRealGrid();
+
+          common_data->FillInData(nrlib_grid,
+                                  fft_grid_resampled,
+                                  &simbox,
+                                  storm,
+                                  segy,
+                                  model_settings->getSmoothLength(),
+                                  missing_traces_simbox,
+                                  missing_traces_padding,
+                                  dead_traces_simbox,
+                                  FFTGrid::DATA,
+                                  false,
+                                  is_segy,
+                                  is_storm,
+                                  true);
+
+          delete nrlib_grid;
+        }
+
+        if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
+          std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
+          fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
+        }
+
+        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
+
+        //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
+        for(int k=seismic_storm->GetNK()-1;k>0;k--) {
+          for(size_t j=0;j<seismic_storm->GetNJ();j++) {
+            for(size_t i=0;i<seismic_storm->GetNI();i++) {
+              (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
+            }
+          }
+        }
+
+        if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
+          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
+
+        if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
+          StormContGrid residual(*(synt_seismic_data_[j]));
+          for(size_t k=0;k<seismic_storm->GetNK();k++) {
+            for(size_t j=0;j<seismic_storm->GetNJ();j++) {
+              for(size_t i=0;i<seismic_storm->GetNI();i++) {
+                residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+              }
+            }
+          }
+
+          sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
+          std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
+
+          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+        }
+      }
+    }
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
+  }
+
+  //Write Background models
+  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
+    WriteBackgrounds(model_settings,
+                      &simbox,
+                      background_vp_,
+                      background_vs_,
+                      background_rho_,
+                      time_depth_mapping,
+                      *model_settings->getTraceHeaderFormatOutput());
+
+    if (write_crava_) {
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
       std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
       std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
@@ -1208,389 +1370,183 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       ExpTransf(background_rho_intervals_[0]);
       background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
     }
-
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
   }
-  else {
 
-    //Write blocked wells
-    if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
-      WriteBlockedWells(blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+  //Write correlations and post variances. Write per interval.
+  for (int i = 0; i < n_intervals_; i++) {
 
-      //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
-      //Do not write if multiple intervals is used
-      if (n_intervals_ == 1)
-        WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
+    std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
 
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
-    }
-    //if ((model_settings->getWellOutputFlag() & IO::WELLS) > 0) {
-    //  WriteWells(common_data->GetWells(), model_settings);
+    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
+    //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
+
+    //delete corr_T_[i];
+    //fftw_free(corr_T_[i]);
+
+    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
+    //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
+    //  //delete [] corr_T_filtered_[i];
     //}
 
-    if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids...");
-
-      //From computePostMeanResidAndFFTCov()
-      ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
-                                        output_grids_elastic, -1, false);
+    if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations...");
+      WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
+      WriteFilePostCovGrids(model_settings, simbox, interval_name);
 
       if (write_crava_) {
-        std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vp");
-        std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vs");
-        std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Rho");
-        seismic_parameters.GetPostVp()->writeCravaFile(file_name_vp,   &simbox);
-        seismic_parameters.GetPostVs()->writeCravaFile(file_name_vs,   &simbox);
-        seismic_parameters.GetPostRho()->writeCravaFile(file_name_rho, &simbox);
+        std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
+        std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
+        std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
+        std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
+        std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
+        std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+
+        seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
+        seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
+        seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
+        seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
+        seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
+        seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
       }
+    LogKit::LogFormatted(LogKit::Low,"ok\n");
+    }
+  }
 
-      //From doPredictionKriging
-      if (model_settings->getKrigingParameter() > 0) {
-        ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_kriged_, post_vs_kriged_, post_rho_kriged_,
-                                         output_grids_elastic, -1, true);
 
-        if (write_crava_) {
-          std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vp_Kriged");
-          std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Vs_Kriged");
-          std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixPredictions() + "Rho_Kriged");
-          seismic_parameters.GetPostVpKriged()->writeCravaFile(file_name_vp,   &simbox);
-          seismic_parameters.GetPostVsKriged()->writeCravaFile(file_name_vs,   &simbox);
-          seismic_parameters.GetPostRhoKriged()->writeCravaFile(file_name_rho, &simbox);
-        }
-      }
+  if (model_settings->getKrigingParameter() > 0 && model_settings->getWritePrediction()) {
+    KrigingData3D kd(common_data->GetBlockedLogs(), 1); // 1 = full resolution logs
+    std::string base_name = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
+    std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), base_name);
+    kd.writeToFile(file_name);
+  }
 
-      //From CKrigingAdmin::KrigAll
-      if (model_settings->getDebugFlag()) {
-        ParameterOutput::WriteFile(model_settings, block_grid_, "BlockGrid", IO::PathToInversionResults(), &simbox);
+  //FaciesProb: prob, undefined, qualitygrid, lhcube
+  if (model_settings->getEstimateFaciesProb()) {
+    std::vector<std::string> facies_names = common_data->GetFaciesNames();
+    int n_facies = static_cast<int>(facies_names.size());
 
-        if (write_crava_) {
-          std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), "BlockGrid");
-          seismic_parameters.GetBlockGrid()->writeCravaFile(file_name, &simbox);
-        }
-      }
-
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
+    std::string base_name = IO::PrefixFaciesProbability();
+    if (model_settings->getFaciesProbRelative()) {
+      if (model_settings->getFaciesProbFromRockPhysics())
+        base_name += "Rock_Physics_";
+    }
+    else if (model_settings->getFaciesProbRelative() == false) {
+      base_name += "Absolute_";
+      if (model_settings->getFaciesProbFromRockPhysics())
+        base_name += "Rock_Physics_";
     }
 
-    //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
-    if(model_settings->getForwardModeling() == false &&
-       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
-        || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data...");
-
-      int n_timelapses = model_settings->getNumberOfTimeLapses();
-
-      for (int i = 0; i < n_timelapses; i ++) {
-
-        //H: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
-
-        int n_angles              = model_settings->getNumberOfAngles(i);
-        std::vector<float> angles = model_settings->getAngle(i);
-        std::vector<float> offset = model_settings->getLocalSegyOffset(i);
-
-        for (int j = 0; j < n_angles; j++) {
-          std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
-          std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
-          std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-          if (offset.size() > 0 && offset[j] < 0)
-            offset[j] = model_settings->getSegyOffset(i);
-
-          std::string angle_synt     = NRLib::ToString(j);
-          std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
-
-          int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
-          int missing_traces_simbox  = 0;
-          int missing_traces_padding = 0;
-          int dead_traces_simbox     = 0;
-
-          FFTGrid * fft_grid_resampled = NULL;
-          bool delete_fft_grid         = true;
-          if (seismic_type == 3) {
-            fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
-            delete_fft_grid = false;
-          }
-          else {
-            SegY * segy                     = NULL;
-            StormContGrid * storm           = NULL;
-            NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
-            bool is_segy                    = false;
-            bool is_storm                   = false;
-            if (seismic_type == 0) {//SEGY
-              segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
-              is_segy = true;
-            }
-            else if (seismic_type == 1 || seismic_type == 2) {//STORM/SGRI
-              storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
-              is_storm = true;
-            }
-            if (write_crava_)
-              fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
-            else
-              fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
-            fft_grid_resampled->createRealGrid();
-
-            common_data->FillInData(nrlib_grid,
-                                    fft_grid_resampled,
-                                    &simbox,
-                                    storm,
-                                    segy,
-                                    model_settings->getSmoothLength(),
-                                    missing_traces_simbox,
-                                    missing_traces_padding,
-                                    dead_traces_simbox,
-                                    FFTGrid::DATA,
-                                    false,
-                                    is_segy,
-                                    is_storm,
-                                    true);
-
-            delete nrlib_grid;
-          }
-
-          if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
-            std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
-            fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
-          }
-
-          StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
-
-          //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
-          for(int k=seismic_storm->GetNK()-1;k>0;k--) {
-            for(size_t j=0;j<seismic_storm->GetNJ();j++) {
-              for(size_t i=0;i<seismic_storm->GetNI();i++) {
-                (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
-              }
-            }
-          }
-
-          if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-            ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
-
-          if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
-            StormContGrid residual(*(synt_seismic_data_[j]));
-            for(size_t k=0;k<seismic_storm->GetNK();k++) {
-              for(size_t j=0;j<seismic_storm->GetNJ();j++) {
-                for(size_t i=0;i<seismic_storm->GetNI();i++) {
-                  residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
-                }
-              }
-            }
-
-            sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
-            std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
-
-            ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
-          }
-        }
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
-    }
-
-    //Write Background models
-    if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
-      WriteBackgrounds(model_settings,
-                       &simbox,
-                       background_vp_,
-                       background_vs_,
-                       background_rho_,
-                       time_depth_mapping,
-                       *model_settings->getTraceHeaderFormatOutput());
-
-      if (write_crava_) {
-        std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
-        std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
-        std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
-
-        ExpTransf(background_vp_intervals_[0]);
-        background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
-
-        ExpTransf(background_vs_intervals_[0]);
-        background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
-
-        ExpTransf(background_rho_intervals_[0]);
-        background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
-    }
-
-    //Write correlations and post variances. Write per interval.
-    for (int i = 0; i < n_intervals_; i++) {
-
-      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
-
-      //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-      //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
-
-      //delete corr_T_[i];
-      //fftw_free(corr_T_[i]);
-
-      //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-      //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-      //  //delete [] corr_T_filtered_[i];
-      //}
-
-      if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-        LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations...");
-        WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
-        WriteFilePostCovGrids(model_settings, simbox, interval_name);
-
-        if (write_crava_) {
-          std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
-          std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
-          std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
-          std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
-          std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
-          std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
-
-          seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
-          seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
-          seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
-          seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
-          seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
-          seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
-        }
-      LogKit::LogFormatted(LogKit::Low,"ok\n");
-      }
-    }
-
-
-    if (model_settings->getKrigingParameter() > 0 && model_settings->getWritePrediction()) {
-      KrigingData3D kd(common_data->GetBlockedLogs(), 1); // 1 = full resolution logs
-      std::string base_name = "Raw_" + IO::PrefixKrigingData() + IO::SuffixGeneralData();
-      std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), base_name);
-      kd.writeToFile(file_name);
-    }
-
-    //FaciesProb: prob, undefined, qualitygrid, lhcube
-    if (model_settings->getEstimateFaciesProb()) {
-      std::vector<std::string> facies_names = common_data->GetFaciesNames();
-      int n_facies = static_cast<int>(facies_names.size());
-
-      std::string base_name = IO::PrefixFaciesProbability();
-      if (model_settings->getFaciesProbRelative()) {
-        if (model_settings->getFaciesProbFromRockPhysics())
-          base_name += "Rock_Physics_";
-      }
-      else if (model_settings->getFaciesProbRelative() == false) {
-        base_name += "Absolute_";
-        if (model_settings->getFaciesProbFromRockPhysics())
-          base_name += "Rock_Physics_";
-      }
-
-      if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
-        for (int i = 0; i < n_facies; i++) {
-          std::string file_name = base_name +"With_Undef_"+ facies_names[i];
-          ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_[i], file_name, "");
-
-          if (write_crava_) {
-            std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
-            seismic_parameters.GetFaciesProb()[i]->writeCravaFile(file_name_crava, &simbox);
-          }
-        }
-        std::string file_name = base_name + "Undef";
-        ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_undef_, file_name, "");
+    if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
+      for (int i = 0; i < n_facies; i++) {
+        std::string file_name = base_name +"With_Undef_"+ facies_names[i];
+        ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_[i], file_name, "");
 
         if (write_crava_) {
           std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
-          seismic_parameters.GetFaciesProbUndefined()->writeCravaFile(file_name_crava, &simbox);
-        }
-
-      }
-      if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
-        for (int i = 0; i < n_facies; i++) {
-          std::string file_name = base_name + facies_names[i];
-          ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_geo_[i], file_name, "");
-
-          if (write_crava_) {
-            std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
-            seismic_parameters.GetFaciesProbGeomodel()[i]->writeCravaFile(file_name_crava, &simbox);
-          }
+          seismic_parameters.GetFaciesProb()[i]->writeCravaFile(file_name_crava, &simbox);
         }
       }
-      if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
-        std::string file_name = "Seismic_Quality_Grid";
-        ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, quality_grid_, file_name, "");
+      std::string file_name = base_name + "Undef";
+      ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_undef_, file_name, "");
+
+      if (write_crava_) {
+        std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
+        seismic_parameters.GetFaciesProbUndefined()->writeCravaFile(file_name_crava, &simbox);
+      }
+
+    }
+    if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
+      for (int i = 0; i < n_facies; i++) {
+        std::string file_name = base_name + facies_names[i];
+        ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, facies_prob_geo_[i], file_name, "");
 
         if (write_crava_) {
           std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
-          seismic_parameters.GetQualityGrid()->writeCravaFile(file_name_crava, &simbox);
-        }
-      }
-      if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
-        for (int i = 0; i < n_facies; i++) {
-          std::string file_name = IO::PrefixLikelihood() + facies_names[i];
-          ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, lh_cubes_[i], file_name, "");
-
-          if (write_crava_) {
-            std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixLikelihood() + facies_names[i]);
-            seismic_parameters.GetLHCube()[i]->writeCravaFile(file_name, &simbox);
-          }
-
+          seismic_parameters.GetFaciesProbGeomodel()[i]->writeCravaFile(file_name_crava, &simbox);
         }
       }
     }
+    if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
+      std::string file_name = "Seismic_Quality_Grid";
+      ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, quality_grid_, file_name, "");
 
-    //Simulations
-    if (model_settings->getNumberOfSimulations() > 0) {
-      int n_simulations = simulations_seed0_.size();
-      bool kriging      = model_settings->getKrigingParameter() > 0;
-      for (int i = 0; i < n_simulations; i++) {
-        ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, simulations_seed0_[i], simulations_seed1_[i], simulations_seed2_[i],
-                                          model_settings->getOutputGridsElastic(), i, kriging);
+      if (write_crava_) {
+        std::string file_name_crava = IO::makeFullFileName(IO::PathToInversionResults(), file_name);
+        seismic_parameters.GetQualityGrid()->writeCravaFile(file_name_crava, &simbox);
+      }
+    }
+    if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
+      for (int i = 0; i < n_facies; i++) {
+        std::string file_name = IO::PrefixLikelihood() + facies_names[i];
+        ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, lh_cubes_[i], file_name, "");
 
         if (write_crava_) {
-          std::string prefix = IO::PrefixSimulations();
-          std::string suffix;
-          if (kriging)
-            suffix += "_Kriged_"+NRLib::ToString(i+1);
-          else
-            suffix += "_"+NRLib::ToString(i+1);
-
-          std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vp" + suffix);
-          std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vs" + suffix);
-          std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Rho" + suffix);
-          seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vp,  &simbox);
-          seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vs,  &simbox);
-          seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_rho, &simbox);
+          std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixLikelihood() + facies_names[i]);
+          seismic_parameters.GetLHCube()[i]->writeCravaFile(file_name, &simbox);
         }
+
       }
     }
+  }
 
-    //Synthetic seismic
-    if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
+  //Simulations
+  if (model_settings->getNumberOfSimulations() > 0) {
+    int n_simulations = simulations_seed0_.size();
+    bool kriging      = model_settings->getKrigingParameter() > 0;
+    for (int i = 0; i < n_simulations; i++) {
+      ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, simulations_seed0_[i], simulations_seed1_[i], simulations_seed2_[i],
+                                        model_settings->getOutputGridsElastic(), i, kriging);
 
-      int n_angles = model_settings->getNumberOfAngles(0); //Only write synthetic seismic for the first vintage
-      std::vector<float> angles = model_settings->getAngle(0);
+      if (write_crava_) {
+        std::string prefix = IO::PrefixSimulations();
+        std::string suffix;
+        if (kriging)
+          suffix += "_Kriged_"+NRLib::ToString(i+1);
+        else
+          suffix += "_"+NRLib::ToString(i+1);
 
-      for (int i = 0; i < n_angles; i++) {
-
-        float theta       = angles[i];
-        float theta_deg   = static_cast<float>((theta*180.0/NRLib::Pi));
-        std::string angle = NRLib::ToString(theta_deg, 1);
-
-        std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
-        std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
-
-        if(((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-          (model_settings->getForwardModeling() == true))
-          ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+        std::string file_name_vp  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vp" + suffix);
+        std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vs" + suffix);
+        std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Rho" + suffix);
+        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vp,  &simbox);
+        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vs,  &simbox);
+        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_rho, &simbox);
       }
     }
+  }
 
-    //Trend Cubes
-    if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+  //Synthetic seismic
+  if (model_settings->getGenerateSeismicAfterInv() || model_settings->getForwardModeling()) {
 
-      const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
+    int n_angles = model_settings->getNumberOfAngles(0); //Only write synthetic seismic for the first vintage
+    std::vector<float> angles = model_settings->getAngle(0);
 
-      for (size_t i = 0; i < trend_cubes_.size(); i++) {
-        std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
-        ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, "trend cube");
-      }
+    for (int i = 0; i < n_angles; i++) {
+
+      float theta       = angles[i];
+      float theta_deg   = static_cast<float>((theta*180.0/NRLib::Pi));
+      std::string angle = NRLib::ToString(theta_deg, 1);
+
+      std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
+      std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
+
+      if(((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+        (model_settings->getForwardModeling() == true))
+        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
     }
+  }
 
+  //Trend Cubes
+  if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+
+    const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
+
+    for (size_t i = 0; i < trend_cubes_.size(); i++) {
+      std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
+      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, "trend cube");
+    }
   }
 }
 
@@ -1663,7 +1619,7 @@ void CravaResult::WriteEstimationResults(ModelSettings           * model_setting
     background_vs_  = new NRLib::StormContGrid(simbox, *(bg[1]));
     background_rho_ = new NRLib::StormContGrid(simbox, *(bg[2]));
 
-    LogKit::LogFormatted(LogKit::Low,"ok\nWrite Background Grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
     WriteBackgrounds(model_settings,
                      &simbox,
                      background_vp_,
@@ -1671,10 +1627,11 @@ void CravaResult::WriteEstimationResults(ModelSettings           * model_setting
                      background_rho_,
                      time_depth_mapping,
                      *model_settings->getTraceHeaderFormatOutput());
+    LogKit::LogFormatted(LogKit::Low,"ok");
 
     if (write_crava_) {
 
-      LogKit::LogFormatted(LogKit::Low,"ok\nWrite Background CRAVA Grids...");
+      LogKit::LogFormatted(LogKit::Low,"\nWrite Background CRAVA Grids...");
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
       std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
       std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
@@ -1687,9 +1644,9 @@ void CravaResult::WriteEstimationResults(ModelSettings           * model_setting
 
       ExpTransf(background_rho_intervals_[0]);
       background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
-    }
 
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
+      LogKit::LogFormatted(LogKit::Low,"ok");
+    }
   }
 }
 
@@ -2017,7 +1974,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
                                      StormContGrid                * rho,
                                      std::vector<StormContGrid *> & synt_seismic_data)
 {
-  LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
+  //LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
   int nx = vp->GetNI();
   int ny = vp->GetNJ();
