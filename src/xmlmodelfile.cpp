@@ -2230,7 +2230,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
-  //If facies are given as probabilities under parseFacies and multiinterval are used, set all intervals equal to this value.
+  //If facies are given as probabilities and we use multiple intervals, we set all intervals equal to this value.
   if(modelSettings_->GetMultipleIntervalSetting() == true && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
     for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
       const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);

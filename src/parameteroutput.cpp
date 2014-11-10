@@ -514,7 +514,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+file_name_segy+"...");
 
+        SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                              simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                              simbox->getILStepX(), simbox->getILStepY(),
+                              simbox->getXLStepX(), simbox->getXLStepY(),
+                              simbox->getAngle());
         SegY * segy = new SegY(output,
+                               &geometry,
                                z0,
                                file_name_segy,
                                true, //Write to file
@@ -578,9 +584,15 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
             }
           }
 
+          SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                                simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                                simbox->getILStepX(), simbox->getILStepY(),
+                                simbox->getXLStepX(), simbox->getXLStepY(),
+                                simbox->getAngle());
+
           std::string file_name_segy = file_name + IO::SuffixSegy();
 
-          SegY * segy = new SegY(storm_cube_depth, z0, file_name_segy, true);
+          SegY * segy = new SegY(storm_cube_depth, &geometry, z0, file_name_segy, true);
           delete segy;
           delete storm_cube_depth;
 
@@ -647,7 +659,12 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
   if((format & IO::SEGY) > 0) {
     gf_name =  file_name + IO::SuffixSegy();
 
-    SegY * segy = new SegY(outgrid, z0, gf_name, true);
+    SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
+                          simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
+                          simbox->getILStepX(), simbox->getILStepY(),
+                          simbox->getXLStepX(), simbox->getXLStepY(),
+                          simbox->getAngle());
+    SegY * segy = new SegY(outgrid, &geometry, z0, gf_name, true);
     delete segy;
 
     //writeSegyFromStorm(outgrid, gf_name);

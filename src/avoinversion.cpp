@@ -2056,7 +2056,6 @@ void AVOInversion::newPosteriorCovPointwise(NRLib::Matrix & sigmanew,
   help = help + sigmaenew;
   NRLib::Vector eigvale(ntheta_);
   NRLib::Matrix eigvece(ntheta_,ntheta_);
-  //LogKit::LogFormatted(LogKit::Low,"test14\n"); H-REMOVE
   NRLib::ComputeEigenVectors(help, eigvale, eigvece);
   NRLib::Matrix eigvalmate = NRLib::ZeroMatrix(ntheta_);
   for (int i=0 ; i<ntheta_ ; i++) {
