@@ -44,7 +44,7 @@ public:
                                        const Simbox       * timeSimbox);
   void            makeTimeTimeMapping(const Simbox * timeCutSimbox);
 
-  void            setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox);
+  void            setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox, int format);
 
   void            setMappingFromVelocity(StormContGrid * velocity, const Simbox * timeSimbox, int format);
 

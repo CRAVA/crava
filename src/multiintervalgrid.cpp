@@ -167,6 +167,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       int    output_grids_other   = model_settings->getOutputGridsOther();
       int    output_grids_seismic = model_settings->getOutputGridsSeismic();
 
+      //Add in writing of ascii-files
+      if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+        output_format += IO::ASCII;
+
       if ((output_domain & IO::TIMEDOMAIN) > 0) {
         std::string top_surf          = IO::PrefixSurface() + IO::PrefixTop() + interval_names_[i] + "_"  + IO::PrefixTime();
         std::string base_surf         = IO::PrefixSurface() + IO::PrefixBase() + interval_names_[i] + "_" + IO::PrefixTime();
@@ -307,6 +311,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     int                    other_output_domain                    = model_settings->getOutputGridDomain();
     int                    other_output_format                    = model_settings->getOutputGridFormat();
 
+    if (model_settings->getWriteAsciiSurfaces() && !(other_output_format & IO::ASCII))
+      other_output_format+= IO::ASCII;
 
 
     // Make a simbox for the original interval --------------------------------------------
@@ -325,7 +331,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       corr_dir = true;
       Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
-        other_output_flag, other_output_domain, other_output_format, err_text, failed);
+                                         other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf;
     }
     // Case 2: Top and base correlation surfaces
@@ -334,7 +340,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
-                                          other_output_flag, other_output_domain, other_output_format,err_text, failed);
+                                        other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf_top;
       delete corr_surf_base;
     }
@@ -343,7 +349,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       corr_dir = true;
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
-                                          other_output_flag, other_output_domain, other_output_format, err_text, failed);
+                                        other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf_base;
     }
     // Case 4: Top correlation surface and base conform
@@ -351,7 +357,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       corr_dir = true;
       Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox);
       interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
-                                          other_output_flag, other_output_domain, other_output_format, err_text, failed);
+                                           other_output_flag, other_output_domain, other_output_format, err_text, failed);
       delete corr_surf_top;
     }
     // Case 5: Top and base conform

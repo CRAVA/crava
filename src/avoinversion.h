@@ -43,7 +43,7 @@ public:
 
   ~AVOInversion();
 
-  int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters);
+  int                    computePostMeanResidAndFFTCov(ModelGeneral * modelGeneral, SeismicParametersHolder & seismicParameters, ModelSettings * modelSettings);
   //int                    computeSyntSeismicOld(FFTGrid * Vp, FFTGrid * Vs, FFTGrid * Rho);
 
   FFTGrid              * getPostVp()  { return postVp_  ;}

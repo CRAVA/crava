@@ -269,7 +269,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
 
     computePostMeanResidAndFFTCov(modelGeneral_,
-                                  seismicParameters);
+                                  seismicParameters,
+                                  modelSettings);
 
     time(&timeend);
     LogKit::LogFormatted(LogKit::DebugLow,"\nTime elapsed :  %d\n",timeend-timestart);
@@ -795,7 +796,8 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
 
 int
 AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGeneral,
-                                            SeismicParametersHolder & seismicParameters)
+                                            SeismicParametersHolder & seismicParameters,
+                                            ModelSettings           * modelSettings)
 {
   LogKit::WriteHeader("Posterior model / Performing Inversion");
 
@@ -1150,7 +1152,11 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     postVp_->expTransf();
     GridMapping * tdMap = modelGeneral_->GetTimeDepthMapping();
 
-    tdMap->setMappingFromVelocity(postVp_, simbox_);
+    int format = postVp_->getOutputFormat();
+    if (modelSettings->getWriteAsciiSurfaces() && !(format & IO::ASCII))
+      format += IO::ASCII;
+
+    tdMap->setMappingFromVelocity(postVp_, simbox_, format);
     postVp_->logTransf();
     postVp_->endAccess();
   }
