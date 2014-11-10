@@ -902,9 +902,8 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
     for(int j=0; j<static_cast<int>(posteriorPdf[0].size()); j++) {
       std::string baseName = "Rock_Physics_";
       baseName = baseName + facies_names[j];
-      std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
       bool writeSurface = (j==0); //writeSurface is true if j == 0.
-      posteriorPdf[0][j]->ResampleAndWriteDensity(fileName, volume[0], expVol, j, writeSurface);
+      posteriorPdf[0][j]->ResampleAndWriteDensity(baseName, volume[0], expVol, j, writeSurface);
 
     }
     delete expVol;
@@ -1146,10 +1145,9 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
         } else
           baseName = "Rock_Physics_";
         baseName = baseName + facies_names[j];
-        std::string fileName = IO::makeFullFileName(IO::PathToInversionResults(), baseName);
         bool writeSurface = (j==0); //writeSurface is true if j == 0.
 
-        posteriorPdf3d[i][j]->ResampleAndWriteDensity(fileName, volume[i], expVol, j, writeSurface);
+        posteriorPdf3d[i][j]->ResampleAndWriteDensity(baseName, volume[i], expVol, j, writeSurface);
 
       }
       delete expVol;

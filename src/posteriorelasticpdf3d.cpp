@@ -310,7 +310,7 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
     int format = IO::STORM;
     std::string topSurf  = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixDensity() + NRLib::ToString(gridNo);
     std::string baseSurf = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixDensity() + NRLib::ToString(gridNo);
-    volume->WriteTopBaseSurfaceGrids(topSurf, baseSurf, IO::PathToInversionResults(), format);
+    volume->WriteTopBaseSurfaceGrids(topSurf, baseSurf, IO::PathToRockPhysics(), format);
     volume->setTopBotName(topSurf, baseSurf, format);
   }
 
@@ -357,7 +357,7 @@ void PosteriorElasticPDF3D::ResampleAndWriteDensity(const std::string & fileName
   header_lines[2] = "x-axis is Vp, and y-axis is Vs.";
   header_lines[3] = "Vertical axis is physical density, starting from "+NRLib::ToString(z_min)+".";
   header_lines[4] = "Physical density is scaled by a factor of 1000.";
-  expDens.writeFile(fileName, "", volume, "NO_LABEL", static_cast<float>(z_min), NULL,
+  expDens.writeFile(fileName, IO::PathToRockPhysics(), volume, "NO_LABEL", static_cast<float>(z_min), NULL,
                     TraceHeaderFormat(TraceHeaderFormat::SEISWORKS), false, scientific_format, header_lines);
 }
 

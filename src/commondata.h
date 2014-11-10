@@ -248,12 +248,14 @@ private:
   bool               CreateOuterTemporarySimbox(ModelSettings           * model_settings,
                                                 InputFiles              * input_files,
                                                 Simbox                  & full_inversion_simbox,
+                                                SegyGeometry           *& segy_geometry,
                                                 std::string             & err_text) const;
 
-  void               SetupOutputSimbox(Simbox            & output_simbox,
-                                       const Simbox      & full_inversion_simbox,
-                                       ModelSettings     * model_settings,
-                                       MultiIntervalGrid * multi_interval_grid);
+  void               SetupOutputSimbox(Simbox             & output_simbox,
+                                       const Simbox       & full_inversion_simbox,
+                                       ModelSettings      * model_settings,
+                                       const SegyGeometry * segy_geometry,
+                                       MultiIntervalGrid  * multi_interval_grid);
 
   double             FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j);
 
