@@ -5523,6 +5523,7 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("3d-wavelet-tuning-factor");
   legalCommands.push_back("gradient-smoothing-range");
   legalCommands.push_back("estimate-well-gradient-from-seismic");
+  legalCommands.push_back("write-ascii-surfaces");
 
 #ifdef PARALLEL
   int n_thread = 0;
@@ -5614,6 +5615,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   bool estimate = false;
   if(parseBool(root, "estimate-well-gradient-from-seismic", estimate, errTxt) == true)
     modelSettings_->setEstimateWellGradientFromSeismic(estimate);
+
+  bool ascii_surfaces = false;
+  if(parseBool(root, "write-ascii-surfaces", ascii_surfaces, errTxt) == true)
+    modelSettings_->setWriteAsciiSurfaces(ascii_surfaces);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

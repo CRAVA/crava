@@ -178,6 +178,7 @@ ModelSettings::ModelSettings(void)
   noSeismicNeeded_         =    false;
   snapGridToSeismicData_   =    false;
   wellGradientFromSeismic_ =    false;
+  writeAsciiSurfaces_      =    false;
 
   priorFaciesProbGiven_    = ModelSettings::FACIES_FROM_WELLS;
 

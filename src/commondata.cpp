@@ -355,7 +355,7 @@ CommonData::~CommonData() {
 
   // local_noise_scales_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_noise_scales_.begin(); it != local_noise_scales_.end(); it++) {
-    for (size_t j = 0; j < local_noise_scales_.size(); j++) {
+    for (size_t j = 0; j < it->second.size(); j++) {
       if (local_noise_scales_.find(it->first)->second[j] != NULL) {
         delete local_noise_scales_.find(it->first)->second[j];
         local_noise_scales_.find(it->first)->second[j] = NULL;
@@ -649,7 +649,13 @@ void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
 
   int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
 
-  output_simbox.setDepth(*output_simbox.GetTopSurface().Clone(), *output_simbox.GetBotSurface().Clone(), nz_new, false); //Also set nz_pad = nz
+  const NRLib::Surface<double> * top_surf = output_simbox.GetTopSurface().Clone();
+  const NRLib::Surface<double> * bot_surf = output_simbox.GetBotSurface().Clone();
+  output_simbox.setDepth(*top_surf, *bot_surf, nz_new, false); //Also set nz_pad = nz
+  delete top_surf;
+  delete bot_surf;
+
+  //output_simbox.setDepth(*output_simbox.GetTopSurface().Clone(), *output_simbox.GetBotSurface().Clone(), nz_new, false); //Also set nz_pad = nz
   std::string err_text_tmp = "";
   output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
@@ -3638,7 +3644,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      local_noise_scale,
                                      angle);
 
-      if (useLocalShift) {
+      if (useLocalShift)
         ReadAndWriteLocalGridsToFile(input_files->getShiftFile(i_timelapse,j_angle),
                                      IO::PrefixLocalWaveletShift(),
                                      1.0,
@@ -3647,16 +3653,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      shift_grid, //local_shift,
                                      angle);
 
-        //shift_grid = new Grid2D(*local_shift);
-
-        //if (wavelet_pre_resampling != NULL)
-        //  wavelet_pre_resampling->setShiftGrid(new Grid2D(*local_shift));
-
-        //wavelet->setShiftGrid(local_shift);
-
-      }
-
-      if (useLocalGain) {
+      if (useLocalGain)
         ReadAndWriteLocalGridsToFile(input_files->getScaleFile(i_timelapse,j_angle),
                                      IO::PrefixLocalWaveletGain(),
                                      1.0,
@@ -3664,15 +3661,6 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                      full_inversion_simbox,
                                      gain_grid, //local_scale,
                                      angle);
-
-        //gain_grid = new Grid2D(*local_scale); //Gain grid is set in modelavodynamic for the correct wavelet
-
-        //if (wavelet_pre_resampling != NULL)
-        //  wavelet_pre_resampling->setGainGrid(new Grid2D(*local_scale));
-
-        //wavelet->setGainGrid(local_scale);
-
-      }
     }
   }
 
@@ -4085,8 +4073,11 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
                                          const Grid2D        * grid,
                                          const float           angle) const
 {
-  bool   estimationMode   = model_settings->getEstimationMode();
-  int    outputFormat     = model_settings->getOutputGridFormat();
+  bool   estimation_mode = model_settings->getEstimationMode();
+  int    output_format   = model_settings->getOutputGridFormat();
+  if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+        output_format += IO::ASCII;
+
   double angle_tmp        = angle*180.0/M_PI;
 
   Surface * help = NULL;
@@ -4107,7 +4098,7 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
       ResampleGrid2DToSurface(&simbox, grid, help);
     }
   }
-  if ((estimationMode ||
+  if ((estimation_mode ||
     ((type==IO::PrefixLocalWaveletGain() || type==IO::PrefixLocalWaveletShift()) && (model_settings->getWaveletOutputFlag() & IO::LOCAL_WAVELETS)>0) ||
     (type==IO::PrefixLocalNoise() && (model_settings->getOtherOutputFlag() & IO::LOCAL_NOISE)>0)) &&
      help != NULL)
@@ -4116,9 +4107,9 @@ CommonData::ReadAndWriteLocalGridsToFile(const std::string   & file_name,
     help->Multiply(scale_factor);
 
     if (type==IO::PrefixLocalNoise())
-      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), outputFormat);
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToNoise(), output_format);
     else
-      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), outputFormat);
+      IO::writeSurfaceToFile(*help, baseName, IO::PathToWavelets(), output_format);
   }
   if (help != NULL)
     delete help;
@@ -6314,7 +6305,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
           if(is_seismic)
-            z0_data = z0_data - static_cast<float>(0.5) * segy->GetDz();
+            z0_data = z0_data-0.5f*segy->GetDz();
         }
         else if (is_storm) {
           size_t i_in, j_in, k_in;
@@ -6384,7 +6375,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
           if (is_seismic)
-            z0_grid += static_cast<float>(0.5*dz);
+            z0_grid += 0.5f*static_cast<float>(dz);
 
           std::vector<float> grid_trace(nzp);
 
@@ -7039,6 +7030,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
     time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), base_depth_surface, failed_dummy, err_text);
 
     if (velocity != NULL) {
+
+      int output_format = model_settings->getOutputGridFormat();
+      if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+        output_format += IO::ASCII;
+
       time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
       time_depth_mapping_->setDepthSimbox(&full_inversion_simbox, full_inversion_simbox.getnz(),
                                           model_settings->getOutputGridFormat(),
@@ -7062,9 +7058,14 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       }
     }
     else if (velocity == NULL && velocity_from_inversion_ ==false) {
+
+      int output_format = model_settings->getOutputGridFormat();
+      if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+        output_format += IO::ASCII;
+
       time_depth_mapping->setDepthSimbox(&full_inversion_simbox,
                                           full_inversion_simbox.getnz(),
-                                          model_settings->getOutputGridFormat(),
+                                          output_format, //model_settings->getOutputGridFormat(),
                                           failed_dummy,
                                           err_text);
     }
@@ -7159,7 +7160,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
 
           //Create a sepeate background simbox based on correlation_direction
-          SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, model_settings->getOutputGridFormat(),
+          int output_format = model_settings->getOutputGridFormat();
+          if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+            output_format += IO::ASCII;
+
+          SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, output_format,
                                         model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
           std::string err_text_tmp = "";
           int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
@@ -7187,7 +7192,11 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           {
             Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
             //Extend only with bot corr surface
-            SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+            int output_format = model_settings->getOutputGridFormat();
+            if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+              output_format += IO::ASCII;
+
+            SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, output_format,
                                           model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
           }
           //Top correlation surface and base conform
