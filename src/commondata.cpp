@@ -359,7 +359,7 @@ CommonData::~CommonData() {
 
   // local_noise_scales_
   for (std::map<int, std::vector<Grid2D *> >::const_iterator it = local_noise_scales_.begin(); it != local_noise_scales_.end(); it++) {
-    for (size_t j = 0; j < local_noise_scales_.size(); j++) {
+    for (size_t j = 0; j < it->second.size(); j++) {
       if (local_noise_scales_.find(it->first)->second[j] != NULL) {
         delete local_noise_scales_.find(it->first)->second[j];
         local_noise_scales_.find(it->first)->second[j] = NULL;
@@ -6260,7 +6260,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
           if(is_seismic)
-            z0_data = z0_data-0.5*segy->GetDz();
+            z0_data = z0_data-0.5f*segy->GetDz();
         }
         else if (is_storm) {
           size_t i_in, j_in, k_in;
@@ -6330,7 +6330,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           float       dz_grid  = static_cast<float>(dz);
           float       z0_grid  = static_cast<float>(z0);
           if (is_seismic)
-            z0_grid += 0.5*static_cast<float>(dz);
+            z0_grid += 0.5f*static_cast<float>(dz);
 
           std::vector<float> grid_trace(nzp);
 
