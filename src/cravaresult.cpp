@@ -185,7 +185,7 @@ CravaResult::~CravaResult()
   //  }
   //}
 
-  if(blocked_logs_intervals_.size() > 0) {
+  if (blocked_logs_intervals_.size() > 0) {
     for (int i = 0; i < n_intervals_; i++) {
       for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_intervals_[i].begin(); it != blocked_logs_intervals_[i].end(); it++) {
         if (blocked_logs_intervals_[i].find(it->first)->second != NULL) {
@@ -1233,7 +1233,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
-  if(model_settings->getForwardModeling() == false &&
+  if (model_settings->getForwardModeling() == false &&
       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
       || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data...");
@@ -1315,9 +1315,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
 
         //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
-        for(int k=seismic_storm->GetNK()-1;k>0;k--) {
-          for(size_t j=0;j<seismic_storm->GetNJ();j++) {
-            for(size_t i=0;i<seismic_storm->GetNI();i++) {
+        for (int k=seismic_storm->GetNK()-1;k>0;k--) {
+          for (size_t j=0;j<seismic_storm->GetNJ();j++) {
+            for (size_t i=0;i<seismic_storm->GetNI();i++) {
               (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
             }
           }
@@ -1328,9 +1328,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
         if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
           StormContGrid residual(*(synt_seismic_data_[j]));
-          for(size_t k=0;k<seismic_storm->GetNK();k++) {
-            for(size_t j=0;j<seismic_storm->GetNJ();j++) {
-              for(size_t i=0;i<seismic_storm->GetNI();i++) {
+          for (size_t k=0;k<seismic_storm->GetNK();k++) {
+            for (size_t j=0;j<seismic_storm->GetNJ();j++) {
+              for (size_t i=0;i<seismic_storm->GetNI();i++) {
                 residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
               }
             }
@@ -1532,7 +1532,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
       std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
 
-      if(((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
+      if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
         (model_settings->getForwardModeling() == true))
         ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
     }
@@ -1551,12 +1551,10 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 }
 
 
-void CravaResult::WriteEstimationResults(ModelSettings           * model_settings,
-                                         CommonData              * common_data)
+void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
+                                         CommonData    * common_data)
 {
   //No CombineResults have been run, so much is unset, but we should be able to live with it.
-  LogKit::LogFormatted(LogKit::Low,"\n\nWrite Results");
-
   const Simbox & simbox            = common_data->GetOutputSimbox();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
@@ -1567,12 +1565,12 @@ void CravaResult::WriteEstimationResults(ModelSettings           * model_setting
     write_crava_ = true;
 
   //Estimation model: All estimated parameters are written to file, regardless of output settings
-  if(((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
+  if (((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
      (model_settings->getEstimateBackground() || model_settings->getEstimateWaveletNoise())) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
 
     //Fill in seismic if needed.
-    if(model_settings->getEstimateWaveletNoise()) {
+    if (model_settings->getEstimateWaveletNoise()) {
       //ComputeSeismicImpedance from avoinversion.cpp
       reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
       wavelets_          = common_data->GetWavelet(0);
@@ -1614,10 +1612,46 @@ void CravaResult::WriteEstimationResults(ModelSettings           * model_setting
   }
 
   if (model_settings->getEstimateBackground() == true) {
-    std::vector<NRLib::Grid<float> *> bg = common_data->GetBackgroundParametersInterval(0);
-    background_vp_  = new NRLib::StormContGrid(simbox, *(bg[0]));
-    background_vs_  = new NRLib::StormContGrid(simbox, *(bg[1]));
-    background_rho_ = new NRLib::StormContGrid(simbox, *(bg[2]));
+
+    if (n_intervals_ > 1) {
+      //Resample background grids to one final grid
+      //We don't have seismicParametersHolder (with FFT-grids), only CommonData (With NRLib-grids)
+      //Have to transform from NRLib-Grid to FFTGrid to be used in CombineResult.
+      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
+      MultiIntervalGrid      * multi_interval_grid = common_data->GetMultipleIntervalGrid();
+      const std::vector<int> & erosion_priorities  = multi_interval_grid->GetErosionPriorities();
+
+      int nx = simbox.getnx();
+      int ny = simbox.getny();
+      int nz = simbox.getnz();
+      double dz_output = simbox.getdz();
+
+      background_vp_  = new StormContGrid(simbox, nx, ny, nz);
+      background_vs_  = new StormContGrid(simbox, nx, ny, nz);
+      background_rho_ = new StormContGrid(simbox, nx, ny, nz);
+
+      std::vector<FFTGrid *> background_vp_intervals(n_intervals_);
+      std::vector<FFTGrid *> background_vs_intervals(n_intervals_);
+      std::vector<FFTGrid *> background_rho_intervals(n_intervals_);
+
+      for (int i = 0; i < n_intervals_; i++) {
+        background_vp_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[0], nx, ny, nz);
+        background_vs_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[1], nx, ny, nz);
+        background_rho_intervals[i] = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[2], nx, ny, nz);
+      }
+
+      CombineResult(background_vp_,  background_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(background_vs_,  background_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(background_rho_, background_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"Ok");
+
+    }
+    else {
+      std::vector<NRLib::Grid<float> *> bg = common_data->GetBackgroundParametersInterval(0);
+      background_vp_  = new NRLib::StormContGrid(simbox, *(bg[0]));
+      background_vs_  = new NRLib::StormContGrid(simbox, *(bg[1]));
+      background_rho_ = new NRLib::StormContGrid(simbox, *(bg[2]));
+    }
 
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
     WriteBackgrounds(model_settings,
@@ -1690,8 +1724,8 @@ void CravaResult::WriteFilePostVariances(const NRLib::Matrix      & post_var0,
   file << std::fixed;
   file << std::right;
   file << std::setprecision(6);
-  for(int i=0 ; i<3 ; i++) {
-    for(int j=0 ; j<3 ; j++) {
+  for (int i=0 ; i<3 ; i++) {
+    for (int j=0 ; j<3 ; j++) {
       file << std::setw(10) << post_var0(i,j) << " ";
     }
     file << "\n";
@@ -1718,7 +1752,7 @@ void CravaResult::WriteFilePostCorrT(const std::vector<float> & post_cov,
   file << std::right;
   float c0 = 1.0f/post_cov[0];
 
-  for(int k=0 ; k < static_cast<int>(post_cov.size()) ; k++)
+  for (int k=0 ; k < static_cast<int>(post_cov.size()) ; k++)
     file << std::setw(9) << post_cov[k]*c0 << "\n";
 
   file.close();
@@ -1806,7 +1840,7 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
       }
     }
 
-    if(delete_fft)
+    if (delete_fft)
       delete fft_grid;
 
     return(storm);
@@ -1877,7 +1911,7 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
                                    GridMapping             * depth_mapping,
                                    const TraceHeaderFormat & thf)
 {
-  if(depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
+  if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
     //H-CHECK
     int output_format = model_settings->getOutputGridFormat();
     if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
@@ -2111,10 +2145,10 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   std::vector<std::vector<Wavelet *> > wavelets(blocked_wells.size()); //First index is well, seoond is angle.
   for (int i = 0; i < n_angles; i++) {
     std::vector<Wavelet1D *> angle_wavelets = common_data->GetWellWavelets(i);
-    for(size_t w=0;w<blocked_wells.size();w++) {
-      if(i==0)
+    for (size_t w=0;w<blocked_wells.size();w++) {
+      if (i==0)
         wavelets[w].resize(n_angles);
-      if(angle_wavelets.size() == 0 || angle_wavelets[w] == NULL)
+      if (angle_wavelets.size() == 0 || angle_wavelets[w] == NULL)
         wavelets[w][i] = NULL;
       else {
         Wavelet1D * wavelet = new Wavelet1D(angle_wavelets[w]);
@@ -2138,7 +2172,7 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   }
 
   for (int i = 0; i < n_angles; i++) {
-    for(size_t w=0;w<blocked_wells.size();w++) {
+    for (size_t w=0;w<blocked_wells.size();w++) {
       delete wavelets[w][i];
     }
   }

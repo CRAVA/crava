@@ -3137,7 +3137,7 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
   for (i=start; i<start+length; i++)
     seis_r[i] = static_cast<fftw_real>(seismic_data[i]);
 
-  if(top_value == true)
+  if (top_value == true)
     Utils::ShiftTrace(&(seis_r[start]),length, false);
 }
 
@@ -3212,13 +3212,13 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
   {
     std::vector<double> blocked_log(n_blocks_);
 
-    if(type == "ACTUAL_SYNTHETIC_SEISMIC") {
+    if (type == "ACTUAL_SYNTHETIC_SEISMIC") {
       std::vector<fftw_real> trace(vertical_trend.size());
-      for(size_t i=0;i<vertical_trend.size();i++)
+      for (size_t i=0;i<vertical_trend.size();i++)
         trace[i] = static_cast<float>(vertical_trend[i]);
       Utils::ShiftTrace(&(trace[0]), trace.size());
       std::vector<double> v_trend(vertical_trend.size());
-      for(size_t i=0;i<vertical_trend.size();i++)
+      for (size_t i=0;i<vertical_trend.size();i++)
         v_trend[i] = static_cast<double>(trace[i]);
       SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
                               v_trend, z0, dz, nz);
@@ -3252,11 +3252,11 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
       }
     }
     std::vector<fftw_real> trace(vertical_trend.size());
-    for(size_t i=0;i<vertical_trend.size();i++)
+    for (size_t i=0;i<vertical_trend.size();i++)
       trace[i] = static_cast<float>(vertical_trend[i]);
     Utils::ShiftTrace(&(trace[0]), trace.size());
     std::vector<double> v_trend(vertical_trend.size());
-    for(size_t i=0;i<vertical_trend.size();i++)
+    for (size_t i=0;i<vertical_trend.size();i++)
       v_trend[i] = static_cast<double>(trace[i]);
     SetLogFromVerticalTrend(well_synt_seismic_data[i_angle], z_pos_blocked_, n_blocks_,
                             v_trend, z0, dz, nz);
@@ -3895,7 +3895,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
 
   int n_angles = static_cast<int>(wavelet.size());
   for (i=0; i < n_angles; i++) {
-    if(wavelet[i] != NULL) {
+    if (wavelet[i] != NULL) {
       for (j=0; j < rnzp; j++) {
         cpp_r[j] = 0;
         synt_seis_r[j] = 0;
@@ -3929,7 +3929,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
 
       SetNAngles(n_angles);
       std::string log_type;
-      if(well_opt == true)
+      if (well_opt == true)
         log_type = "WELL_SYNTHETIC_SEISMIC";
       else
         log_type = "ACTUAL_SYNTHETIC_SEISMIC";
@@ -4145,7 +4145,7 @@ void BlockedLogsCommon::FindTrendPositions(const std::vector<int> & i_pos,
   s2.resize(n_blocks, RMISSING);
 
   std::vector<double> positions(2, RMISSING);
-  for(int i = 0; i < n_blocks; i++) {
+  for (int i = 0; i < n_blocks; i++) {
     positions = trend_cubes.GetTrendPosition(i_pos[i], j_pos[i], k_pos[i]);
     s1[i] = positions[0];
     s2[i] = positions[1];

@@ -900,8 +900,12 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   void               PrintSettings(const ModelSettings    * model_settings,
                                    const InputFiles       * input_files) const;
 
+  void               WriteOutputSurfaces(ModelSettings * model_settings,
+                                         Simbox        & simbox) const;
+
   void               DumpVector(const std::vector<float> data,
                                 const std::string        name) const;
+
   void               DumpVector(const fftw_real   * data,
                                 int                 n_data,
                                 const std::string   name) const;

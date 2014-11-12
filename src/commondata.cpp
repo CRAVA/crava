@@ -112,7 +112,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       optimize_well_location_ = true;
 
     //Block wells for inversion purposes, ok now that moving of wells is done.
-    if(read_wells_ == true)
+    if (read_wells_ == true)
       inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
 
@@ -169,7 +169,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == false || model_settings->getForwardModeling() == true) && optimize_well_location_ && setup_background_model_)
+    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_ && setup_background_model_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
@@ -178,7 +178,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     if (read_seismic_ && setup_estimation_rock_physics_) {
       if (model_settings->getEstimateCorrelations() == true) {
         //Block wells for inversion purposes
-        if(read_wells_ == true) {
+        if (read_wells_ == true) {
           correlation_wells_ = BlockLogsForCorrelation(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                        discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
 
@@ -191,7 +191,7 @@ CommonData::CommonData(ModelSettings * model_settings,
           }
         }
       }
-      else if(model_settings->getEstimationMode() == false) {
+      else if (model_settings->getEstimationMode() == false) {
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
@@ -199,7 +199,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       }
     }
 
-    if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
+    if (model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
       // 14. Set up TimeLine class
       setup_timeline_ = SetupTimeLine(model_settings, time_line_, err_text);
 
@@ -250,10 +250,8 @@ CommonData::~CommonData() {
   // SeismicStorage is deleted in the main loop
   for (size_t i = 0; i < seismic_data_.size(); i++) {
     for (size_t j = 0; j < seismic_data_[i].size(); j++) {
-
       if (seismic_data_[i][j] != NULL)
         delete seismic_data_[i][j];
-
     }
   }
 
@@ -289,7 +287,7 @@ CommonData::~CommonData() {
     }
   }
 
-  for(size_t i=0;i<wells_.size();i++)
+  for (size_t i=0;i<wells_.size();i++)
     delete wells_[i];
 
   // facies_estim_interval_
@@ -446,7 +444,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     std::string tmp_err_text;
     SegyGeometry * geometry;
     TraceHeaderFormat * thf = NULL;
-    if(model_settings->getNumberOfTraceHeaderFormats(0) > 0)
+    if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
       thf = model_settings->getTraceHeaderFormat(0,0);
     GetGeometryFromGridOnFile(grid_file,
                               thf, //Trace header format is the same for all time lapses
@@ -659,8 +657,14 @@ void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   std::string err_text_tmp = "";
   output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
-  if(segy_geometry != NULL)
+  if (segy_geometry != NULL)
     output_simbox.setILXL(segy_geometry);
+
+  //Surfaces are written out per interval in setup of Multiintervalgrid with interval names.
+  //We also need to write out surfaces based on output simbox
+  //If there is only one interval, surfaces written out in Multiinterval will be overwritten here.
+  WriteOutputSurfaces(model_settings, output_simbox);
+
 }
 
 double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j)
@@ -1152,7 +1156,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         std::string tmp_err_text;
         ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, porosity_log_given, format, tmp_err_text);
         err_text += tmp_err_text;
-        if(tmp_err_text == "") {
+        if (tmp_err_text == "") {
           //Store facies names.
           if (model_settings->getFaciesLogGiven()) {
             ReadFaciesNamesFromWellLogs(new_well, cur_facies_nr, cur_facies_names);
@@ -2388,7 +2392,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
   std::string tmp_error_text;
   double xy_scale = 1.0;
   double time_scale = 1.0;
-  if(format == NRLib::Well::NORSAR) {
+  if (format == NRLib::Well::NORSAR) {
     xy_scale   = 1000.0; //From km to m
     time_scale = 1000.0; //from s to ms
   }
@@ -2476,39 +2480,39 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     std::vector<double> new_porosity;
 
 
-    for(size_t i=0;i<z_log.size();i++) {
-      if(new_well.IsMissing(z_log[i]) == false) {
+    for (size_t i=0;i<z_log.size();i++) {
+      if (new_well.IsMissing(z_log[i]) == false) {
         new_x.push_back(x_log[i]*xy_scale);
         new_y.push_back(y_log[i]*xy_scale);
         new_z.push_back(z_log[i]*time_scale);
 
-        if(new_well.IsMissing(vp[i]))
+        if (new_well.IsMissing(vp[i]))
           new_vp.push_back(RMISSING);
         else if (inverse_velocity[0])
           new_vp.push_back(factor_usfeet_to_meters/vp[i]);
         else
           new_vp.push_back(vp[i]);
 
-        if(new_well.IsMissing(vs[i]))
+        if (new_well.IsMissing(vs[i]))
           new_vs.push_back(RMISSING);
         else if (inverse_velocity[0])
           new_vs.push_back(factor_usfeet_to_meters/vs[i]);
         else
           new_vs.push_back(vs[i]);
 
-        if(new_well.IsMissing(rho[i]))
+        if (new_well.IsMissing(rho[i]))
           new_rho.push_back(RMISSING);
         else
           new_rho.push_back(rho[i]);
 
-        if(df_log.size() > 0) {
-          if(new_well.IsMissing(df_log[i]))
+        if (df_log.size() > 0) {
+          if (new_well.IsMissing(df_log[i]))
             new_facies.push_back(IMISSING);
           else
             new_facies.push_back(df_log[i]);
         }
-        else if(cf_log.size() > 0) {
-          if(new_well.IsMissing(cf_log[i]))
+        else if (cf_log.size() > 0) {
+          if (new_well.IsMissing(cf_log[i]))
             new_facies.push_back(IMISSING);
           else
             new_facies.push_back(static_cast<int>(cf_log[i]));
@@ -3524,7 +3528,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
       std::string tmp_err_text;
       float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
-      if(tmp_err_text != "") {
+      if (tmp_err_text != "") {
         err_text += tmp_err_text;
         error = 1;
       }
@@ -3675,7 +3679,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   delete [] reflection_coefs;
 
-  if(error == 0) {
+  if (error == 0) {
     //All wavelets from commondata should not be stored on fftorder.
     if (wavelet_pre_resampling != NULL) {
       delete wavelet;
@@ -6306,7 +6310,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         //Get data_trace for this i and j.
         if (is_segy) {
           segy->GetNearestTrace(data_trace, missing, z0_data, xf, yf);
-          if(is_seismic)
+          if (is_seismic)
             z0_data = z0_data-0.5f*segy->GetDz();
         }
         else if (is_storm) {
@@ -9873,7 +9877,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     }
   }
 
-  if(model_settings->getEstimateWaveletNoise() == true) {
+  if (model_settings->getEstimateWaveletNoise() == true) {
     const std::string & top_WEI  = input_files->getWaveletEstIntFileTop(0);
     const std::string & base_WEI = input_files->getWaveletEstIntFileBase(0);
 
@@ -10284,9 +10288,78 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   }
 }
 
+void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
+                                     Simbox        & simbox) const
+{
+  bool   generate_seismic     = model_settings->getForwardModeling();
+  bool   estimation_mode      = model_settings->getEstimationMode();
+  bool   generate_background  = model_settings->getGenerateBackground();
+  int    output_format        = model_settings->getOutputGridFormat();
+  int    output_domain        = model_settings->getOutputGridDomain();
+  int    output_grids_elastic = model_settings->getOutputGridsElastic();
+  int    output_grids_other   = model_settings->getOutputGridsOther();
+  int    output_grids_seismic = model_settings->getOutputGridsSeismic();
+
+  //Add in writing of ascii-files
+  if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+    output_format += IO::ASCII;
+
+  if ((output_domain & IO::TIMEDOMAIN) > 0) {
+    std::string top_surf          = IO::PrefixSurface() + IO::PrefixTop()  + IO::PrefixTime();
+    std::string base_surf         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
+    simbox.setTopBotName(top_surf, base_surf, output_format);
+
+    std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
+    std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
+    simbox.SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
+
+    if (generate_seismic) {
+      simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                      IO::PathToSeismicData(), output_format);
+      simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                            IO::PathToSeismicData(), output_format);
+    }
+    else if (!estimation_mode) {
+      if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToInversionResults(), output_format);
+        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                              IO::PathToInversionResults(), output_format);
+    }
+    if ((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
+      if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
+          (output_grids_elastic & IO::BACKGROUND_TREND) > 0 ||
+          (estimation_mode && generate_background)) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToBackground(), output_format);
+        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                              IO::PathToBackground(), output_format);
+      }
+      if ((output_grids_other & IO::CORRELATION) > 0) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToCorrelations(), output_format);
+        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                              IO::PathToCorrelations(), output_format);
+      }
+      if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToSeismicData(), output_format);
+        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                              IO::PathToSeismicData(), output_format);
+      }
+      if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToVelocity(), output_format);
+        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+                                              IO::PathToVelocity(), output_format);
+      }
+    }
+  }
+
+}
+
 void CommonData::SetDebugLevel(ModelSettings * model_settings) const
 {
-  //Debug level from ModelGeneral
   int debug_level = model_settings->getLogLevel();
   if (model_settings->getDebugLevel() == 1)
     debug_level = LogKit::L_DebugLow;
