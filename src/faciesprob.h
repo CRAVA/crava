@@ -65,7 +65,6 @@ public:
              const std::vector<float>                           & priorFacies,
              std::vector<FFTGrid *>                               priorFaciesCubes,
              FFTGrid                                            * seismicLH,
-             const std::map<std::string, DistributionsRock *>   & rock_distributions,
              const std::vector<std::string>                     & facies_names,
              const std::vector<Surface *>                       & faciesEstimInterval,
              AVOInversion                                       * avoInversionResult,
@@ -76,7 +75,6 @@ public:
              SpatialSyntWellFilter                              * filteredSyntLogs,
              std::map<std::string, BlockedLogsCommon *>           blocked_wells,
              CravaTrend                                         & trend_cubes,
-             //int                                                  nWells = 0,
              const double                                         dz = 0.0,
              bool                                                 useFilter = false,
              bool                                                 relative = false,
@@ -119,9 +117,7 @@ private:
                                                             SeismicParametersHolder                                & seismicParameters,
                                                             std::vector<FFTGrid *>                                 & priorFaciesCubes,
                                                             const ModelSettings                                    * modelSettings,
-                                                            const std::map<std::string, DistributionsRock *>       & rock_distributions,
                                                             const std::vector<std::string>                         & facies_names,
-                                                            const double                                           & dz,
                                                             const double                                           & trend1_min,
                                                             const double                                           & trend1_max,
                                                             const double                                           & trend2_min,
@@ -262,15 +258,6 @@ private:
                                              std::vector<FFTGrid *>       & priorFaciesCubes,
                                              const std::vector<Grid2D *>   & noiseScale,
                                              FFTGrid                       * seismicLH);
-
-  // This function draws random facies length following a geometric distribution with mean 10.0 ms, i.e. dz/10.0 bins
-  void                   GenerateSyntWellData(std::vector<SyntWellData *>                              & syntWellData,
-                                              const std::map<std::string, DistributionsRock *>         & rock_distributions,
-                                              const std::vector<std::string>                           & facies_names,
-                                              const std::vector<double>                                & trend1,
-                                              const std::vector<double>                                & trend2,
-                                              double                                                     dz,
-                                              int                                                        nWellsPerCombinationOfTrendParams);
 
   // shared routine for the calculateFaciesProb functions
 

@@ -29,7 +29,7 @@ DistributionWithTrendStorage::GenerateDistributionWithTrend(const std::string   
                                                             const std::vector<std::vector<double> > & trend_cube_sampling,
                                                             std::string                             & errTxt)
 {
-  const std::vector<std::vector<double> >   dummy_blocked_logs; // Use dummy when not estimatin.
+  const std::vector<std::vector<double> >   dummy_blocked_logs; // Use dummy when not estimation.
   const std::vector<std::vector<double> >   dummy_s1;
   const std::vector<std::vector<double> >   dummy_s2;
   const int                                 dummy_output_other = -999;

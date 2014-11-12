@@ -81,8 +81,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
     // 4. read well data
-    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_,
-                               model_settings->getLogNames(), model_settings->getInverseVelocity(), model_settings->getFaciesLogGiven(), err_text);
+    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, err_text);
 
     // 5. block wells for estimation
     // if well position is to be optimized or
@@ -99,7 +98,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                     discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
     }
     else
-      block_wells_ = false;
+      block_wells_ = true;
 
     // 6. Temporary reflection matrix and wavelet
     setup_reflection_matrix_ = SetupReflectionMatrix(model_settings, input_files, reflection_matrix_, n_angles_,  refmat_from_file_global_vpvs_, err_text);
@@ -125,21 +124,24 @@ CommonData::CommonData(ModelSettings * model_settings,
       trend_cubes_.resize(multiple_interval_grid_->GetNIntervals());
 
     // 10. Rock Physics
-    if (read_wells_ && setup_multigrid_ && model_settings->getFaciesProbFromRockPhysics()) {
-      if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
-        if (setup_trend_cubes_) {
-          setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
-                                                            wells_, reservoir_variables_, rock_distributions_, err_text);
+    if (model_settings->getFaciesProbFromRockPhysics()) {
+      if (read_wells_ && setup_multigrid_) {
+        if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
+          if (setup_trend_cubes_) {
+            setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
+                                                              wells_, reservoir_variables_, rock_distributions_, err_text);
+          }
         }
-      }
-      else {
+        else
           setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
                                                             wells_, reservoir_variables_, rock_distributions_, err_text);
       }
     }
+    else
+      setup_estimation_rock_physics_ = true;
 
     // 11. Setup of prior facies probabilities
-    if (setup_multigrid_) {
+    if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
         if (read_wells_)
           setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
@@ -151,7 +153,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
 
     // 12. Setup of background model
-    if (setup_multigrid_) {
+    if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
@@ -173,7 +175,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
     // 13. Setup of prior correlation
-    if (read_seismic_) {
+    if (read_seismic_ && setup_estimation_rock_physics_) {
       if (model_settings->getEstimateCorrelations() == true) {
         //Block wells for inversion purposes
         if(read_wells_ == true) {
@@ -195,9 +197,6 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
       }
-    }
-    else {
-      err_text += "Could not set up prior correlations since this requires seismic data.\n";
     }
 
     if(model_settings->getEstimationMode() == false) { //The rest is not needed for estimation.
@@ -307,20 +306,17 @@ CommonData::~CommonData() {
     }
   }
 
-  // rock_distributions_
-  for (std::map<std::string, std::vector<DistributionsRock *> >::const_iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
-    for (size_t j = 0; rock_distributions_.find(it->first)->second.size(); j++) {
-      delete rock_distributions_.find(it->first)->second[j];
-      rock_distributions_.find(it->first)->second[j] = NULL;
-    }
+
+  for (std::map<std::string, std::vector<DistributionsRock *> >::iterator it = rock_distributions_.begin(); it != rock_distributions_.end(); it++) {
+    std::vector<DistributionsRock *> rock = it->second;
+    for (size_t i = 0; i < rock.size(); i++)
+      delete rock[i];
   }
 
-  // reservoir_variables_
-  for (std::map<std::string, std::vector<DistributionWithTrend *> >::const_iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
-    for (size_t j = 0; reservoir_variables_.find(it->first)->second.size(); j++) {
-      delete reservoir_variables_.find(it->first)->second[j];
-      reservoir_variables_.find(it->first)->second[j] = NULL;
-    }
+  for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator it = reservoir_variables_.begin(); it != reservoir_variables_.end(); it++) {
+    std::vector<DistributionWithTrend *> variable = it->second;
+    for (size_t i = 0; i < variable.size(); i++)
+      delete variable[i];
   }
 
   // temporary_wavelets_
@@ -793,10 +789,16 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           bool relative_padding = false;
           bool only_volume      = true;
 
-          segy->ReadAllTraces(&full_inversion_simbox,
-                              padding,
-                              only_volume,
-                              relative_padding);
+          try {
+            segy->ReadAllTraces(&full_inversion_simbox,
+                                padding,
+                                only_volume,
+                                relative_padding);
+          }
+          catch (NRLib::Exception & e) {
+            err_text += NRLib::ToString(e.what());
+          }
+
           segy->CreateRegularGrid(); //sets geometry
 
           segy->GetGeometry()->WriteGeometry();
@@ -1078,20 +1080,21 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
                               std::vector<std::string>                & log_names,
                               std::vector<int>                        & facies_nr,
                               std::vector<std::string>                & facies_names,
-                              const std::vector<std::string>          & log_names_from_user,
-                              const std::vector<bool>                 & inverse_velocity,
-                              bool                                      facies_log_given,
                               std::string                             & err_text_common) const
 {
   std::string err_text = "";
+
+  int                      n_wells             = model_settings->getNumberOfWells();
+  bool                     facies_log_given    = model_settings->getFaciesLogGiven();
+  bool                     porosity_log_given  = model_settings->getPorosityLogGiven();
+  std::vector<std::string> log_names_from_user = model_settings->getLogNames();
+  std::vector<bool>        inverse_velocity    = model_settings->getInverseVelocity();
 
   // Get all log names given by user
   for (size_t i = 0; i < log_names_from_user.size(); i++) {
     if (log_names_from_user[i] != "")
       log_names.push_back(log_names_from_user[i]);
   }
-
-  int n_wells  = model_settings->getNumberOfWells();
 
   if (n_wells == 0)
     return true;
@@ -1147,7 +1150,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
 
         //Process logs
         std::string tmp_err_text;
-        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, format, tmp_err_text);
+        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, porosity_log_given, format, tmp_err_text);
         err_text += tmp_err_text;
         if(tmp_err_text == "") {
           //Store facies names.
@@ -1163,6 +1166,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
           new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
           new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
+          new_well.SetUseForRockPhysics(model_settings->getIndicatorRockPhysics(i));
 
           //Check if well is valid
           bool well_valid = true;
@@ -2377,6 +2381,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
                                         std::vector<std::string>        & log_names_from_user,
                                         const std::vector<bool>         & inverse_velocity,
                                         bool                              facies_log_given,
+                                        bool                              porosity_log_given,
                                         int                               format,
                                         std::string                     & error_text) const
 {
@@ -2394,14 +2399,18 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     log_names_from_user.push_back("DT");
     log_names_from_user.push_back("RHOB");
     log_names_from_user.push_back("DTS");
-    if(facies_log_given)
+    if (facies_log_given)
       log_names_from_user.push_back("FACIES");
+    if (porosity_log_given)
+      log_names_from_user.push_back("POROSITY");
   }
 
   for (size_t i = 0; i < log_names_from_user.size(); i++) {
-    // If the well does not contain the log specified by the user, return an error message
-    if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
-      tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+    if (i < 5) { // No error message if porosity log is not given
+      // If the well does not contain the log specified by the user, return an error message
+      if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
+        tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      }
     }
   }
 
@@ -2442,11 +2451,19 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
 
     std::vector<int>    df_log;
     std::vector<double> cf_log;
-    if(facies_log_given == true) {
-      if(new_well.HasDiscLog(log_names_from_user[4]))
+    if (facies_log_given == true) {
+      if (new_well.HasDiscLog(log_names_from_user[4]))
         df_log = new_well.GetDiscLog(log_names_from_user[4]);
       else
         cf_log = new_well.GetContLog(log_names_from_user[4]);
+    }
+
+    std::vector<double> poro;
+    if (porosity_log_given == true) {
+      if (new_well.HasContLog(log_names_from_user[5]))
+        poro = new_well.GetContLog(log_names_from_user[5]);
+      else
+        poro.resize(z_log.size(), RMISSING);
     }
 
     std::vector<double> new_x;
@@ -2456,6 +2473,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     std::vector<double> new_vs;
     std::vector<double> new_rho;
     std::vector<int> new_facies;
+    std::vector<double> new_porosity;
 
 
     for(size_t i=0;i<z_log.size();i++) {
@@ -2495,6 +2513,13 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
           else
             new_facies.push_back(static_cast<int>(cf_log[i]));
         }
+
+        if (porosity_log_given == true) {
+          if (new_well.IsMissing(poro[i]))
+            new_porosity.push_back(RMISSING);
+          else
+            new_porosity.push_back(poro[i]);
+        }
       }
     }
     new_well.AddContLog("X_pos", new_x);
@@ -2513,7 +2538,7 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     new_well.AddContLog("Rho", new_rho);
 
     new_well.SetMissing(RMISSING);
-    if(df_log.size() > 0) {
+    if (df_log.size() > 0) {
       new_well.SetFaciesMappingFromDiscLog(log_names_from_user[4]);
       new_well.RemoveDiscLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", new_facies);
@@ -2522,6 +2547,11 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
       new_well.RemoveContLog(log_names_from_user[4]);
       new_well.AddDiscLog("Facies", new_facies);
       new_well.SetFaciesMappingFromDiscLog("Facies");
+    }
+
+    if (porosity_log_given == true) {
+      new_well.RemoveContLog(log_names_from_user[5]);
+      new_well.AddContLog("Porosity", new_porosity);
     }
   }
 
@@ -4532,7 +4562,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 void CommonData::SetLogsToBeBlocked(ModelSettings                    * model_settings,
                                     const std::vector<NRLib::Well *> & wells,
                                     std::vector<std::string>         & continuous_logs_to_be_blocked,
-                                    std::vector<std::string>         & discrete_logs_to_be_blocked) const
+                                    std::vector<std::string>         & /*discrete_logs_to_be_blocked*/) const
 {
   // Continuous parameters that are to be used in BlockedLogsCommon
   continuous_logs_to_be_blocked.push_back("Vp");
@@ -5111,7 +5141,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
       std::vector<DistributionWithTrend *>          dist_vector(storage.size());
 
       for (size_t j = 0; j < storage.size(); j++) {
-        dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
+        if (storage[j]->GetEstimate() == true)
+          err_text += "Reservoir variables can not be estimated from wells.\n";
+        else
+          dist_vector[j] = storage[j]->GenerateDistributionWithTrend(path, trend_cube_parameters, trend_cube_sampling[i], err_text);
       }
 
       reservoir_variables[it->first] = dist_vector;
@@ -5151,7 +5184,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     const std::map<std::string, DistributionsRockStorage    *>  rock_storage     = model_settings->getRockStorage();
 
     // Map reservoir variables for use in rocks to access resampling trigger.
-    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage;
+    std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(1, std::vector<DistributionWithTrend *>(0));
     if (reservoir_variables.size() > 0) {
       size_t n_vintages = reservoir_variables.begin()->second.size();
       res_var_vintage.resize(n_vintages);
@@ -5226,7 +5259,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                 LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", t+1);
 
               //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-              rock[t]->CompleteTopLevelObject(res_var_vintage[t], tmp_err_txt);
+              std::vector<DistributionWithTrend *> reservoir_variable(0);
+              if (n_vintages > 0)
+                reservoir_variable = res_var_vintage[t];
+              rock[t]->CompleteTopLevelObject(reservoir_variable, tmp_err_txt);
 
               std::vector<bool> has_trends = rock[t]->HasTrend();
               bool              has_trend = false;
@@ -5372,11 +5408,15 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   if (tmp_err_text != "")
     err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
 
-  tmp_err_text = "";
-  FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
+  if (model_settings->getFaciesProbFromRockPhysics()== false) {
+    tmp_err_text = "";
+    FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
 
-  if (tmp_err_text != "")
-    err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+    if (tmp_err_text != "")
+      err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+  }
+  else
+    facies_estim_interval.resize(0);
 
   if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
     if (n_facies > 0) {
@@ -5702,7 +5742,7 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
   const int    ny             = full_inversion_simbox.getny();
 
   if (topFEI != "" && baseFEI != "") {
-    facies_estim_interval.resize(2);
+    facies_estim_interval.resize(2, NULL);
     try {
       if (NRLib::IsNumber(topFEI))
         facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
@@ -6025,10 +6065,15 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     float padding          = 2*guard_zone;
     bool  relative_padding = false;
 
-    segy->ReadAllTraces(volume,
-                        padding,
-                        only_volume,
-                        relative_padding);
+    try {
+      segy->ReadAllTraces(volume,
+                          padding,
+                          only_volume,
+                          relative_padding);
+    }
+    catch (NRLib::Exception & e) {
+      err_text += NRLib::ToString(e.what());
+    }
     segy->CreateRegularGrid();
 
   }
@@ -8017,8 +8062,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
         for (size_t i = 0; i < n_intervals; i++) {
           CalculateCovarianceFromRockPhysics(rock_distribution,
-                                             model_settings->getPriorFaciesProb(interval_names[i]),
-                                             facies_names_,
+                                             prior_facies_[i],
                                              trend_cubes[i],
                                              prior_param_cov[i],
                                              err_text);
@@ -8486,8 +8530,7 @@ void CommonData::ValidateCovarianceMatrix(float               ** C,
 }
 
 void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                     const std::map<std::string, float>               & probability,
-                                                     const std::vector<std::string>                   & facies_names,
+                                                     const std::vector<float>                         & probability,
                                                      const CravaTrend                                 & trend_cubes,
                                                      NRLib::Matrix                                    & param_cov,
                                                      std::string                                      & err_txt) const{
@@ -8498,11 +8541,6 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
     err_txt += "No rock physics models associated with the inversion interval(s). \n";
     return;
   }
-
-  // order the facies prob vector after the facies_names vector
-  std::vector<float> facies_prob(facies_names.size());
-  for (unsigned int i=0; i<facies_names.size(); i++)
-    facies_prob[i] = probability.find(facies_names[i])->second;
 
   bool has_trend = false;
   for (size_t i=0; i<rock_distribution.size(); i++) {
@@ -8548,7 +8586,7 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
             NRLib::Grid2D<double> sigma_sum(3,3,0);
 
             CalculateCovarianceInTrendPosition(rock_distribution,
-                                               facies_prob,
+                                               probability,
                                                trend_position,
                                                sigma_sum);
 
@@ -8588,7 +8626,7 @@ void  CommonData::CalculateCovarianceFromRockPhysics(const std::vector<Distribut
     NRLib::Grid2D<double> sigma_sum(3,3,0);
 
     CalculateCovarianceInTrendPosition(rock_distribution,
-                                       facies_prob,
+                                       probability,
                                        trend_position,
                                        sigma_sum);
 
@@ -9596,7 +9634,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       if (model_settings->getFaciesLogGiven())
         LogKit::LogFormatted(LogKit::Low,"  Facies                                   : %10s\n",log_names[4].c_str());
       if (model_settings->getPorosityLogGiven())
-        LogKit::LogFormatted(LogKit::Low,"  Porosity                                  : %10s\n",  log_names[5].c_str());
+        LogKit::LogFormatted(LogKit::Low,"  Porosity                                 : %10s\n",  log_names[5].c_str());
     }
     else
     {

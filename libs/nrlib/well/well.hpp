@@ -162,12 +162,14 @@ namespace NRLib {
     void SetUseForFaciesProbabilities(int use_for_facies_probabilities) { use_for_facies_probabilities_ = use_for_facies_probabilities ;}
     void SetUseForWaveletEstimation(int use_for_wavelet_estimation)     { use_for_wavelet_estimation_   = use_for_wavelet_estimation   ;}
     void SetRealVsLog(int real_vs_log)                                  { real_vs_log_                  = real_vs_log                  ;}
+    void SetUseForRockPhysics(int use_for_rock_physics)                 { use_for_rock_physics_         = use_for_rock_physics         ;}
 
     int GetUseForBackgroundTrend(void)     const { return use_for_background_trend_     ;}
     int GetUseForFiltering(void)           const { return use_for_filtering_            ;}
     int GetUseForFaciesProbabilities(void) const { return use_for_facies_probabilities_ ;}
     int GetUseForWaveletEstimation(void)   const { return use_for_wavelet_estimation_   ;}
     int GetRealVsLog(void)                 const { return real_vs_log_                  ;}
+    int GetUseForRockPhysics(void)         const { return use_for_rock_physics_         ;}
 
     bool HasSyntheticVsLog(void)           const { return(real_vs_log_)==0              ;}
 
@@ -205,6 +207,7 @@ namespace NRLib {
     int                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
     int                         use_for_facies_probabilities_;   //Uses the indicator enum from Modelsettings
     int                         real_vs_log_;                    //Uses the indicator enum from Modelsettings
+    int                         use_for_rock_physics_;           //Uses the indicator enum from Modelsettings
 
     double                      x_pos0_;                       // x-coordinate from well file header
     double                      y_pos0_;                       // y-coordinate from well file header

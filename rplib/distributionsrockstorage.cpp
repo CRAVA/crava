@@ -1789,7 +1789,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
   std::vector<std::vector<double> > bulk_weight_given_facies(nWells);
   std::vector<std::vector<double> > shear_weight_given_facies(nWells);
 
-  if(bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) {
+  if ((bulk_weight_[0]->GetEstimate() == true || shear_weight_[0]->GetEstimate() == true) && tmpErrTxt == "") {
 
     // Calculate bulk- and shear-weights
 
@@ -1839,9 +1839,11 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     }
   }
 
-  CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, porosity_given_facies,     tmpErrTxt);
-  CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, bulk_weight_given_facies,  tmpErrTxt);
-  CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, shear_weight_given_facies, tmpErrTxt);
+  if (tmpErrTxt == "") {
+    CheckValuesInZeroOne(porosity_,     "porosity",             path, trend_cube_parameters, trend_cube_sampling, porosity_given_facies,     tmpErrTxt);
+    CheckValuesInZeroOne(bulk_weight_,  "bulk-modulus-weight",  path, trend_cube_parameters, trend_cube_sampling, bulk_weight_given_facies,  tmpErrTxt);
+    CheckValuesInZeroOne(shear_weight_, "shear-modulus-weight", path, trend_cube_parameters, trend_cube_sampling, shear_weight_given_facies, tmpErrTxt);
+  }
 
   std::vector<DistributionsRock *>     dist_rock(n_vintages, NULL);
   std::vector<DistributionWithTrend *> porosity_dist_with_trend(n_vintages, NULL);

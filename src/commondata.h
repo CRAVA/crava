@@ -76,7 +76,6 @@ public:
   GridMapping                                                        * GetTimeDepthMapping()                                  { return time_depth_mapping_                            ;}
   bool                                                                 GetVelocityFromInversion()                             { return velocity_from_inversion_                       ;}
 
-  std::map<int, std::vector<Grid2D *> >                              & GetLocalNoiseScale()                                   { return local_noise_scales_                            ;}
   std::vector<Grid2D *>                                              & GetLocalNoiseScaleTimeLapse(int time_lapse)            { return local_noise_scales_.find(time_lapse)->second   ;}
   std::vector<SeismicStorage *>                                      & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
@@ -298,9 +297,6 @@ private:
                                   std::vector<std::string>                & log_names,
                                   std::vector<int>                        & facies_nr,
                                   std::vector<std::string>                & facies_names,
-                                  const std::vector<std::string>          & log_names_from_user,
-                                  const std::vector<bool>                 & inverse_velocity,
-                                  bool                                      facies_log_given,
                                   std::string                             & err_text) const;
 
   void               SetLogsToBeBlocked(ModelSettings                    * model_settings,
@@ -397,6 +393,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                             std::vector<std::string>        & log_names_from_user,
                                             const std::vector<bool>         & inverse_velocity,
                                             bool                              facies_log_given,
+                                            bool                              porosity_log_given,
                                             int                               format,
                                             std::string                     & error_text) const;
   int                CheckWellAgainstSimbox(const Simbox      * simbox,
@@ -808,8 +805,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                                 double                                                  dz) const;
 
   void               CalculateCovarianceFromRockPhysics(const std::vector<DistributionsRock *>           & rock_distribution,
-                                                        const std::map<std::string, float>               & probability,
-                                                        const std::vector<std::string>                   & facies_names,
+                                                        const std::vector<float>                         & probability,
                                                         const CravaTrend                                 & trend_cubes,
                                                         NRLib::Matrix                                    & param_cov,
                                                         std::string                                      & err_txt) const;
