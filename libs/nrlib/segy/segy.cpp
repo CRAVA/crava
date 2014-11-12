@@ -382,7 +382,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
       }
 
       for (k = first_data; k < end_data; k++) {
-        z           = z0 + k*dz + z_shift;
+        z           = z0 + k*dz + static_cast<float>(z_shift);
         data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
       }
       for (k = end_data; k < nz; k++) {

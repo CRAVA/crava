@@ -140,7 +140,7 @@ public:
                                               const int nyPad,
                                               const int nzPad);
 
-  float                  * getPriorCorrTFiltered(int nz, int nzp) const;
+  float                       * getPriorCorrTFiltered(int nz, int nzp) const;
 
 
 
@@ -237,42 +237,41 @@ private:
   //                                                 const std::string        & subDir,
   //                                                 const std::string        & baseName) const;
 
-  FFTGrid * meanVp_;
-  FFTGrid * meanVs_;
-  FFTGrid * meanRho_;
-  FFTGrid * covVp_;
-  FFTGrid * covVs_;
-  FFTGrid * covRho_;
-  FFTGrid * crCovVpVs_;
-  FFTGrid * crCovVpRho_;
-  FFTGrid * crCovVsRho_;
+  FFTGrid              * meanVp_;
+  FFTGrid              * meanVs_;
+  FFTGrid              * meanRho_;
+  FFTGrid              * covVp_;
+  FFTGrid              * covVs_;
+  FFTGrid              * covRho_;
+  FFTGrid              * crCovVpVs_;
+  FFTGrid              * crCovVpRho_;
+  FFTGrid              * crCovVsRho_;
 
-  bool            cov_estimated_;
-  NRLib::Matrix   priorVar0_;
+  bool                   cov_estimated_;
+  NRLib::Matrix          priorVar0_;
 
   //Stored variables for writing:
+  FFTGrid              * postVp_; //From avoinversion computePostMeanResidAndFFTCov()
+  FFTGrid              * postVs_;
+  FFTGrid              * postRho_;
 
-  FFTGrid * postVp_; //From avoinversion computePostMeanResidAndFFTCov()
-  FFTGrid * postVs_;
-  FFTGrid * postRho_;
+  FFTGrid              * postVpKriged_; //From avoinversion doPredictionKriging()
+  FFTGrid              * postVsKriged_;
+  FFTGrid              * postRhoKriged_;
 
-  FFTGrid * postVpKriged_; //From avoinversion doPredictionKriging()
-  FFTGrid * postVsKriged_;
-  FFTGrid * postRhoKriged_;
+  NRLib::Matrix          postVar0_;
+  std::vector<float>     postCovVp00_;        // Posterior covariance in (i,j) = (0,0)
+  std::vector<float>     postCovVs00_;
+  std::vector<float>     postCovRho00_;
 
-  NRLib::Matrix      postVar0_;
-  std::vector<float> postCovVp00_;        // Posterior covariance in (i,j) = (0,0)
-  std::vector<float> postCovVs00_;
-  std::vector<float> postCovRho00_;
-
-  fftw_real * corr_T_;
-  float     * corr_T_filtered_;
+  fftw_real            * corr_T_;
+  float                * corr_T_filtered_;
 
   std::vector<FFTGrid *> simulations_seed0_; //Vector over number of simulations;
   std::vector<FFTGrid *> simulations_seed1_;
   std::vector<FFTGrid *> simulations_seed2_;
 
-  FFTGrid * block_grid_;
+  FFTGrid              * block_grid_;
 
   std::vector<FFTGrid *> facies_prob_;
   FFTGrid *              facies_prob_undef_;
@@ -280,7 +279,7 @@ private:
 
   std::vector<FFTGrid *> lh_cube_;
 
-  FFTGrid * quality_grid_;
+  FFTGrid              * quality_grid_;
 
 };
 #endif

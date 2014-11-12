@@ -477,6 +477,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const TraceHeaderFormat & thf,
                            bool                      padding)
 {
+  //All crava files are written out directly in CravaResult
   (void) padding;
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
@@ -540,17 +541,6 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
       }
-      //All crava files are written out directly in CravaResult
-      //if ((format_flag & IO::CRAVA) > 0) {
-        //CRAVA format should be written with padding
-        //FFTGrid * grid_tmp = new FFTGrid(storm_grid, simbox->GetNXpad(), simbox->GetNYpad(), simbox->GetNZpad());
-        //grid_tmp->writeCravaFile(file_name, simbox);
-        //if (grid_tmp != NULL)
-        //  delete grid_tmp;
-
-        //std::string crava_file_name = file_name + IO::SuffixCrava();
-        //storm_grid->WriteCravaFile(crava_file_name, simbox->getIL0(), simbox->getXL0(), simbox->getILStepX(), simbox->getILStepY(), simbox->getXLStepX(), simbox->getXLStepY());
-      //}
     }
 
     if (depth_map != NULL && (domain_flag & IO::DEPTHDOMAIN) > 0) { //Writing in depth. Currently, only stormfiles are written in depth.
@@ -563,11 +553,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         if ((format_flag & IO::STORM) > 0) {
+          output->SetFormat(NRLib::StormContGrid::STORM_BINARY);
           std::string file_name_storm = depth_name + IO::SuffixStormBinary();
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, false);
           output->WriteToFile(file_name_storm, header, false);
         }
         if ((format_flag & IO::ASCII) > 0) {
+          output->SetFormat(NRLib::StormContGrid::STORM_ASCII);
           std::string file_name_ascii = depth_name + IO::SuffixGeneralData();
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, true);
           output->WriteToFile(file_name_ascii, header, true);
@@ -608,6 +600,13 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0);
       }
     }
+
+    //If seismic, the grid is copied
+    if (is_seismic == true) {
+      if (output != NULL)
+        delete output;
+    }
+
   }
 }
 

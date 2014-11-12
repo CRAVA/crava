@@ -201,6 +201,7 @@ public:
   double                           getWavelet3DTuningFactor(void)       const { return wavelet3DTuningFactor_                     ;}
   double                           getGradientSmoothingRange(void)      const { return gradientSmoothingRange_                    ;}
   bool                             getEstimateWellGradientFromSeismic() const { return wellGradientFromSeismic_                   ;}
+  bool                             getWriteAsciiSurfaces(void)          const { return writeAsciiSurfaces_                        ;}
   int                              getLogLevel(void)                    const { return logLevel_                                  ;}
   bool                             getErrorFileFlag()                   const { return ((otherFlag_ & IO::ERROR_FILE)>0)          ;}
   bool                             getTaskFileFlag()                    const { return ((otherFlag_ & IO::TASK_FILE)>0)           ;}
@@ -525,6 +526,7 @@ public:
   void setWavelet3DTuningFactor(double tuningFactor)      { wavelet3DTuningFactor_    = tuningFactor             ;}
   void setGradientSmoothingRange(double smoothingRange)   { gradientSmoothingRange_   = smoothingRange           ;}
   void setEstimateWellGradientFromSeismic(bool estimate)  { wellGradientFromSeismic_  = estimate                 ;}
+  void setWriteAsciiSurfaces(bool write_ascii)            { writeAsciiSurfaces_       = write_ascii              ;}
 
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
@@ -809,6 +811,7 @@ private:
   bool                              wellGradientFromSeismic_;    ///< Estimate well gradient used for 3D wavelet estimation from seismic?
   float                             seismicQualityGridRange_;    ///< Radius value from well-points where wells are used in Seismic Quality Grids
   float                             seismicQualityGridValue_;    ///< Value between wells if range is used.
+  bool                              writeAsciiSurfaces_;         ///< If true, ascii format will be added when surfaces are written
 
   std::map<std::string, bool>       topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface per interval
   std::map<std::string, bool>       baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface per interval
