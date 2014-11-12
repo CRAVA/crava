@@ -4596,12 +4596,14 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
   }
 
   //Need to set angles in blocked_logs_common before wavelet estimation
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_common.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
+  if (model_settings->getNumberOfVintages() > 0) {
+    for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
+      std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs_common.find(it->first);
+      BlockedLogsCommon * blocked_log = iter->second;
 
-    int n_angles = model_settings->getNumberOfAngles(0);
-    blocked_log->SetNAngles(n_angles);
+      int n_angles = model_settings->getNumberOfAngles(0);
+      blocked_log->SetNAngles(n_angles);
+    }
   }
 
   if (err_text != "") {
