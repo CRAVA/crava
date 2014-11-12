@@ -425,6 +425,9 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setPorosityLogGiven(true);
   }
 
+  if (modelSettings_->getFaciesLogGiven() == false && modelSettings_->getPorosityLogGiven() == true)
+    errTxt += "Porosity logs can not be given if facies logs are not given in <well-data><log-names>.\n";
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -4011,16 +4014,14 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
       label = variable;
       trendGiven++;
     }
-    else {
+    else
       errTxt += "The variable "+variable+" is not defined in <reservoir>.\n";
-      errTxt += "  Note that <reservoir> needs to be given before <rock> and <predefinitions> in <rock-physics>\n";
-    }
   }
 
   if(trendGiven == 0)
-    errTxt += "Need at least one definition for the variable in <"+keyword+">\n";
+    errTxt += "Need at least one definition of the variable in <"+keyword+">\n";
   else if(trendGiven > 1)
-    errTxt += "There can only be one definition for the variable in <"+keyword+">\n";
+    errTxt += "There can only be one definition of the variable in <"+keyword+">\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);

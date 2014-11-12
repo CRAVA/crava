@@ -13,13 +13,25 @@ SpatialSyntWellFilter::SpatialSyntWellFilter()
 {
 }
 
-SpatialSyntWellFilter::SpatialSyntWellFilter(int    nwells,
-                                             bool   cov_estimated)
+SpatialSyntWellFilter::SpatialSyntWellFilter(const std::map<std::string, DistributionsRock *>        & rock_distributions,
+                                             const std::vector<std::string>                          & facies_names,
+                                             const std::vector<double>                               & trend_min,
+                                             const std::vector<double>                               & trend_max,
+                                             int                                                       n_synt_wells,
+                                             int                                                       n_wells_pr_combination_trend,
+                                             double                                                    dz,
+                                             int                                                       n_bins_trend,
+                                             int                                                       syntWellLength,
+                                             bool                                                      cov_estimated)
 {
-  nWells_ = nwells;
+  nWells_                            = n_synt_wells;
+  n_bins_trend_                      = n_bins_trend;
+  nWellsToBeFiltered_                = n_synt_wells;
+  nWellsPerCombinationOfTrendParams_ = n_wells_pr_combination_trend;
+  n_                                 = new int[nWells_];
 
   // If the prior cov has been estimated, we do not use a common corr_t
-  if (cov_estimated){
+  if (cov_estimated) {
     prior_cov_vp_.resize(nWells_);
     prior_cov_vs_.resize(nWells_);
     prior_cov_rho_.resize(nWells_);
@@ -28,27 +40,59 @@ SpatialSyntWellFilter::SpatialSyntWellFilter(int    nwells,
     prior_cov_vsrho_.resize(nWells_);
     priorSpatialCorr_ = NULL;
   }
-  else{
+  else {
     priorSpatialCorr_ = new double **[nWells_];
     for(int i = 0 ; i < nWells_ ; i++)
       priorSpatialCorr_[i] = NULL;
   }
 
-  n_                  = new int[nWells_];
+  if ((trend_max[0] - trend_min[0]) > 0.0 && (trend_max[1] - trend_min[1]) > 0.0) {
 
+    trend_1_.resize(n_bins_trend_);
+    trend_2_.resize(n_bins_trend_);
+
+    trend_1_bin_size_ = (trend_max[0] - trend_min[0])/n_bins_trend_;
+    trend_2_bin_size_ = (trend_max[1] - trend_min[1])/n_bins_trend_;
+
+    for (int i = 0; i < n_bins_trend_ + 1; i++) {
+      trend_1_[i] = trend_min[0] + i*trend_1_bin_size_;
+      trend_2_[i] = trend_min[1] + i*trend_2_bin_size_;
+    }
+    //it is not possible to have a trend2 but no trend1
+  }
+  else if (trend_max[1] - trend_min[1] == 0.0 && trend_max[0] - trend_min[0] > 0.0) {
+    trend_1_.resize(n_bins_trend_);
+    trend_2_.resize(1, trend_min[1]);
+
+    trend_1_bin_size_ = (trend_max[0] - trend_min[0]) / n_bins_trend_;
+
+    for (int i = 0; i < n_bins_trend_; i++)
+      trend_1_[i] = trend_min[0] + i*trend_1_bin_size_;
+    // if trend2max == trend1min and trend1max == trend1min
+  }
+  else {
+    trend_1_.resize(1, trend_min[0]);
+    trend_2_.resize(1, trend_min[1]);
+  }
+
+  syntWellData_.resize((trend_1_.size() * trend_2_.size() * nWellsPerCombinationOfTrendParams_), NULL);
+
+  GenerateSyntWellData(rock_distributions,
+                       facies_names,
+                       dz,
+                       syntWellLength);
 }
 
 SpatialSyntWellFilter::~SpatialSyntWellFilter()
 {
-  int i,j;
-  if (priorSpatialCorr_!= NULL){
-  for(i=0;i<nWells_;i++)
-  {
-    for(j=0;j<n_[i];j++)
-      delete [] priorSpatialCorr_[i][j];
-    delete [] priorSpatialCorr_[i];
-  }
-  delete [] priorSpatialCorr_;
+
+  if (priorSpatialCorr_ != NULL) {
+    for (int i = 0; i < nWells_; i++) {
+      for (int j = 0; j < n_[i]; j++)
+        delete [] priorSpatialCorr_[i][j];
+      delete [] priorSpatialCorr_[i];
+    }
+    delete [] priorSpatialCorr_;
   }
   delete [] n_;
 }
@@ -273,13 +317,13 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
     NRLib::SymmetricMatrix Sprior(3*n);
     NRLib::SymmetricMatrix Spost(3*n);
 
-    for(int i = 0 ; i < 3*n ; i++)
-      for(int j = i ; j < 3*n ; j++)
-        Sprior(j,i) = sigmapri[j][i];
+    for (int i = 0; i < 3*n; i++)
+      for (int j = 0; j <= i; j++)
+        Sprior(j, i) = sigmapri[j][i];
 
-    for(int i = 0 ; i < 3*n ; i++)
-      for(int j = i ; j < 3*n ; j++)
-        Spost(j,i) = sigmapost[j][i];
+    for (int i = 0; i < 3*n; i++)
+      for (int j = i; j <= i; j++)
+        Spost(j, i) = sigmapost[j][i];
 
     //
     // Filter = I - Sigma_post * inv(Sigma_prior)
@@ -318,7 +362,7 @@ void  SpatialSyntWellFilter::DoFilteringSyntWells(SeismicParametersHolder       
 
   if(no_wells_filtered == false){
     // finds the scale at default inversion (all minimum noise in case of local noise)
-    NRLib::Matrix Se(3,3);// = sigmaeSynt_[0]; Marit
+    NRLib::Matrix Se(3,3);
     Se(0,0) /= lastn;
     Se(1,0) /= lastn;
     Se(1,1) /= lastn;
@@ -389,7 +433,7 @@ SpatialWellFilter::updateSigmaeSynt(double ** filter, double ** postCov,  int n)
   lib_matr_prod(filter,postCov,3*n,3*n,3*n,sigmaeW);
 
   for(int i=0; i<n; i++) {
-    NRLib::Matrix Se(3,3); //= sigmaeSynt_[0]; Marit
+    NRLib::Matrix Se(3,3);
     Se(0,0) += sigmaeW[i      ][i     ];
     Se(1,0) += sigmaeW[i +   n][i     ];
     Se(2,0) += sigmaeW[i + 2*n][i     ];
@@ -408,40 +452,10 @@ SpatialWellFilter::updateSigmaeSynt(double ** filter, double ** postCov,  int n)
 
 void    SpatialSyntWellFilter::GenerateSyntWellData (const std::map<std::string, DistributionsRock *>        & rock_distributions,
                                                      const std::vector<std::string>                          & facies_names,
-                                                     const std::vector<double>                               & trend_min,
-                                                     const std::vector<double>                               & trend_max,
                                                      double                                                    dz,
-                                                     int                                                       nWellsPerCombinationOfTrendParams,
-                                                     int                                                       n_bins_trend,
                                                      int                                                       syntWellLength)
 {
-  n_bins_trend_   = n_bins_trend;
-  int nFacies     = static_cast<int>(facies_names.size());
-
-  if((trend_max[0] - trend_min[0]) > 0.0 && (trend_max[1] - trend_min[1]) > 0.0){
-    trend_1_.resize(n_bins_trend_);
-    trend_2_.resize(n_bins_trend_);
-    trend_1_bin_size_ = (trend_max[0] - trend_min[0])/n_bins_trend_;
-    trend_2_bin_size_ = (trend_max[1] - trend_min[1])/n_bins_trend_;
-    for(int i=0; i<n_bins_trend_ + 1; i++){
-      trend_1_[i] = trend_min[0] + i*trend_1_bin_size_;
-      trend_2_[i] = trend_min[1] + i*trend_2_bin_size_;
-    }
-    //it is not possible to have a trend2 but no trend1
-  }else if(trend_max[1]-trend_min[1] == 0.0 && trend_max[0] - trend_min[0] > 0.0){
-    trend_1_.resize(n_bins_trend_);
-    trend_2_.resize(0);
-    trend_1_bin_size_ = (trend_max[0] - trend_min[0])/n_bins_trend_;
-    for(int i=0; i<n_bins_trend_ + 1; i++){
-      trend_1_[i] = trend_min[0] + i*trend_1_bin_size_;
-    }
-    // if trend2max == trend1min and trend1max == trend1min
-  }else{
-    trend_1_.resize(1, trend_min[0]);
-    trend_2_.resize(1, trend_min[1]);
-  }
-
-  syntWellData_.resize((trend_1_.size()*trend_2_.size()*nWellsPerCombinationOfTrendParams_), NULL);
+  int nFacies = static_cast<int>(facies_names.size());
 
   // 10.0 is the desired mean length
   double p = 0.0;
@@ -449,50 +463,57 @@ void    SpatialSyntWellFilter::GenerateSyntWellData (const std::map<std::string,
   double lambda = 1.0;
   // corr is initially set to 0.5
   double corr = 0.5;
-  if(dz < 10.0) { //Erik: dz<log(10)
+  if (dz < 10.0) { //Erik: dz<log(10)
     // this ensures that the mean of the geometric distribution is 10.0/dz
-    p = dz/10.0; // Erik: exp(dz)/10.0;
+    p = dz / 10.0; // Erik: exp(dz)/10.0;
     // calculate lambda for the exponential distribution used below
-    lambda = - std::log((1.0-p));
+    lambda = - std::log((1.0 - p));
   }
-  else {
-    throw NRLib::Exception("Facies probabilities: dz is too large to generate synthetic well data");
-  }
+  else
+    throw NRLib::Exception("Facies probabilities: dz is too large to generate synthetic well data, need dz < 10");
 
   int nWell = 0;
-  for (int i=0; i<static_cast<int>(trend_1_.size()); i++){
-    for (int j=0; j<static_cast<int>(trend_2_.size()); j++){
-      for (int m=0; m<nWellsPerCombinationOfTrendParams; m++){
+  for (int i = 0; i < static_cast<int>(trend_1_.size()); i++) {
+    for (int j = 0; j < static_cast<int>(trend_2_.size()); j++) {
+      for (int m = 0; m < nWellsPerCombinationOfTrendParams_; m++) {
+
         std::vector<double> trend_params(2);
+
         trend_params[0] = trend_1_[i];
         trend_params[1] = trend_2_[j];
+
         std::vector<float> vp;
         std::vector<float> vs;
         std::vector<float> rho;
-        std::vector<int> facies;
+        std::vector<int>   facies;
 
         int k = 0;
-        while (k<syntWellLength ){
+
+        while (k < syntWellLength ) {
           // pick a random (uniform) facies
-          int randomFacies = static_cast<int>(floor(nFacies*NRLib::Random::Unif01()));
+          int randomFacies = static_cast<int>(floor(nFacies * NRLib::Random::Unif01()));
+
           // draw the facies length from a geometric distribution
-          double uRan = NRLib::Random::Unif01();
+          double uRan            = NRLib::Random::Unif01();
           int randomFaciesLength = static_cast<int>(ceil(-std::log(uRan)/lambda));
 
           std::vector<double> vp_temp(randomFaciesLength);
           std::vector<double> vs_temp(randomFaciesLength);
           std::vector<double> rho_temp(randomFaciesLength);
+
           std::map<std::string, DistributionsRock *>::const_iterator iter = rock_distributions.find(facies_names[randomFacies]);
+
           iter->second->GenerateWellSample(corr, vp_temp, vs_temp, rho_temp, trend_params);
 
-          for(int l = 0; l<randomFaciesLength; l++){
+          for (int l = 0; l < randomFaciesLength; l++){
             facies.push_back(randomFacies);
+
             vp.push_back(static_cast<float>(log(vp_temp[l])));
             vs.push_back(static_cast<float>(log(vs_temp[l])));
             rho.push_back(static_cast<float>(log(rho_temp[l])));
           }
 
-          k+= randomFaciesLength;
+          k += randomFaciesLength;
         }
         syntWellData_[nWell] = new SyntWellData(trend_1_[i], trend_2_[j], i, j, vp, vs, rho, facies, facies_names);
         nWell++;

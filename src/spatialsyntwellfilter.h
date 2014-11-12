@@ -20,8 +20,16 @@ class SpatialSyntWellFilter: public SpatialWellFilter
 public:
   SpatialSyntWellFilter();
 
-  SpatialSyntWellFilter(int         n_synt_wells,
-                        bool        cov_estimated);
+  SpatialSyntWellFilter(const std::map<std::string, DistributionsRock *>           & rock_distributions,
+                        const std::vector<std::string>                             & facies_names,
+                        const std::vector<double>                                  & trend_min,
+                        const std::vector<double>                                  & trend_max,
+                        int                                                          n_synt_wells,
+                        int                                                          n_wells_pr_combination_trend,
+                        double                                                       dz,
+                        int                                                          n_bins_trend,
+                        int                                                          syntWellLength,
+                        bool                                                         cov_estimated);
 
   ~SpatialSyntWellFilter();
 
@@ -39,17 +47,6 @@ public:
   void                     DoFilteringSyntWells(SeismicParametersHolder                  & seismicParameters,
                                                 const NRLib::Matrix                      & priorVar0);
 
-  void                    GenerateSyntWellData (const std::map<std::string, DistributionsRock *>       & rock_distributions,
-                                                const std::vector<std::string>                         & facies_names,
-                                                const std::vector<double>                              & trend_min,
-                                                const std::vector<double>                              & trend_max,
-                                                double                                                   dz,
-                                                int                                                      nWellsPerCombinationOfTrendParams,
-                                                int                                                      n_bins_trend,
-                                                int                                                      syntWellLength);
-
-  void    SetNumberOfSyntWellsToBeFiltered(int n_synt_wells)                      { nWellsToBeFiltered_ = n_synt_wells                ;}
-  void    SetNumberOfSyntWellsPerCombinationOfTrendParams(int n_synt_wells)       { nWellsPerCombinationOfTrendParams_ = n_synt_wells ;}
 
   const std::vector<SyntWellData *> & GetSyntWellData()                                                 const { return syntWellData_                     ;}
   const std::vector<double>         & GetTrend1()                                                       const { return trend_1_                          ;}
@@ -71,7 +68,11 @@ private:
                                          int           ni,
                                          int           nj);
 
-  //In the case of synthetic wells
+  void    GenerateSyntWellData (const std::map<std::string, DistributionsRock *>       & rock_distributions,
+                                const std::vector<std::string>                         & facies_names,
+                                double                                                   dz,
+                                int                                                      syntWellLength);
+
   std::vector<SyntWellData *>             syntWellData_;
   int                                     n_bins_trend_;
   std::vector<double>                     trend_1_;

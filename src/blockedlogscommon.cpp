@@ -31,6 +31,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
   use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
   use_for_filtering_            = well_data->GetUseForFiltering();
+  use_for_rock_physics_         = well_data->GetUseForRockPhysics();
   well_name_                    = well_data->GetWellName();
   facies_log_defined_           = false;
   first_S_                      = IMISSING;
@@ -271,6 +272,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
   use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
   use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
   use_for_filtering_            = well_data->GetUseForFiltering();
+  use_for_rock_physics_         = well_data->GetUseForRockPhysics();
   facies_log_defined_           = false;
   n_layers_                     = static_cast<int>(stormgrid.GetNK());
   dz_                           = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
@@ -509,6 +511,7 @@ BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)
   use_for_background_trend_     = logs.use_for_background_trend_;
   use_for_filtering_            = logs.use_for_filtering_;
   use_for_wavelet_estimation_   = logs.use_for_wavelet_estimation_;
+  use_for_rock_physics_         = logs.use_for_rock_physics_;
 
   //Variables used for rockphysics
   facies_names_                 = logs.facies_names_;
