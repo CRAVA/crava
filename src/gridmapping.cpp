@@ -166,7 +166,7 @@ GridMapping::makeTimeDepthMapping(NRLib::Grid<float> * velocity,
 
 
 void
-GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox)
+GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbox, int format)
 {
   if(simbox_!=NULL)  //Allow this to be called to override old mappings.
   {
@@ -189,7 +189,7 @@ GridMapping::setMappingFromVelocity(FFTGrid * velocity, const Simbox * timeSimbo
     delete mapping_;
   mapping_ = NULL;
 
-  int format = velocity->getOutputFormat();
+  //int format = velocity->getOutputFormat();
   bool failed = false;
   std::string errText("");
   calculateSurfaceFromVelocity(velocity, timeSimbox);
