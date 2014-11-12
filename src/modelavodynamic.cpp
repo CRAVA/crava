@@ -382,6 +382,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
   for (int l = 0; l < number_of_angles_; l++) {
     wd_corr_mvar[l] = ComputeWDCorrMVar(error_smooth[l], corrT, nzp);
   }
+  fftw_free(corrT);
 
   // Compute signal and model variance and theoretical signal-to-noise-ratio
   for (int l = 0; l < number_of_angles_; l++) {

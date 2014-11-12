@@ -578,7 +578,7 @@ Wavelet1D::Wavelet1D(fftw_real * vec,
   for(int i=nz;i<nzp_;i++)
     rAmp_[i]= 0;
 
-  dz_ = dz;
+  dz_ = static_cast<float>(dz);
 
   inFFTorder_ = true;
 }
