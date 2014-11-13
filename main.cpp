@@ -235,9 +235,9 @@ int main(int argc, char** argv)
         LogKit::LogFormatted(LogKit::Low,"\nBackground model..\n");
 
         seismicParametersIntervals[i_interval].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(i_interval),
-                                                                                simbox->GetNXpad(),
-                                                                                simbox->GetNYpad(),
-                                                                                simbox->GetNZpad());
+                                                                               simbox->GetNXpad(),
+                                                                               simbox->GetNYpad(),
+                                                                               simbox->GetNZpad());
 
         //Background grids are overwritten in avoinversion
         std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
@@ -258,7 +258,7 @@ int main(int argc, char** argv)
         float low_cut   = modelSettings->getLowCut();
         int low_int_cut = int(floor(low_cut*(simbox->GetNZpad()*0.001*dt))); // computes the integer which corresponds to the low cut frequency.
 
-        if (!modelSettings->getForwardModeling()){
+        if (!modelSettings->getForwardModeling()) {
           LogKit::LogFormatted(LogKit::Low,"\nCorrelation parameters..\n");
           seismicParametersIntervals[i_interval].setCorrelationParameters(common_data->GetPriorCovEst(),
                                                                           common_data->GetPriorParamCov(i_interval),
@@ -360,7 +360,7 @@ int main(int argc, char** argv)
       crava_result->SetBgBlockedLogs(common_data->GetBgBlockedLogs());
 
     if (modelSettings->getEstimationMode() == true) {
-
+      LogKit::WriteHeader("Combine Results and Write to Files");
       if (modelSettings->getEstimateBackground() == true && n_intervals == 1 && ((modelSettings->getOutputGridFormat() & IO::CRAVA) > 0)) {
         const Simbox * simbox = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(0);
         seismicParametersIntervals[0].setBackgroundParametersInterval(common_data->GetBackgroundParametersInterval(0),

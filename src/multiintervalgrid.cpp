@@ -155,12 +155,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
   // 3  WRITE SURFACES ----------------------------------------------------------------------
   if (!failed) {
-    for (size_t i = 0 ; i <interval_simboxes_.size(); i++) {
+    for (size_t i = 0 ; i < interval_simboxes_.size(); i++) {
       bool   generate_seismic     = model_settings->getForwardModeling();
       bool   estimation_mode      = model_settings->getEstimationMode();
       bool   generate_background  = model_settings->getGenerateBackground();
-      //bool   parallel_surfaces    = model_settings->getParallelTimeSurfaces();
-      //int    nz                   = model_settings->getTimeNz(interval_names_[i]);
       int    output_format        = model_settings->getOutputGridFormat();
       int    output_domain        = model_settings->getOutputGridDomain();
       int    output_grids_elastic = model_settings->getOutputGridsElastic();
