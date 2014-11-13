@@ -183,7 +183,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                        discrete_logs_to_be_blocked_, mapped_blocked_logs_for_correlation_ , err_text);
 
           model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
-          if (setup_multigrid_ == true && correlation_wells_ == true) {
+          if (setup_multigrid_ == true && correlation_wells_ == true && setup_background_model_ == true) {
             setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                              multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                              background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
