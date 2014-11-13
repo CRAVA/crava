@@ -3714,6 +3714,12 @@ ModelGeneral::processWells(std::vector<WellData*> & wells,
 
     }
     failed = error > 0;
+
+    if (tmpErrText != "") {
+      errText += "Process wells failed:\n";
+      errText += tmpErrText;
+    }
+
     Timings::setTimeWells(wall,cpu);
   }
 }
