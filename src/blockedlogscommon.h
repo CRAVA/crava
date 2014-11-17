@@ -41,9 +41,11 @@ public:
                     const StormContGrid & stormgrid);
 
   // Constructor for blocked logs for rock physics
-  BlockedLogsCommon(const NRLib::Well   * well_data,
-                    const Simbox        * simbox,
-                    const CravaTrend    & trend_cubes);
+  BlockedLogsCommon(const NRLib::Well              * well_data,
+                    const Simbox                   * simbox,
+                    const CravaTrend               & trend_cubes,
+                    const std::vector<std::string> & cont_logs_to_be_blocked,
+                    const std::vector<std::string> & disc_logs_to_be_blocked);
 
   //Copy constructor
   BlockedLogsCommon(const BlockedLogsCommon & logs);

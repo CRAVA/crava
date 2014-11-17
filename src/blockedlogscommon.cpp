@@ -328,9 +328,11 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
 }
 
 //Blocked logs for RockPhysics
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
-                                     const Simbox        * simbox,
-                                     const CravaTrend    & trend_cubes)
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
+                                     const Simbox                   * simbox,
+                                     const CravaTrend               & trend_cubes,
+                                     const std::vector<std::string> & cont_logs_to_be_blocked,
+                                     const std::vector<std::string> & disc_logs_to_be_blocked)
 : first_S_(IMISSING),
   last_S_ (IMISSING),
   first_M_(IMISSING),
@@ -361,18 +363,16 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
   }
 
   // Get all continuous and discrete logs
-  std::vector<std::string> cont_logs_to_be_blocked;
-  std::vector<std::string> disc_logs_to_be_blocked;
-
-  const std::map<std::string,std::vector<double> > & cont_logs = well->GetContLog();
-  const std::map<std::string,std::vector<int> >    & disc_logs = well->GetDiscLog();
-
-  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-    cont_logs_to_be_blocked.push_back(it->first);
-  }
-  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-    disc_logs_to_be_blocked.push_back(it->first);
-  }
+  //std::vector<std::string> cont_logs_to_be_blocked;
+  //std::vector<std::string> disc_logs_to_be_blocked;
+  //const std::map<std::string,std::vector<double> > & cont_logs = well->GetContLog();
+  //const std::map<std::string,std::vector<int> >    & disc_logs = well->GetDiscLog();
+  //for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+  //  cont_logs_to_be_blocked.push_back(it->first);
+  //}
+  //for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+  //  disc_logs_to_be_blocked.push_back(it->first);
+  //}
 
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
   RemoveMissingLogValues(well, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
@@ -408,12 +408,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
     BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
   BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
-
-  //BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy),    firstM, lastM, nBlocks, blocked_alpha);
-  //BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy),     firstM, lastM, nBlocks, blocked_beta);
-  //BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy),      firstM, lastM, nBlocks, blocked_rho);
-  //BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dummy), firstM, lastM, nBlocks, blocked_porosity);
-  //BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 
   vp_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
   vs_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));

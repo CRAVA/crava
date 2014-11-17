@@ -579,10 +579,11 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                       const MultiIntervalGrid                                       * multiple_interval_grid,
                                       const Simbox                                                  & estimation_simbox,
                                       const std::vector<CravaTrend>                                 & trend_cubes,
-                                      //const std::map<std::string, BlockedLogsCommon *>              & mapped_blocked_logs,
                                       std::vector<NRLib::Well *>                                    & wells,
                                       std::map<std::string, std::vector<DistributionWithTrend *> >  & reservoir_variables,
                                       std::map<std::string, std::vector<DistributionsRock *> >      & rock_distributions,
+                                      const std::vector<std::string>                                & cont_logs_to_be_blocked,
+                                      const std::vector<std::string>                                & disc_logs_to_be_blocked,
                                       std::string                                                   & error_text) const;
 
   void               PrintExpectationAndCovariance(const std::vector<double>   & expectation,

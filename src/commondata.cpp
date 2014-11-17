@@ -129,12 +129,12 @@ CommonData::CommonData(ModelSettings * model_settings,
         if (model_settings->getTrendCubeParameters().size() > 0) { // If trends are used, the setup of trend cubes must be ok as well
           if (setup_trend_cubes_) {
             setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
-                                                              wells_, reservoir_variables_, rock_distributions_, err_text);
+                                                              wells_, reservoir_variables_, rock_distributions_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, err_text);
           }
         }
         else
           setup_estimation_rock_physics_ = SetupRockPhysics(model_settings, input_files, multiple_interval_grid_, estimation_simbox_, trend_cubes_,
-                                                            wells_, reservoir_variables_, rock_distributions_, err_text);
+                                                            wells_, reservoir_variables_, rock_distributions_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_, err_text);
       }
     }
     else
@@ -2531,8 +2531,8 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     new_well.AddContLog("Y_pos", new_y);
     new_well.RemoveContLog(y_log_name);
     new_well.AddContLog("Z_pos", new_z);
-    new_well.SetNumberOfNonMissingData(new_z.size());
-    new_well.SetNumberOfData(new_z.size());
+    new_well.SetNumberOfNonMissingData(static_cast<int>(new_z.size()));
+    new_well.SetNumberOfData(static_cast<int>(new_z.size()));
 
     new_well.RemoveContLog(log_names_from_user[1]);
     new_well.AddContLog("Vp", new_vp);
@@ -2569,7 +2569,7 @@ CommonData::ReadFaciesNamesFromWellLogs(NRLib::Well              & well,
                                         std::vector<std::string> & facies_names)const
 {
   const std::map<int, std::string> & facies_map = well.GetFaciesMap();
-  int n_facies = facies_map.size();
+  int n_facies = static_cast<int>(facies_map.size());
 
   facies_nr.resize(n_facies);
   facies_names.resize(n_facies);
@@ -2625,7 +2625,7 @@ void CommonData::SetFaciesNamesFromWells(const ModelSettings                    
 
     if (facies_log_wells_[w] == true) {
 
-      n_facies = facies_names_wells[w].size();
+      n_facies = static_cast<int>(facies_names_wells[w].size());
 
       for (int i = 0; i < n_facies; i++) {
 
@@ -2832,7 +2832,7 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings                            
 
     //FFT to find peak-frequency.
     for (int k = 0; k < 100; k++) {
-      int n_trace     = trace_data[k].size();
+      int n_trace     = static_cast<int>(trace_data[k].size());
       int n_trace_fft = ((n_trace / 2) + 1)*2;
 
       fftw_real * seis_r    = new fftw_real[n_trace_fft];
@@ -4409,7 +4409,7 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
         segy = new SegY(grid_file, offset, *format);
       }
 
-      nz = segy->GetNz();
+      nz = static_cast<int>(segy->GetNz());
       if (segy != NULL)
         delete segy;
     }
@@ -4419,7 +4419,7 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
       StormContGrid * stormgrid = NULL;
       stormgrid = new StormContGrid(0,0,0);
       stormgrid->ReadFromFile(grid_file);
-      nz = stormgrid->GetNK();
+      nz = static_cast<int>(stormgrid->GetNK());
 
       if (stormgrid != NULL)
         delete stormgrid;
@@ -5030,7 +5030,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   const std::vector<int>          & trend_cube_type           = model_settings->getTrendCubeType();
   const std::vector<std::string>  & interval_names            = model_settings->getIntervalNames();
 
-  int n_parameters = trend_cube_parameters.size();
+  int n_parameters = static_cast<int>(trend_cube_parameters.size());
   int n_intervals  = multiple_interval_grid->GetNIntervals();
 
   // Initialize values
@@ -5113,6 +5113,8 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                                   std::vector<NRLib::Well *>                                    & wells,
                                   std::map<std::string, std::vector<DistributionWithTrend *> >  & reservoir_variables,
                                   std::map<std::string, std::vector<DistributionsRock *> >      & rock_distributions,
+                                  const std::vector<std::string>                                & cont_logs_to_be_blocked,
+                                  const std::vector<std::string>                                & disc_logs_to_be_blocked,
                                   std::string                                                   & err_text_common) const
 {
   LogKit::WriteHeader("Processing Rock Physics");
@@ -5179,7 +5181,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
     if (n_wells > 0) {
       for (int i = 0; i < n_wells; i++) {
-        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0]);
+        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0], cont_logs_to_be_blocked, disc_logs_to_be_blocked);
       }
     }
 
@@ -6223,13 +6225,13 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
     rnxp = fft_grid_new->getRNxp();
   }
   else {
-    nx   = grid_new->GetNI();
-    ny   = grid_new->GetNJ();
-    nz   = grid_new->GetNK();
-    nxp  = grid_new->GetNI();
-    nyp  = grid_new->GetNJ();
-    nzp  = grid_new->GetNK();
-    rnxp = grid_new->GetNI(); //2*(nxp/2+1);
+    nx   = static_cast<int>(grid_new->GetNI());
+    ny   = static_cast<int>(grid_new->GetNJ());
+    nz   = static_cast<int>(grid_new->GetNK());
+    nxp  = static_cast<int>(grid_new->GetNI());
+    nyp  = static_cast<int>(grid_new->GetNJ());
+    nzp  = static_cast<int>(grid_new->GetNK());
+    rnxp = static_cast<int>(grid_new->GetNI()); //2*(nxp/2+1);
   }
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling data into %dx%dx%d grid:", nxp, nyp, nzp);
@@ -6584,7 +6586,7 @@ void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
     data_trace[k] *= sinT*sinT;
   }
 
-  int n_data = data_trace.size();
+  int n_data = static_cast<int>(data_trace.size());
   int kstart = n_data - n_smooth;
 
   for (int k = 0; k < n_smooth; k++) {
@@ -7456,9 +7458,9 @@ double CommonData::FindMeanVsVp(const NRLib::Grid<float> * vp,
                                 const NRLib::Grid<float> * vs) const
 {
   double mean = 0;
-  int ni  = vp->GetNI();
-  int nj  = vp->GetNJ();
-  int nk  = vp->GetNK();
+  int ni  = static_cast<int>(vp->GetNI());
+  int nj  = static_cast<int>(vp->GetNJ());
+  int nk  = static_cast<int>(vp->GetNK());
   for (int k=0; k < nk; k++) {
     for (int j=0; j < nj; j++) {
       for (int i=0; i < ni; i++) {
@@ -7585,9 +7587,9 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
       float log_min = model_settings->getVpMin();
       float log_max = model_settings->getVpMax();
 
-      const int nz = velocity->GetNK();
-      const int ny = velocity->GetNJ();
-      const int nx = velocity->GetNI();
+      const int nz = static_cast<int>(velocity->GetNK());
+      const int ny = static_cast<int>(velocity->GetNJ());
+      const int nx = static_cast<int>(velocity->GetNI());
       int too_low  = 0;
       int too_high = 0;
 
@@ -8236,8 +8238,8 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               }
               for (int j = n_est; j < n_corr_T; j++) {
                 prior_auto_cov[i][j].resize(3,3);
-                for (size_t k = 0; k < 3; k++) {
-                  for (size_t l = 0; l < 3; l++)
+                for (int k = 0; k < 3; k++) {
+                  for (int l = 0; l < 3; l++)
                     prior_auto_cov[i][j](k,l) = 0.0;
                 }
               }
@@ -9221,8 +9223,8 @@ void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>   
 
   while (cell_coarse < prior_auto_cov.size()) {
     if (cell_coarse == 0) {
-      for (size_t i = 0;  i < 3; i++) {
-        for (size_t j = 0; j < 3; j++) {
+      for (int i = 0;  i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
           prior_auto_cov[0](i,j) = prior_auto_cov_dz_min[0](i,j);
         }
       }
@@ -9230,8 +9232,8 @@ void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>   
     else {
       cell_fine_1 = static_cast<int>((cell_coarse*dz)/dz_min);
       cell_fine_2 = cell_fine_1 + 1;
-      for (size_t i = 0;  i < 3; i++) {
-        for (size_t j = 0; j < 3; j++) {
+      for (int i = 0;  i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
           fraction_1  = prior_auto_cov_dz_min[cell_fine_2](i,j) - prior_auto_cov_dz_min[cell_fine_1](i,j);
           fraction_2  = (cell_coarse*dz - cell_fine_1*dz_min)/dz_min;
           prior_auto_cov[cell_coarse](i,j) = prior_auto_cov_dz_min[cell_fine_1](i,j) + fraction_1*fraction_2;
