@@ -208,7 +208,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   // Results in seismic_parameters are stored as fftgrid
   //CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
 
-  //H-TODO: CombineResult is not done
+  //H-TODO (CRA-735): CombineResult is not done
   //  There is no smoothing between intervals
 
   MultiIntervalGrid * multi_interval_grid     = common_data->GetMultipleIntervalGrid();
@@ -468,15 +468,16 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   wavelets_          = common_data->GetWavelet(0);
 
   //Resample wavelet to output simbox. These wavelets are from CommonData, and should not be on FFTFormat (and should not have added gainfactor).
-  for (size_t i = 0; i < wavelets_.size(); i++) {
+  int n_wavelets = static_cast<int>(wavelets_.size());
+  for (int i = 0; i < n_wavelets; i++) {
     wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
                            output_simbox.getnz(),
                            output_simbox.GetNZpad());
 
-    if (common_data->GetShiftGrid(0, static_cast<int>(i)) != NULL)
-      wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, static_cast<int>(i))));
-    if (common_data->GetGainGrid(0, static_cast<int>(i)) != NULL) {
-      wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, static_cast<int>(i))));
+    if (common_data->GetShiftGrid(0, i) != NULL)
+      wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, i)));
+    if (common_data->GetGainGrid(0, i) != NULL) {
+      wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       wavelets_[i]->invFFT1DInPlace();
     }
   }
@@ -1242,8 +1243,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     for (int i = 0; i < n_timelapses; i ++) {
 
-      //H: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
-
       int n_angles              = model_settings->getNumberOfAngles(i);
       std::vector<float> angles = model_settings->getAngle(i);
       std::vector<float> offset = model_settings->getLocalSegyOffset(i);
@@ -1577,15 +1576,16 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
 
       std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
       //Resample wavelet to output simbox, and generate seismic logs.
-      for (size_t i = 0; i < wavelets_.size(); i++) {
+      int n_wavelets = static_cast<int>(wavelets_.size());
+      for (int i = 0; i < n_wavelets; i++) {
         wavelets_[i]->resample(static_cast<float>(simbox.getdz()),
                                simbox.getnz(),
                                simbox.GetNZpad());
 
-        if (common_data->GetShiftGrid(0, static_cast<int>(i)) != NULL)
-          wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, static_cast<int>(i))));
-        if (common_data->GetGainGrid(0, static_cast<int>(i)) != NULL)
-          wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, static_cast<int>(i))));
+        if (common_data->GetShiftGrid(0, i) != NULL)
+          wavelets_[i]->setShiftGrid(new Grid2D(*common_data->GetShiftGrid(0, i)));
+        if (common_data->GetGainGrid(0, i) != NULL)
+          wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       }
 
       GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox);
@@ -1912,7 +1912,6 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
                                    const TraceHeaderFormat & thf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
-    //H-CHECK
     int output_format = model_settings->getOutputGridFormat();
     if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
       output_format += IO::ASCII;

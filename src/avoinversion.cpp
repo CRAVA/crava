@@ -161,13 +161,11 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
                                                           simbox_->getdz(),
                                                           nBinsTrendVector,
                                                           syntWellLength,
-                                                          true); //H
+                                                          true);
       }
       // Create Real Well filter
       else
-        spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), true); //H
-        //spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), seismicParameters.GetCovEstimated());
-
+        spat_real_well_filter = new SpatialRealWellFilter(modelSettings->getNumberOfWells(), true);
 
       FFTGrid * cov_vp    = seismicParameters.GetCovVp();
       FFTGrid * cov_vs    = seismicParameters.GetCovVs();
@@ -186,11 +184,8 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
 
       // Synthetic wells
       if (modelSettings->getFaciesProbFromRockPhysics()){
-        for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++){
-          //if (seismicParameters.GetCovEstimated())
+        for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++) {
             spat_synt_well_filter->SetPriorSpatialCovarianceSyntWell(cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho, j);
-          //else
-            //spat_synt_well_filter->SetPriorSpatialCorrSyntWell(cov_vp, j);
         }
       }
       else{
@@ -199,12 +194,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
         for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells_.begin(); it != blocked_wells_.end(); it++) {
           std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells_.find(it->first);
           BlockedLogsCommon * blocked_log = iter->second;
-          //if (seismicParameters.GetCovEstimated()) {
             spat_real_well_filter->SetPriorSpatialCovariance(blocked_log, i, cov_vp, cov_vs, cov_rho, cov_vpvs, cov_vprho, cov_vsrho);
-          //}
-          //else {
-            //spat_real_well_filter->setPriorSpatialCorr(cov_vp, blocked_log, i);
-          //}
           i++;
         }
       }
@@ -963,7 +953,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       // Copy matrix A to float**
       float ** A = new float * [3];
       for (int i = 0; i < ntheta_; i++)
-        A[i] = new float[3]; //H
+        A[i] = new float[3];
       for (int i = 0; i < ntheta_; i++){
         for (int j = 0; j < 3; j++){
           A[i][j] = static_cast<float>(A_(i,j));

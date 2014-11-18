@@ -341,8 +341,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   last_B_ (IMISSING)
 {
 
-  bool failed                   = false;
-  std::string err_text          = "";
+  bool failed          = false;
+  std::string err_text = "";
 
   // FACIES
   if (well->HasDiscLog("Facies")) {
@@ -361,18 +361,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
     facies_nr[i] = i;
     i++;
   }
-
-  // Get all continuous and discrete logs
-  //std::vector<std::string> cont_logs_to_be_blocked;
-  //std::vector<std::string> disc_logs_to_be_blocked;
-  //const std::map<std::string,std::vector<double> > & cont_logs = well->GetContLog();
-  //const std::map<std::string,std::vector<int> >    & disc_logs = well->GetDiscLog();
-  //for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-  //  cont_logs_to_be_blocked.push_back(it->first);
-  //}
-  //for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-  //  disc_logs_to_be_blocked.push_back(it->first);
-  //}
 
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
   RemoveMissingLogValues(well, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
@@ -1389,10 +1377,10 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       max_m = last_M_+1;                          // 1. If the last well obs is in interval number s
     else {
       for (int t = 0; t < s+1; t++)
-        max_m += n_well_log_obs_in_interval_[t];  // 2. If the last well obs is in another interval
+        max_m += n_well_log_obs_in_interval[t];  // 2. If the last well obs is in another interval
     }
     for (int t = 0; t < s; t++) {
-      min_m += n_well_log_obs_in_interval_[t];
+      min_m += n_well_log_obs_in_interval[t];
     }
     for (int m = min_m; m<max_m; m++) {
       wl++;
@@ -4183,8 +4171,8 @@ void BlockedLogsCommon::AssignToFacies(const std::vector<double>         & well_
                                        std::vector<std::vector<double> > & blocked_log) const
 {
   if (well_log.size() > 0) {
-    int n_facies = blocked_log.size();
-    int n_blocks = blocked_log[0].size();
+    int n_facies = static_cast<int>(blocked_log.size());
+    int n_blocks = static_cast<int>(blocked_log[0].size());
 
     for (int m = 0; m < n_blocks; m++) {
       if (well_log[m] != RMISSING && facies_log[m] != IMISSING) {

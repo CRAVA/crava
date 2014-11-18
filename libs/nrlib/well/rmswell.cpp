@@ -120,7 +120,7 @@ RMSWell::RMSWell(const std::string& filename)
     k = 3;
     for (size_t i = 0; i < nlog; i++) {
       if (isDiscrete_[i+3]) {
-        double dummy = ReadNext<double>(ist, line); //H Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
+        double dummy = ReadNext<double>(ist, line); //Double because of a problem with ReadNext<int> and facies on the form -9.9900000e+002
         if(IsMissing(dummy) == false)
           disclogs[j].push_back(static_cast<int>(dummy));
         else

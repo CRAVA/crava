@@ -6207,7 +6207,7 @@ XmlModelFile::checkEstimationConsistency(std::string & errTxt) {
   if (modelSettings_->getEstimateWaveletNoise()==false && modelSettings_->getOptimizeWellLocation()==false)
     modelSettings_->setNoSeismicNeeded(true);
   else {
-    if (inputFiles_->getNumberOfSeismicFiles(0)==0) {
+    if (modelSettings_->getNumberOfVintages() == 0 || inputFiles_->getNumberOfSeismicFiles(0)==0) {
       if (modelSettings_->getOptimizeWellLocation())
         errTxt += "Seismic data are needed for optimizing well locations.\n";
       if (modelSettings_->getEstimateWaveletNoise())

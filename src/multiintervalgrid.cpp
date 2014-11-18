@@ -265,9 +265,9 @@ MultiIntervalGrid::~MultiIntervalGrid() {
 int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const
 {
   int simbox_num = -1;
-  for (size_t i = 0; i<interval_simboxes_.size(); i++) {
+  for (size_t i = 0; i < interval_simboxes_.size(); i++) {
     if (interval_simboxes_[i]->IsPointBetweenOriginalSurfaces(x,y,z)) {
-      simbox_num = i;
+      simbox_num = static_cast<int>(i);
       break;
     }
   }
@@ -742,14 +742,14 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
                                           const Surface * base_surface,
                                           const Simbox  * estimation_simbox,
                                           int             n_layers) const{
-  size_t nx = top_surface->GetNI();
-  size_t ny = base_surface->GetNJ();
+  int nx = static_cast<int>(top_surface->GetNI());
+  int ny = static_cast<int>(base_surface->GetNJ());
 
   double maximum_dz = 0;
   double resolution     = 0;
 
-  for (size_t i = 0; i<nx; i++) {
-    for (size_t j = 0; j<ny; j++) {
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
       double x,y;
       estimation_simbox->getXYCoord(i,j,x,y);
       double z_top  = top_surface->GetZ(x,y);

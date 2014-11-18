@@ -2597,7 +2597,7 @@ void CommonData::SetFaciesNamesFromWells(const ModelSettings                    
   std::vector<int> facies_nr_well;
   bool first = true;
   for (int w = 0; w < model_settings->getNumberOfWells(); w++) {
-    n_facies = facies_names_wells[w].size();
+    n_facies = static_cast<int>(facies_names_wells[w].size());
 
     facies_nr_well = facies_nr_wells[w];
 
@@ -4128,7 +4128,7 @@ CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
   simbox->getMinAndMaxXY(xmin,xmax,ymin,ymax);
   int nx,ny;
   double angle = simbox->getAngle()*180.0/M_PI;
-  if (angle > -45 || angle < 45)
+  if (angle > -45 || angle < 45) //H-TODO always true
   {
     nx = static_cast<int>(floor(simbox->getnx()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
     ny = static_cast<int>(floor(simbox->getny()*1.0/std::cos(simbox->getAngle())+0.5)) * 2;
@@ -5042,7 +5042,14 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
     }
   }
 
-  //H-TODO: Do not allow trends with a z-component together with multizone.
+  //H-TODO
+  //Problems with Trend Cubes and multiple intervals.
+  // Trend cubes values are obtained by i,j,k access. STRATIGRAPHIC_DEPTH would cause problems as all cubes would start on 0.
+  // Rock Physics are not set up per interval, but it uses trend cubes and trend cube samplings.
+  if (n_intervals > 1) {
+    err_text_common += "We currently do not allow trend cubes with multiple intervals";
+    return false;
+  }
 
   try {
     for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
@@ -5124,7 +5131,11 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   std::string err_text = "";
   int n_intervals = multiple_interval_grid->GetNIntervals();
 
-  //H-Temp fix for single interval
+  //H-Temp fix for single interval:
+  //We currently do not allow multiple intervals and trend cubes
+  // Single interval, we use the same simbox as the trend cube
+  // Multiple interval, no trend cubes, we use estimation simbox.
+  //Problem is GenerateDistributionsRock which uses trend_cube_sampling(intervals)
   Simbox simbox;
   if (n_intervals == 1)
     simbox = *multiple_interval_grid->GetIntervalSimbox(0);
@@ -5245,7 +5256,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
           std::vector<DistributionsRock *> rock = storage->GenerateDistributionsRock(n_vintages,
                                                                                      path,
                                                                                      trend_cube_parameters,
-                                                                                     trend_cube_sampling[0], //H-TODO interval i
+                                                                                     trend_cube_sampling[0], //H In multizone (not currently allowed with Trend Cubes), how to use samplings per interval?
                                                                                      blocked_logs_rock_physics,
                                                                                      rock_storage,
                                                                                      solid_storage,
@@ -7506,9 +7517,9 @@ void CommonData::SubtractGrid(NRLib::Grid<float>       * to_grid,
                               const NRLib::Grid<float> * from_grid) const
 {
 
-  int ni = to_grid->GetNI();
-  int nj = to_grid->GetNJ();
-  int nk = to_grid->GetNK();
+  int ni = static_cast<int>(to_grid->GetNI());
+  int nj = static_cast<int>(to_grid->GetNJ());
+  int nk = static_cast<int>(to_grid->GetNK());
 
   for (int i = 0; i < ni; i++) {
     for (int j = 0; j < nj; j++) {
@@ -7524,9 +7535,9 @@ void CommonData::SubtractGrid(NRLib::Grid<float>       * to_grid,
 void CommonData::ChangeSignGrid(NRLib::Grid<float> * grid) const
 {
 
-  int ni = grid->GetNI();
-  int nj = grid->GetNJ();
-  int nk = grid->GetNK();
+  int ni = static_cast<int>(grid->GetNI());
+  int nj = static_cast<int>(grid->GetNJ());
+  int nk = static_cast<int>(grid->GetNK());
 
   for (int i = 0; i < ni; i++) {
     for (int j = 0; j < nj; j++) {

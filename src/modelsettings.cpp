@@ -198,7 +198,7 @@ ModelSettings::ModelSettings(void)
   seed_                    =        0;
   number_of_threads_       =        0;
 
-  erosion_priority_top_surface_ = 1; //H
+  erosion_priority_top_surface_ = 1;
 
   //intervalTopConformCorrelation_[""]  = false;
   //intervalBaseConformCorrelation_[""] = false;
