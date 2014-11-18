@@ -1782,7 +1782,7 @@ BoundingRockStorage::GenerateDistributionsRock(const int                        
     }
     else {
       if(shear_weight_[i]->GetEstimate() == true)
-        tmpErrTxt += "<shear-modulus-weight> can not be estimatedfor time lapse data.\n";
+        tmpErrTxt += "<shear-modulus-weight> can not be estimated for time lapse data.\n";
     }
   }
 

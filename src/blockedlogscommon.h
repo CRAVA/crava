@@ -541,6 +541,10 @@ private:
                              const std::vector<double>  &  well_log,
                              std::vector<double>        &  blocked_log) const;
 
+  void    BlockPorosityLog(const std::vector<int>     &  b_ind,
+                           const std::vector<double>  &  well_log,
+                           std::vector<double>        &  blocked_log) const;
+
   void    BlockFaciesLog(const std::vector<int>             & b_ind,
                            const std::vector<int>           & well_log,
                            const std::map<int,std::string>  & facies_map,

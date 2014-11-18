@@ -405,7 +405,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
     BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
 
   if (well->HasContLog("Porosity"))
-    BlockContinuousLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
+    BlockPorosityLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
   BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
 
@@ -1734,6 +1734,36 @@ void BlockedLogsCommon::BlockContinuousLog(const std::vector<int>     & b_ind,
       blocked_log[l] = RMISSING;
   }
 
+}
+
+//------------------------------------------------------------------------------
+void BlockedLogsCommon::BlockPorosityLog(const std::vector<int>     & b_ind,
+                                         const std::vector<double>  & well_log,
+                                         std::vector<double>        & blocked_log) const
+{
+  //
+  // Initialise arrays
+  //
+
+  blocked_log.resize(n_blocks_, 0.0f);
+  std::vector<int> count(n_blocks_, 0);
+
+  //
+  // Block log
+  //
+  for (int m = first_M_ ; m < last_M_ + 1 ; m++) {
+    if (well_log[m] != RMISSING && well_log[m] != WELLMISSING) {
+      blocked_log[b_ind[m]] += well_log[m];
+      count[b_ind[m]]++;
+    }
+  }
+
+  for (unsigned int l = 0 ; l < n_blocks_ ; l++) {
+    if (count[l] > 0)
+      blocked_log[l] /= count[l];
+    else
+      blocked_log[l] = RMISSING;
+  }
 }
 
 //------------------------------------------------------------------------------
