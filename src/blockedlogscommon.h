@@ -649,6 +649,17 @@ private:
                                 std::vector<double>       & y_pos_blocked,
                                 std::vector<double>       & z_pos_blocked) const;
 
+  void    FindXYZForVirtualPart(const MultiIntervalGrid   * multiple_interval_grid,
+                                const std::vector<int>    & i_pos,
+                                const std::vector<int>    & j_pos,
+                                const std::vector<int>    & k_pos,
+                                const int                 & n_blocks,
+                                const int                 & first_B,
+                                const int                 & last_B,
+                                std::vector<double>       & x_pos_blocked,
+                                std::vector<double>       & y_pos_blocked,
+                                std::vector<double>       & z_pos_blocked) const;
+
   void    UpdateLog(std::vector<double>                           & data,
                     const std::vector<std::pair<size_t, size_t> > & intervals) const;
 

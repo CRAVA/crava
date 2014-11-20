@@ -311,6 +311,14 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
           sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
 
       }
+
+      if (noise_scaled_tmp != NULL)
+        delete noise_scaled_tmp;
+      if (shift_grid_tmp != NULL)
+        delete shift_grid_tmp;
+      if (gain_grid_tmp != NULL)
+        delete gain_grid_tmp;
+
     }
     else {
       //wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];

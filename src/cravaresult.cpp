@@ -312,6 +312,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Covariance grids
   if (!model_settings->getForwardModeling()) {
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids...");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_rho_       = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -342,6 +343,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
   //Facies prob

@@ -649,7 +649,7 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
     output_name = " for interval \'" + simbox->GetIntervalName() + "\'";
 
   LogKit::LogFormatted(logLevel,"\nZ padding sizes" + text2 + output_name + ":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.fms, %5.3f, %5d, %4d\n",
+  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.0fms, %5.3f, %5d, %4d\n",
                        z_pad, z_pad_fac, nz, nz_pad);
 }
 

@@ -647,13 +647,8 @@ void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
 
   int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
 
-  const NRLib::Surface<double> * top_surf = output_simbox.GetTopSurface().Clone();
-  const NRLib::Surface<double> * bot_surf = output_simbox.GetBotSurface().Clone();
-  output_simbox.setDepth(*top_surf, *bot_surf, nz_new, false); //Also set nz_pad = nz
-  delete top_surf;
-  delete bot_surf;
+  output_simbox.setDepth(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface(), nz_new, false); //Also set nz_pad = nz
 
-  //output_simbox.setDepth(*output_simbox.GetTopSurface().Clone(), *output_simbox.GetBotSurface().Clone(), nz_new, false); //Also set nz_pad = nz
   std::string err_text_tmp = "";
   output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);

@@ -1826,14 +1826,23 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("base-conform");
   legalCommands.push_back("interval");
 
-  // Default
-  modelSettings_->setCorrDirTopConform("", false);
-  modelSettings_->setCorrDirBaseConform("", false);
+  //Check first if intervals are used
+  bool interval_used = false;
+  while (parseIntervalCorrelationDirection(root,errTxt)==true) {
+    if (interval_used == false)
+      interval_used = true;
+  }
+  
+  if (interval_used == false) {
+    // Default
+    modelSettings_->setCorrDirTopConform("", false);
+    modelSettings_->setCorrDirBaseConform("", false);
+  }
 
   std::string corr_file = "";
   bool single_corr_file_used = false;
-  while(parseCurrentValue(root, corr_file, errTxt) == true) {
-    if(corr_file != "") {
+  while (parseCurrentValue(root, corr_file, errTxt) == true) {
+    if (corr_file != "") {
       inputFiles_->setCorrDirFile("", corr_file);
       single_corr_file_used = true;
       //modelSettings_->setCorrDirBaseConform("", false);
@@ -1847,63 +1856,61 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
   bool base_conform       = false;
 
   std::string filename;
-  if(parseFileName(root, "top-surface", filename, errTxt) == true) {
+  if (parseFileName(root, "top-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirTopSurfaceFile("", filename);
     top_corr_surface = true;
-  } else if (single_corr_file_used == false){
+  }
+  else if (single_corr_file_used == false && interval_used == false) {
     modelSettings_->setCorrDirTopConform("", true);
     top_conform = true;
   }
 
-
-  if(parseFileName(root, "base-surface", filename, errTxt) == true) {
+  if (parseFileName(root, "base-surface", filename, errTxt) == true) {
     inputFiles_->setCorrDirBaseSurfaceFile("", filename);
     base_corr_surface = true;
-  } else if (single_corr_file_used == false){
+  }
+  else if (single_corr_file_used == false && interval_used == false) {
     modelSettings_->setCorrDirBaseConform("", true);
     base_conform = true;
   }
 
-  if(parseBool(root, "top-conform", top_conform, errTxt) == true){
+  if (parseBool(root, "top-conform", top_conform, errTxt) == true) {
     modelSettings_->setCorrDirTopConform("", true);
     top_conform = true;
   }
 
-  if(parseBool(root, "base-conform", base_conform, errTxt) == true){
+  if (parseBool(root, "base-conform", base_conform, errTxt) == true) {
     modelSettings_->setCorrDirBaseConform("", true);
     base_conform = true;
   }
 
-  if(top_corr_surface == true && top_conform == true)
+  if (top_corr_surface == true && top_conform == true)
     errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  if(base_corr_surface == true && base_conform == true)
+  if (base_corr_surface == true && base_conform == true)
     errTxt += "Both <base-surface> and <base-conform> are given under <correlation-direction> where only one is allowed.\n";
 
-  if((top_corr_surface == true || top_conform == true) && (base_corr_surface == false && base_conform == false))
+  if ((top_corr_surface == true || top_conform == true) && (base_corr_surface == false && base_conform == false))
     errTxt += "Either <base-surface> or <base-conform> is missing under <correlation-direction>. One of these must be set if either <top-surface> or <top-conform> are used.\n";
 
-  if((base_corr_surface == true || base_conform == true) && (top_corr_surface == false && top_conform == false))
+  if ((base_corr_surface == true || base_conform == true) && (top_corr_surface == false && top_conform == false))
     errTxt += "Either <top-surface> or <top-conform> is missing under <correlation-direction>. One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
   //if(top_conform == true && base_conform == true)
   //  errTxt += "Both top-conform and base-conform are set to true under <" + root->ValueStr() +">, "
   //            + "where only one is allowed to be true.\n";
 
-  bool interval_used = false;
-
-  while(parseIntervalCorrelationDirection(root,errTxt)==true) {
-    if(interval_used == false)
-      interval_used = true;
-  }
 
   if (interval_used == false && top_corr_surface == false && base_corr_surface == false && top_conform == false && base_conform == false && single_corr_file_used == false)
     errTxt += "-No correlation surfaces have been defined under <correlation-direction>.\n";
 
-  if(single_corr_file_used == true && interval_used == true)
+  if (single_corr_file_used == true && interval_used == true)
     errTxt += "You cannot use both a correlation-direction file and correlation directions for intervals under " + node->ValueStr() + ".\n";
-  if(single_corr_file_used == true && (top_conform == true || base_conform == true || top_corr_surface == true || base_corr_surface == true))
+  if (single_corr_file_used == true && (top_conform == true || base_conform == true || top_corr_surface == true || base_corr_surface == true))
     errTxt += "You cannot use both a correlation-direction file and correlation directions for top-surface/base-surface/top-conform/base-conform under "
+                + node->ValueStr() + ".\n";
+  if (interval_used == true && (top_conform == true || base_conform == true || top_corr_surface == true || base_corr_surface == true))
+    errTxt += "You cannot use both correlation-directions for intervals and correlation directions for top-surface/base-surface/top-conform/base-conform under "
                 + node->ValueStr() + ".\n";
 
   checkForJunk(root, errTxt, legalCommands, true);
@@ -2000,8 +2007,8 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     errTxt += "-Either <top-surface> or <top-conform> is missing under <correlation-direction> for interval " + interval_name
               + ". One of these must be set if either <base-surface> or <base-conform> are used.\n";
 
-  if (top_surface == false && base_surface == false && top_conform == false && base_conform == false)
-    errTxt += "-Neither a top correlation surface nor a base correlation surface has been defined under <correlation-direction> for interval "
+  if (single_surface == false && top_surface == false && base_surface == false && top_conform == false && base_conform == false)
+    errTxt += "-No correlation surfaces have been defined under <correlation-direction> for interval "
                 + interval_name + ".\n";
 
   //if(top_conform == true && base_conform == true)
