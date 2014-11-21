@@ -33,6 +33,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   optimize_well_location_(false),
   wavelet_handling_(false),
   setup_multigrid_(false),
+  setup_output_simbox_(false),
   setup_trend_cubes_(false),
   setup_estimation_rock_physics_(false),
   setup_prior_facies_probabilities_(false),
@@ -73,9 +74,12 @@ CommonData::CommonData(ModelSettings * model_settings,
       const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
       full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
     }
+
     //Set up simbox for writing
-    SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, segy_geometry, multiple_interval_grid_);
-    delete segy_geometry; //Not needed anymore.
+    if (setup_multigrid_) {
+      setup_output_simbox_ = SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, segy_geometry, multiple_interval_grid_, err_text);
+      delete segy_geometry; //Not needed anymore.
+    }
 
     // 3. read seismic data and create estimation simbox.
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
@@ -94,8 +98,10 @@ CommonData::CommonData(ModelSettings * model_settings,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
       //Block wells to output simbox
-      block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
-                                                    discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
+      if (setup_output_simbox_) {
+        block_wells_output_ = BlockWellsForEstimation(model_settings, output_simbox_, wells_, continuous_logs_to_be_blocked_,
+                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_output_, err_text, false);
+      }
     }
     else
       block_wells_ = true;
@@ -626,14 +632,17 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   return true;
 }
 
-void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
+bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
                                    const Simbox       & full_inversion_simbox,
                                    ModelSettings      * model_settings,
                                    const SegyGeometry * segy_geometry,
-                                   MultiIntervalGrid  * multi_interval_grid)
+                                   MultiIntervalGrid  * multi_interval_grid,
+                                   std::string        & err_text)
 {
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
+
+  LogKit::LogFormatted(LogKit::Low,"\nCreating output simbox");
 
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
@@ -659,6 +668,13 @@ void CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   //We also need to write out surfaces based on output simbox
   //If there is only one interval, surfaces written out in Multiinterval will be overwritten here.
   WriteOutputSurfaces(model_settings, output_simbox);
+
+  if (err_text_tmp != "") {
+    err_text += err_text_tmp;
+    return false;
+  }
+
+  return true;
 
 }
 
@@ -5047,7 +5063,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
   }
 
   try {
-    for (size_t i = 0; i < trend_cube_parameters.size(); i++) {
+    for (int i = 0; i < static_cast<int>(trend_cube_parameters.size()); i++) {
       if (trend_cube_type[i] == ModelSettings::CUBE_FROM_FILE) { //Other options are handled inside CravaTrend
         // 1. Read the file into an FFTGrid
         const std::string         log_name   = "Trend cube '"+trend_cube_parameters[i]+"'";
@@ -6840,8 +6856,8 @@ int CommonData::GetZSimboxIndex(int k,
 
 void CommonData::SetTrace(const std::vector<float> & trace,
                           NRLib::Grid<float>       * grid,
-                          size_t                     i,
-                          size_t                     j) const
+                          int                        i,
+                          int                        j) const
 {
   for (size_t k = 0; k < grid->GetNK(); k++) {
     grid->SetValue(i, j, k, trace[k]);
@@ -6850,8 +6866,8 @@ void CommonData::SetTrace(const std::vector<float> & trace,
 
 void CommonData::SetTrace(float                value,
                           NRLib::Grid<float> * grid,
-                          size_t               i,
-                          size_t               j) const
+                          int                  i,
+                          int                  j) const
 {
   for (size_t k = 0; k < grid->GetNK(); k++) {
     grid->SetValue(i, j, k, value);
@@ -6860,8 +6876,8 @@ void CommonData::SetTrace(float                value,
 
 void CommonData::SetTrace(const std::vector<float> & trace,
                           FFTGrid                  * grid,
-                          size_t                     i,
-                          size_t                     j) const
+                          int                        i,
+                          int                        j) const
 {
   for (int k = 0; k < grid->getNzp(); k++) {
     grid->setRealValue(i, j, k, trace[k], true);
@@ -6870,8 +6886,8 @@ void CommonData::SetTrace(const std::vector<float> & trace,
 
 void CommonData::SetTrace(float     value,
                           FFTGrid * grid,
-                          size_t    i,
-                          size_t    j) const
+                          int       i,
+                          int       j) const
 {
   for (int k = 0; k < grid->getNzp(); k++) {
     grid->setRealValue(i, j, k, value, true);
@@ -7060,7 +7076,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
         std::string sgri_label = std::string("Time-to-depth velocity");
         float       offset     = model_settings->getSegyOffset(0); //Only allow one segy offset for time lapse data
 
-        FFTGrid * velocity_fft = new FFTGrid(velocity, velocity->GetNI(), velocity->GetNJ(), velocity->GetNK());
+        int nx = static_cast<int>(velocity->GetNI());
+        int ny = static_cast<int>(velocity->GetNJ());
+        int nz = static_cast<int>(velocity->GetNK());
+
+        FFTGrid * velocity_fft = new FFTGrid(velocity, nx, ny, nz);
         velocity_fft->writeFile(base_name,
                                 IO::PathToVelocity(),
                                 &full_inversion_simbox,
@@ -8030,10 +8050,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         }
         // copy
         else {
-          for (size_t i = 0; i<n_intervals; i++) {
+          for (size_t i = 0; i < n_intervals; i++) {
             prior_param_cov[i].resize(3,3);
-            for (size_t j = 0; j<3; j++) {
-              for (size_t k = 0; k<3; k++) {
+            for (int j = 0; j < 3; j++) {
+              for (int k = 0; k < 3; k++) {
                 // parameter covariance is the same for all intervals
                 prior_param_cov[i](j,k) = temp_array[j][k];
               }
@@ -8345,7 +8365,7 @@ void CommonData::ReadPriorAutoCovariance(const std::string                      
 
   //If there are more lags in the file, we only use the n_corr_T first lags
   //If there are too few lags in the file, we add in zero-matrices in the end.,
-  int n_matrices_file = tmp_cov_matrices.size();
+  int n_matrices_file = static_cast<int>(tmp_cov_matrices.size());
   if (n_matrices_file >= n_corr_T) {
     for (int i = 0; i < n_corr_T; i++) {
       prior_auto_cov[0][i] = tmp_cov_matrices[i];
@@ -8388,7 +8408,7 @@ void CommonData::ValidatePriorAutoCovMatrices(const std::vector<std::vector<NRLi
                                               const ModelSettings                            * model_settings,
                                               std::string                                    & err_txt) const
 {
-  int n_intervals = prior_auto_cov.size();
+  int n_intervals = static_cast<int>(prior_auto_cov.size());
   float minVp     = model_settings->getVarVpMin();
   float maxVp     = model_settings->getVarVpMax();
   float minVs     = model_settings->getVarVsMin();
@@ -9135,14 +9155,14 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
 }
 
 // --------------------------------------------------------------------------------
-void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
+void  CommonData::EstimateXYPaddingSizes(Simbox          * simbox,
                                          ModelSettings   * model_settings) const{
-  double dx      = interval_simbox->getdx();
-  double dy      = interval_simbox->getdy();
-  double lx      = interval_simbox->getlx();
-  double ly      = interval_simbox->getly();
-  int    nx      = interval_simbox->getnx();
-  int    ny      = interval_simbox->getny();
+  double dx      = simbox->getdx();
+  double dy      = simbox->getdy();
+  double lx      = simbox->getlx();
+  double ly      = simbox->getly();
+  int    nx      = simbox->getnx();
+  int    ny      = simbox->getny();
 
   // The padding factor in model settings is the user specified padding factor
   double x_pad_factor = model_settings->getXPadFac();
@@ -9173,12 +9193,12 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * interval_simbox,
   double true_xPad    = true_x_pad_factor*lx;
   double true_yPad    = true_y_pad_factor*ly;
 
-  interval_simbox->SetNXpad(nx_pad);
-  interval_simbox->SetNYpad(ny_pad);
-  interval_simbox->SetXPadFactor(true_x_pad_factor);
-  interval_simbox->SetYPadFactor(true_y_pad_factor);
-  interval_simbox->SetZPadFactor(0.0);
-  interval_simbox->SetNZpad(interval_simbox->getnz());
+  simbox->SetNXpad(nx_pad);
+  simbox->SetNYpad(ny_pad);
+  simbox->SetXPadFactor(true_x_pad_factor);
+  simbox->SetYPadFactor(true_y_pad_factor);
+  simbox->SetZPadFactor(0.0);
+  simbox->SetNZpad(simbox->getnz());
 
   std::string text1;
   std::string text2;
@@ -9739,6 +9759,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     if (area_specification == ModelSettings::AREA_FROM_GRID_DATA ||
        area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM ||
        area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE)
+
       grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
   }
   if (area_specification == ModelSettings::AREA_FROM_GRID_DATA) {

@@ -1832,7 +1832,7 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
     if (interval_used == false)
       interval_used = true;
   }
-  
+
   if (interval_used == false) {
     // Default
     modelSettings_->setCorrDirTopConform("", false);
@@ -2239,7 +2239,7 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
 
   //If facies are given as probabilities and we use multiple intervals, we set all intervals equal to this value.
   if(modelSettings_->GetMultipleIntervalSetting() == true && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
-    for(size_t i = 0; i < modelSettings_->getIntervalNames().size(); i++) {
+    for(int i = 0; i < static_cast<int>(modelSettings_->getIntervalNames().size()); i++) {
       const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
       const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProb("");
       modelSettings_->addPriorFaciesProbs(interval_name_tmp, facies_map_tmp);
@@ -6042,6 +6042,8 @@ XmlModelFile::setDerivedParameters(std::string & errTxt)
       if (modelSettings_->getNoSeismicNeeded() && inputFiles_->getNumberOfSeismicFiles(i)==0)
         errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
     }
+    if (modelSettings_->getNoSeismicNeeded() && modelSettings_->getNumberOfVintages() == 0)
+      errTxt += "The area needs to be defined from seismic data, a surface or UTM-coordinates.\n";
   }
   modelSettings_->setAreaSpecification(areaSpecification);
 
@@ -6360,7 +6362,7 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
     if(modelSettings_->getIsPriorFaciesProbGiven() == ModelSettings::FACIES_FROM_MODEL_FILE) {
 
       std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
-      int n_intervals                         = interval_names.size();
+      int n_intervals                         = static_cast<int>(interval_names.size());
 
       //if (interval_names.size() == 0)
       //  n_intervals = 1;
@@ -6527,15 +6529,15 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       const std::map<std::string, bool> & interval_top_conform_correlation = modelSettings_->getCorrDirTopConforms();
       const std::map<std::string, bool> & interval_base_conform_correlation = modelSettings_->getCorrDirBaseConforms();
 
-      int single_count = interval_corr_dir_file.size();
+      int single_count = static_cast<int>(interval_corr_dir_file.size());
 
-      int top_count =  interval_corr_dir_top_file.size();
+      int top_count = static_cast<int>(interval_corr_dir_top_file.size());
       for(std::map<std::string, bool>::const_iterator it = interval_top_conform_correlation.begin(); it != interval_top_conform_correlation.end(); it++) {
         if(it->second == true)
           top_count++;
       }
 
-      int base_count = interval_corr_dir_base_file.size();
+      int base_count = static_cast<int>(interval_corr_dir_base_file.size());
       for(std::map<std::string, bool>::const_iterator it = interval_base_conform_correlation.begin(); it != interval_base_conform_correlation.end(); it++) {
         if(it->second == true)
           base_count++;
@@ -6550,8 +6552,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
 
       for(size_t i = 0; i < interval_names.size(); i++) {
-        int n_ = interval_corr_dir_file.count(interval_names[i]);
-        n_ = interval_corr_dir_top_file.count(interval_names[i]);
+        //int n_ = interval_corr_dir_file.count(interval_names[i]);
+        //n_ = interval_corr_dir_top_file.count(interval_names[i]);
 
         if(interval_corr_dir_file.count(interval_names[i]) == 0 &&
            interval_corr_dir_top_file.count(interval_names[i]) == 0 &&

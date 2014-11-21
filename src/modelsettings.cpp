@@ -237,7 +237,7 @@ ModelSettings::~ModelSettings(void)
     geometry_ = NULL;
   }
 
-  if(geometry_ != NULL){
+  if(geometry_full_ != NULL){
     delete geometry_full_;
     geometry_full_ = NULL;
   }

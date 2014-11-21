@@ -51,7 +51,7 @@ RockPhysicsInversion4D::RockPhysicsInversion4D(NRLib::Vector                    
   tmp           = posteriorCov*v_;
   posteriorCovF = transpose(v_)*tmp;
 
-  int nSamp = mSamp[0].size();
+  int nSamp = static_cast<int>(mSamp[0].size());
 
   NRLib::Vector m(6);
   for(int k=0;k<6;k++)

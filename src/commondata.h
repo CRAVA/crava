@@ -250,11 +250,12 @@ private:
                                                 SegyGeometry           *& segy_geometry,
                                                 std::string             & err_text) const;
 
-  void               SetupOutputSimbox(Simbox             & output_simbox,
+  bool               SetupOutputSimbox(Simbox             & output_simbox,
                                        const Simbox       & full_inversion_simbox,
                                        ModelSettings      * model_settings,
                                        const SegyGeometry * segy_geometry,
-                                       MultiIntervalGrid  * multi_interval_grid);
+                                       MultiIntervalGrid  * multi_interval_grid,
+                                       std::string        & err_text);
 
   double             FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j);
 
@@ -687,23 +688,23 @@ bool                 BlockLogsForInversion(const ModelSettings                  
 
   void               SetTrace(const std::vector<float> & trace,
                               NRLib::Grid<float>       * grid,
-                              size_t                     i,
-                              size_t                     j) const;
+                              int                        i,
+                              int                        j) const;
 
   void               SetTrace(float                value,
                               NRLib::Grid<float> * grid,
-                              size_t               i,
-                              size_t               j) const;
+                              int                  i,
+                              int                  j) const;
 
   void               SetTrace(const std::vector<float> & trace,
                               FFTGrid                  * grid,
-                              size_t                     i,
-                              size_t                     j) const;
+                              int                        i,
+                              int                        j) const;
 
   void               SetTrace(float     value,
                               FFTGrid * grid,
-                              size_t    i,
-                              size_t    j) const;
+                              int       i,
+                              int       j) const;
 
   void               ReadStormFile(const std::string                 & file_name,
                                    std::vector<NRLib::Grid<float> *> & interval_grids,
@@ -927,6 +928,7 @@ bool                 BlockLogsForInversion(const ModelSettings                  
   bool optimize_well_location_;
   bool wavelet_handling_;
   bool setup_multigrid_;
+  bool setup_output_simbox_;
   bool setup_trend_cubes_;
   bool setup_estimation_rock_physics_;
   bool setup_prior_facies_probabilities_;

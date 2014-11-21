@@ -616,8 +616,8 @@ TimeEvolution::makeCovRobust(NRLib::Vector  mu, NRLib::Matrix sigma, std::vector
   double eps =adjustment_factor;
 
   int nd    = last_component-start_component+1;
-  int n     = sample[0].size();
-  int nFull = sample.size();
+  int n     = static_cast<int>(sample[0].size());
+  int nFull = static_cast<int>(sample.size());
 
   NRLib::Matrix AdjustedSigmaFull(nFull,nFull);
   for(int i=0;i<nFull;i++)

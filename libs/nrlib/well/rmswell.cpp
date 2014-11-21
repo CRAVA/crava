@@ -152,7 +152,7 @@ RMSWell::RMSWell(const std::string& filename)
   }
 
   // Find n_data including WELLMISSING values
-  unsigned int n_data = GetContLog(lognames_[0]).size();
+  int n_data = static_cast<int>(GetContLog(lognames_[0]).size());
 
   this->SetNumberOfData(n_data);
   SetXPos0(xpos0_);
