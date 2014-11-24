@@ -4486,14 +4486,23 @@ bool XmlModelFile::parseMultipleIntervals(TiXmlNode * node, std::string & err_tx
   }
 
   std::sort(erosion_priorities.begin(), erosion_priorities.end());
-  bool priorities_ok = true;
+  bool priorities_unique = true;
+  bool priorities_max    = true;
   for (unsigned int i=1; i<erosion_priorities.size();i++){
     if (erosion_priorities[i-1]>=erosion_priorities[i])
-      priorities_ok = false;
+      priorities_unique = false;
   }
-  if(priorities_ok == false){
+  for (size_t i = 0; i < erosion_priorities.size(); i++) {
+    if (erosion_priorities[i] > (nIntervals+1))
+      priorities_max = false;
+  }
+  if(priorities_unique == false){
     err_txt += "The erosion priorities are not unique in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+". The top-surface has a default priority of 1.\n";
+  }
+  if (priorities_max == false) {
+      err_txt += "The erosion priorities in command <"+root->ValueStr()+"> need to be given executive numbers, \n"
+                "such that the largest number is equal to the number of surfaces in the multiinterval model\n";
   }
 
   checkForJunk(root, err_txt, legalCommands);
