@@ -88,7 +88,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
   }
   else {
-    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in simbox failed.\n");
   }
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());

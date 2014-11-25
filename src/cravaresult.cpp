@@ -235,7 +235,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //WriteCravaGrids(model_settings, common_data, output_simbox, seismic_parameters_intervals[0]);
 
   if (model_settings->getWritePrediction() && !model_settings->getEstimationMode()) {
-    LogKit::LogFormatted(LogKit::Low,"\nCombine Prediction Grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Prediction Grids");
 
     //Post vp, vs and rho from avoinversion computePostMeanResidAndFFTCov()
     post_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -262,8 +262,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
       }
     }
+    LogKit::LogFormatted(LogKit::Low,"\n Vp ");
     CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Vs ");
     CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Rho ");
     CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
 
     //Post vp, vs and rho from avoinversion doPredictionKriging()
@@ -280,24 +283,28 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_vs_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVsKriged();
         post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
       }
+      LogKit::LogFormatted(LogKit::Low,"\n Vp kriged ");
       CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n Vs kriged ");
       CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n Rho kriged ");
       CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, erosion_priorities, dz_output);
     }
-    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
   //Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nCombine Background Model...");
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Background Model");
     background_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
     background_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
+    LogKit::LogFormatted(LogKit::Low,"\n Vp ");
     CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Vs ");
     CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Rho ");
     CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, erosion_priorities, dz_output);
-    LogKit::LogFormatted(LogKit::Low,"ok");
   }
   else { //These background grids are not used later if we are not going to write them to file
     for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
@@ -312,7 +319,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Covariance grids
   if (!model_settings->getForwardModeling()) {
-    LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_rho_       = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -337,17 +344,23 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       //if (!model_settings->getForwardModeling())
       //  seismic_parameters_intervals[i].FFTCovGrids();
     }
+    LogKit::LogFormatted(LogKit::Low,"\n Vp ");
     CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Vs ");
     CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n Rho ");
     CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n VpVs ");
     CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n VpRho ");
     CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"\n VsRho ");
     CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
-    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
   //Facies prob
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Facies prob:");
     int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProb().size());
     facies_prob_.resize(n_facies);
 
@@ -358,6 +371,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
       }
+      LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     }
 
@@ -367,10 +381,12 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
     }
+    LogKit::LogFormatted(LogKit::Low,"\n Undef ");
     CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, erosion_priorities, dz_output);
 
   }
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Facies prob:");
     int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProbGeomodel().size());
     facies_prob_geo_.resize(n_facies);
 
@@ -381,12 +397,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
       }
+      LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     }
   }
 
   //LH Cube
   if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nFacies Likelihood:");
     int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetLHCube().size());
     lh_cubes_.resize(n_facies);
 
@@ -397,13 +415,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
       }
+      LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, erosion_priorities, dz_output);
-
     }
   }
 
   //Quality grid
   if (model_settings->getOutputGridsOther() & IO::SEISMIC_QUALITY_GRID) {
+    LogKit::LogFormatted(LogKit::Low,"\nSeismic Quality Grid: ");
     quality_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     std::vector<FFTGrid *> quality_grid_intervals(n_intervals_);
@@ -415,6 +434,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Simulation grids
   if (model_settings->getNumberOfSimulations() > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nSimulations Grids: ");
     int n_simulations = static_cast<int>(seismic_parameters_intervals[0].GetSimulationsSeed0().size());
     simulations_seed0_.resize(n_simulations);
     simulations_seed1_.resize(n_simulations);
@@ -433,9 +453,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         simulations_seed1_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed1(j);
         simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
       }
-
+      LogKit::LogFormatted(LogKit::Low,"\n seed0 " + NRLib::ToString(j) + " ");
       CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n seed1 " + NRLib::ToString(j) + " ");
       CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n seed2 " + NRLib::ToString(j) + " ");
       CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, erosion_priorities, dz_output);
 
     }
@@ -443,6 +465,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Block grid
   if (model_settings->getWritePrediction() && model_settings->getDebugFlag()) {
+    LogKit::LogFormatted(LogKit::Low,"\nBlock Grid ");
     block_grid_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     std::vector<FFTGrid *> block_grid_intervals(n_intervals_);
@@ -511,6 +534,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Trend Cubes
   if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nTrend Cubes: ");
 
     int n_parameters = static_cast<int>(model_settings->getTrendCubeParameters().size());
     trend_cubes_.resize(n_parameters);
@@ -528,7 +552,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         if (trend_cube != NULL)
           delete trend_cube;
       }
-
+      LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(i) + ": ");
       CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     }
   }
@@ -558,8 +582,15 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
   //If output simbox has the same size as the result grid there is no need to resample
   if (n_intervals_ == 1 && static_cast<int>(final_grid->GetNK()) == multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
     CreateStormGrid(*final_grid, interval_grids[0]);
+    LogKit::LogFormatted(LogKit::Low,"ok");
     return;
   }
+
+  float monitor_size = std::max(1.0f, static_cast<float>(nx*ny)*0.02f);
+  float next_monitor = monitor_size;
+  printf("\n  0%%       20%%       40%%       60%%       80%%      100%%");
+  printf("\n  |    |    |    |    |    |    |    |    |    |    |");
+  printf("\n  ^");
 
   //Resample
   for (int i = 0; i < nx; i++) {
@@ -730,6 +761,13 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
         for (size_t k = 0; k < new_trace_resampled.size(); k++)
           file << new_trace_resampled[k] << " ";
         file.close();
+      }
+
+      // Log progress
+      if (ny*i + j + 1 >= static_cast<int>(next_monitor)) {
+        next_monitor += monitor_size;
+        printf("^");
+        fflush(stdout);
       }
 
     } //ny
@@ -1619,7 +1657,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       //Resample background grids to one final grid
       //We don't have seismicParametersHolder (with FFT-grids), only CommonData (With NRLib-grids)
       //Have to transform from NRLib-Grid to FFTGrid to be used in CombineResult.
-      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
+      LogKit::LogFormatted(LogKit::Low,"\nCombine Background Grids");
       MultiIntervalGrid      * multi_interval_grid = common_data->GetMultipleIntervalGrid();
       const std::vector<int> & erosion_priorities  = multi_interval_grid->GetErosionPriorities();
 
@@ -1628,24 +1666,29 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       int nz = simbox.getnz();
       double dz_output = simbox.getdz();
 
-      background_vp_  = new StormContGrid(simbox, nx, ny, nz);
-      background_vs_  = new StormContGrid(simbox, nx, ny, nz);
-      background_rho_ = new StormContGrid(simbox, nx, ny, nz);
-
       std::vector<FFTGrid *> background_vp_intervals(n_intervals_);
       std::vector<FFTGrid *> background_vs_intervals(n_intervals_);
       std::vector<FFTGrid *> background_rho_intervals(n_intervals_);
 
       for (int i = 0; i < n_intervals_; i++) {
         background_vp_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[0], nx, ny, nz);
+        common_data->ReleaseBackgroundGrids(i, 0);
         background_vs_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[1], nx, ny, nz);
+        common_data->ReleaseBackgroundGrids(i, 1);
         background_rho_intervals[i] = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[2], nx, ny, nz);
+        common_data->ReleaseBackgroundGrids(i, 2);
       }
 
+      background_vp_  = new StormContGrid(simbox, nx, ny, nz);
+      background_vs_  = new StormContGrid(simbox, nx, ny, nz);
+      background_rho_ = new StormContGrid(simbox, nx, ny, nz);
+
+      LogKit::LogFormatted(LogKit::Low,"\n Vp");
       CombineResult(background_vp_,  background_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n Vs");
       CombineResult(background_vs_,  background_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      LogKit::LogFormatted(LogKit::Low,"\n Rho");
       CombineResult(background_rho_, background_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
-      LogKit::LogFormatted(LogKit::Low,"Ok");
 
     }
     else {
@@ -1653,6 +1696,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       background_vp_  = new NRLib::StormContGrid(simbox, *(bg[0]));
       background_vs_  = new NRLib::StormContGrid(simbox, *(bg[1]));
       background_rho_ = new NRLib::StormContGrid(simbox, *(bg[2]));
+
+      common_data->ReleaseBackgroundGrids(0, 0);
+      common_data->ReleaseBackgroundGrids(0, 1);
+      common_data->ReleaseBackgroundGrids(0, 2);
     }
 
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
