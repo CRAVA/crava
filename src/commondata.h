@@ -111,25 +111,66 @@ public:
   Grid2D                                                             * GetGainGrid(int timelapse, int angle)            const { return gain_grids_[timelapse][angle]                  ;}
   Grid2D                                                             * GetShiftGrid(int timelapse, int angle)           const { return shift_grids_[timelapse][angle]                 ;}
 
-  static void         ResampleTrace(const std::vector<float> & data_trace,
+  template<typename T>
+  static void         ResampleTrace(const std::vector<T>     & data_trace,
                                     const rfftwnd_plan       & fftplan1,
                                     const rfftwnd_plan       & fftplan2,
                                     fftw_real                * rAmpData,
                                     fftw_real                * rAmpFine,
+                                    int                        nt,
                                     int                        cnt,
                                     int                        rnt,
                                     int                        cmt,
-                                    int                        rmt);
+                                    int                        rmt)
+{
+  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
+  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
 
-  static void        ResampleTrace(const std::vector<double> & data_trace,
-                                   const rfftwnd_plan        & fftplan1,
-                                   const rfftwnd_plan        & fftplan2,
-                                   fftw_real                 * rAmpData,
-                                   fftw_real                 * rAmpFine,
-                                   int                         cnt,
-                                   int                         rnt,
-                                   int                         cmt,
-                                   int                         rmt);
+  //
+  // Fill vector to be FFT'ed
+  //
+  int n_data = static_cast<int>(data_trace.size());
+
+  for (int i = 0; i < n_data; i++) {
+    rAmpData[i] = data_trace[i];
+  }
+  // Pad with zeros
+  for (int i = n_data; i < rnt; i++) {
+    rAmpData[i] = 0.0f;
+  }
+
+  //
+  // Transform to Fourier domain
+  //
+  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
+
+  //
+  // Fill fine-sampled grid
+  //
+  for (int i = 0; i < cnt; i++) {
+    cAmpFine[i].re = cAmpData[i].re;
+    cAmpFine[i].im = cAmpData[i].im;
+  }
+  // Pad with zeros (cmt is always greater than cnt)
+  for (int i = cnt; i < cmt; i++) {
+    cAmpFine[i].re = 0.0f;
+    cAmpFine[i].im = 0.0f;
+  }
+
+  //
+  // Fine-sampled grid: Fourier --> Time
+  //
+  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
+
+  //
+  // Scale and fill grid_trace
+  //
+  float scale = 1/static_cast<float>(nt);
+  for (int i = 0; i < rmt; i++) {
+    rAmpFine[i] = scale*rAmpFine[i];
+  }
+}
+
 
   static FFTGrid *   CreateFFTGrid(int nx,
                                    int ny,
@@ -198,6 +239,8 @@ public:
                                                    std::string            & err_text);
 
   static int                FindClosestFactorableNumber(int leastint);
+
+
 
 private:
 

@@ -2,11 +2,12 @@
 *      Copyright (C) 2008 by Norwegian Computing Center and Statoil        *
 ***************************************************************************/
 
+#include "nrlib/grid/grid.hpp"
+#include "nrlib/random/beta.hpp"
 
 #include "src/multiintervalgrid.h"
 #include "src/definitions.h"
 #include "src/simbox.h"
-#include "nrlib/grid/grid.hpp"
 
 MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      InputFiles     * input_files,
@@ -22,9 +23,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   relative_grid_resolution_.resize(n_intervals_);
   erosion_priorities_.resize(n_intervals_+1);
   int n_surfaces                                                  = n_intervals_ + 1;
-  std::vector<Surface>    eroded_surfaces(n_surfaces);
+  eroded_surfaces_.resize(n_surfaces);
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
+  const std::map<std::string, double> uncertainty_base_surfaces   = model_settings->getUncertaintyBaseSurfaces();
   dz_min_                                                         = 10000;
 
   if (model_settings->GetMultipleIntervalSetting() == false) {
@@ -35,6 +37,8 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     LogKit::WriteHeader("Setting up multiple interval grid");
     multiple_interval_setting_ = true;
   }
+
+  uncertainties_.resize(n_intervals_+1); //Two more than needed, but now follows erosion priorities.
 
   std::vector<Surface>    surfaces(n_intervals_+1);                 //Store surfaces.
 
@@ -52,15 +56,23 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
     if (multiple_interval_setting_) {
       top_surface_file_name_temp = input_files->getTimeSurfTopFile();
       erosion_priorities_[0] = erosion_priority_top_surface;
+      uncertainties_[0] = 0;
 
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
       surfaces[0] = *top_surface;
-
       for (int i = 0; i < n_intervals_; i++) {
 
         std::string interval_name = model_settings->getIntervalName(i);
         base_surface_file_name_temp = input_files->getBaseTimeSurface(interval_name);
         erosion_priorities_[i+1] = erosion_priority_base_surfaces.find(interval_name)->second;
+
+        double uncty = 0.001;
+        std::map<std::string, double>::const_iterator it = uncertainty_base_surfaces.find(interval_name);
+        if(it != uncertainty_base_surfaces.end())
+          uncty = it->second;
+        uncertainties_[i+1] = uncty;
+        if(i == n_intervals_-1 && uncertainties_[i+1] > 0.001)
+          LogKit::LogMessage(LogKit::Warning,"Warning: Uncertainty on last base surface is ignored.\n\n");
 
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         surfaces[i+1] =  *base_surface;
@@ -73,7 +85,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                                      model_settings->getTimeNz(interval_names_[i]));
         }
 
-        ErodeAllSurfaces(eroded_surfaces,
+        ErodeAllSurfaces(eroded_surfaces_,
                          erosion_priorities_,
                          surfaces,
                          *estimation_simbox,
@@ -89,22 +101,22 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
-        eroded_surfaces[0] = *top_surface;
+        eroded_surfaces_[0] = *top_surface;
 
         base_surface_file_name_temp = input_files->getBaseTimeSurface("");
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
-        eroded_surfaces[1] = *base_surface;
+        eroded_surfaces_[1] = *base_surface;
 
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
-        eroded_surfaces[0] = *top_surface;
+        eroded_surfaces_[0] = *top_surface;
 
         base_surface = new Surface(*top_surface);
         double lz = model_settings->getTimeLz();
         base_surface->Add(lz);
-        eroded_surfaces[1] = *base_surface;
+        eroded_surfaces_[1] = *base_surface;
 
         double dz = model_settings->getTimeDz();
         if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
@@ -133,7 +145,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         SetupIntervalSimboxes(model_settings,
                               estimation_simbox,
                               interval_names_,
-                              eroded_surfaces,
+                              eroded_surfaces_,
                               interval_simboxes_,
                               input_files->getCorrDirFiles(),
                               input_files->getCorrDirTopSurfaceFiles(),
@@ -765,3 +777,83 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
 
   return maximum_dz;
 }
+
+void
+MultiIntervalGrid::FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid)
+{
+  size_t n_surf = eroded_surfaces_.size();
+  std::vector<NRLib::Beta> uc_dist(n_surf-2); //Top and base are certain. Shifted 1 compared to surf.
+
+  for(size_t i=0;i<n_surf-2;i++) {
+    uc_dist[i] = NRLib::Beta(-uncertainties_[i+1],uncertainties_[i+1],2,2);
+  }
+
+  std::vector<double> prob_zone(n_surf-1); //All zones
+  std::vector<double> rel_z(n_surf-1);     //Dummy for first surface, lacking for last.
+
+  for(size_t i=0; i<zone_prob_grid[0].GetNI();i++) {
+    for(size_t j=0; j<zone_prob_grid[0].GetNJ();j++) {
+      for(size_t k=0; k<zone_prob_grid[0].GetNK();k++) {
+        double x,y,z;
+        zone_prob_grid[0].FindCenterOfCell(i, j, k, x, y, z);
+        for(size_t s=1;s<n_surf-1;s++)
+          rel_z[s] = z-eroded_surfaces_[s].GetZ(x,y);
+        ComputeZoneProbability(rel_z, uc_dist, erosion_priorities_, prob_zone);
+        for(size_t s=0;s<prob_zone.size();s++)
+          zone_prob_grid[s](i,j,k) = prob_zone[s];
+      }
+    }
+  }
+}
+
+void
+MultiIntervalGrid::ComputeZoneProbability(const std::vector<double>      & z,
+                                          const std::vector<NRLib::Beta> & horizon_distributions,
+                                          const std::vector<int>         & erosion_priority,
+                                          std::vector<double>            & zone_probability) const
+{
+
+  int n_zones = static_cast<int>(zone_probability.size());
+
+  std::vector<double> horizon_cdf(n_zones+1, 0);
+  horizon_cdf[0]       = 1;      //The upper surface has cdf 1, whereas the lower surface has cdf 0
+  horizon_cdf[n_zones] = 0;
+
+  for(int i=1; i<n_zones; i++)
+    horizon_cdf[i] = horizon_distributions[i-1].Cdf(z[i]);
+
+  for(int zone=0; zone<n_zones; zone++) {
+    //Initialize with probability that we are below top surface for zone
+    double prob = horizon_cdf[zone];
+
+    //Multiply with probability that we are above base surface for zone
+    prob *= (1-horizon_cdf[zone+1]);
+
+    //We may be eroded from above. Must consider the surfaces that
+    //1. Are above top in the standard sequence.
+    //2. Have lower erosion priority number than the top.
+    //3. Have no horizons with lower erosion priority number between it and top.
+    int min_erosion = erosion_priority[zone];
+    for(int prev_hor = zone-1; prev_hor >=0; prev_hor--) {
+      if(erosion_priority[prev_hor] < min_erosion) {
+        prob        *= horizon_cdf[prev_hor];
+        min_erosion  = erosion_priority[prev_hor]; //Those with higher number stop in this
+      }
+    }
+
+    //We may be eroded from below. Must consider the surfaces that
+    //1. Are below base in the standard sequence.
+    //2. Have lower erosion priority number than the base.
+    //3. Have no horizons with lower erosion priority number between it and base.
+    min_erosion = erosion_priority[zone+1];
+    for(int late_hor = zone+2; late_hor < n_zones+1; late_hor++) {
+      if(erosion_priority[late_hor] < min_erosion) {
+        prob        *= (1-horizon_cdf[late_hor]);
+        min_erosion  = erosion_priority[late_hor]; //Those with higher number stop in this
+      }
+    }
+
+    zone_probability[zone] = prob;
+  }
+}
+

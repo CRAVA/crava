@@ -214,12 +214,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   MultiIntervalGrid * multi_interval_grid     = common_data->GetMultipleIntervalGrid();
   Simbox & output_simbox                      = common_data->GetOutputSimbox();
   n_intervals_                                = multi_interval_grid->GetNIntervals();
-  const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
 
   int nx           = output_simbox.getnx();
   int ny           = output_simbox.getny();
   int nz_output    = output_simbox.getnz();
-  double dz_output = output_simbox.getdz();
 
   LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
@@ -233,6 +231,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //Output on CRAVA-format requires padding and is only used with single zone. Since they already are on fft-format with padding, we write them out here
   //before they are transformed to storm-grids and deleted.
   //WriteCravaGrids(model_settings, common_data, output_simbox, seismic_parameters_intervals[0]);
+
+  std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
+  for(size_t i=0; i<zone_prob_grid.size();i++)
+    zone_prob_grid[i] = NRLib::StormContGrid(output_simbox, nx, ny, nz_output);
+  multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
 
   if (model_settings->getWritePrediction() && !model_settings->getEstimationMode()) {
     LogKit::LogFormatted(LogKit::Low,"\nCombine Prediction Grids...");
@@ -262,9 +265,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
       }
     }
-    CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, zone_prob_grid);
+    CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, zone_prob_grid);
+    CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, zone_prob_grid);
 
     //Post vp, vs and rho from avoinversion doPredictionKriging()
     if (model_settings->getKrigingParameter() > 0) {
@@ -280,9 +283,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_vs_kriged_intervals[i]  = seismic_parameters_intervals[i].GetPostVsKriged();
         post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
       }
-      CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, zone_prob_grid);
+      CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, zone_prob_grid);
+      CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, zone_prob_grid);
     }
     LogKit::LogFormatted(LogKit::Low,"ok");
   }
@@ -294,9 +297,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
-    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid);
+    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid);
+    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid);
     LogKit::LogFormatted(LogKit::Low,"ok");
   }
   else { //These background grids are not used later if we are not going to write them to file
@@ -336,12 +339,12 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       //if (!model_settings->getForwardModeling())
       //  seismic_parameters_intervals[i].FFTCovGrids();
     }
-    CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
-    CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, zone_prob_grid);
+    CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, zone_prob_grid);
+    CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, zone_prob_grid);
+    CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, zone_prob_grid);
+    CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, zone_prob_grid);
+    CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, zone_prob_grid);
   }
 
   //Facies prob
@@ -356,7 +359,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
       }
-      CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid);
     }
 
     //Undef
@@ -365,7 +368,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
     }
-    CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, zone_prob_grid);
 
   }
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
@@ -379,7 +382,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
       }
-      CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid);
     }
   }
 
@@ -395,7 +398,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int i = 0; i < n_intervals_; i++) {
         lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
       }
-      CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, zone_prob_grid);
 
     }
   }
@@ -408,7 +411,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       quality_grid_intervals[i] = seismic_parameters_intervals[i].GetQualityGrid();
     }
-    CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, zone_prob_grid);
   }
 
   //Simulation grids
@@ -432,9 +435,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
       }
 
-      CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, zone_prob_grid);
+      CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, zone_prob_grid);
+      CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, zone_prob_grid);
 
     }
   }
@@ -447,7 +450,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       block_grid_intervals[i] = seismic_parameters_intervals[i].GetBlockGrid();
     }
-    CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, zone_prob_grid);
   }
 
   //Correlations and post variances
@@ -526,7 +529,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
           delete trend_cube;
       }
 
-      CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, erosion_priorities, dz_output);
+      CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, zone_prob_grid);
     }
   }
 
@@ -538,19 +541,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
 }
 
-void CravaResult::CombineResult(StormContGrid         *& final_grid,
-                                std::vector<FFTGrid *> & interval_grids,
-                                MultiIntervalGrid      * multi_interval_grid,
-                                const std::vector<int> & erosion_priorities,
-                                double                   dz_min,
-                                bool                     smooth)
+void CravaResult::CombineResult(StormContGrid                    *& final_grid,
+                                std::vector<FFTGrid *>            & interval_grids,
+                                MultiIntervalGrid                 * multi_interval_grid,
+                                const std::vector<StormContGrid>  & zone_probability)
 {
   int nx = final_grid->GetNI();
   int ny = final_grid->GetNJ();
   int nz = final_grid->GetNK();
-
-  bool writing  = false; //debugging
-  float res_fac = 10.0; //Degree of refinement, must be integer.
 
   //If output simbox has the same size as the result grid there is no need to resample
   if (n_intervals_ == 1 && static_cast<int>(final_grid->GetNK()) == multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
@@ -562,7 +560,7 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-      std::vector<std::vector<float> > new_traces(n_intervals_);
+      std::vector<std::vector<float> > new_traces(n_intervals_); //Finely interpolated values
 
       //Resample each trace to new nz
       for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
@@ -572,163 +570,42 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
 
         std::vector<float> old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
 
-        double top_value = interval_simbox->getTop(i,j);
-        double bot_value = interval_simbox->getBot(i,j);
         int nz_old       = interval_simbox->getnz();
 
-        //Resample to new nz based on minimum dz from all traces and intervals
-        int nz_new = static_cast<int>( ((bot_value - top_value) / dz_min) * res_fac);
+        int scale = 10; //How densely to sample "fine" values.
+        new_traces[i_interval].resize(nz_old*scale);
 
-        new_traces[i_interval].resize(nz_new);
-
-        //H-Debugging
-        if (writing) {
-          std::string file_name = "combine/old_trace";
-          std::ofstream file;
-          NRLib::OpenWrite(file, file_name);
-          file << std::fixed
-                << std::setprecision(6);
-          for (size_t k = 0; k < old_trace.size(); k++)
-            file << old_trace[k] << " ";
-          file.close();
-        }
-
-        //Resampling of traces from CommonData::FillInData
-        //Remove trend -> fft -> pad with zeroes -> resample -> ifft -> add trend
-
-        //Remove trend from trace
-        size_t n_trace    = old_trace.size();
-        float trend_first = old_trace[0];
-        float trend_last  = old_trace[n_trace - 1];
-        float trend_inc   = (trend_last - trend_first) / (n_trace - 1);
-        for (size_t k_trace = 0; k_trace < old_trace.size(); k_trace++) {
-          old_trace[k_trace] -= trend_first + k_trace * trend_inc;
-        }
-
-        //int nt = CommonData::FindClosestFactorableNumber(nz_old);
-        int nt = nz_old;
-        int mt = nz_new;
-
-        rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-        rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-
-        int cnt = nt/2 + 1;
-        int rnt = 2*cnt;
-        int cmt = mt/2 + 1;
-        int rmt = 2*cmt;
-
-        fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
-        fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
-
-        CommonData::ResampleTrace(old_trace,
-                                  fftplan1,
-                                  fftplan2,
-                                  rAmpData,
-                                  rAmpFine,
-                                  cnt,
-                                  rnt,
-                                  cmt,
-                                  rmt);
-
-        //Add trend
-        trend_inc = (trend_last - trend_first) / (res_fac * (nz_old - 1));
-        for (int k = 0; k < nz_new; k++) {
-          new_traces[i_interval][k] = rAmpFine[k] + (trend_first + k*trend_inc);
-        }
-
-        fftw_free(rAmpData);
-        fftw_free(rAmpFine);
-        fftwnd_destroy_plan(fftplan1);
-        fftwnd_destroy_plan(fftplan2);
-
-        //H-Debugging
-        if (writing) {
-          std::string file_name = "combine/new_trace_resampled_long";
-          std::ofstream file;
-          NRLib::OpenWrite(file, file_name);
-          file << std::fixed
-                << std::setprecision(6);
-          for (size_t k = 0; k < new_traces[i_interval].size(); k++)
-            file << new_traces[i_interval][k] << " ";
-          file.close();
-        }
+        DownscaleTrace(old_trace, new_traces[i_interval], scale);
 
       } //n_intervals
 
-      std::vector<float> tmp_trace(nz);
-      std::vector<int>   interval_indexes(nz);
+
       //Combine vectors for each interval to one trace in stormgrid
       for (int k = 0; k < nz; k++) {
-
-        bool two_intervals = false;
-
         double global_x = 0.0;
         double global_y = 0.0;
         double global_z = 0.0;
 
+        double value = 0;
         final_grid->FindCenterOfCell(i, j, k, global_x, global_y, global_z);
-        double dz_final = (final_grid->GetBotSurface().GetZ(global_x, global_y) - final_grid->GetTopSurface().GetZ(global_x, global_y)) / final_grid->GetNK();
+        for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
+          if(zone_probability[i_interval](i,j,k) > 0) {
+            Simbox * z_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+            double dummy1, dummy2, rel_index;
+            z_simbox->getInterpolationIndexes(global_x, global_y, global_z, dummy1, dummy2, rel_index);
+            rel_index -= 0.5; //First half grid cell is outside interpolation vector.
+            rel_index /= static_cast<double>(z_simbox->getnz()-1);
+            if(rel_index < 0)
+              rel_index = 0;
+            else if(rel_index > 1)
+              rel_index = 1;
 
-        int i_interval = 0;
-        for (i_interval = 0; i_interval < n_intervals_; i_interval++) {
-          Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
-
-          if (interval_simbox->IsInside(global_x, global_y, global_z))
-            break;
+            int index = static_cast<int>(floor(0.5+rel_index*(new_traces[i_interval].size()-1))); //0 to first item, 1 to last item.
+            value += zone_probability[i_interval](i,j,k)*new_traces[i_interval][index];
+          }
         }
-        if (i_interval < (n_intervals_-1)) { //Also check if it hits the next interval, unless it is the last one.
-          Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval+1);
-
-          if (interval_simbox->IsInside(global_x, global_y, global_z))
-            two_intervals = true;
-        }
-
-        float value         = 0.0f;
-        double dz_resampled = dz_min / res_fac;
-        int interval_index  = i_interval;
-
-        if (two_intervals == true) {
-          //Use erorsion priorities to select between the two intervals
-          if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
-            interval_index = i_interval;
-          else
-            interval_index = i_interval+1;
-        }
-        double top = multi_interval_grid->GetIntervalSimbox(i_interval)->getTop(global_x, global_y);
-        value      = GetResampledTraceValue(new_traces[i_interval], dz_resampled, top, global_z, dz_final);
-        interval_indexes[k] = interval_index;
-
-        if (smooth == true && n_intervals_ > 1)
-          tmp_trace[k] = value;
-        else
-          final_grid->SetValue(i, j, k, value);
+        (*final_grid)(i,j,k) = value;
       }
-
-      if (smooth == true && n_intervals_ > 1) {
-        //SmoothTraceIntervals(tmp_trace, interval_indexes, dz_min); //H-TODO CRA-735
-
-        for (int k = 0; k < nz; k++)
-          final_grid->SetValue(i, j, k, tmp_trace[k]);
-      }
-
-      //H-DEBUGGING
-      if (writing) {
-        std::vector<float> new_trace_resampled(nz);
-
-        for (int k = 0; k < nz; k++) {
-          new_trace_resampled[k] = final_grid->GetValue(i, j, k);
-        }
-
-        std::string file_name = "combine/new_trace_resampled";
-        std::ofstream file;
-        NRLib::OpenWrite(file, file_name);
-        file << std::fixed
-              << std::setprecision(6);
-        for (size_t k = 0; k < new_trace_resampled.size(); k++)
-          file << new_trace_resampled[k] << " ";
-        file.close();
-      }
-
     } //ny
   } //nx
 
@@ -1090,6 +967,7 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
                             fftplan2,
                             rAmpData,
                             rAmpFine,
+                            nt,
                             cnt,
                             rnt,
                             cmt,
@@ -1619,12 +1497,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       //Have to transform from NRLib-Grid to FFTGrid to be used in CombineResult.
       LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
       MultiIntervalGrid      * multi_interval_grid = common_data->GetMultipleIntervalGrid();
-      const std::vector<int> & erosion_priorities  = multi_interval_grid->GetErosionPriorities();
 
       int nx = simbox.getnx();
       int ny = simbox.getny();
       int nz = simbox.getnz();
-      double dz_output = simbox.getdz();
 
       background_vp_  = new StormContGrid(simbox, nx, ny, nz);
       background_vs_  = new StormContGrid(simbox, nx, ny, nz);
@@ -1640,9 +1516,15 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
         background_rho_intervals[i] = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[2], nx, ny, nz);
       }
 
-      CombineResult(background_vp_,  background_vp_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(background_vs_,  background_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
-      CombineResult(background_rho_, background_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+      std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
+      for(size_t i=0; i<zone_prob_grid.size();i++)
+        zone_prob_grid[i] = NRLib::StormContGrid(simbox, nx, ny, nz);
+      multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
+
+
+      CombineResult(background_vp_,  background_vp_intervals,  multi_interval_grid, zone_prob_grid);
+      CombineResult(background_vs_,  background_vs_intervals,  multi_interval_grid, zone_prob_grid);
+      CombineResult(background_rho_, background_rho_intervals, multi_interval_grid, zone_prob_grid);
       LogKit::LogFormatted(LogKit::Low,"Ok");
 
     }
@@ -2178,56 +2060,56 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   }
 }
 
-void CravaResult::SmoothTraceIntervals(std::vector<float>     & trace,
-                                       const std::vector<int> & intervals,
-                                       double                   dz) const
+ void
+ CravaResult::DownscaleTrace(const std::vector<float> & trace_in,
+                             std::vector<float>       & trace_out,
+                             int                         scale)
 {
-  /*
-  //Only smooth between intervals
-  int n_intervals = 0;
-  std::vector<int> interval_changes;
-  for (size_t i = 1; i < trace.size(); i++) {
-    if (intervals[i] != intervals[i-1]) {
-      n_intervals++;
-      interval_changes.push_back(i);
-    }
+  std::vector<float> input_pad = trace_in;
+  size_t pad = 101; //Want odd length vector in fft, better for interpolation.
+  if(trace_in.size() % 2 == 1)
+    pad = 100;
+  size_t n_data = trace_in.size();
+  input_pad.resize(n_data+pad);
+  double step = 1.0/static_cast<float>(pad);
+  for(size_t i=n_data; i<input_pad.size();i++) {
+    double t = (i-trace_in.size())*step;
+    input_pad[i] = static_cast<float>((1-t)*trace_in[n_data-1]+t*trace_in[0]);
   }
 
-  for (int i_interval = 0; i_interval < n_intervals; i_interval++) {
-    double sigma = 10 / dz;
-    int L = 6; //??
-    //int smoothing_width = 8;
+  int nt = static_cast<int>(input_pad.size());
+  int mt = nt*scale;
+  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
-    int start = interval_changes[i_interval] - L;
-    int end   = interval_changes[i_interval] + L;
-    //int start = interval_changes[i_interval] - smoothing_width;
-    //int end   = interval_changes[i_interval] + smoothing_width - 1;
+  int cnt = nt/2 + 1;
+  int rnt = 2*cnt;
+  int cmt = mt/2 + 1;
+  int rmt = 2*cmt;
 
-    std::vector<float> smooth_index(2*L+1);
-    float tmp;
-    for (int j = -L; j <= L; j++) {
-      tmp = static_cast<float>((j*j)/(2*sigma*sigma));
-      smooth_index[j+L] = exp(-tmp);
-    }
+  fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
+  fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-    std::vector<float> s_trace(trace.size());
+  CommonData::ResampleTrace(input_pad,
+                            fftplan1,
+                            fftplan2,
+                            rAmpData,
+                            rAmpFine,
+                            nt,
+                            cnt,
+                            rnt,
+                            cmt,
+                            rmt);
 
-    float N;
-    //for (i = start; i <= end; i++) {
-    for (int i = 0; i <= static_cast<int>(trace.size()); i++) {
-      N = 0;
-      for (int j = -L; j <= L; j++) {
-        //if (i+j >= start && i+j < end) {
-        if (i+j >= 0 && i+j < static_cast<int>(trace.size())) {
-          s_trace[i] += smooth_index[j+L]*trace[i+j];
-          N += smooth_index[j+L];
-        }
-      }
-     s_trace[i] /= N;
-    }
-
-    for (int i = start; i <= end; i++)
-      trace[i] = s_trace[i];
+  //Add trend
+  size_t out_len = trace_in.size()*scale-(scale-1); //Points beyond this are contaminated by padding.
+  trace_out.resize(out_len);
+  for (size_t k = 0; k < out_len; k++) {
+    trace_out[k] = rAmpFine[k];
   }
-  */
+
+  fftw_free(rAmpData);
+  fftw_free(rAmpFine);
+  fftwnd_destroy_plan(fftplan1);
+  fftwnd_destroy_plan(fftplan2);
 }
