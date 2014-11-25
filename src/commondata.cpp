@@ -118,7 +118,7 @@ CommonData::CommonData(ModelSettings * model_settings,
       optimize_well_location_ = true;
 
     //Block wells for inversion purposes, ok now that moving of wells is done.
-    if (read_wells_ == true)
+    if (read_wells_ == true && setup_multigrid_ == true)
       inversion_wells_ = this->BlockLogsForInversion(model_settings, multiple_interval_grid_, wells_, continuous_logs_to_be_blocked_,
                                                      discrete_logs_to_be_blocked_, mapped_blocked_logs_intervals_, err_text);
 
@@ -149,7 +149,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // 11. Setup of prior facies probabilities
     if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
-        if (read_wells_)
+        if (read_wells_ && inversion_wells_)
           setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
                                                                    facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
       }
@@ -161,7 +161,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // 12. Setup of background model
     if (setup_multigrid_ && setup_estimation_rock_physics_) {
       if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
-        if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_)
+        if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_ && inversion_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_,
                                                          multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
         else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
@@ -4705,12 +4705,22 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
                                   std::string                                                & err_text_common) const
 {
   // Block logs to each interval simbox
-  LogKit::WriteHeader("Blocking wells for intervals");
+  int n_intervals = multiple_interval_grid->GetNIntervals();
+
+  if (n_intervals > 1)
+    LogKit::WriteHeader("Blocking wells for intervals");
+  else
+    LogKit::WriteHeader("Blocking wells for inversion");
   std::string err_text;
   try {
-    LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
+    if (n_intervals > 1)
+      LogKit::LogFormatted(LogKit::Low,"\nBlocking wells in each interval simbox:\n");
     for (int i = 0; i < multiple_interval_grid->GetNIntervals(); i++) {
       std::map<std::string, BlockedLogsCommon *> blocked_log_interval;
+
+      std::string interval_name = multiple_interval_grid->GetIntervalName(i);
+      if (interval_name != "")
+        LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
 
       for (size_t j = 0; j < wells.size(); j++) {
         blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j]->GetWellName(),
@@ -7282,7 +7292,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           background_parameters[i][j] = new NRLib::Grid<float>();
 
         //Create background
-        Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, err_text);
+        Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
 
         //These logs are written out in CravaResult if multiple interval isn't used
         if (n_intervals == 1)
