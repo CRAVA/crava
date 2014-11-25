@@ -35,6 +35,7 @@ public:
              const std::map<std::string, BlockedLogsCommon *> & bl,
              const std::map<std::string, BlockedLogsCommon *> & bg_bl,
              const ModelSettings                              * modelSettings,
+             const std::string                                & interval_name,
              std::string                                      & err_text);
 
   Background(FFTGrid ** grids);
@@ -49,6 +50,7 @@ private:
                                        const Simbox                                     * simbox,
                                        const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                                        const ModelSettings                              * model_settings,
+                                       const std::string                                & interval_name,
                                        std::string                                      & err_text);
 
   void         ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
@@ -94,12 +96,14 @@ private:
                                  bool                  write1D,
                                  bool                  write3D,
                                  bool                  hasVelocityTrend,
-                                 const std::string &   name,
-                                 bool                  isFile);
+                                 const std::string   & name,
+                                 bool                  isFile,
+                                 const std::string   & interval_name);
 
-  const CovGrid2D & MakeCovGrid2D(const Simbox * simbox,
-                                  Vario        * vario,
-                                  int            debugFlag);
+  const CovGrid2D & MakeCovGrid2D(const Simbox      * simbox,
+                                  Vario             * vario,
+                                  int                 debugFlag,
+                                  const std::string & interval_name);
 
   void         SetupKrigingData2D(std::vector<KrigingData2D>                 & kriging_data_vp,
                                   std::vector<KrigingData2D>                 & kriging_data_vs,
@@ -120,7 +124,8 @@ private:
                                   const std::vector<std::vector<double> >    & vt_rho,
                                   const std::vector<const std::vector<int> *>  ipos,
                                   const std::vector<const std::vector<int> *>  jpos,
-                                  const std::vector<const std::vector<int> *>  kpos) const;
+                                  const std::vector<const std::vector<int> *>  kpos,
+                                  const std::string                          & interval_name) const;
 
   void         MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
                                     NRLib::Grid<float>               * bg_grid,
@@ -156,7 +161,8 @@ private:
   void         WriteVerticalTrend(std::vector<double> & trend,
                                   float                 dz,
                                   int                   nz,
-                                  std::string           name);
+                                  std::string           name,
+                                  const std::string   & interval_name);
 
   void         CalculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & wellTrend,
                                                    const std::vector<double>         & trend,
