@@ -9844,7 +9844,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
 
       std::string buffer = "";
       if (interval_names[i] != "") {
-        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+        LogKit::LogFormatted(LogKit::Low,"\n  Interval " + interval_names[i] + ":\n");
         buffer = "  ";
       }
 
@@ -9857,13 +9857,13 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                         : %10d\n", model_settings->getTimeNz(interval_names[i]));
     }
 
-    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
+    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax        : %10.2f\n", model_settings->getLzLimit());
   }
   for (size_t i = 0; i < n_intervals; i++) {
 
     std::string buffer = "";
     if (interval_names[i] != "") {
-      LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+      LogKit::LogFormatted(LogKit::Low,"\n  Interval " + interval_names[i] + ":");
       buffer = "  ";
     }
 
@@ -9872,11 +9872,13 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     if (input_files->getCorrDirTopSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirTopSurfaceFiles().end())
       LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
     if (model_settings->getCorrDirTopConforms().find(interval_names[i]) != model_settings->getCorrDirTopConforms().end())
-      LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top conform \n");
+      if (model_settings->getCorrDirTopConform(interval_names[i]) == true)
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top conform \n");
     if (input_files->getCorrDirBaseSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirBaseSurfaceFiles().end())
       LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
     if (model_settings->getCorrDirBaseConforms().find(interval_names[i]) != model_settings->getCorrDirBaseConforms().end())
-      LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base conform \n");
+      if (model_settings->getCorrDirBaseConform(interval_names[i]) == true)
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base conform \n");
   }
 
   if (model_settings->getDoDepthConversion())
@@ -9909,10 +9911,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   }
 
   if (n_intervals > 1) {
-    LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n", model_settings->getErosionPriorityTopSurface());
+    LogKit::LogFormatted(LogKit::Low,"\n    Top surface erosion priority           : %10d\n", model_settings->getErosionPriorityTopSurface());
 
     for (size_t i = 0; i < n_intervals; i++) {
-       LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority for interval " + interval_names[i] +": "+ NRLib::ToString(model_settings->getErosionPriorityBaseSurface(interval_names[i])));
+       LogKit::LogFormatted(LogKit::Low,"    Base surface erosion priority for interval " + interval_names[i] +": "+ NRLib::ToString(model_settings->getErosionPriorityBaseSurface(interval_names[i])) + "\n");
     }
   }
 
