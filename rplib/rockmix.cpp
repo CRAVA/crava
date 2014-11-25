@@ -252,17 +252,17 @@ RockMixOfSolidAndFluid::SetPorosity(double porosity)
   size_t n_fluid = volume_fraction_fluid_.size();
   size_t n_solid = volume_fraction_solid_.size();
 
-  double poro_old = 0;
+  double poro_old = 0.0;
   for(size_t i=0; i<n_fluid; i++)
     poro_old += volume_fraction_fluid_[i];
 
-  double sum = 0;
+  double sum = 0.0;
   for(size_t i=0; i<n_fluid; i++) {
     volume_fraction_fluid_[i] = porosity * volume_fraction_fluid_[i] / poro_old;
     sum += volume_fraction_fluid_[i];
   }
 
-  double solid_fraction = 0;
+  double solid_fraction = 0.0;
   for(size_t i=0; i<n_solid; i++)
     solid_fraction += volume_fraction_solid_[i];
 
@@ -271,7 +271,7 @@ RockMixOfSolidAndFluid::SetPorosity(double porosity)
     sum += volume_fraction_solid_[i];
   }
 
-  volume_fraction_solid_[n_solid-1] = 1-sum; // To avoid numerical unstability
+  volume_fraction_solid_[n_solid-1] = 1.0-sum; // To avoid numerical unstability
 
   ComputeSeismicVariables();
 

@@ -208,7 +208,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   // Results in seismic_parameters are stored as fftgrid
   //CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
 
-  //H-TODO: CombineResult is not done
+  //H-TODO (CRA-735): CombineResult is not done
   //  There is no smoothing between intervals
 
   MultiIntervalGrid * multi_interval_grid     = common_data->GetMultipleIntervalGrid();
@@ -312,6 +312,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Covariance grids
   if (!model_settings->getForwardModeling()) {
+    LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids...");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_rho_       = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -342,11 +343,12 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
     CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, erosion_priorities, dz_output);
+    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
   //Facies prob
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB_WITH_UNDEF) {
-    int n_facies = seismic_parameters_intervals[0].GetFaciesProb().size();
+    int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProb().size());
     facies_prob_.resize(n_facies);
 
     for (int j = 0; j < n_facies; j++) {
@@ -369,7 +371,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   }
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
-    int n_facies = seismic_parameters_intervals[0].GetFaciesProbGeomodel().size();
+    int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProbGeomodel().size());
     facies_prob_geo_.resize(n_facies);
 
     for (int j = 0; j < n_facies; j++) {
@@ -385,7 +387,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //LH Cube
   if ((model_settings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
-    int n_facies = seismic_parameters_intervals[0].GetLHCube().size();
+    int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetLHCube().size());
     lh_cubes_.resize(n_facies);
 
     for (int j = 0; j < n_facies; j++) {
@@ -413,7 +415,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //Simulation grids
   if (model_settings->getNumberOfSimulations() > 0) {
-    int n_simulations = seismic_parameters_intervals[0].GetSimulationsSeed0().size();
+    int n_simulations = static_cast<int>(seismic_parameters_intervals[0].GetSimulationsSeed0().size());
     simulations_seed0_.resize(n_simulations);
     simulations_seed1_.resize(n_simulations);
     simulations_seed2_.resize(n_simulations);
@@ -468,7 +470,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   wavelets_          = common_data->GetWavelet(0);
 
   //Resample wavelet to output simbox. These wavelets are from CommonData, and should not be on FFTFormat (and should not have added gainfactor).
-  for (size_t i = 0; i < wavelets_.size(); i++) {
+  int n_wavelets = static_cast<int>(wavelets_.size());
+  for (int i = 0; i < n_wavelets; i++) {
     wavelets_[i]->resample(static_cast<float>(output_simbox.getdz()),
                            output_simbox.getnz(),
                            output_simbox.GetNZpad());
@@ -509,7 +512,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //Trend Cubes
   if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
 
-    int n_parameters = model_settings->getTrendCubeParameters().size();
+    int n_parameters = static_cast<int>(model_settings->getTrendCubeParameters().size());
     trend_cubes_.resize(n_parameters);
 
     for (int i = 0; i < n_parameters; i++) {
@@ -520,7 +523,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (int j = 0; j < n_intervals_; j++) {
 
         NRLib::Grid<float> * trend_cube = common_data->GetTrendCube(j).GetTrendCube(i);
-        trend_cubes_intervals[j] = new FFTGrid(common_data->GetTrendCube(j).GetTrendCube(i), trend_cube->GetNI(), trend_cube->GetNJ(), trend_cube->GetNK());
+        trend_cubes_intervals[j] = new FFTGrid(common_data->GetTrendCube(j).GetTrendCube(i), static_cast<int>(trend_cube->GetNI()), static_cast<int>(trend_cube->GetNJ()), static_cast<int>(trend_cube->GetNK()));
 
         if (trend_cube != NULL)
           delete trend_cube;
@@ -545,9 +548,9 @@ void CravaResult::CombineResult(StormContGrid         *& final_grid,
                                 double                   dz_min,
                                 bool                     smooth)
 {
-  int nx = final_grid->GetNI();
-  int ny = final_grid->GetNJ();
-  int nz = final_grid->GetNK();
+  int nx = static_cast<int>(final_grid->GetNI());
+  int ny = static_cast<int>(final_grid->GetNJ());
+  int nz = static_cast<int>(final_grid->GetNK());
 
   bool writing  = false; //debugging
   float res_fac = 10.0; //Degree of refinement, must be integer.
@@ -745,7 +748,7 @@ float CravaResult::GetResampledTraceValue(const std::vector<float> & resampled_t
                                           const double             & global_z, //center of cell
                                           const double             & dz_final)
 {
-  int nz_resampled    = resampled_trace.size();
+  int nz_resampled    = static_cast<int>(resampled_trace.size());
   double global_z_top = global_z - 0.5*dz_final; //Use top of cell
 
   //Start on top and pick the closest value in z
@@ -768,7 +771,7 @@ double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled
                                            const std::vector<double> & z_pos_resampled,
                                            const double              & global_z) //z-value for this cell in the final blocked log
 {
-  int nz_resampled    = resampled_trace.size();
+  int nz_resampled = static_cast<int>(resampled_trace.size());
   //Get trace value to global_z. We search from the top of this interval until we find the corresponding z-value
 
   int index = 0;
@@ -795,7 +798,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //blocked_logs_output are blocked to output_simbox in commondata
   //Need to resample blocked logs that are added after commondata
 
-  int n_intervals = blocked_logs_intervals.size();
+  int n_intervals = static_cast<int>(blocked_logs_intervals.size());
   float res_fac   = 10.0; //Degree of refinement, must be integer.
 
   //Do not resample if there is only one interval, and if output_simbox and has the same resolution as the interval_simbox
@@ -987,8 +990,8 @@ void CravaResult::InterpolateMissing(std::vector<double> & well_log)
 
   for (size_t i = 1; i < well_log.size()-1; i++) {
     if (well_log[i] == RMISSING) {
-      int first_m = i;
-      int j = i + 1;
+      int first_m = static_cast<int>(i);
+      int j = static_cast<int>(i) + 1;
       while (well_log[j] == RMISSING) { //Find length of missing values
         j++;
       }
@@ -1016,7 +1019,7 @@ void CravaResult::ExtrapolateLog(std::vector<double> & well_log)
   }
 
   if (well_log[well_log.size() - 1] == RMISSING) {
-    int i = well_log.size() - 2;
+    int i = static_cast<int>(well_log.size()) - 2;
     while (well_log[i] == RMISSING)
       i--;
     for (size_t j = i + 1; j < well_log.size(); j++)
@@ -1059,8 +1062,8 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
                                 const float           res_fac)
 {
 
-  int nz_old = old_trace.size();
-  int nz_new = new_trace.size();
+  int nz_old = static_cast<int>(old_trace.size());
+  int nz_new = static_cast<int>(new_trace.size());
 
   //Remove trend from trace
   size_t n_trace     = old_trace.size();
@@ -1114,8 +1117,8 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
                                 const std::vector<std::vector<double> > & interval_logs_fine,
                                 const std::vector<std::vector<double> > & z_pos_resampled)
 {
-  int nz          = final_log.size();
-  int n_intervals = interval_logs_fine.size();
+  int nz          = static_cast<int>(final_log.size());
+  int n_intervals = static_cast<int>(interval_logs_fine.size());
 
   const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
 
@@ -1242,8 +1245,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     for (int i = 0; i < n_timelapses; i ++) {
 
-      //H: If one interval and output_simbox = interval_simbox we could store the resampled seismic from modelavodynamic
-
       int n_angles              = model_settings->getNumberOfAngles(i);
       std::vector<float> angles = model_settings->getAngle(i);
       std::vector<float> offset = model_settings->getLocalSegyOffset(i);
@@ -1315,9 +1316,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
 
         //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
-        for (int k=seismic_storm->GetNK()-1;k>0;k--) {
-          for (size_t j=0;j<seismic_storm->GetNJ();j++) {
-            for (size_t i=0;i<seismic_storm->GetNI();i++) {
+        for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
+          for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
+            for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
               (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
             }
           }
@@ -1493,7 +1494,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
   //Simulations
   if (model_settings->getNumberOfSimulations() > 0) {
-    int n_simulations = simulations_seed0_.size();
+    int n_simulations = static_cast<int>(simulations_seed0_.size());
     bool kriging      = model_settings->getKrigingParameter() > 0;
     for (int i = 0; i < n_simulations; i++) {
       ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, simulations_seed0_[i], simulations_seed1_[i], simulations_seed2_[i],
@@ -1577,7 +1578,8 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
 
       std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
       //Resample wavelet to output simbox, and generate seismic logs.
-      for (size_t i = 0; i < wavelets_.size(); i++) {
+      int n_wavelets = static_cast<int>(wavelets_.size());
+      for (int i = 0; i < n_wavelets; i++) {
         wavelets_[i]->resample(static_cast<float>(simbox.getdz()),
                                simbox.getnz(),
                                simbox.GetNZpad());
@@ -1886,9 +1888,9 @@ void CravaResult::CreateStormGrid(StormContGrid & grid_new,
                                   FFTGrid       * fft_grid,
                                   bool            allow_delete)
 {
-  int nx = grid_new.GetNI();
-  int ny = grid_new.GetNJ();
-  int nz = grid_new.GetNK();
+  int nx = static_cast<int>(grid_new.GetNI());
+  int ny = static_cast<int>(grid_new.GetNJ());
+  int nz = static_cast<int>(grid_new.GetNK());
 
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
@@ -1912,7 +1914,6 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
                                    const TraceHeaderFormat & thf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
-    //H-CHECK
     int output_format = model_settings->getOutputGridFormat();
     if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
       output_format += IO::ASCII;
@@ -2010,14 +2011,14 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
 {
   //LogKit::WriteHeader("Compute Synthetic Seismic and Residuals");
 
-  int nx = vp->GetNI();
-  int ny = vp->GetNJ();
-  int nz = vp->GetNK();
+  int nx = static_cast<int>(vp->GetNI());
+  int ny = static_cast<int>(vp->GetNJ());
+  int nz = static_cast<int>(vp->GetNK());
 
   int nzp = simbox->GetNZpad();
 
   std::vector<float> angles = model_settings->getAngle(0); //Synt seismic only for first vintage
-  int n_theta = angles.size();
+  int n_theta = static_cast<int>(angles.size());
 
   for (int l = 0; l < n_theta; l++) {
     StormContGrid * imp = ComputeSeismicImpedance(vp, vs, rho, reflection_matrix_, l);
@@ -2076,9 +2077,9 @@ CravaResult::ComputeSeismicImpedance(StormContGrid       * vp,
                                      const NRLib::Matrix & reflection_matrix,
                                      int                   angle) const
 {
-  int nx = vp->GetNI();
-  int ny = vp->GetNJ();
-  int nz = vp->GetNK();
+  int nx = static_cast<int>(vp->GetNI());
+  int ny = static_cast<int>(vp->GetNJ());
+  int nz = static_cast<int>(vp->GetNK());
 
   StormContGrid * impedance = new StormContGrid(nx, ny, nz);
 

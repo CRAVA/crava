@@ -41,9 +41,11 @@ public:
                     const StormContGrid & stormgrid);
 
   // Constructor for blocked logs for rock physics
-  BlockedLogsCommon(const NRLib::Well   * well_data,
-                    const Simbox        * simbox,
-                    const CravaTrend    & trend_cubes);
+  BlockedLogsCommon(const NRLib::Well              * well_data,
+                    const Simbox                   * simbox,
+                    const CravaTrend               & trend_cubes,
+                    const std::vector<std::string> & cont_logs_to_be_blocked,
+                    const std::vector<std::string> & disc_logs_to_be_blocked);
 
   //Copy constructor
   BlockedLogsCommon(const BlockedLogsCommon & logs);
@@ -637,6 +639,17 @@ private:
                           const float                             max_hz_seismic) const;
 
   void    FindXYZForVirtualPart(const Simbox              * simbox,
+                                const std::vector<int>    & i_pos,
+                                const std::vector<int>    & j_pos,
+                                const std::vector<int>    & k_pos,
+                                const int                 & n_blocks,
+                                const int                 & first_B,
+                                const int                 & last_B,
+                                std::vector<double>       & x_pos_blocked,
+                                std::vector<double>       & y_pos_blocked,
+                                std::vector<double>       & z_pos_blocked) const;
+
+  void    FindXYZForVirtualPart(const MultiIntervalGrid   * multiple_interval_grid,
                                 const std::vector<int>    & i_pos,
                                 const std::vector<int>    & j_pos,
                                 const std::vector<int>    & k_pos,

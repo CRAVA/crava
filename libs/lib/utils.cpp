@@ -246,9 +246,9 @@ Utils::ShiftTrace(fftw_real * trace,
   size_t change = n_data+n_data/2;
 
   for(;i<change;i++)
-    s_trace[i] = s_trace[n_data-1]*(1+cos(NRLib::Pi*static_cast<double>(i-n_data)/static_cast<double>(change-1-n_data)));
+    s_trace[i] = s_trace[n_data-1]*static_cast<fftw_real>((1+cos(NRLib::Pi*static_cast<double>(i-n_data)/static_cast<double>(change-1-n_data)))); //H added static_cast
   for(;i<n_small;i++)
-    s_trace[i] = s_trace[0]*(1+cos(NRLib::Pi*static_cast<double>(n_small-1-i)/static_cast<double>(n_small-1-change)));
+    s_trace[i] = s_trace[0]*static_cast<fftw_real>((1+cos(NRLib::Pi*static_cast<double>(n_small-1-i)/static_cast<double>(n_small-1-change)))); //H
 
   Utils::fft(&(s_trace[0]), s_trace_c, n_small);
 

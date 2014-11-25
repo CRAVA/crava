@@ -251,8 +251,8 @@ void StormContGrid::WriteToSgriFile(const std::string & file_name,
     dz = 1.0; */
   float dz = static_cast<float> (simbox_dz);
   int nz = static_cast<int> (ceil((z_max - z_min)/dz));
-  int ny = GetNJ();
-  int nx = GetNI();
+  int ny = static_cast<int>(GetNJ());
+  int nx = static_cast<int>(GetNI());
   header_file << nx << " " << ny << " " << nz << std::endl;
   header_file << std::setprecision(10);
   header_file << GetDX()*hor_scale << " " << GetDY()*hor_scale << " " << dz*vert_scale << std::endl;
@@ -717,22 +717,22 @@ StormContGrid::WriteCravaFile(const std::string & file_name,
     std::string file_type = "crava_fftgrid_binary";
     bin_file << file_type << "\n";
 
-    NRLib::WriteBinaryDouble(bin_file, GetXMin()); //simbox->getx0());
-    NRLib::WriteBinaryDouble(bin_file, GetYMin()); //simbox->gety0());
-    NRLib::WriteBinaryDouble(bin_file, GetDX()); //simbox->getdx());
-    NRLib::WriteBinaryDouble(bin_file, GetDY()); //simbox->getdy());
-    NRLib::WriteBinaryInt(bin_file, GetNI()); //simbox->getnx());
-    NRLib::WriteBinaryInt(bin_file, GetNJ()); //simbox->getny());
-    NRLib::WriteBinaryDouble(bin_file, inline_0); //simbox->getIL0());
-    NRLib::WriteBinaryDouble(bin_file, crossline_0); //simbox->getXL0());
-    NRLib::WriteBinaryDouble(bin_file, il_step_x); //simbox->getILStepX());
-    NRLib::WriteBinaryDouble(bin_file, il_step_y); //simbox->getILStepY());
-    NRLib::WriteBinaryDouble(bin_file, xl_step_x); //simbox->getXLStepX());
-    NRLib::WriteBinaryDouble(bin_file, xl_step_y); //simbox->getXLStepY());
-    NRLib::WriteBinaryDouble(bin_file, GetAngle()); //simbox->getAngle());
-    NRLib::WriteBinaryInt(bin_file, GetNI()); //NRLib::WriteBinaryInt(bin_file, rnxp_);
-    NRLib::WriteBinaryInt(bin_file, GetNJ()); //NRLib::WriteBinaryInt(bin_file, nyp_);
-    NRLib::WriteBinaryInt(bin_file, GetNK()); //NRLib::WriteBinaryInt(bin_file, nzp_);
+    NRLib::WriteBinaryDouble(bin_file, GetXMin());
+    NRLib::WriteBinaryDouble(bin_file, GetYMin());
+    NRLib::WriteBinaryDouble(bin_file, GetDX());
+    NRLib::WriteBinaryDouble(bin_file, GetDY());
+    NRLib::WriteBinaryInt(bin_file, static_cast<int>(GetNI()));
+    NRLib::WriteBinaryInt(bin_file, static_cast<int>(GetNJ()));
+    NRLib::WriteBinaryDouble(bin_file, inline_0);
+    NRLib::WriteBinaryDouble(bin_file, crossline_0);
+    NRLib::WriteBinaryDouble(bin_file, il_step_x);
+    NRLib::WriteBinaryDouble(bin_file, il_step_y);
+    NRLib::WriteBinaryDouble(bin_file, xl_step_x);
+    NRLib::WriteBinaryDouble(bin_file, xl_step_y);
+    NRLib::WriteBinaryDouble(bin_file, GetAngle());
+    NRLib::WriteBinaryInt(bin_file, static_cast<int>(GetNI()));
+    NRLib::WriteBinaryInt(bin_file, static_cast<int>(GetNJ()));
+    NRLib::WriteBinaryInt(bin_file, static_cast<int>(GetNK()));
 
     //for(int i=0;i<rsize_;i++)
     //  NRLib::WriteBinaryFloat(binFile, rvalue_[i]);

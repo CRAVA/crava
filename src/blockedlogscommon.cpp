@@ -328,9 +328,11 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blo
 }
 
 //Blocked logs for RockPhysics
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
-                                     const Simbox        * simbox,
-                                     const CravaTrend    & trend_cubes)
+BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
+                                     const Simbox                   * simbox,
+                                     const CravaTrend               & trend_cubes,
+                                     const std::vector<std::string> & cont_logs_to_be_blocked,
+                                     const std::vector<std::string> & disc_logs_to_be_blocked)
 : first_S_(IMISSING),
   last_S_ (IMISSING),
   first_M_(IMISSING),
@@ -339,8 +341,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
   last_B_ (IMISSING)
 {
 
-  bool failed                   = false;
-  std::string err_text          = "";
+  bool failed          = false;
+  std::string err_text = "";
 
   // FACIES
   if (well->HasDiscLog("Facies")) {
@@ -358,20 +360,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
     facies_names_[i] = it->second;
     facies_nr[i] = i;
     i++;
-  }
-
-  // Get all continuous and discrete logs
-  std::vector<std::string> cont_logs_to_be_blocked;
-  std::vector<std::string> disc_logs_to_be_blocked;
-
-  const std::map<std::string,std::vector<double> > & cont_logs = well->GetContLog();
-  const std::map<std::string,std::vector<int> >    & disc_logs = well->GetDiscLog();
-
-  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-    cont_logs_to_be_blocked.push_back(it->first);
-  }
-  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-    disc_logs_to_be_blocked.push_back(it->first);
   }
 
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
@@ -408,12 +396,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well,
     BlockPorosityLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
   BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
-
-  //BlockedLogs::blockContinuousLog(bInd, well->getAlpha(dummy),    firstM, lastM, nBlocks, blocked_alpha);
-  //BlockedLogs::blockContinuousLog(bInd, well->getBeta(dummy),     firstM, lastM, nBlocks, blocked_beta);
-  //BlockedLogs::blockContinuousLog(bInd, well->getRho(dummy),      firstM, lastM, nBlocks, blocked_rho);
-  //BlockedLogs::blockContinuousLog(bInd, well->getPorosity(dummy), firstM, lastM, nBlocks, blocked_porosity);
-  //BlockedLogs::blockDiscreteLog(bInd, well->getFacies(dummy), well->getFaciesNr(), well->getNFacies(), firstM, lastM, nBlocks, blocked_facies);
 
   vp_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
   vs_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
@@ -592,7 +574,8 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked);
 
       //Extrapolates if missing values in the beginning or end.
-      //FindXYZForVirtualPart(estimation_simbox); //TODO (CRA-660): Adjust for multiple_intervals
+      FindXYZForVirtualPart(multiple_interval_grid, i_pos, j_pos, k_pos, n_blocks, first_B, last_B,
+                            x_pos_blocked, y_pos_blocked, z_pos_blocked);
 
       //HighCutSeismic blocked logs
       const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
@@ -724,7 +707,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
       BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked);
 
       //Extrapolates if missing values in the beginning or end.
-      FindXYZForVirtualPart(estimation_simbox, i_pos_, j_pos_, k_pos_, n_blocks, first_B, last_B,
+      FindXYZForVirtualPart(estimation_simbox, i_pos, j_pos, k_pos, n_blocks, first_B, last_B,
                                  x_pos_blocked, y_pos_blocked, z_pos_blocked);
 
       // Continuous logs
@@ -1321,7 +1304,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   int wl = -1;  // well log counter
   int first_I, first_J, first_K;
   interval_simboxes[first_S]->getIndexes(x_pos_raw_logs[first_M], y_pos_raw_logs[first_M], z_pos_raw_logs[first_M], first_I, first_J, first_K);
-  for (int s = 0 ;  s < first_S_; s++) {
+  for (int s = 0;  s < first_S_; s++) {
     //double dz     = interval_simboxes[s].getdz();
     //double dz_0   = 0;
     //interval_simboxes[s].getZCoord(0,x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], dz_0);
@@ -1342,7 +1325,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   // IJK in the simbox with the first well observation
   //
   //b = -1;
-  for (int k = 0 ; k < first_K ; k++) {
+  for (int k = 0; k < first_K; k++) {
     b++;
     s_pos[b] = first_S_;
     i_pos[b] = first_I;
@@ -1368,11 +1351,11 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     max_m = last_M_+1;                              // 1. If the last well obs is in interval number first_S_
   }
   else {
-    for (int s = 0; s<=first_S_; s++)
+    for (int s = 0; s <= first_S_; s++)
       max_m += n_well_log_obs_in_interval[s];      // 2. If the last well obs is in another interval
   }
   // loop over the first simbox where the well is observed
-  for (int m = first_M_ + 1 ; m < max_m ; m++) {
+  for (int m = first_M_ + 1; m < max_m; m++) {
     wl++;
     if (bInd[wl] != bInd[wl - 1]) {
       b++;
@@ -1395,12 +1378,13 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       max_m = last_M_+1;                          // 1. If the last well obs is in interval number s
     else {
       for (int t = 0; t < s+1; t++)
-        max_m += n_well_log_obs_in_interval_[t];  // 2. If the last well obs is in another interval
+        max_m += n_well_log_obs_in_interval[t];  // 2. If the last well obs is in another interval
     }
     for (int t = 0; t < s; t++) {
-      min_m += n_well_log_obs_in_interval_[t];
+      min_m += n_well_log_obs_in_interval[t];
     }
-    for (int m = min_m; m<max_m; m++) {
+    int start = first_M_ + min_m; //Start of this simbox.
+    for (int m = start; m < max_m; m++) {
       wl++;
       if (bInd[wl] != bInd[wl - 1]) {
         b++;
@@ -1410,7 +1394,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
         i_pos[b] = i;
         j_pos[b] = j;
 
-        k_pos[b] = static_cast<int>(k*dz_rel[s]); //H-TODO k = IMISSING
+        k_pos[b] = static_cast<int>(k*dz_rel[s]);
       }
     }
   }
@@ -1420,12 +1404,12 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   // 3. Set IJK for the virtual part of the well in the lower simboxes
   //
 
-  int last_I,  last_J,  last_K;
+  int last_I, last_J, last_K;
 
   interval_simboxes[last_S]->getIndexes(x_pos_raw_logs[last_M], y_pos_raw_logs[last_M], z_pos_raw_logs[last_M], last_I, last_J, last_K);
   min_m = last_K+1;
   max_m = interval_simboxes[last_S]->getnz();
-  for (int k = last_K + 1 ; k < max_m ; k++) {
+  for (int k = last_K + 1; k < max_m; k++) {
     b++;
     s_pos[b] = last_S;
     i_pos[b] = last_I;
@@ -1433,7 +1417,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     k_pos[b] = static_cast<int>(k*dz_rel[last_S]);
   }
 
-  for (int s = last_S+1; s < static_cast<int>(interval_simboxes.size()) ; s++) {
+  for (int s = last_S+1; s < static_cast<int>(interval_simboxes.size()); s++) {
     min_m = 0;
     max_m = interval_simboxes[s]->getnz();
     for (int k = min_m; k< max_m; k++) {
@@ -1453,7 +1437,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",first_B,last_B);
     LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",first_I, first_J, first_K);
     LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",last_I, last_J, last_K);
-    for (unsigned int b = 0 ; b < n_blocks_ ; b++)
+    for (unsigned int b = 0; b < n_blocks_; b++)
       LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,i_pos[b],j_pos[b],k_pos[b]);
   }
 }
@@ -4162,6 +4146,50 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const Simbox              * simbox
   }
 }
 
+//--------------------------------------------------------------------------------------
+void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multiple_interval_grid,
+                                              const std::vector<int>    & i_pos,
+                                              const std::vector<int>    & j_pos,
+                                              const std::vector<int>    & k_pos,
+                                              const int                 & n_blocks,
+                                              const int                 & first_B,
+                                              const int                 & last_B,
+                                              std::vector<double>       & x_pos_blocked,
+                                              std::vector<double>       & y_pos_blocked,
+                                              std::vector<double>       & z_pos_blocked) const
+{
+  //
+  // If the ends have undefined coordinates we use the nearest defined
+  // coordinate for x and y and the block cell centre for z
+  //
+  const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
+  int i_interval = 0;
+
+  for (int b = 0 ; b < first_B ; b++) {
+    double x,y,z;
+    interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
+    while (interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
+      i_interval++;
+      interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
+    }
+    x_pos_blocked[b] = x_pos_blocked[first_B];
+    y_pos_blocked[b] = y_pos_blocked[first_B];
+    z_pos_blocked[b] = z;
+  }
+
+  for (int b = last_B + 1; b < n_blocks; b++) {
+    double x,y,z;
+    interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
+    while (interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
+      i_interval++;
+      interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
+    }
+    x_pos_blocked[b] = x_pos_blocked[last_B];
+    y_pos_blocked[b] = y_pos_blocked[last_B];
+    z_pos_blocked[b] = z;
+  }
+}
+
 //------------------------------------------------------------------------------
 void BlockedLogsCommon::FindTrendPositions(const std::vector<int> & i_pos,
                                            const std::vector<int> & j_pos,
@@ -4189,8 +4217,8 @@ void BlockedLogsCommon::AssignToFacies(const std::vector<double>         & well_
                                        std::vector<std::vector<double> > & blocked_log) const
 {
   if (well_log.size() > 0) {
-    int n_facies = blocked_log.size();
-    int n_blocks = blocked_log[0].size();
+    int n_facies = static_cast<int>(blocked_log.size());
+    int n_blocks = static_cast<int>(blocked_log[0].size());
 
     for (int m = 0; m < n_blocks; m++) {
       if (well_log[m] != RMISSING && facies_log[m] != IMISSING) {

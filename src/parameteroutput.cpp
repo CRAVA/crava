@@ -555,13 +555,19 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         if ((format_flag & IO::STORM) > 0) {
           output->SetFormat(NRLib::StormContGrid::STORM_BINARY);
           std::string file_name_storm = depth_name + IO::SuffixStormBinary();
-          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, false);
+          int nx = static_cast<int>(output->GetNI());
+          int ny = static_cast<int>(output->GetNJ());
+          int nz = static_cast<int>(output->GetNK());
+          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, false, false);
           output->WriteToFile(file_name_storm, header, false);
         }
         if ((format_flag & IO::ASCII) > 0) {
           output->SetFormat(NRLib::StormContGrid::STORM_ASCII);
           std::string file_name_ascii = depth_name + IO::SuffixGeneralData();
-          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, output->GetNI(), output->GetNJ(), output->GetNK(), false, true);
+          int nx = static_cast<int>(output->GetNI());
+          int ny = static_cast<int>(output->GetNJ());
+          int nz = static_cast<int>(output->GetNK());
+          std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, false, true);
           output->WriteToFile(file_name_ascii, header, true);
         }
         if ((format_flag & IO::SEGY) >0) {
@@ -626,8 +632,8 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
 
   double x,y;
   int nz = static_cast<int>(mapping->GetNK());
-  for (size_t i = 0; i < storm_grid->GetNI(); i++) {
-    for (size_t j = 0; j < storm_grid->GetNJ(); j++) {
+  for (int i = 0; i < static_cast<int>(storm_grid->GetNI()); i++) {
+    for (int j = 0; j < static_cast<int>(storm_grid->GetNJ()); j++) {
       simbox->getXYCoord(i,j,x,y);
       for (int k = 0; k < nz; k++) {
         time   = (*mapping)(i,j,k);
@@ -644,14 +650,18 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
   std::string header;
   if ((format & IO::ASCII) > 0) { // ASCII
     gf_name = file_name + IO::SuffixGeneralData();
-    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER, storm_grid->GetNI(), storm_grid->GetNJ(), nz, 0, 1);
+    int nx = static_cast<int>(storm_grid->GetNI());
+    int ny = static_cast<int>(storm_grid->GetNJ());
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, 0, 1);
     outgrid->SetFormat(StormContGrid::STORM_ASCII);
     outgrid->WriteToFile(gf_name, header);
   }
 
   if ((format & IO::STORM) > 0) {
     gf_name =  file_name + IO::SuffixStormBinary();
-    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER,storm_grid->GetNI(), storm_grid->GetNJ(), nz, 0, 0);
+    int nx = static_cast<int>(storm_grid->GetNI());
+    int ny = static_cast<int>(storm_grid->GetNJ());
+    header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, 0, 0);
     outgrid->SetFormat(StormContGrid::STORM_BINARY);
     outgrid->WriteToFile(gf_name,header);
   }
