@@ -4650,6 +4650,7 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
   legalCommands.push_back("time-value");
   legalCommands.push_back("depth-file");
   legalCommands.push_back("erosion-priority");
+  legalCommands.push_back("uncertainty");
 
   std::string file_name;
   bool time_file = parseFileName(root,"time-file", file_name, err_txt);
@@ -4678,11 +4679,16 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
   int erosion_priority;
   if(parseValue(root, "erosion-priority", erosion_priority, err_txt)){
     modelSettings_->setErosionPriorityBaseSurface(interval_name, erosion_priority);
-  }else{
+  }
+  else{
     err_txt += "No erosion priority given in command <"+root->ValueStr()+"> "
       +lineColumnText(root)+".\n";
   }
 
+  double u_value, uncertainty = 10.0;
+  if(parseValue(root, "uncertainty", u_value, err_txt) == true)
+    uncertainty = u_value;
+  modelSettings_->setUncertaintyBaseSurface(interval_name, uncertainty);
 
   checkForJunk(root, err_txt, legalCommands);
   return(true);
@@ -6561,7 +6567,8 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
 
       size_t intervals_used = top_count + single_count;
       if(interval_names.size() != intervals_used)
-        errTxt += "-The number of intervals in <project-settings> (" + NRLib::ToString(interval_names.size()) +") differ from the number of intervals specified for <correlation-direction> under <prior-model> (" + NRLib::ToString(top_count + single_count) +").\n";
+        errTxt += "-The number of intervals in <project-settings> (" + NRLib::ToString(interval_names.size())
+                  +") differ from the number of intervals specified for <correlation-direction> under <prior-model> (" + NRLib::ToString(top_count + single_count) +").\n";
 
 
       for(size_t i = 0; i < interval_names.size(); i++) {

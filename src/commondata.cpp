@@ -6431,6 +6431,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                         fftplan2,
                         rAmpData,
                         rAmpFine,
+                        nt,
                         cnt,
                         rnt,
                         cmt,
@@ -6628,67 +6629,8 @@ void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
   }
 }
 
-//
-// static function
-//
-void CommonData::ResampleTrace(const std::vector<float> & data_trace,
-                               const rfftwnd_plan       & fftplan1,
-                               const rfftwnd_plan       & fftplan2,
-                               fftw_real                * rAmpData,
-                               fftw_real                * rAmpFine,
-                               int                        cnt,
-                               int                        rnt,
-                               int                        cmt,
-                               int                        rmt)
-{
-  fftw_complex * cAmpData = reinterpret_cast<fftw_complex*>(rAmpData);
-  fftw_complex * cAmpFine = reinterpret_cast<fftw_complex*>(rAmpFine);
 
-  //
-  // Fill vector to be FFT'ed
-  //
-  int n_data = static_cast<int>(data_trace.size());
-
-  for (int i = 0; i < n_data; i++) {
-    rAmpData[i] = data_trace[i];
-  }
-  // Pad with zeros
-  for (int i = n_data; i < rnt; i++) {
-    rAmpData[i] = 0.0f;
-  }
-
-  //
-  // Transform to Fourier domain
-  //
-  rfftwnd_one_real_to_complex(fftplan1, rAmpData, cAmpData);
-
-  //
-  // Fill fine-sampled grid
-  //
-  for (int i = 0; i < cnt; i++) {
-    cAmpFine[i].re = cAmpData[i].re;
-    cAmpFine[i].im = cAmpData[i].im;
-  }
-  // Pad with zeros (cmt is always greater than cnt)
-  for (int i = cnt; i < cmt; i++) {
-    cAmpFine[i].re = 0.0f;
-    cAmpFine[i].im = 0.0f;
-  }
-
-  //
-  // Fine-sampled grid: Fourier --> Time
-  //
-  rfftwnd_one_complex_to_real(fftplan2, cAmpFine, rAmpFine);
-
-  //
-  // Scale and fill grid_trace
-  //
-  float scale = 1/static_cast<float>(rnt);
-  for (int i = 0; i < rmt; i++) {
-    rAmpFine[i] = scale*rAmpFine[i];
-  }
-}
-
+/*
 void CommonData::ResampleTrace(const std::vector<double> & data_trace,
                                const rfftwnd_plan        & fftplan1,
                                const rfftwnd_plan        & fftplan2,
@@ -6746,6 +6688,7 @@ void CommonData::ResampleTrace(const std::vector<double> & data_trace,
     rAmpFine[i] = scale*rAmpFine[i];
   }
 }
+*/
 
 void CommonData::InterpolateGridValues(std::vector<float> & grid_trace,
                                        float                z0_grid,

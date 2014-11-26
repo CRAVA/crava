@@ -33,12 +33,10 @@ public:
                       CommonData                           * common_data,
                       std::vector<SeismicParametersHolder> & seismic_paramters_intervals);
 
-  void CombineResult(StormContGrid         *& final_grid,
-                     std::vector<FFTGrid *> & post_vp_intervals,
-                     MultiIntervalGrid      * multi_interval_grid,
-                     const std::vector<int> & erosion_priorities,
-                     double                   dz_min,
-                     bool                     smooth = false);
+  void CombineResult(StormContGrid                    *& final_grid,
+                     std::vector<FFTGrid *>            & interval_grids,
+                     MultiIntervalGrid                 * multi_interval_grid,
+                     const std::vector<StormContGrid>  & zone_probability);
 
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
                                const double             & dz_resampled,
@@ -168,6 +166,10 @@ public:
   void SmoothTraceIntervals(std::vector<float>     & trace,
                             const std::vector<int> & intervals,
                             double                   dz) const;
+
+  void DownscaleTrace(const std::vector<float> & trace_in,
+                      std::vector<float>       & trace_out,
+                      int                         scale);
 
   //GET FUNCTIONS
 
