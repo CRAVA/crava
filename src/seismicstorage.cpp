@@ -121,9 +121,9 @@ int SeismicStorage::GetNx() const {
   int nx  = 0;
 
   if (seismic_type_ == SEGY)
-    nx = segy_->GetGeometry()->GetNx();
+    nx = static_cast<int>(segy_->GetGeometry()->GetNx());
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
-    nx = storm_grid_->GetNI();
+    nx = static_cast<int>(storm_grid_->GetNI());
   else if (seismic_type_ == FFTGRID)
     nx = fft_grid_->getNx();
 
@@ -135,9 +135,9 @@ int SeismicStorage::GetNy() const {
   int ny  = 0;
 
   if (seismic_type_ == SEGY)
-    ny = segy_->GetGeometry()->GetNy();
+    ny = static_cast<int>(segy_->GetGeometry()->GetNy());
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
-    ny = storm_grid_->GetNJ();
+    ny = static_cast<int>(storm_grid_->GetNJ());
   else if (seismic_type_ == FFTGRID)
     ny = fft_grid_->getNy();
 
@@ -149,9 +149,9 @@ int SeismicStorage::GetNz() const {
   int nz  = 0;
 
   if (seismic_type_ == SEGY)
-    nz = segy_->GetNz();
+    nz = static_cast<int>(segy_->GetNz());
   else if (seismic_type_ == STORM || seismic_type_ == SGRI)
-    nz = storm_grid_->GetNK();
+    nz = static_cast<int>(storm_grid_->GetNK());
   else if (seismic_type_ == FFTGRID)
     nz = fft_grid_->getNz();
 
@@ -167,7 +167,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
   //SEGY: n traces. STORM/SGRI: n grid-elements.
 
   if (seismic_type_ == SEGY) {
-    int n_traces = segy_->GetNTraces();
+    int n_traces = static_cast<int>(segy_->GetNTraces());
 
     if (n > n_traces)
       n = n_traces;
@@ -270,7 +270,7 @@ SeismicStorage::GetRealTrace(const Simbox * estimation_simbox,
 
   if (seismic_type_ == SEGY) {
     for (size_t k = 0; k < segy_->GetNz(); k++) {
-      estimation_simbox->getCoord(i, j, k, x_tmp, y_tmp, z_tmp);
+      estimation_simbox->getCoord(i, j, static_cast<int>(k), x_tmp, y_tmp, z_tmp);
       value.push_back(segy_->GetValue(x_tmp, y_tmp, z_tmp)); ///H Is this correct? Want to get det same value as FFTGrid::getRealTrace2(int i, int j)
     }
   }
@@ -332,7 +332,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
       seismic_simbox.getMinAndMaxXY(x_min, x_max, y_min, y_max);
       NRLib::RegularSurface<double> top(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_top);
       NRLib::RegularSurface<double> base(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, z_base);
-      seismic_simbox.setDepth(top, base, segy_->GetNz(), true);
+      seismic_simbox.setDepth(top, base, static_cast<int>(segy_->GetNz()), true);
       seismic_simbox.SetErodedSurfaces(top, base, true);
       seismic_simbox.calculateDz(lz_limit, err_txt);
       seismic_simbox.SetNoPadding();
@@ -362,7 +362,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
         NRLib::RegularSurface<double> top_surface(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, top_z);
         NRLib::RegularSurface<double> base_surface(x_min, y_min, x_max-x_min, y_max-y_min, 2, 2, bot_z);
         seismic_simbox.SetErodedSurfaces(top_surface, base_surface, true);
-        seismic_simbox.setDepth(top_surface, base_surface, storm_grid_->GetNK(), true);
+        seismic_simbox.setDepth(top_surface, base_surface, static_cast<int>(storm_grid_->GetNK()), true);
       }
       else {
         NRLib::Surface<double> * top_grid = storm_grid_->GetTopSurface().Clone();
@@ -372,7 +372,7 @@ SeismicStorage::FindSimbox(const Simbox & full_inversion_simbox,
         bot_grid->Multiply(scale_value);
 
         seismic_simbox.SetErodedSurfaces(*top_grid, *bot_grid, true);
-        seismic_simbox.setDepth(*top_grid, *bot_grid, storm_grid_->GetNK(), true);
+        seismic_simbox.setDepth(*top_grid, *bot_grid, static_cast<int>(storm_grid_->GetNK()), true);
         seismic_simbox.SetIsConstantThick(false);
 
         delete top_grid;

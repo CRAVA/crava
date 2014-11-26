@@ -138,7 +138,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox %s\n",output_name.c_str());
+  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox%s\n",output_name.c_str());
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());
@@ -189,7 +189,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   }
   if(status_!=BOXOK){
     failed = true;
-    err_text+="Simbox setup failed: there is a problem with the surfaces.";
+    err_text+="Simbox setup failed: there is a problem with the surfaces.\n";
   }
 }
 
@@ -216,7 +216,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + " .\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -360,7 +360,11 @@ Simbox::Simbox(const Simbox         * simbox,
                bool                 & failed)
 : Volume(*simbox)
 {
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces for interval \'%s\'.\n",interval_name.c_str());
+  std::string output_name = "";
+  if (interval_name != "")
+    output_name = " for interval \'" + interval_name + "\'";
+  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces" + output_name + ".\n");
+
   interval_name_  = interval_name;
   status_         = BOXOK;
   cosrot_         = cos(simbox->GetAngle());

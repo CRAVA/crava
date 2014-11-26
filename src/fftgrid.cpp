@@ -126,9 +126,9 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
   theta_          = RMISSING;
-  nx_             = grid->GetNI();
-  ny_             = grid->GetNJ();
-  nz_             = grid->GetNK();
+  nx_             = static_cast<int>(grid->GetNI());
+  ny_             = static_cast<int>(grid->GetNJ());
+  nz_             = static_cast<int>(grid->GetNK());
   nxp_            = nxp;
   nyp_            = nyp;
   nzp_            = nzp;
@@ -220,9 +220,9 @@ FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
   theta_          = RMISSING;
-  nx_             = grid->GetNI();
-  ny_             = grid->GetNJ();
-  nz_             = grid->GetNK();
+  nx_             = static_cast<int>(grid->GetNI());
+  ny_             = static_cast<int>(grid->GetNJ());
+  nz_             = static_cast<int>(grid->GetNK());
   nxp_            = nxp;
   nyp_            = nyp;
   nzp_            = nzp;
@@ -619,7 +619,7 @@ FFTGrid::interpolateGridValues(std::vector<float> & grid_trace,
 }
 
 void
-FFTGrid::setTrace(const std::vector<float> & trace, size_t i, size_t j)
+FFTGrid::setTrace(const std::vector<float> & trace, int i, int j)
 {
   for (int k = 0 ; k < nzp_ ; k++) {
     setRealValue(i, j, k, trace[k], true);
@@ -627,7 +627,7 @@ FFTGrid::setTrace(const std::vector<float> & trace, size_t i, size_t j)
 }
 
 void
-FFTGrid::setTrace(float value, size_t i, size_t j)
+FFTGrid::setTrace(float value, int i, int j)
 {
   for (int k = 0 ; k < nzp_ ; k++) {
     setRealValue(i, j, k, value, true);

@@ -169,8 +169,8 @@ BlockedLogsForRockPhysics::assignToFacies(const float                      * wel
                                           std::vector<std::vector<float> > & blockedLog) const
 {
   if (wellLog != NULL) {
-    int nFacies = blockedLog.size();
-    int nBlocks = blockedLog[0].size();
+    int nFacies = static_cast<int>(blockedLog.size());
+    int nBlocks = static_cast<int>(blockedLog[0].size());
 
     for (int m = 0; m < nBlocks; m++) {
       if (wellLog[m] != RMISSING && faciesLog[m] != IMISSING) {

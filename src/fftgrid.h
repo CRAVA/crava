@@ -68,8 +68,8 @@ public:
                                              float                dz_fine,
                                              int                  n_fine);
 
-  void                 setTrace(const std::vector<float> & trace, size_t i, size_t j);
-  void                 setTrace(float value, size_t i, size_t j);
+  void                 setTrace(const std::vector<float> & trace, int i, int j);
+  void                 setTrace(float value, int i, int j);
 
   void                 fillInConstant(float value, bool add = true);              // No mode
 

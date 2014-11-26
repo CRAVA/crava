@@ -289,7 +289,7 @@ void EstimateTrend1D(const std::vector<double> & x,
 
   // the effective sample size has to be less than the actual sample size.
   if (x_binned.size() < effective_sample_size) {
-    effective_sample_size = x_binned.size();
+    effective_sample_size = static_cast<double>(x_binned.size());
     LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 1D trend is larger than the actual sample size.");
     LogKit::LogFormatted(LogKit::High,"\n          The local linear model is reduced to a standard linear model.");
   }
@@ -684,7 +684,7 @@ void EstimateVariance1D(const std::vector<double> & x,
     double y_var_weight = CalculateEffectiveSampleSize1D(x_binned, bandwidth);
 
     if (x_binned.size() < y_var_weight) {
-      y_var_weight = x_binned.size();
+      y_var_weight = static_cast<double>(x_binned.size());
       LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 1D variance is larger than the actual sample size.");
       LogKit::LogFormatted(LogKit::High,"\n          The local linear model is reduced to a standard linear model.");
     }
@@ -807,7 +807,7 @@ void EstimateTrend2D(const std::vector<double>         & x,
   double effective_sample_size = CalculateEffectiveSampleSize2D(x_binned, y_binned, bandwidth_x, bandwidth_y);
 
   if (z_binned.size() < effective_sample_size) {
-    effective_sample_size = z_binned.size();
+    effective_sample_size = static_cast<double>(z_binned.size());
     LogKit::LogFormatted(LogKit::High,"\nWARNING : The effective sample size used in estimating 2D trend is larger than the actual sample size.");
     LogKit::LogFormatted(LogKit::High,"\n          The local linear is reduced to a standard linear model.");
   }

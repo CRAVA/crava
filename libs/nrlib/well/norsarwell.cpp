@@ -181,7 +181,7 @@ NorsarWell::NorsarWell(const std::string & filename)
     AddContLog(log_name[i], track_logs[i]);
 
   // find n_data including WELLMISSING values
-  unsigned int n_data = GetContLog(log_name[0]).size();
+  int n_data = static_cast<int>(GetContLog(log_name[0]).size());
   SetNumberOfData(n_data);
   SetXPos0(xpos0_);
   SetYPos0(ypos0_);
