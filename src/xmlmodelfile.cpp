@@ -2330,6 +2330,10 @@ bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
       err_txt += "The number of layers needs to be larger than 0.\n";
   }
 
+  //Set default top and base conform, can be changed under correlation-direction
+  modelSettings_->setCorrDirTopConform(interval_name,  true);
+  modelSettings_->setCorrDirBaseConform(interval_name, true);
+
   checkForJunk(root, err_txt, legalCommands, true); //allow duplicates
   return(true);
 }

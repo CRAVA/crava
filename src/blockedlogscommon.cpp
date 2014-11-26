@@ -4164,6 +4164,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
   //
   const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   int i_interval = 0;
+  int n_intervals = multiple_interval_grid->GetNIntervals();
 
   for (int b = 0 ; b < first_B ; b++) {
     double x,y,z;
@@ -4180,7 +4181,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
   for (int b = last_B + 1; b < n_blocks; b++) {
     double x,y,z;
     interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
-    while (interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
+    while (i_interval < (n_intervals -1) && interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
       i_interval++;
       interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
     }
