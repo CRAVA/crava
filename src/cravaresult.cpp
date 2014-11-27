@@ -208,9 +208,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   // Results in seismic_parameters are stored as fftgrid
   //CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
 
-  //H-TODO (CRA-735): CombineResult is not done
-  //  There is no smoothing between intervals
-
   MultiIntervalGrid * multi_interval_grid     = common_data->GetMultipleIntervalGrid();
   Simbox & output_simbox                      = common_data->GetOutputSimbox();
   n_intervals_                                = multi_interval_grid->GetNIntervals();
@@ -636,7 +633,7 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
             value += zone_probability[i_interval](i,j,k)*new_traces[i_interval][index];
           }
         }
-        (*final_grid)(i,j,k) = value;
+        (*final_grid)(i,j,k) = static_cast<float>(value);
       }
       // Log progress
       if (ny*i + j + 1 >= static_cast<int>(next_monitor)) {
@@ -1106,7 +1103,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //}
 
   if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids\n");
 
     //From computePostMeanResidAndFFTCov()
     ParameterOutput::WriteParameters(&simbox, time_depth_mapping, model_settings, post_vp_, post_vs_, post_rho_,
@@ -1145,15 +1142,13 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         seismic_parameters.GetBlockGrid()->writeCravaFile(file_name, &simbox);
       }
     }
-
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
   }
 
   //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
   if (model_settings->getForwardModeling() == false &&
       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
       || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data...");
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data\n");
 
     int n_timelapses = model_settings->getNumberOfTimeLapses();
 
@@ -1258,12 +1253,11 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         }
       }
     }
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
   }
 
   //Write Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
     WriteBackgrounds(model_settings,
                       &simbox,
                       background_vp_,
@@ -1286,7 +1280,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       ExpTransf(background_rho_intervals_[0]);
       background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
     }
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
   }
 
   //Write correlations and post variances. Write per interval.
@@ -1306,7 +1299,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
     //}
 
     if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations...");
+      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
       WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
       WriteFilePostCovGrids(model_settings, simbox, interval_name);
 
@@ -1325,7 +1318,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
         seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
       }
-    LogKit::LogFormatted(LogKit::Low,"ok\n");
     }
   }
 
@@ -1582,7 +1574,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       common_data->ReleaseBackgroundGrids(0, 2);
     }
 
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids...");
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
     WriteBackgrounds(model_settings,
                      &simbox,
                      background_vp_,
@@ -1590,11 +1582,8 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                      background_rho_,
                      time_depth_mapping,
                      *model_settings->getTraceHeaderFormatOutput());
-    LogKit::LogFormatted(LogKit::Low,"ok");
 
     if (write_crava_) {
-
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Background CRAVA Grids...");
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
       std::string file_name_vs  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vs");
       std::string file_name_rho = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Rho");
@@ -1607,8 +1596,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
 
       ExpTransf(background_rho_intervals_[0]);
       background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
-
-      LogKit::LogFormatted(LogKit::Low,"ok");
     }
   }
 }

@@ -1989,7 +1989,7 @@ FFTGrid::writeSegyFile(const std::string              & fileName,
   if(headerText.size() == 0)
     header = TextualHeader::standardHeader();
   else {
-    for(size_t i=0;i<headerText.size();i++) {
+    for(int i=0;i<static_cast<int>(headerText.size());i++) {
       header.SetLine(i+1, headerText[i]);
     }
   }
@@ -2200,6 +2200,7 @@ void
 FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
+    LogKit::LogFormatted(LogKit::Low,"\nWriting CRAVA file "+fileName+"...");
     std::ofstream binFile;
     std::string fName = fileName + IO::SuffixCrava();
     NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
@@ -2227,6 +2228,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
       NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();
+    LogKit::LogFormatted(LogKit::Low,"done.");
   }
   catch (NRLib::Exception & e) {
     std::string message = "Error: "+std::string(e.what())+"\n";

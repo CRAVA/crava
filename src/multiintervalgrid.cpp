@@ -808,7 +808,7 @@ MultiIntervalGrid::FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid)
           rel_z[s] = z-eroded_surfaces_[s].GetZ(x,y);
         ComputeZoneProbability(rel_z, uc_dist, erosion_priorities_, prob_zone);
         for(size_t s=0;s<prob_zone.size();s++)
-          zone_prob_grid[s](i,j,k) = prob_zone[s];
+          zone_prob_grid[s](i,j,k) = static_cast<float>(prob_zone[s]);
       }
     }
   }

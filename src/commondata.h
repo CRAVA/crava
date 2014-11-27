@@ -132,7 +132,7 @@ public:
   int n_data = static_cast<int>(data_trace.size());
 
   for (int i = 0; i < n_data; i++) {
-    rAmpData[i] = data_trace[i];
+    rAmpData[i] = static_cast<fftw_real>(data_trace[i]);
   }
   // Pad with zeros
   for (int i = n_data; i < rnt; i++) {
