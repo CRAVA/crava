@@ -36,10 +36,6 @@ public:
                     bool                               interpolate,
                     std::string                      & err_text);
 
-  // Constructor for wavelet estimation blocking
-  BlockedLogsCommon(const NRLib::Well   * well_data,
-                    const StormContGrid & stormgrid);
-
   // Constructor for blocked logs for rock physics
   BlockedLogsCommon(const NRLib::Well              * well_data,
                     const Simbox                   * simbox,

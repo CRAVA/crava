@@ -254,78 +254,78 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 }
 
-BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
-                                     const StormContGrid & stormgrid)
-: first_S_(IMISSING),
-  last_S_ (IMISSING),
-  first_M_(IMISSING),
-  last_M_(IMISSING),
-  first_B_ (IMISSING),
-  last_B_ (IMISSING)
-{
-
-  bool failed                   = false;
-  std::string err_text          = "";
-  is_deviated_                  = well_data->IsDeviated();
-  use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
-  real_vs_log_                  = well_data->GetRealVsLog();
-  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
-  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
-  use_for_filtering_            = well_data->GetUseForFiltering();
-  use_for_rock_physics_         = well_data->GetUseForRockPhysics();
-  facies_log_defined_           = false;
-  n_layers_                     = static_cast<int>(stormgrid.GetNK());
-  dz_                           = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
-
-  // FACIES
-  if (well_data->HasDiscLog("Facies")) {
-    facies_log_defined_ = true;
-    facies_map_ = well_data->GetFaciesMap();
-  }
-
-  // Get all continuous and discrete logs
-  std::vector<std::string> cont_logs_to_be_blocked;
-  std::vector<std::string> disc_logs_to_be_blocked;
-
-  const std::map<std::string,std::vector<double> > & cont_logs = well_data->GetContLog();
-  const std::map<std::string,std::vector<int> >    & disc_logs = well_data->GetDiscLog();
-
-  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
-    cont_logs_to_be_blocked.push_back(it->first);
-  }
-  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
-    disc_logs_to_be_blocked.push_back(it->first);
-  }
-
-  //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
-  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
-                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
-
-  std::vector<int> b_ind(n_data_); // Gives which block each well log entry contributes to
-
-  FindSizeAndBlockPointers(stormgrid, b_ind, first_M_, last_M_, n_blocks_, err_text);
-  if (err_text == "") {
-    FindBlockIJK(stormgrid, b_ind, first_M_, last_M_, first_B_, last_B_, i_pos_, j_pos_, k_pos_);
-
-    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_raw_logs_.begin(); it!=continuous_raw_logs_.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-
-      continuous_logs_blocked_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
-
-    //Create HighCutBackground blocked logs
-    const std::map<std::string, std::vector<double> > & background_resolution_logs = well_data->GetContLogBackgroundResolution();
-    for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
-      std::vector<double> temp_vector_blocked;
-      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
-      cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
-    }
-  }
-
-}
+//BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well   * well_data, //From blockedlogsforzone.cpp
+//                                     const StormContGrid & stormgrid)
+//: first_S_(IMISSING),
+//  last_S_ (IMISSING),
+//  first_M_(IMISSING),
+//  last_M_(IMISSING),
+//  first_B_ (IMISSING),
+//  last_B_ (IMISSING)
+//{
+//
+//  bool failed                   = false;
+//  std::string err_text          = "";
+//  is_deviated_                  = well_data->IsDeviated();
+//  use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
+//  real_vs_log_                  = well_data->GetRealVsLog();
+//  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+//  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+//  use_for_filtering_            = well_data->GetUseForFiltering();
+//  use_for_rock_physics_         = well_data->GetUseForRockPhysics();
+//  facies_log_defined_           = false;
+//  n_layers_                     = static_cast<int>(stormgrid.GetNK());
+//  dz_                           = static_cast<float>(stormgrid.GetLZ()/stormgrid.GetNK());
+//
+//  // FACIES
+//  if (well_data->HasDiscLog("Facies")) {
+//    facies_log_defined_ = true;
+//    facies_map_ = well_data->GetFaciesMap();
+//  }
+//
+//  // Get all continuous and discrete logs
+//  std::vector<std::string> cont_logs_to_be_blocked;
+//  std::vector<std::string> disc_logs_to_be_blocked;
+//
+//  const std::map<std::string,std::vector<double> > & cont_logs = well_data->GetContLog();
+//  const std::map<std::string,std::vector<int> >    & disc_logs = well_data->GetDiscLog();
+//
+//  for (std::map<std::string,std::vector<double> >::const_iterator it = cont_logs.begin(); it!=cont_logs.end(); it++) {
+//    cont_logs_to_be_blocked.push_back(it->first);
+//  }
+//  for (std::map<std::string,std::vector<int> >::const_iterator it = disc_logs.begin(); it!=disc_logs.end(); it++) {
+//    disc_logs_to_be_blocked.push_back(it->first);
+//  }
+//
+//  //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
+//  RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
+//                         facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
+//                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+//
+//  std::vector<int> b_ind(n_data_); // Gives which block each well log entry contributes to
+//
+//  FindSizeAndBlockPointers(stormgrid, b_ind, first_M_, last_M_, n_blocks_, err_text);
+//  if (err_text == "") {
+//    FindBlockIJK(stormgrid, b_ind, first_M_, last_M_, first_B_, last_B_, i_pos_, j_pos_, k_pos_);
+//
+//    for (std::map<std::string, std::vector<double> >::const_iterator it = continuous_raw_logs_.begin(); it!=continuous_raw_logs_.end(); it++) {
+//      std::vector<double> temp_vector_blocked;
+//
+//      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+//
+//      continuous_logs_blocked_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+//    }
+//
+//    //Create HighCutBackground blocked logs
+//    const std::map<std::string, std::vector<double> > & background_resolution_logs = well_data->GetContLogBackgroundResolution();
+//    for (std::map<std::string, std::vector<double> >::const_iterator it = background_resolution_logs.begin(); it!=background_resolution_logs.end(); it++) {
+//      std::vector<double> temp_vector_blocked;
+//      BlockContinuousLog(b_ind, it->second, temp_vector_blocked);
+//      cont_logs_highcut_background_.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector_blocked));
+//    }
+//  }
+//
+//}
 
 //Blocked logs for RockPhysics
 BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
@@ -996,7 +996,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  
       break;
     }
   }
-  if (first_M_ == IMISSING) {
+  if (first_M == IMISSING) {
     err_text += "Well "+GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
     return;
   }
