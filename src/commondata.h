@@ -238,9 +238,7 @@ public:
                                                    const Simbox           & estimation_simbox,
                                                    std::string            & err_text);
 
-  static int                FindClosestFactorableNumber(int leastint);
-
-
+  static int         FindClosestFactorableNumber(int leastint);
 
 private:
 
@@ -365,13 +363,13 @@ private:
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
                                              std::string                                                & err_text_common) const;
 
-bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
-                                           const MultiIntervalGrid                                    * multiple_interval_grid,
-                                           std::vector<NRLib::Well *>                                 & wells,
-                                           std::vector<std::string>                                   & continuous_logs_to_be_blocked,
-                                           std::vector<std::string>                                   & discrete_logs_to_be_blocked,
-                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
-                                           std::string                                                & err_text_common) const;
+  bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
+                                             const MultiIntervalGrid                                    * multiple_interval_grid,
+                                             std::vector<NRLib::Well *>                                 & wells,
+                                             std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                             std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                             std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                             std::string                                                & err_text_common) const;
 
   bool               RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
                                                        ModelSettings * model_settings,

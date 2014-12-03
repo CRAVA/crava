@@ -233,7 +233,8 @@ CommonData::CommonData(ModelSettings * model_settings,
   }
 
   if (err_text != "") {
-    LogKit::WriteHeader("Loading and processing data failed:");
+    LogKit::LogFormatted(LogKit::Low, "\n\n");
+    LogKit::WriteHeader("Loading and processing data failed. CRAVA has to stop due to the following errors:");
     LogKit::LogFormatted(LogKit::Error, err_text);
     exit(1);
   }
@@ -4478,6 +4479,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     else {
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
       top_surface = new Surface(top_surface_file_name);
+      MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
     }
 
   }
@@ -4513,6 +4515,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           else {
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
             base_surface = new Surface(base_surface_file_name);
+            MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
           }
         }
       }
@@ -4531,6 +4534,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         else {
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
           base_surface = new Surface(base_surface_file_name);
+          MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
         }
       }
     }
@@ -4723,8 +4727,28 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
         LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
 
       for (size_t j = 0; j < wells.size(); j++) {
+
+        //H-TODO BlockedLogsCommon gives an error if a well doesnt hit inside interval simbox.
+        //std::string err_text_tmp = "";
+
         blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j]->GetWellName(),
           new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text)));
+        //BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text_tmp);
+
+        //if (err_text_tmp != "") {
+        //  std::string interval_text = "";
+        //  if (n_intervals > 1)
+        //    interval_text = " for interval " + interval_name;
+
+        //  LogKit::LogFormatted(LogKit::Low,"Blocking of well " + wells[j]->GetWellName() + " in simbox failed" + interval_text +".\n");
+        //  LogKit::LogFormatted(LogKit::Low, err_text_tmp);
+        //  err_text += err_text_tmp;
+
+        //}
+        //else {
+        //  blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j]->GetWellName(), bl_tmp));
+        //}
+
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
@@ -7146,6 +7170,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           else
             err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
 
+          MultiIntervalGrid::RemoveNaNFromSurface(correlation_direction);
+
           //Create a sepeate background simbox based on correlation_direction
           int output_format = model_settings->getOutputGridFormat();
           if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
@@ -7203,7 +7229,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           for (size_t j = 0; j < wells.size(); j++) {
             bg_blocked_log = NULL;
 
-            // Get all continuous and discrete logs
+            // Get all continuous and discrete logs //H-TODO use cont_logs_to_be_blocked_
             std::vector<std::string> cont_logs_to_be_blocked;
             std::vector<std::string> disc_logs_to_be_blocked;
 
@@ -7217,6 +7243,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               disc_logs_to_be_blocked.push_back(it->first);
             }
 
+            //H-TODO Only add BL if it is inside simbox
             bg_blocked_log = new BlockedLogsCommon(wells[j],
                                                    cont_logs_to_be_blocked,
                                                    disc_logs_to_be_blocked,
@@ -7228,6 +7255,15 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             bg_blocked_log->SetWellName(bg_well_name);
 
             bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
+
+            //if (err_text_tmp != "")
+            //  bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
+            //else {
+            //  LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + bg_well_name + " in simbox " + model_settings->getIntervalName(i) + "failed:\n");
+            //  LogKit::LogFormatted(LogKit::Low, err_text_tmp);
+            //  err_text += err_text_tmp;
+            //}
+
           }
         }
 
@@ -9173,7 +9209,6 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * simbox,
   //LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
 }
 
-
 void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
                                              double                                                  dz_min,
                                              std::vector<NRLib::Matrix>                            & prior_auto_cov,
@@ -9355,9 +9390,6 @@ void  CommonData::PrintPriorVariances(const std::vector<std::string> & interval_
     }
   }
 }
-
-
-
 
 void CommonData::ReadAngularCorrelations(ModelSettings                                  * model_settings,
                                          std::vector<std::vector<std::vector<float> > > & angular_correlations) const
@@ -9550,8 +9582,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
 
   for (size_t i = 0; i < n_intervals; i++) {
     if (interval_names[i] != "") {
-      LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
-      LogKit::LogFormatted(LogKit::High ,"    Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(interval_names[i]));
+      if (model_settings->getVpVsRatios().find(interval_names[i]) != model_settings->getVpVsRatios().end()) {
+        LogKit::LogFormatted(LogKit::Low,"  Interval " + interval_names[i] + ":\n");
+        LogKit::LogFormatted(LogKit::High ,"    Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(interval_names[i]));
+      }
     }
     else if (model_settings->getVpVsRatios().find("") != model_settings->getVpVsRatios().end())
       LogKit::LogFormatted(LogKit::High ,"  Vp-Vs ratio used in reflection coef.     : %10.2f\n", model_settings->getVpVsRatio(""));
@@ -9802,26 +9836,30 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
 
     LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax        : %10.2f\n", model_settings->getLzLimit());
   }
-  for (size_t i = 0; i < n_intervals; i++) {
 
-    std::string buffer = "";
-    if (interval_names[i] != "") {
-      LogKit::LogFormatted(LogKit::Low,"\n  Interval " + interval_names[i] + ":");
-      buffer = "  ";
+  if (model_settings->getCorrDirUsed()) {
+    LogKit::LogFormatted(LogKit::Low,"\nCorrelation Direction:\n");
+    for (size_t i = 0; i < n_intervals; i++) {
+
+      std::string buffer = "";
+      if (interval_names[i] != "") {
+        LogKit::LogFormatted(LogKit::Low,"\n  Interval " + interval_names[i] + ":");
+        buffer = "  ";
+      }
+
+      if (input_files->getCorrDirFiles().find(interval_names[i]) != input_files->getCorrDirFiles().end())
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Correlation direction                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
+      if (input_files->getCorrDirTopSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirTopSurfaceFiles().end())
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
+      if (model_settings->getCorrDirTopConforms().find(interval_names[i]) != model_settings->getCorrDirTopConforms().end())
+        if (model_settings->getCorrDirTopConform(interval_names[i]) == true)
+          LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top conform \n");
+      if (input_files->getCorrDirBaseSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirBaseSurfaceFiles().end())
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
+      if (model_settings->getCorrDirBaseConforms().find(interval_names[i]) != model_settings->getCorrDirBaseConforms().end())
+        if (model_settings->getCorrDirBaseConform(interval_names[i]) == true)
+          LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base conform \n");
     }
-
-    if (input_files->getCorrDirFiles().find(interval_names[i]) != input_files->getCorrDirFiles().end())
-      LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Correlation direction                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
-    if (input_files->getCorrDirTopSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirTopSurfaceFiles().end())
-      LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
-    if (model_settings->getCorrDirTopConforms().find(interval_names[i]) != model_settings->getCorrDirTopConforms().end())
-      if (model_settings->getCorrDirTopConform(interval_names[i]) == true)
-        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top conform \n");
-    if (input_files->getCorrDirBaseSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirBaseSurfaceFiles().end())
-      LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
-    if (model_settings->getCorrDirBaseConforms().find(interval_names[i]) != model_settings->getCorrDirBaseConforms().end())
-      if (model_settings->getCorrDirBaseConform(interval_names[i]) == true)
-        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base conform \n");
   }
 
   if (model_settings->getDoDepthConversion())

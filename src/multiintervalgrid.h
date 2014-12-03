@@ -57,6 +57,8 @@ public:
   //Support functions
   void FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid);
 
+  static void RemoveNaNFromSurface(Surface *& surface);
+
 private:
 
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
