@@ -335,12 +335,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
     // Make extended interval_simbox for the inversion interval ---------------------------
 
-    // Case 0: No correlation directions in the xml file - top and base conform
-    if (corr_dir_top_conform.size() == 0 && corr_dir_base_conform.size() == 0) {
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
-    }
     // Case 1: Single correlation surface
-    else if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
+    if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
       corr_dir = true;
       Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
@@ -387,8 +383,12 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &base_surface,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
     }
+    // Case 8: No correlation directions in the xml file - top and base conform
+    else if (corr_dir_top_conform.size() == 0 && corr_dir_base_conform.size() == 0) {
+      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
+    }
     // else something is wrong
-    else{
+    else {
       err_text_tmp += "\nCorrelation directions are not set correctly for interval " + interval_name[i];
       err_text_tmp += ".\n";
     }

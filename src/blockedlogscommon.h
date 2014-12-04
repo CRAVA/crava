@@ -26,6 +26,7 @@ public:
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const MultiIntervalGrid          * multiple_interval_grid,
                     bool                               interpolate,
+                    bool                             & is_inside,
                     std::string                      & err_text);
 
   // Constructor for blocking in the surrounding estimation simbox
@@ -34,7 +35,12 @@ public:
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
                     bool                               interpolate,
+                    bool                             & is_inside,
                     std::string                      & err_text);
+
+  // Constructor for wavelet estimation blocking
+  //BlockedLogsCommon(const NRLib::Well   * well_data,
+  //                  const StormContGrid & stormgrid);
 
   // Constructor for blocked logs for rock physics
   BlockedLogsCommon(const NRLib::Well              * well_data,
@@ -425,6 +431,7 @@ private:
                                                    bool                                                  interpolate,
                                                    double                                              & dz,
                                                    bool                                                & failed,
+                                                   bool                                                & is_insde,
                                                    std::string                                         & err_text) const;
 
   void                                   BlockWellForCorrelationEstimation(const MultiIntervalGrid                             * multiple_interval_grid,
@@ -481,14 +488,14 @@ private:
                                    int                           & first_M,
                                    int                           & last_M,
                                    unsigned int                  & n_blocks,
-                                   std::string                   & err_text) const;
+                                   bool                          & is_inside) const;
 
-  void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
-                                   std::vector<int>              & bInd,
-                                   int                           & first_M,
-                                   int                           & last_M,
-                                   unsigned int                  & n_blocks,
-                                   std::string                   & err_text) const;
+  //void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
+  //                                 std::vector<int>              & bInd,
+  //                                 int                           & first_M,
+  //                                 int                           & last_M,
+  //                                 unsigned int                  & n_blocks,
+  //                                 std::string                   & err_text) const;
 
   void    FindBlockIJK(const Simbox                     * estimation_simbox,
                        const std::vector<int>           & bInd,

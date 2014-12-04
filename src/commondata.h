@@ -769,6 +769,8 @@ private:
                                           const std::vector<NRLib::Well *>                           & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                           std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
+                                          const std::vector<std::string>                             & cont_logs_to_be_blocked,
+                                          const std::vector<std::string>                             & disc_logs_to_be_blocked,
                                           MultiIntervalGrid                                          * multi_interval_grid,
                                           Simbox                                                     * inversion_simbox,
                                           std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
