@@ -8,7 +8,10 @@
 #include "src/definitions.h"
 #include "src/modelsettings.h"
 #include "src/inputfiles.h"
+
 #include "nrlib/flens/nrlib_flens.hpp"
+#include "nrlib/stormgrid/stormcontgrid.hpp"
+#include "nrlib/random/beta.hpp"
 
 class MultiIntervalGrid
 {
@@ -50,6 +53,9 @@ public:
 
   static   void  EstimateZPaddingSize(Simbox          * simbox,
                                       ModelSettings   * model_settings);
+
+  //Support functions
+  void FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid);
 
 private:
 
@@ -127,12 +133,20 @@ private:
                          const Simbox  * estimation_simbox,
                          int             n_layers) const;
 
+  void ComputeZoneProbability(const std::vector<double>      & z,
+                              const std::vector<NRLib::Beta> & horizon_distributions,
+                              const std::vector<int>         & erosion_priority,
+                              std::vector<double>            & zone_probability) const;
+
+
   // CLASS VARIABLES
   double                                               dz_min_;                    // Highest vertical resolution in the interval simboxes
   int                                                  n_intervals_;
   bool                                                 multiple_interval_setting_;
   std::vector<std::string>                             interval_names_;
   std::vector<int>                                     erosion_priorities_;
+  std::vector<double>                                  uncertainties_;
+  std::vector<Surface>                                 eroded_surfaces_;
   std::vector<std::string>                             surface_files_;
 
   std::vector<Simbox *>                                interval_simboxes_;        // Extended simbox with padding and correlation direction, must have same size as the parameters vector

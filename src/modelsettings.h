@@ -247,6 +247,7 @@ public:
   int                                                  getErosionPriorityTopSurface()                                   const { return erosion_priority_top_surface_                               ;}
   const std::map<std::string,int> &                    getErosionPriorityBaseSurfaces()                                 const { return erosion_priority_base_surfaces_                             ;}
   int                                                  getErosionPriorityBaseSurface(const std::string & interval_name) const { return erosion_priority_base_surfaces_.find(interval_name)->second ;}
+  const std::map<std::string, double> &                getUncertaintyBaseSurfaces()                                     const { return uncertainty_base_surfaces_                                  ;}
 
   const std::map<std::string, bool>& getCorrDirTopConforms()                  const { return topConformCorrelation_                     ;}
   bool                               getCorrDirTopConform(std::string name)   const { return topConformCorrelation_.find(name)->second  ;}
@@ -353,6 +354,8 @@ public:
   void addVpVsRatio(std::string interval_name, float ratio){ vp_vs_ratio_[interval_name] = ratio                 ;}
   void setErosionPriorityTopSurface(int priority)         { erosion_priority_top_surface_= priority              ;}
   void setErosionPriorityBaseSurface(const std::string & interval_name, int erosion_pri) { erosion_priority_base_surfaces_[interval_name] = erosion_pri; }
+  void setUncertaintyBaseSurface(const std::string & interval_name, double uncertainty)
+                                                       { uncertainty_base_surfaces_[interval_name] = uncertainty ;}
   void setVpVsRatioFromWells(bool vp_vs_ratio_from_wells) { vp_vs_ratio_from_wells_   = vp_vs_ratio_from_wells   ;}
   void setVpVsRatioMin(float vp_vs_ratio_min)             { vp_vs_ratio_min_          = vp_vs_ratio_min          ;}
   void setVpVsRatioMax(float vp_vs_ratio_max)             { vp_vs_ratio_max_          = vp_vs_ratio_max          ;}
@@ -632,6 +635,7 @@ private:
 
   int                               erosion_priority_top_surface_;   ///< Erosion priority for the top surface of the inversion intervals for multiple intervals. 1 by default
   std::map<std::string, int>        erosion_priority_base_surfaces_; ///< Erosion priority for the base surfaces of each interval. Each one must be unique.
+  std::map<std::string, double>     uncertainty_base_surfaces_;      ///< Uncertainty for the base surfaces of each interval. Uncertainty for last is ignored.
   bool                              multiple_intervals_;          // Multiple interval setting being used
   std::vector<std::string>          interval_names_;                 ///< Interval names for multiple interval inversion
   std::map<std::string, float>      vp_vs_ratio_;                    /// Interval names and the Vp/Vs-ratio given in <vp-vs-ratio> under <advanced-settings>
