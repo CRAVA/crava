@@ -7159,7 +7159,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         std::string interval_text = "";
         if (n_intervals > 1) {
-          LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + "\n");
+          LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + ":\n\n");
           interval_text = " for interval " + model_settings->getIntervalName(i);
         }
 

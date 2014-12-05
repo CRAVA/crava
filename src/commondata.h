@@ -102,6 +102,10 @@ public:
   const std::vector<NRLib::Grid<float> *>                            & GetBackgroundParametersInterval(int i)           const { return background_parameters_[i]                      ;}
   double                                                               GetBackgroundVsVpRatioInterval(int i)            const { return background_vs_vp_ratios_[i]                    ;}
 
+  NRLib::Grid<float>                                                 * GetBackgroundVpInterval(int i) const { return background_parameters_[i][0] ;}
+  NRLib::Grid<float>                                                 * GetBackgroundVsInterval(int i) const { return background_parameters_[i][1] ;}
+  NRLib::Grid<float>                                                 * GetBackgroundRhoInterval(int i) const { return background_parameters_[i][2] ;}
+
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
 
