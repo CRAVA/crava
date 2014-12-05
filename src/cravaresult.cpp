@@ -231,6 +231,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //before they are transformed to storm-grids and deleted.
   //WriteCravaGrids(model_settings, common_data, output_simbox, seismic_parameters_intervals[0]);
 
+  LogKit::LogFormatted(LogKit::Low,"\nSetting up zone probabilities");
   std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
   for(size_t i=0; i<zone_prob_grid.size();i++)
     zone_prob_grid[i] = NRLib::StormContGrid(output_simbox, nx, ny, nz_output);
@@ -617,7 +618,6 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
           old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
         }
         else {
-          //NRLib::Grid<float> * interval_grid = interval_grids_nrlib[i];
           old_trace = GetNRLibGridTrace(interval_grids_nrlib[i_interval], i, j);
         }
 
@@ -1585,6 +1585,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       background_vs_  = new StormContGrid(simbox, nx, ny, nz);
       background_rho_ = new StormContGrid(simbox, nx, ny, nz);
       std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
+      LogKit::LogFormatted(LogKit::Low,"\n Setting up zone probabilities");
       for(size_t i=0; i<zone_prob_grid.size();i++)
         zone_prob_grid[i] = NRLib::StormContGrid(simbox, nx, ny, nz);
       multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
