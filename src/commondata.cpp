@@ -9868,12 +9868,12 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       if (input_files->getCorrDirFiles().find(interval_names[i]) != input_files->getCorrDirFiles().end())
         LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Correlation direction                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
       if (input_files->getCorrDirTopSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirTopSurfaceFiles().end())
-        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top correlation surface                    : "+input_files->getCorrDirTopSurfaceFile(interval_names[i])+"\n");
       if (model_settings->getCorrDirTopConforms().find(interval_names[i]) != model_settings->getCorrDirTopConforms().end())
         if (model_settings->getCorrDirTopConform(interval_names[i]) == true)
           LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Top conform \n");
       if (input_files->getCorrDirBaseSurfaceFiles().find(interval_names[i]) != input_files->getCorrDirBaseSurfaceFiles().end())
-        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base correlation surface                    : "+input_files->getCorrDirFile(interval_names[i])+"\n");
+        LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base correlation surface                    : "+input_files->getCorrDirBaseSurfaceFile(interval_names[i])+"\n");
       if (model_settings->getCorrDirBaseConforms().find(interval_names[i]) != model_settings->getCorrDirBaseConforms().end())
         if (model_settings->getCorrDirBaseConform(interval_names[i]) == true)
           LogKit::LogFormatted(LogKit::Low,"\n  "+buffer+"Base conform \n");

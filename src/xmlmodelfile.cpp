@@ -1945,11 +1945,15 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     base_surface = true;
   }
 
-  if(parseBool(root, "top-conform", top_conform, errTxt) == true)
-    modelSettings_->setCorrDirTopConform(interval_name, true);
+  if(parseBool(root, "top-conform", top_conform, errTxt) == true) {
+    if (top_conform == true)
+      modelSettings_->setCorrDirTopConform(interval_name, true);
+  }
 
-  if(parseBool(root, "base-conform", base_conform, errTxt) == true)
-    modelSettings_->setCorrDirBaseConform(interval_name, true);
+  if(parseBool(root, "base-conform", base_conform, errTxt) == true) {
+    if (base_conform == true)
+      modelSettings_->setCorrDirBaseConform(interval_name, true);
+  }
 
   if(single_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
     errTxt += "-For interval " + interval_name + " a single surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";

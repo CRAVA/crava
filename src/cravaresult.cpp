@@ -571,7 +571,7 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
                                 std::vector<FFTGrid *>            & interval_grids,
                                 MultiIntervalGrid                 * multi_interval_grid,
                                 const std::vector<StormContGrid>  & zone_probability,
-                                std::vector<NRLib::Grid<float> *> & interval_grids_nrlib) //Optional
+                                std::vector<NRLib::Grid<float> *> & interval_grids_nrlib) //Optional, send in an empty vector if FFTGrids are used
 {
   int nx = static_cast<int>(final_grid->GetNI());
   int ny = static_cast<int>(final_grid->GetNJ());
@@ -580,7 +580,6 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
   //If output simbox has the same size as the result grid there is no need to resample
   if (n_intervals_ == 1 && static_cast<int>(final_grid->GetNK()) == multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
 
-    //H Temp solution
     if (interval_grids_nrlib.size() > 0) {
       FFTGrid * tmp_grid = new FFTGrid(interval_grids_nrlib[0], nx, ny, nz);
       CreateStormGrid(*final_grid, tmp_grid);
@@ -1564,7 +1563,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       //Resample background grids to one final grid
       //We don't have seismicParametersHolder (with FFT-grids), only CommonData (With NRLib-grids)
       //Have to transform from NRLib-Grid to FFTGrid to be used in CombineResult.
-      //H-TODO Add support of NRlib-Grid to CombineResult
       LogKit::LogFormatted(LogKit::Low,"\nCombine Background Grids");
       MultiIntervalGrid      * multi_interval_grid = common_data->GetMultipleIntervalGrid();
 
@@ -1572,54 +1570,25 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       int ny = simbox.getny();
       int nz = simbox.getnz();
 
-      //std::vector<FFTGrid *> background_vp_intervals(n_intervals_);
-      //std::vector<FFTGrid *> background_vs_intervals(n_intervals_);
-      //std::vector<FFTGrid *> background_rho_intervals(n_intervals_);
       std::vector<FFTGrid *> dummy_fft_grids;
 
-
-      LogKit::LogFormatted(LogKit::Low,"\nNX " + NRLib::ToString(nx)); //H-REMOVE
-      LogKit::LogFormatted(LogKit::Low,"\nNY " + NRLib::ToString(ny)); //H-REMOVE
-      LogKit::LogFormatted(LogKit::Low,"\nNZ " + NRLib::ToString(nz)); //H-REMOVE
-
-      //for (int i = 0; i < n_intervals_; i++) {
-      //  background_vp_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[0], nx, ny, nz);
-      //  common_data->ReleaseBackgroundGrids(i, 0);
-      //  background_vs_intervals[i]  = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[1], nx, ny, nz);
-      //  common_data->ReleaseBackgroundGrids(i, 1);
-      //  background_rho_intervals[i] = new FFTGrid(common_data->GetBackgroundParametersInterval(i)[2], nx, ny, nz);
-      //  common_data->ReleaseBackgroundGrids(i, 2);
-      //}
-      LogKit::LogFormatted(LogKit::Low,"\nTEST"); //H-REMOVE
       std::vector<NRLib::Grid<float> *> background_vp_intervals(n_intervals_);
       std::vector<NRLib::Grid<float> *> background_vs_intervals(n_intervals_);
       std::vector<NRLib::Grid<float> *> background_rho_intervals(n_intervals_);
       for (int i = 0; i < n_intervals_; i++) {
-        LogKit::LogFormatted(LogKit::Low,"\nTESTint"); //H-REMOVE
-        //background_vp_intervals[i] = common_data->GetBackgroundParametersInterval(i)[0];
-        //background_vs_intervals[i] = common_data->GetBackgroundParametersInterval(i)[1];
-        //background_rho_intervals[i] = common_data->GetBackgroundParametersInterval(i)[2];
-        background_vp_intervals[i] = common_data->GetBackgroundVpInterval(i);
-        background_vs_intervals[i] = common_data->GetBackgroundVsInterval(i);
+        background_vp_intervals[i]  = common_data->GetBackgroundVpInterval(i);
+        background_vs_intervals[i]  = common_data->GetBackgroundVsInterval(i);
         background_rho_intervals[i] = common_data->GetBackgroundRhoInterval(i);
 
       }
-      LogKit::LogFormatted(LogKit::Low,"\nTEST"); //H-REMOVE
       background_vp_  = new StormContGrid(simbox, nx, ny, nz);
       background_vs_  = new StormContGrid(simbox, nx, ny, nz);
       background_rho_ = new StormContGrid(simbox, nx, ny, nz);
-      LogKit::LogFormatted(LogKit::Low,"\nTEST"); //H-REMOVE
       std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
       for(size_t i=0; i<zone_prob_grid.size();i++)
         zone_prob_grid[i] = NRLib::StormContGrid(simbox, nx, ny, nz);
       multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
-      LogKit::LogFormatted(LogKit::Low,"\nTEST"); //H-REMOVE
-      //LogKit::LogFormatted(LogKit::Low,"\n Vp");
-      //CombineResult(background_vp_,  background_vp_intervals,  multi_interval_grid, zone_prob_grid);
-      //LogKit::LogFormatted(LogKit::Low,"\n Vs");
-      //CombineResult(background_vs_,  background_vs_intervals,  multi_interval_grid, zone_prob_grid);
-      //LogKit::LogFormatted(LogKit::Low,"\n Rho");
-      //CombineResult(background_rho_, background_rho_intervals, multi_interval_grid, zone_prob_grid);
+
       LogKit::LogFormatted(LogKit::Low,"\n Vp");
       CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals);
       LogKit::LogFormatted(LogKit::Low,"\n Vs");
