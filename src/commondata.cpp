@@ -159,8 +159,8 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
 
     // 12. Setup of background model
-    if (setup_multigrid_ && setup_estimation_rock_physics_) {
-      if (model_settings->getGenerateBackground() || model_settings->getEstimateBackground()) {
+    if (setup_multigrid_ && setup_estimation_rock_physics_ && (model_settings->getEstimationMode() == false || model_settings->getEstimateBackground())) {
+      if ((model_settings->getEstimationMode() == false && model_settings->getGenerateBackground()) || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_ && inversion_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                          multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
@@ -175,7 +175,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_ && setup_background_model_)
+    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
@@ -981,7 +981,7 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
       }
 
       if (err_text_tmp != "") {
-        err_text += "Error with seismic data for time lapse " + NRLib::ToString(this_timelapse) + " and angle " + NRLib::ToString(angles[i]) +":\n";
+        err_text += "Error with seismic data for time lapse " + NRLib::ToString(this_timelapse) + " and angle " + NRLib::ToString(180.0*angles[i]/NRLib::Pi) +":\n";
         err_text += err_text_tmp;
       }
     }
@@ -998,7 +998,7 @@ CommonData::CheckThatDataCoverGrid(const SegY  * segy,
 {
   // Seismic data coverage (translate to CRAVA grid by adding half a grid cell)
   float dz = segy->GetDz();
-  float z0 = offset + 0.5f*dz;
+  float z0 = offset;
   float zn = z0 + (segy->GetNz() - 1)*dz;
 
   // Find guard zone
@@ -3047,6 +3047,7 @@ CommonData::FindVsVpForZone(int                   i_interval,
     origin = "model file";
   }
   else if (model_settings->getVpVsRatioFromWells()) { //wells
+    vsvp = 0; //Assumed in code
     VsVpFromWells(i_interval,
                   vsvp,
                   n_well_points);
