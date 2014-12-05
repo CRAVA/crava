@@ -102,6 +102,10 @@ public:
   const std::vector<NRLib::Grid<float> *>                            & GetBackgroundParametersInterval(int i)           const { return background_parameters_[i]                      ;}
   double                                                               GetBackgroundVsVpRatioInterval(int i)            const { return background_vs_vp_ratios_[i]                    ;}
 
+  NRLib::Grid<float>                                                 * GetBackgroundVpInterval(int i)                   const { return background_parameters_[i][0]                   ;}
+  NRLib::Grid<float>                                                 * GetBackgroundVsInterval(int i)                   const { return background_parameters_[i][1]                   ;}
+  NRLib::Grid<float>                                                 * GetBackgroundRhoInterval(int i)                  const { return background_parameters_[i][2]                   ;}
+
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
 
@@ -132,7 +136,7 @@ public:
   int n_data = static_cast<int>(data_trace.size());
 
   for (int i = 0; i < n_data; i++) {
-    rAmpData[i] = data_trace[i];
+    rAmpData[i] = static_cast<fftw_real>(data_trace[i]);
   }
   // Pad with zeros
   for (int i = n_data; i < rnt; i++) {
@@ -238,9 +242,7 @@ public:
                                                    const Simbox           & estimation_simbox,
                                                    std::string            & err_text);
 
-  static int                FindClosestFactorableNumber(int leastint);
-
-
+  static int         FindClosestFactorableNumber(int leastint);
 
 private:
 
@@ -365,13 +367,13 @@ private:
                                              std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
                                              std::string                                                & err_text_common) const;
 
-bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
-                                           const MultiIntervalGrid                                    * multiple_interval_grid,
-                                           std::vector<NRLib::Well *>                                 & wells,
-                                           std::vector<std::string>                                   & continuous_logs_to_be_blocked,
-                                           std::vector<std::string>                                   & discrete_logs_to_be_blocked,
-                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
-                                           std::string                                                & err_text_common) const;
+  bool                 BlockLogsForInversion(const ModelSettings                                        * const model_settings,
+                                             const MultiIntervalGrid                                    * multiple_interval_grid,
+                                             std::vector<NRLib::Well *>                                 & wells,
+                                             std::vector<std::string>                                   & continuous_logs_to_be_blocked,
+                                             std::vector<std::string>                                   & discrete_logs_to_be_blocked,
+                                             std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                             std::string                                                & err_text_common) const;
 
   bool               RemoveDuplicateLogEntriesFromWell(NRLib::Well   & well,
                                                        ModelSettings * model_settings,
@@ -771,6 +773,8 @@ bool                 BlockLogsForInversion(const ModelSettings                  
                                           const std::vector<NRLib::Well *>                           & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                           std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
+                                          const std::vector<std::string>                             & cont_logs_to_be_blocked,
+                                          const std::vector<std::string>                             & disc_logs_to_be_blocked,
                                           MultiIntervalGrid                                          * multi_interval_grid,
                                           Simbox                                                     * inversion_simbox,
                                           std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
