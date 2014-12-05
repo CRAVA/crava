@@ -8,6 +8,7 @@
 #include "src/multiintervalgrid.h"
 #include "src/definitions.h"
 #include "src/simbox.h"
+#include "src/tasklist.h"
 
 MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      InputFiles     * input_files,
@@ -91,6 +92,24 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                          surfaces,
                          *estimation_simbox,
                          err_text);
+
+        //Check if eroded surfaces have max distance greater than zero.
+        //H-TODO Make removal of intervals automatic
+        for (int i = 0; i<n_intervals_; i++) {
+
+          double tmp_resolution = FindResolution(&eroded_surfaces_[i], &eroded_surfaces_[i+1], estimation_simbox,
+                                                 model_settings->getTimeNz(interval_names_[i]));
+
+          //If max resolution of eroded surfaces is zero we can't set up interval simboxes
+          if (tmp_resolution == 0) {
+            LogKit::LogMessage(LogKit::Error,"Error: Eroded surfaces for interval " + interval_names_[i] + " has maximum thickness equal to zero. This interval should be removed.\n");
+            err_text += "Eroded surfaces for interval " + interval_names_[i] + " has maximum distance equal to zero. This interval should be removed.\n";
+            TaskList::addTask("Removed interval " + interval_names_[i]);
+            failed = true;
+          }
+        }        
+
+
       }
       else {
         err_text += "Erosion of surfaces failed because the interval surfaces could not be set up correctly.\n";

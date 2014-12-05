@@ -248,7 +248,7 @@ base_eroded_surface_(NULL)
 
   setDepth(top_surface, bot_surface, n_layers); //Needed for GetLZ()
   //this->calculateDz(lz_limit, err_text);
-  //calculcateDz also checks for interval-thickness. Sinche surfaces are eroded they may be zero which gives and error.
+  //calculcateDz also checks for interval-thickness. Since surfaces are eroded they may be zero which gives and error.
   double old_dz = GetLZ() / nz_;
 
   SetErodedSurfaces(top_surface, bot_surface);
