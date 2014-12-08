@@ -168,16 +168,16 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
   botName_        = "";
   grad_x_         = 0;
   grad_y_         = 0;
-  setDepth(top_surface, base_surface, n_layers);
-  this->calculateDz(lz_limit, err_text);
-  SetErodedSurfaces(top_surface, base_surface);
+  //setDepth(top_surface, base_surface, n_layers);
+  //this->calculateDz(lz_limit, err_text);
+  //SetErodedSurfaces(top_surface, base_surface);
 
   if (estimation_simbox->CheckSurface(top_surface) == false){
     err_text += "Error: Surface "+ topName_ +" does not cover volume.\n";
     failed = true;
   }
   if(estimation_simbox->CheckSurface(base_surface) == false){
-    err_text += "Error: Surface"+ botName_ +"does not cover volume.\n";
+    err_text += "Error: Surface "+ botName_ +" does not cover volume.\n";
     failed  = true;
   }
   // Set Eroded surfaces in the simbox
@@ -186,6 +186,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
     // Set surfaces in the volume
     // This should set the status to BOXOK
     setDepth(top_surface, base_surface, n_layers);
+    this->calculateDz(lz_limit, err_text);
   }
   if(status_!=BOXOK){
     failed = true;
@@ -244,8 +245,12 @@ base_eroded_surface_(NULL)
   ilStepY_        = simbox->getILStepY();
   xlStepX_        = simbox->getXLStepX();
   xlStepY_        = simbox->getXLStepY();
-  setDepth(top_surface, bot_surface, n_layers);
-  this->calculateDz(lz_limit, err_text);
+
+  setDepth(top_surface, bot_surface, n_layers); //Needed for GetLZ()
+  //this->calculateDz(lz_limit, err_text);
+  //calculcateDz also checks for interval-thickness. Since surfaces are eroded they may be zero which gives and error.
+  double old_dz = GetLZ() / nz_;
+
   SetErodedSurfaces(top_surface, bot_surface);
 
   if (simbox->CheckSurface(*single_corr_surface) != true) {
@@ -257,7 +262,7 @@ base_eroded_surface_(NULL)
   NRLib::Vector corr_plane_parameters = FindPlane(single_corr_surface);
   Surface * mean_surface;
   if(single_corr_surface->GetNI() > 2)
-  mean_surface = new Surface(*single_corr_surface);
+    mean_surface = new Surface(*single_corr_surface);
   else {
     mean_surface = new Surface(dynamic_cast<const Surface &>(top_surface));
     if(mean_surface->GetNI() == 2) { //Extend corrSurf to cover other surfaces.
@@ -282,8 +287,8 @@ base_eroded_surface_(NULL)
     (*mean_surface)(i) = 0;
 
   // Find mean of top and base surface
-  mean_surface->AddNonConform(&GetTopSurface());
-  mean_surface->AddNonConform(&GetBotSurface());
+  mean_surface->AddNonConform(&(top_surface));
+  mean_surface->AddNonConform(&(bot_surface));
   mean_surface->Multiply(0.5);
   NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
 
@@ -302,15 +307,17 @@ base_eroded_surface_(NULL)
   double shift_top = new_top_surface.Max();
   shift_top *= -1.0;
   new_top_surface.Add(shift_top);
-  new_top_surface.AddNonConform(&(simbox->GetTopSurface()));
+  new_top_surface.AddNonConform(&(top_surface));
+  //new_top_surface.AddNonConform(&(simbox->GetTopSurface())); //H Why add from full_inversion_simbox?
 
   // Create new base surface
   Surface new_base_surface(*ref_plane);
   new_base_surface.SubtractNonConform(&(bot_surface));
   double shift_bot = new_base_surface.Min();
+
   shift_bot *= -1.0;
   double thick    = shift_bot-shift_top;
-  double dz       = getdz();
+  double dz       = old_dz;//getdz();
   int    nz       = int(thick/dz);
   double residual = thick - nz*dz;
   if (residual > 0.0) {
@@ -326,6 +333,7 @@ base_eroded_surface_(NULL)
   new_base_surface.AddNonConform(&(bot_surface));
 
   setDepth(new_top_surface, new_base_surface, nz);
+  this->calculateDz(lz_limit, err_text); //H
 
   if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";
@@ -388,9 +396,11 @@ Simbox::Simbox(const Simbox         * simbox,
   ilStepY_        = simbox->getILStepY();
   xlStepX_        = simbox->getXLStepX();
   xlStepY_        = simbox->getXLStepY();
+
   setDepth(top_surface, base_surface, n_layers);
   SetErodedSurfaces(top_surface, base_surface);
-  this->calculateDz(lz_limit, err_text);
+  //this->calculateDz(lz_limit, err_text);
+  double old_dz = GetLZ() / nz_;
 
   //
   // Check that the two surfaces do not intersect
@@ -455,8 +465,8 @@ Simbox::Simbox(const Simbox         * simbox,
 
     // Find mean of top and base surface
 
-    mean_surface->AddNonConform(&GetTopSurface());
-    mean_surface->AddNonConform(&GetBotSurface());
+    mean_surface->AddNonConform(&top_surface);
+    mean_surface->AddNonConform(&base_surface);
     mean_surface->Multiply(0.5);
     NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
 
@@ -488,7 +498,7 @@ Simbox::Simbox(const Simbox         * simbox,
     double shift_top = new_top.Max();
     shift_top *= -1.0;
     new_top.Add(shift_top);
-    new_top.AddNonConform(&(simbox->GetTopSurface()));
+    new_top.AddNonConform(&top_surface);//new_top.AddNonConform(&(simbox->GetTopSurface())); //H?
 
     // Create new base surface
     //ref_plane_base->AddNonConform(base_corr_surface);
@@ -498,7 +508,7 @@ Simbox::Simbox(const Simbox         * simbox,
     shift_bot *= -1.0;
 
     double thick    = shift_bot-shift_top;
-    double dz       = getdz();
+    double dz       = old_dz; //getdz();
     int    nz       = int(thick/dz);
     double residual = thick - nz*dz;
     if (residual > 0.0) {
@@ -515,6 +525,7 @@ Simbox::Simbox(const Simbox         * simbox,
     new_base.AddNonConform(&(base_surface));
 
     setDepth(new_top, new_base, nz);
+    this->calculateDz(lz_limit, err_text);
 
   if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";

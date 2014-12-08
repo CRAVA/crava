@@ -500,20 +500,24 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, false);
         output->SetFormat(NRLib::StormContGrid::STORM_BINARY);
         std::string file_name_storm = file_name + IO::SuffixStormBinary();
+        LogKit::LogFormatted(LogKit::Low," Writing STORM file "+file_name_storm+"...");
         output->WriteToFile(file_name_storm, header, false);
+        LogKit::LogFormatted(LogKit::Low,"done\n");
       }
 
       if ((format_flag & IO::ASCII) > 0) {
         output->SetFormat(NRLib::StormContGrid::STORM_ASCII);
         const std::string header = simbox->getStormHeader(1, simbox->getnx(), simbox->getny(), simbox->getnz(), false, true);
         std::string file_name_ascii = file_name + IO::SuffixGeneralData();
+        LogKit::LogFormatted(LogKit::Low," Writing ASCII file "+file_name_ascii+"...");
         output->WriteToFile(file_name_ascii, header, true);
+        LogKit::LogFormatted(LogKit::Low,"done\n");
       }
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((format_flag & IO::SEGY) > 0) {
         std::string file_name_segy = file_name + IO::SuffixSegy();
-        LogKit::LogFormatted(LogKit::Low,"\nWriting SEGY file "+file_name_segy+"...");
+        LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
 
         SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
                               simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
@@ -536,7 +540,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_sgri   = file_name + IO::SuffixSgri();
         std::string file_name_header = file_name + IO::SuffixSgriHeader();
 
-        LogKit::LogFormatted(LogKit::Low,"\nWriting SGRI header file "+ file_name_header + "...");
+        LogKit::LogFormatted(LogKit::Low," Writing SGRI header file "+ file_name_header + "...");
         output->WriteToSgriFile(file_name_sgri, file_name_header, label, simbox->getdz());
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
@@ -559,7 +563,9 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           int ny = static_cast<int>(output->GetNJ());
           int nz = static_cast<int>(output->GetNK());
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, false, false);
+          LogKit::LogFormatted(LogKit::Low," Writing STORM file "+file_name_storm+"...");
           output->WriteToFile(file_name_storm, header, false);
+          LogKit::LogFormatted(LogKit::Low,"done\n");
         }
         if ((format_flag & IO::ASCII) > 0) {
           output->SetFormat(NRLib::StormContGrid::STORM_ASCII);
@@ -567,8 +573,10 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           int nx = static_cast<int>(output->GetNI());
           int ny = static_cast<int>(output->GetNJ());
           int nz = static_cast<int>(output->GetNK());
+          LogKit::LogFormatted(LogKit::Low," Writing ASCII file "+file_name_ascii+"...");
           std::string header = depth_map->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, false, true);
           output->WriteToFile(file_name_ascii, header, true);
+          LogKit::LogFormatted(LogKit::Low,"done\n");
         }
         if ((format_flag & IO::SEGY) >0) {
           //makeDepthCubeForSegy(depth_map->getSimbox(),depth_name);
@@ -590,10 +598,11 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
 
           std::string file_name_segy = file_name + IO::SuffixSegy();
 
+          LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
           SegY * segy = new SegY(storm_cube_depth, &geometry, z0, file_name_segy, true);
           delete segy;
           delete storm_cube_depth;
-
+          LogKit::LogFormatted(LogKit::Low,"done\n");
         }
       }
       else {
@@ -654,7 +663,9 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
     int ny = static_cast<int>(storm_grid->GetNJ());
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, 0, 1);
     outgrid->SetFormat(StormContGrid::STORM_ASCII);
+    LogKit::LogFormatted(LogKit::Low," Writing ASCII file "+gf_name+"...");
     outgrid->WriteToFile(gf_name, header);
+    LogKit::LogFormatted(LogKit::Low,"done\n");
   }
 
   if ((format & IO::STORM) > 0) {
@@ -663,7 +674,9 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
     int ny = static_cast<int>(storm_grid->GetNJ());
     header = gridmapping->getSimbox()->getStormHeader(FFTGrid::PARAMETER, nx, ny, nz, 0, 0);
     outgrid->SetFormat(StormContGrid::STORM_BINARY);
+    LogKit::LogFormatted(LogKit::Low," Writing STORM file "+gf_name+"...");
     outgrid->WriteToFile(gf_name,header);
+    LogKit::LogFormatted(LogKit::Low,"done\n");
   }
   if((format & IO::SEGY) > 0) {
     gf_name =  file_name + IO::SuffixSegy();
@@ -673,8 +686,10 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
                           simbox->getILStepX(), simbox->getILStepY(),
                           simbox->getXLStepX(), simbox->getXLStepY(),
                           simbox->getAngle());
+    LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+gf_name+"...");
     SegY * segy = new SegY(outgrid, &geometry, z0, gf_name, true);
     delete segy;
+    LogKit::LogFormatted(LogKit::Low,"done\n");
 
     //writeSegyFromStorm(outgrid, gf_name);
   }

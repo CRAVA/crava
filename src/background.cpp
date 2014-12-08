@@ -110,7 +110,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                                     std::string                                      & err_text)
 {
   const int   nz      = simbox->getnz();
-  const int   n_wells = model_settings->getNumberOfWells();
+  const int   n_wells = static_cast<int>(blocked_logs.size());
   const float dz      = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
 
   std::string name_vp  = "Vp";

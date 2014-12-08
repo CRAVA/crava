@@ -36,7 +36,8 @@ public:
   void CombineResult(StormContGrid                    *& final_grid,
                      std::vector<FFTGrid *>            & interval_grids,
                      MultiIntervalGrid                 * multi_interval_grid,
-                     const std::vector<StormContGrid>  & zone_probability);
+                     const std::vector<StormContGrid>  & zone_probability,
+                     std::vector<NRLib::Grid<float> *> & interval_grids_nrlib);
 
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
                                const double             & dz_resampled,
@@ -72,6 +73,10 @@ public:
   void ResampleTrace(std::vector<double> & old_trace,
                      std::vector<double> & new_trace,
                      const float           res_fac);
+
+  std::vector<float> GetNRLibGridTrace(NRLib::Grid<float> * grid,
+                                       int i,
+                                       int j);
 
   void CombineTraces(std::vector<double>                     & final_log,
                      const BlockedLogsCommon                 * blocked_log_final,
