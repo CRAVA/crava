@@ -587,6 +587,12 @@ Simbox & Simbox::operator=(const Simbox   & rhs)
   std::swap(dx_, tmp.dx_);
   std::swap(dy_, tmp.dy_);
   std::swap(dz_, tmp.dz_);
+  std::swap(nx_, tmp.nx_);
+  std::swap(ny_, tmp.ny_);
+  std::swap(nz_, tmp.nz_);
+  std::swap(nx_pad_, tmp.nx_pad_);
+  std::swap(ny_pad_, tmp.ny_pad_);
+  std::swap(nz_pad_, tmp.nz_pad_);
   std::swap(inLine0_, tmp.inLine0_);
   std::swap(crossLine0_, tmp.crossLine0_);
   std::swap(ilStepX_, tmp.ilStepX_);
