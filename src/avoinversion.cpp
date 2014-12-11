@@ -106,6 +106,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
   scaleWarning_      = 0;
   scaleWarningText_  = "";
   sigmamdnew_        = NULL;
+  interval_name_     = modelGeneral_->GetIntervalName();
 
   errThetaCov_       = modelAVOdynamic->GetErrThetaCov();
   thetaDeg_          = modelAVOdynamic->GetThetaDeg();
@@ -720,7 +721,7 @@ AVOInversion::computeAdjustmentFactor(fftw_complex                  * adjustment
 }
 
 void
-AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName)
+AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName, std::string & interval_name)
 {
   int i,j,k,l,flag;
 
@@ -778,6 +779,10 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
       std::string angle     = NRLib::ToString(thetaDeg_[l],1);
       std::string sgriLabel = typeName + " for incidence angle "+angle;
       std::string fileName  = typeName + "_" + angle;
+
+      if (interval_name != "")
+        fileName += "_" + interval_name;
+
       seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
       seisData_[l]->endAccess();
   }
@@ -1115,10 +1120,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     seisData_[l]->endAccess();
 
   //Finish use of seisData_, since we need the memory.
-  if((outputGridsSeismic_ & IO::RESIDUAL) > 0) //H-TODO move this to cravaresult (CRA-742)
+  if((outputGridsSeismic_ & IO::RESIDUAL) > 0)
   {
     if(simbox_->getIsConstantThick() != true)
-      multiplyDataByScaleWaveletAndWriteToFile("residuals");
+      multiplyDataByScaleWaveletAndWriteToFile("residuals", interval_name_);
     else
     {
       for (l=0;l<ntheta_;l++)
@@ -1126,6 +1131,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
         std::string angle     = NRLib::ToString(thetaDeg_[l],1);
         std::string sgriLabel = " Residuals for incidence angle "+angle;
         std::string fileName  = IO::PrefixResiduals() + angle;
+
+        if (interval_name_ != "")
+          fileName += "_" + interval_name_;
+
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
         seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);

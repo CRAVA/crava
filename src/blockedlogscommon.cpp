@@ -377,7 +377,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   n_layers_ = simbox->getnz();
   double dz;
 
-  //H-TODO
   bool is_inside = true;
   FindSizeAndBlockPointers(simbox, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
 

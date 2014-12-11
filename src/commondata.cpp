@@ -93,7 +93,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
       SetLogsToBeBlocked(model_settings, wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
-      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise() || model_settings->getEstimateCorrelations())
+      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise())// || model_settings->getEstimateCorrelations())
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
@@ -4741,10 +4741,6 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       int n_intervals_inside = 0;
       for (size_t j = 0; j < wells.size(); j++) {
 
-        //H-TODO BlockedLogsCommon gives an error if a well doesnt hit inside interval simbox.
-
-        //blocked_log_interval.insert(std::pair<std::string, BlockedLogsCommon *>(wells[j]->GetWellName(),
-        //  new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), err_text)));
         bool is_inside = true;
         BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), is_inside, err_text);
 

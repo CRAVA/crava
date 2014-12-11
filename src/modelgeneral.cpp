@@ -74,6 +74,8 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
     else
       random_gen_ = new RandomGen(input_files->getSeedFile().c_str());
 
+    interval_name_ = model_settings->getIntervalName(i_interval);
+
     //
     // FORWARD MODELLING
     //

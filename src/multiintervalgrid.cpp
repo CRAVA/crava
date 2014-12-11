@@ -107,8 +107,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
             TaskList::addTask("Removed interval " + interval_names_[i]);
             failed = true;
           }
-        }        
-
+        }
 
       }
       else {
