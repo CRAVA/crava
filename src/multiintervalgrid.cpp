@@ -451,8 +451,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       interval_simboxes[i]->SetXPadFactor(estimation_simbox->GetXPadFactor());
       interval_simboxes[i]->SetYPadFactor(estimation_simbox->GetYPadFactor());
 
-      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad())*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad();
-
+      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad());
+      
       if (grid_size > std::numeric_limits<unsigned int>::max()) {
         float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
         float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
@@ -466,10 +466,10 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
       LogKit::LogFormatted(LogKit::Low,"  Output grid        %4i * %4i * %4i   : %10llu\n",
                             interval_simboxes[i]->getnx(),interval_simboxes[i]->getny(),interval_simboxes[i]->getnz(),
-                            static_cast<unsigned long long int>(interval_simboxes[i]->getnx())*interval_simboxes[i]->getny()*interval_simboxes[i]->getnz());
+                            static_cast<unsigned long long int>(interval_simboxes[i]->getnx()*interval_simboxes[i]->getny()*interval_simboxes[i]->getnz()));
       LogKit::LogFormatted(LogKit::Low,"  FFT grid           %4i * %4i * %4i   :%11llu\n",
                             interval_simboxes[i]->GetNXpad(),interval_simboxes[i]->GetNYpad(),interval_simboxes[i]->GetNZpad(),
-                            static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad())*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad());
+                            static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad()));
     }
 
     // Check consistency ------------------------------------------------------------------
