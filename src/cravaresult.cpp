@@ -272,6 +272,18 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
     CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
 
+    //Add predicted logs from resampled grid
+    if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+
+        BlockedLogsCommon * blocked_log = iter->second;
+        blocked_log->SetLogFromGrid(post_vp_,0,1,"VP_PREDICTED");
+        blocked_log->SetLogFromGrid(post_vs_,0,1,"VS_PREDICTED");
+        blocked_log->SetLogFromGrid(post_rho_,0,1,"RHO_PREDICTED");
+      }
+    }
+
     //Post vp, vs and rho from avoinversion doPredictionKriging()
     if (model_settings->getKrigingParameter() > 0) {
       post_vp_kriged_  = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -745,6 +757,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //Resample blocked logs to output_simbox and combine if multiple intervals
   //blocked_logs_output are blocked to output_simbox in commondata
   //Need to resample blocked logs that are added after commondata
+  //H-TODO Avvoid resmpling of blocked logs, should recreate these logs from the resampled grids
 
   int n_intervals = static_cast<int>(blocked_logs_intervals.size());
   float res_fac   = 10.0; //Degree of refinement, must be integer.
@@ -774,36 +787,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
     LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
 
-    //Predicted Logs
-    bool got_predicted = blocked_logs_intervals[0].find(well_name)->second->GetContLogsPredicted().size() > 0;
-    if (got_predicted) {
-      LogKit::LogFormatted(LogKit::Low,"\n    predicted... ");
-
-      std::vector<double> vp_predicted_final(n_blocks);
-      std::vector<double> vs_predicted_final(n_blocks);
-      std::vector<double> rho_predicted_final(n_blocks);
-      std::vector<std::vector<double> > vp_predicted_intervals(n_intervals);
-      std::vector<std::vector<double> > vs_predicted_intervals(n_intervals);
-      std::vector<std::vector<double> > rho_predicted_intervals(n_intervals);
-
-      //Get well logs, missing values are interpolated
-      for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpPredicted());
-        CopyWellLog(vs_predicted_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVsPredicted());
-        CopyWellLog(rho_predicted_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoPredicted());
-      }
-
-      ResampleLog(vp_predicted_final,  vp_predicted_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-      ResampleLog(vs_predicted_final,  vs_predicted_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-      ResampleLog(rho_predicted_final, rho_predicted_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-      blocked_log_final->SetVpPredicted(vp_predicted_final);
-      blocked_log_final->SetVsPredicted(vs_predicted_final);
-      blocked_log_final->SetRhoPredicted(rho_predicted_final);
-      LogKit::LogFormatted(LogKit::Low,"ok");
-    }
-
-
     //Facies prob
     bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
     if (got_facies_prob) {
@@ -818,7 +801,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
         //Get well logs, missing values are interpolated
         for (int i = 0; i < n_intervals_; i++) {
-          CopyWellLog(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRealSeismicData(j));
+          CopyWellLog(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetFaciesProb(j));
         }
 
         ResampleLog(facies_prob_final, facies_prob_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);

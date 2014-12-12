@@ -452,7 +452,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       interval_simboxes[i]->SetYPadFactor(estimation_simbox->GetYPadFactor());
 
       unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad());
-      
+
       if (grid_size > std::numeric_limits<unsigned int>::max()) {
         float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
         float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));

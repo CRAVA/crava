@@ -93,7 +93,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // if correlations should be estimated
     if (read_wells_ == true && wells_.size() > 0) {
       SetLogsToBeBlocked(model_settings, wells_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_);
-      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise())// || model_settings->getEstimateCorrelations())
+      if (model_settings->getOptimizeWellLocation() || model_settings->getEstimateWaveletNoise())
         block_wells_ = BlockWellsForEstimation(model_settings, estimation_simbox_, wells_, continuous_logs_to_be_blocked_,
                                                discrete_logs_to_be_blocked_, mapped_blocked_logs_, err_text);
 
