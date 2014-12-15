@@ -62,6 +62,7 @@ public:
   const std::vector<std::string>             & GetFaciesNames(void)       const { return facies_names_            ;}
   std::vector<int>                             GetFaciesLabel()           const { return facies_labels_           ;}
   bool                                         GetIs4DActive()            const { return(do_4D_inversion_)        ;}
+  std::string                                  GetIntervalName()                { return interval_name_           ;}
 
   void AddFaciesLabel(int faciesLabel)                                        { facies_labels_.push_back(faciesLabel) ;}
   void AddFaciesName(const std::string & faciesName)                          { facies_names_.push_back(faciesName)   ;}
@@ -154,6 +155,8 @@ private:
   bool                                                          do_4D_inversion_;
   bool                                                          do_4D_rock_physics_vnversion_;
   State4D                                                       state4d_;                     ///< State4D holds the 27 grdis needed for 4D inversion.
+
+  std::string                                                   interval_name_;
 
 };
 

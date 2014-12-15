@@ -115,7 +115,7 @@ private:
   FFTFileGrid          * copyFFTGrid(FFTFileGrid * fftGridOld);
 
   void                   divideDataByScaleWavelet(const SeismicParametersHolder & seismicParameters);
-  void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName);
+  void                   multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeName, std::string & interval_name);
   void                   doPostKriging(SeismicParametersHolder & seismicParameters, FFTGrid & postVp, FFTGrid & postVs, FFTGrid & postRho);
 
   void                   correctVpVsRho(ModelSettings * modelSettings);
@@ -190,6 +190,8 @@ private:
   FFTGrid          * postVs_;
   FFTGrid          * postRho_;
   FFTGrid          * errCorr_;
+
+  std::string        interval_name_;
 
   int                                        krigingParameter_;
   std::map<std::string, BlockedLogsCommon *> blocked_wells_;

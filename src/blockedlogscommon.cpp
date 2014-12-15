@@ -377,7 +377,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   n_layers_ = simbox->getnz();
   double dz;
 
-  //H-TODO
   bool is_inside = true;
   FindSizeAndBlockPointers(simbox, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
 
@@ -3397,6 +3396,7 @@ void  BlockedLogsCommon::SetLogFromGrid(SegY         * segy,
   if (type == "SEISMIC_DATA") {
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
+
 }
 
 //--------------------------------------------------------------------------------------
@@ -3426,6 +3426,16 @@ void  BlockedLogsCommon::SetLogFromGrid(StormContGrid * storm,
   if (type == "SEISMIC_DATA") {
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
+  else if (type == "VP_PREDICTED") {
+    continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
+  }
+  else if (type == "VS_PREDICTED") {
+    continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", blocked_log));
+  }
+  else if (type == "RHO_PREDICTED") {
+    continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Rho", blocked_log));
+  }
+
 }
 
 

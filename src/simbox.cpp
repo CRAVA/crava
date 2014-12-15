@@ -245,6 +245,7 @@ base_eroded_surface_(NULL)
   ilStepY_        = simbox->getILStepY();
   xlStepX_        = simbox->getXLStepX();
   xlStepY_        = simbox->getXLStepY();
+  constThick_     = simbox->getIsConstantThick();
 
   setDepth(top_surface, bot_surface, n_layers); //Needed for GetLZ()
   //this->calculateDz(lz_limit, err_text);
@@ -308,7 +309,6 @@ base_eroded_surface_(NULL)
   shift_top *= -1.0;
   new_top_surface.Add(shift_top);
   new_top_surface.AddNonConform(&(top_surface));
-  //new_top_surface.AddNonConform(&(simbox->GetTopSurface())); //H Why add from full_inversion_simbox?
 
   // Create new base surface
   Surface new_base_surface(*ref_plane);
@@ -317,7 +317,7 @@ base_eroded_surface_(NULL)
 
   shift_bot *= -1.0;
   double thick    = shift_bot-shift_top;
-  double dz       = old_dz;//getdz();
+  double dz       = old_dz;
   int    nz       = int(thick/dz);
   double residual = thick - nz*dz;
   if (residual > 0.0) {
@@ -333,7 +333,7 @@ base_eroded_surface_(NULL)
   new_base_surface.AddNonConform(&(bot_surface));
 
   setDepth(new_top_surface, new_base_surface, nz);
-  this->calculateDz(lz_limit, err_text); //H
+  this->calculateDz(lz_limit, err_text);
 
   if((other_output & IO::EXTRA_SURFACES) > 0 && (output_domain & IO::TIMEDOMAIN) > 0) {
     std::string top_surf_name  = IO::PrefixSurface() + IO::PrefixTop() + interval_name + "_"  + IO::PrefixTime() + "_Extended";
@@ -396,6 +396,7 @@ Simbox::Simbox(const Simbox         * simbox,
   ilStepY_        = simbox->getILStepY();
   xlStepX_        = simbox->getXLStepX();
   xlStepY_        = simbox->getXLStepY();
+  constThick_     = simbox->getIsConstantThick();
 
   setDepth(top_surface, base_surface, n_layers);
   SetErodedSurfaces(top_surface, base_surface);
@@ -508,7 +509,7 @@ Simbox::Simbox(const Simbox         * simbox,
     shift_bot *= -1.0;
 
     double thick    = shift_bot-shift_top;
-    double dz       = old_dz; //getdz();
+    double dz       = old_dz;
     int    nz       = int(thick/dz);
     double residual = thick - nz*dz;
     if (residual > 0.0) {
@@ -1264,8 +1265,6 @@ void Simbox::setDepth(const NRLib::Surface<double>& top_surf,
     status_ = NOAREA;
   else if(status_ == NODEPTH)
     status_ = BOXOK;
-
-  //constThick_ = false;
 }
 
 void
@@ -1279,8 +1278,6 @@ Simbox::setDepth(const Surface & z0, const Surface & z1, int nz, bool skipCheck)
     status_ = NOAREA;
   else if(status_ == NODEPTH)
     status_ = BOXOK;
-
-  //constThick_ = false;
 }
 
 void
