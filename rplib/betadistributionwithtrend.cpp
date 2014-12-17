@@ -175,40 +175,51 @@ BetaDistributionWithTrend::GetQuantileValue(double u, double s1, double s2)
     double mean_trend = mean_->GetValue(s1, s2, dummy);
     double var_trend  = var_ ->GetValue(s1, s2, dummy);
 
-    int ix;
-    for(ix = 0; ix < n_samples_mean_; ix++) {
-      if(mean_trend >= mean_sampling_[ix])
-        break;
-    }
+    std::vector<size_t> ix(ni_,0);
+    while(ix[0]<mean_sampling_.size() && mean_trend > mean_sampling_[ix[0]])
+      ix[0]++;
 
-    int jy;
-    for(jy = 0; jy < n_samples_var_; jy++) {
-      if(var_trend >= var_sampling_[jy])
-        break;
-    }
+    std::vector<size_t> jy(nj_,0);
+    while(jy[0]<var_sampling_.size() && var_trend > var_sampling_[jy[0]])
+      jy[0]++;
 
     double li;
-    if(ni_ == 1)
+    if(ni_ == 1) {
       li = 0;
-    else
-      li = mean_sampling_[ix+1] - mean_sampling_[ix];
+    }
+    else if (ix[0] >= mean_sampling_.size()-1) {
+      ix[0] = mean_sampling_.size()-1;
+      ix[1] = ix[0];
+      li = mean_trend - mean_sampling_[ix[0]];
+    }
+    else {
+      ix[1] = ix[0]+1;
+      li = mean_sampling_[ix[1]] - mean_sampling_[ix[0]];
+    }
 
     double lj;
     if(nj_ == 1)
       lj = 0;
-    else
-      lj = var_sampling_[jy+1] - var_sampling_[jy];
+    else if (jy[0] >= var_sampling_.size()-1) {
+      jy[0] = var_sampling_.size()-1;
+      jy[1] = jy[0];
+      lj = var_trend - var_sampling_[ix[0]];
+    }
+    else {
+      jy[1] = jy[0]+1;
+      lj = var_sampling_[jy[1]] - var_sampling_[jy[0]];
+    }
 
     NRLib::Grid2D<double> quantile_grid(ni_, nj_, 0);
 
     for(int i=0; i<ni_; i++) {
       for(int j=0; j<nj_; j++) {
-        NRLib::Distribution<double> * dist = (*beta_distribution_)(ix+i, jy+j);
+        NRLib::Distribution<double> * dist = (*beta_distribution_)(ix[i], jy[j]);
         quantile_grid(i,j) = dist->Quantile(u);
       }
     }
 
-    NRLib::RegularSurface<double> surf(mean_sampling_[ix], var_sampling_[jy], li, lj, quantile_grid);
+    NRLib::RegularSurface<double> surf(mean_sampling_[ix[0]], var_sampling_[jy[0]], li, lj, quantile_grid);
 
     y = surf.GetZ(mean_trend, var_trend);
 
