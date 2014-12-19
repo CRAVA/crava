@@ -1255,7 +1255,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         }
 
         if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
+          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
 
         if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
           StormContGrid residual(*(synt_seismic_data_[j]));
@@ -1270,7 +1270,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
           std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
 
-          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
         }
       }
     }
@@ -1462,7 +1462,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
         (model_settings->getForwardModeling() == true))
-        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
     }
   }
 
@@ -1473,7 +1473,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     for (size_t i = 0; i < trend_cubes_.size(); i++) {
       std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
-      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, "trend cube");
+      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, false, "trend cube", time_depth_mapping);
     }
   }
 }
@@ -1707,22 +1707,22 @@ void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
 
   std::string file_name;
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vp");
+  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vs");
+  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for density");
+  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,Vs)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,density)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vs,density)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
 }
 
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
@@ -1864,13 +1864,13 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
   std::string file_name_rho = IO::PrefixBackground() + "Rho";
 
   ExpTransf(background_vp_);
-  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_vs_);
-  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_rho_);
-  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
