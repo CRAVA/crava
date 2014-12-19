@@ -57,9 +57,7 @@ public:
                             //Real seismic data when resampled are values at base of cell, and must be shifted an index before this is used.
                             bool                      is_seismic = false,
                             const std::string         label = "NO_LABEL",
-                            const float               z0 = 0.0,
                             const GridMapping       * depth_map = NULL,
-                            const TraceHeaderFormat & thf = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
                             bool                      padding = false);
 
 private:
@@ -132,7 +130,8 @@ private:
                                            const std::string   & file_name,
                                            const Simbox        * simbox,
                                            const int             format,
-                                           float                 z0);
+                                           float                 z0,
+                                           bool                  is_depth);
 
   static void     SeismicShift(NRLib::Grid<float> * grid);
 };
