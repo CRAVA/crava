@@ -1276,11 +1276,15 @@ FFTGrid::getRealTrace(float * value, int i, int j)
 }
 
 std::vector<float>
-FFTGrid::getRealTrace(int i, int j) const
+FFTGrid::getRealTrace(int i, int j, bool add_padding) const
 {
-  std::vector<float> value;
-  for(int k = 0; k < nz_; k++)
-    value.push_back(getRealValue(i,j,k));
+  int z_end = nz_;
+  if(add_padding == true)
+    z_end = nzp_;
+  std::vector<float> value(z_end);
+
+  for(int k = 0; k < z_end; k++)
+    value[k] = getRealValue(i,j,k);
   return value;
 }
 
