@@ -88,7 +88,7 @@ public:
   std::vector<Wavelet1D *>                                           & GetWellWavelets(int angle)                             { return well_wavelets_[angle]                          ;}
   std::vector<std::vector<float> >                                   & GetAngularCorrelation(int time_lapse)                  { return angular_correlations_[time_lapse]              ;}
 
-  bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_                           ;}
+  bool                                                                 GetPriorCovEst()                                 const { return prior_cov_estimated_or_file_                   ;}
   const std::vector<std::vector<double> >                            & GetTGradX()                                      const { return t_grad_x_                                      ;}
   const std::vector<std::vector<double> >                            & GetTGradY()                                      const { return t_grad_y_                                      ;}
   const NRLib::Grid2D<float>                                         & GetRefTimeGradX()                                const { return ref_time_grad_x_                               ;}
@@ -846,6 +846,7 @@ private:
   void               ReadPriorAutoCovariance(const std::string                        & file_name,
                                              std::vector<std::vector<NRLib::Matrix> > & prior_auto_cov,
                                              int                                        nz_pad,
+                                             int                                        i_interval,
                                              std::string                              & err_txt) const;
 
   void               ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
@@ -1055,7 +1056,7 @@ private:
 
   // Prior correlation
   bool                                                         prior_corr_per_interval_;       ///< If there is not enough data to estimate per interval, this is false
-  bool                                                         prior_cov_estimated_;           ///< CRA-257: If prior covariances are estimated, time corr is included in this estimation. This is also true if prior_auto_cov_ is read from file.
+  bool                                                         prior_cov_estimated_or_file_;   ///< CRA-257: If prior covariances are estimated, time corr is included in this estimation. This is also true if prior_auto_cov_ is read from file.
   std::vector<Surface *>                                       prior_corr_XY_;
   std::vector<std::vector<NRLib::Matrix> >                     prior_auto_cov_;                ///< CRA-257: New estimation of prior autocovariance - in this case prior_param_corr is not used. The first vector is intervals.
   std::vector<NRLib::Matrix>                                   prior_param_cov_;

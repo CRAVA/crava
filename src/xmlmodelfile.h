@@ -63,6 +63,8 @@ private:
   bool parsePriorModel(TiXmlNode * node, std::string & errTxt);
     bool parseCorrelationDirection(TiXmlNode * node, std::string & errTxt);
       bool parseIntervalCorrelationDirection(TiXmlNode * node, std::string & errTxt);
+    bool parseAutoCovariance(TiXmlNode * node, std::string & errTxt);
+      bool parseIntervalAutoCovariance(TiXmlNode * node, std::string & errTxt);
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);

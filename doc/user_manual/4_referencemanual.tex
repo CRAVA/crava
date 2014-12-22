@@ -2338,14 +2338,14 @@ the vertical sampling interval we find the the number of parameters that is esti
 
  \subsection{\hbracket{temporal-correlation-range}}\newkw{temporal-correlation-range}
   \slist
-    \item \Description Range (ms) in exponential variogram used for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}.
+    \item \Description Range (ms) in exponential variogram used for temporal correlation. Cannot be used in combination with \kw{temporal-correlation}. This is used for all intervals if \kw{multiple-intervals} is used.
     \item \Argument Value
     \item \Default
  \elist
 
 \subsection{\hbracket{parameter-correlation}}\newkw{parameter-correlation}
  \slist
-   \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density. Cannot be used in combination with \kw{parameter-autocovariance}.
+   \item \Description File name for the parameter correlation file. The file is an ascii file, containing covariances between Vp, Vs and density. Cannot be used in combination with \kw{parameter-autocovariance}. This is used for all intervals if \kw{multiple-intervals} is used.
    It is most common to use a file resulting from an earlier run of \crava, and the file might look like this:
 
   \begin{verbatim}
@@ -2359,7 +2359,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  
 \subsection{\hbracket{parameter-autocovariance}}\newkw{parameter-autocovariance}
  \slist
-   \item \Description File name for the parameter autocovariance file. The file is an ascii file, containing covariance matrices between Vp, Vs and density for each lag. This cannot be used in combination with \kw{parameter-correlation} and \kw{temporal-correlation} or \kw{temporal-correlation-range}. Parameter and temporal correlations are integrated in this autocovariance, where \kw{parameter-correlation} is equal to the first lag.
+   \item \Description File name for the parameter autocovariance file OR a list of intervals with a parameter autocovariance for each interval. The file is an ascii file, containing covariance matrices between Vp, Vs and density for each lag. This cannot be used in combination with \kw{parameter-correlation} and \kw{temporal-correlation} or \kw{temporal-correlation-range}. Parameter and temporal correlations are integrated in this autocovariance, where \kw{parameter-correlation} is equal to the first lag.
    It is most common to use a file resulting from an earlier run of \crava, and the first two lags in a file might look like this:
 
   \begin{verbatim}
@@ -2374,9 +2374,30 @@ the vertical sampling interval we find the the number of parameters that is esti
    0.0010523574  0.0014839220 -0.0002266622 
    0.0002532785 -0.0002192851  0.0004530772 
   \end{verbatim}
-   \item \Argument File name
+   \item \Argument File name OR a list of intervals.
    \item \Default
  \elist 
+ 
+\subsubsection{\hbracket{interval}}\rnewkw{interval}{ac-interval}
+ \slist
+   \item \Description Commands controlling the correlation directions of the inversion intervals.
+   \item \Argument Elements controlling the correlation directions.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{name}}\rnewkw{name}{ac-interval-name}
+ \slist
+   \item \Description Interval name - must correspond to one specified in \rkw{name}{interval-name}.
+   \item \Argument String.
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{file-name}}\rnewkw{file-name}{ac-interval-file-name}
+ \slist
+   \item \Description File name for the parameter autocovariance file.
+   \item \Argument File name
+   \item \Default
+ \elist
 
 \subsection{\hbracket{correlation-direction}}\newkw{correlation-direction}
  \slist

@@ -469,7 +469,6 @@ BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)
   discrete_raw_logs_   = logs.discrete_raw_logs_;
 
   //Variables needed in SetLogFromGrid and later used in WriteWell
-  cpp_                       = logs.cpp_;
   continuous_logs_predicted_ = logs.continuous_logs_predicted_;
   real_seismic_data_         = logs.real_seismic_data_;
   facies_prob_               = logs.facies_prob_;
@@ -3340,10 +3339,7 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
   if (n_angles_ == 0)
     n_angles_ = n_angles;
 
-  if (type == "REFLECTION_COEFFICIENT") {
-    cpp_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
-  }
-  else if (type == "SEISMIC_DATA") {
+  if (type == "SEISMIC_DATA") {
     //Real seismic data is shfited up by half a cell to match inversion. Shift back
     Utils::ShiftTrace(blocked_log,false);
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
@@ -3487,7 +3483,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() != 0);
   bool got_vp_rho_fac_log      = (vp_facies_filtered_.size() > 0);
 
-  bool got_cpp                 = (cpp_.size() > 0);
   bool got_facies_prob         = (facies_prob_.size() > 0);
   bool got_real_seismic        = (real_seismic_data_.size() > 0);
   bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0);
@@ -3507,8 +3502,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   if (got_actual_synt_seismic)
     n_logs += n_angles_;
   if (got_well_synt_seismic)
-    n_logs += n_angles_;
-  if (got_cpp)
     n_logs += n_angles_;
   if (got_predicted)
     n_logs += 3;
@@ -3565,10 +3558,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   if (got_well_synt_seismic) {
     for (int i = 0; i < n_angles_; i++)
       file << "WellOptimizedSyntSeis" << i << " UNK lin\n";
-  }
-  if (got_cpp) {
-    for (int i  = 0; i < n_angles_; i++)
-      file << "ReflCoef" << i << " UNK lin\n";
   }
 
   //
@@ -3649,9 +3638,6 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
         file << std::setw(12) << (well_synt_seismic_data_[a][i]==RMISSING ? WELLMISSING : well_synt_seismic_data_[a][i])          << " ";
       file << " ";
     }
-    if (got_cpp)
-      for (int a = 0; a < n_angles_; a++)
-        file << std::setw(12) << (GetCpp(a)[i]==RMISSING               ? WELLMISSING : GetCpp(a)[i])                        << " ";
     file << "\n";
   }
 
@@ -3738,7 +3724,6 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   bool got_real_seismic        = (real_seismic_data_.size() > 0);
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() > 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() > 0);
-  bool got_cpp                 = (cpp_.size() > 0);
   bool got_filtered_log        = (GetVpSeismicResolution().size() > 0);
   bool got_vp_rho_fac_log      = (vp_facies_filtered_.size() > 0);
 
@@ -3754,8 +3739,6 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   if (got_actual_synt_seismic)
     n_logs += n_angles_;
   if (got_well_synt_seismic)
-    n_logs += n_angles_;
-  if (got_cpp)
     n_logs += n_angles_;
 
   std::vector<std::string> params(3);

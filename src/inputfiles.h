@@ -41,7 +41,6 @@ public:
   const std::string              & getReflMatrFile(void)         const { return reflMatrFile_         ;}
   const std::string              & getParamCovFile(void)         const { return paramCovFile_         ;}
   const std::string              & getTempCorrFile(void)         const { return tempCorrFile_         ;}
-  const std::string              & getParamAutoCovFile(void)     const { return paramAutoCovFile_     ;}
   const std::string              & getRefSurfaceFile(void)       const { return refSurfaceFile_       ;}
   const std::string              & getInputDirectory(void)       const { return inputDirectory_       ;}
   const std::map<std::string,std::string> & getPriorFaciesProbFile(void) const {return priorFaciesProb_ ;}
@@ -50,12 +49,14 @@ public:
   const std::string              & getTrendCube(int i)           const { return trendCubes_[i]        ;}
   const std::string              & getGravimetricData(int i)     const { return gravimetricData_[i]   ;}
   const std::vector<std::string> & getSeismicFiles(void)         const { return seismicFiles_         ;}
-  const std::map<std::string, std::string> & getCorrDirFiles(void)                        const { return corrDirFiles_                        ;}
-  const std::string                        & getCorrDirFile(std::string name)             const { return corrDirFiles_.find(name)->second     ;}
-  const std::map<std::string, std::string> & getCorrDirTopSurfaceFiles(void)              const { return corrDirTopFiles_                     ;}
-  const std::string                        & getCorrDirTopSurfaceFile(std::string name)   const { return corrDirTopFiles_.find(name)->second  ;}
-  const std::map<std::string, std::string> & getCorrDirBaseSurfaceFiles(void)             const { return corrDirBaseFiles_                    ;}
-  const std::string                        & getCorrDirBaseSurfaceFile(std::string name)  const { return corrDirBaseFiles_.find(name)->second ;}
+  const std::map<std::string, std::string> & getParamAutoCovFiles(void)                   const { return paramAutoCovFiles_                    ;}
+  const std::string                        & getParamAutoCovFile(std::string name)        const { return paramAutoCovFiles_.find(name)->second ;}
+  const std::map<std::string, std::string> & getCorrDirFiles(void)                        const { return corrDirFiles_                         ;}
+  const std::string                        & getCorrDirFile(std::string name)             const { return corrDirFiles_.find(name)->second      ;}
+  const std::map<std::string, std::string> & getCorrDirTopSurfaceFiles(void)              const { return corrDirTopFiles_                      ;}
+  const std::string                        & getCorrDirTopSurfaceFile(std::string name)   const { return corrDirTopFiles_.find(name)->second   ;}
+  const std::map<std::string, std::string> & getCorrDirBaseSurfaceFiles(void)             const { return corrDirBaseFiles_                     ;}
+  const std::string                        & getCorrDirBaseSurfaceFile(std::string name)  const { return corrDirBaseFiles_.find(name)->second  ;}
   const std::vector<std::vector<std::string> > & getTimeLapseSeismicFiles(void)    const { return timeLapseSeismicFiles_                 ;}
   const std::map<std::string, std::string> & getBaseTimeSurfaces(void)             const { return timeSurfBaseFiles_                     ;}
   const std::string                        & getBaseTimeSurface(std::string name)  const { return timeSurfBaseFiles_.find(name)->second  ;}
@@ -91,13 +92,13 @@ public:
   void setReflMatrFile(const std::string & reflMatrFile)                  { reflMatrFile_         = reflMatrFile      ;}
   void setParamCovFile(const std::string & paramCovFile)                  { paramCovFile_         = paramCovFile      ;}
   void setTempCorrFile(const std::string & tempCorrFile)                  { tempCorrFile_         = tempCorrFile      ;}
-  void setParamAutoCovFile(const std::string & paramAutoCovFile)          { paramAutoCovFile_     = paramAutoCovFile  ;}
   void setRefSurfaceFile(const std::string & refSurfaceFile)              { refSurfaceFile_       = refSurfaceFile    ;}
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
   void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
   void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
   void addDefaultWaveletEstIntFileBase(void)                              { waveletEstIntFileBase_.push_back("")      ;}
+  void setParamAutoCovFile(const std::string & interval_name, const std::string & file_name)       { paramAutoCovFiles_[interval_name]  = file_name ;}
   void setCorrDirFile(const std::string & interval_name, const std::string & file_name)            { corrDirFiles_[interval_name]       = file_name ;}
   void setCorrDirTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { corrDirTopFiles_[interval_name]    = file_name ;}
   void setCorrDirBaseSurfaceFile(const std::string & interval_name, const std::string & file_name) { corrDirBaseFiles_[interval_name]   = file_name ;}
@@ -146,7 +147,7 @@ private:
   std::string                reflMatrFile_;          ///< File name for reflection matrix file.
   std::string                paramCovFile_;          ///< File name for correlation between parameters.
   std::string                tempCorrFile_;          ///< File name for temporal parameter correlations.
-  std::string                paramAutoCovFile_;      ///< File name for parameter autocovariance.
+  std::map<std::string, std::string> paramAutoCovFiles_; ///< File names: Map between interval name and parameter autocovariance.
   std::string                refSurfaceFile_;        ///< File name for reference time surface corresponding to z0.
 
   std::string                        timeSurfTopFile_;    ///< File names: top time surface

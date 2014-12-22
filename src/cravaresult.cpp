@@ -220,7 +220,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
- CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, common_data, &output_simbox); //Combine and resample logs create during inversion
+  CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, common_data, &output_simbox); //Combine and resample logs create during inversion
   LogKit::LogFormatted(LogKit::Low,"ok");
 
   //If we want to write grids on CRAVA-format we do not delete the fft-grids in CombineResult so we can write the grids with padding in WriteResults
@@ -388,6 +388,18 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       }
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    }
+
+    //Set facies prob in blocked logs
+    if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        for (int j = 0; j < n_facies; j++) {
+          blocked_log->SetLogFromGrid(facies_prob_[j], j , n_facies, "FACIES_PROB");
+        }
+      }
     }
 
     //Undef
@@ -807,54 +819,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     int n_blocks          = blocked_log_final->GetNumberOfBlocks();
 
     LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
-
-    //Facies prob
-    bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
-    if (got_facies_prob) {
-       LogKit::LogFormatted(LogKit::Low,"\n    facies prob... ");
-
-      int n_faices = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb();
-
-      for (int j = 0; j < n_faices; j++) {
-
-        std::vector<double> facies_prob_final(n_blocks);
-        std::vector<std::vector<double> > facies_prob_intervals(n_intervals_);
-
-        //Get well logs, missing values are interpolated
-        for (int i = 0; i < n_intervals_; i++) {
-          CopyWellLog(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetFaciesProb(j));
-        }
-
-        ResampleLog(facies_prob_final, facies_prob_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-        blocked_log_final->SetFaciesProb(j, facies_prob_final);
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok");
-    }
-
-    //Cpp
-    bool got_cpp = blocked_logs_intervals[0].find(well_name)->second->GetNCpp() > 0;
-    if (got_cpp) {
-      LogKit::LogFormatted(LogKit::Low,"\n    cpp... ");
-
-      int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNCpp();
-
-      for (int j = 0; j < n_angles; j++) {
-
-        std::vector<double> cpp_final(n_blocks);
-        std::vector<std::vector<double> > cpp_intervals(n_intervals_);
-
-        //Get well logs, missing values are interpolated
-        for (int i = 0; i < n_intervals_; i++) {
-          CopyWellLog(cpp_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetCpp(j));
-        }
-
-        ResampleLog(cpp_final, cpp_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-        blocked_log_final->SetCpp(j, cpp_final);
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok");
-    }
 
     //ForFacies logs (vp, rho)
     bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpFaciesFiltered().size() > 0;
@@ -1317,10 +1281,10 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
 
       ExpTransf(background_vs_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
+      background_vs_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
 
       ExpTransf(background_rho_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+      background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
     }
   }
 
@@ -1460,8 +1424,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vs" + suffix);
         std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Rho" + suffix);
         seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vp,  &simbox);
-        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vs,  &simbox);
-        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_rho, &simbox);
+        seismic_parameters.GetSimulationSeed1(i)->writeCravaFile(file_name_vs,  &simbox);
+        seismic_parameters.GetSimulationSeed2(i)->writeCravaFile(file_name_rho, &simbox);
       }
     }
   }

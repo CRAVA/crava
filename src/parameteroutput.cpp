@@ -509,7 +509,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((format_flag & IO::SEGY) > 0) {
         const TraceHeaderFormat * thf = model_settings->getTraceHeaderFormatOutput();
-        double z0 = model_settings->getSegyOffset(0);
+        float z0 = model_settings->getSegyOffset(0);
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
 
@@ -608,7 +608,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         // Writes also segy in depth if required
-        double z0 = model_settings->getSegyOffset(0);
+        float z0 = model_settings->getSegyOffset(0);
         WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0, true);
       }
     }

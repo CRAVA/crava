@@ -1391,13 +1391,10 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if(parseFileName(root, "parameter-correlation", filename_paramcorr, errTxt) == true)
     inputFiles_->setParamCovFile(filename_paramcorr);
 
-  std::string filename_autocov;
-  if(parseFileName(root, "parameter-autocovariance", filename_autocov, errTxt) == true){
-    inputFiles_->setParamAutoCovFile(filename_autocov);
-  }
+  bool autocov = parseAutoCovariance(root, errTxt);
 
   // check that not both param autocovariance and param_correlations + temporal_correlations are given
-  if (filename_autocov != "" && (filename_tmpcorr != "" || modelSettings_->getUseVerticalVariogram() || filename_paramcorr != ""))
+  if (autocov == true && (filename_tmpcorr != "" || modelSettings_->getUseVerticalVariogram() || filename_paramcorr != ""))
     errTxt += "Parameter correlation and/or Temporal correlation cannot be given as input together with autocovariance. Parameter and temporal correlation are integrated into the autocovariance";
 
   parseCorrelationDirection(root, errTxt);
@@ -1967,6 +1964,77 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
   if (single_surface == false && top_surface == false && base_surface == false && top_conform == false && base_conform == false)
     errTxt += "-No correlation surfaces have been defined under <correlation-direction> for interval "
                 + interval_name + ".\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseAutoCovariance(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("parameter-autocovariance");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("interval");
+
+  int n_intervalfiles = 0;
+  while (parseIntervalAutoCovariance(root,errTxt)==true) {
+    n_intervalfiles++;
+  }
+
+  std::string auto_cov_file = "";
+  while (parseCurrentValue(root, auto_cov_file, errTxt) == true) {
+    if (auto_cov_file != "") {
+      inputFiles_->setParamAutoCovFile("", auto_cov_file);
+    }
+  }
+
+  int n_intervals = static_cast<int>(modelSettings_->getIntervalNames().size());
+
+  if (n_intervalfiles > 0 && n_intervals != n_intervalfiles)
+    errTxt += "Parameter-autocovariance is not given for all intervals under " + node->ValueStr() + ". There are " + NRLib::ToString(n_intervals) + " intervals under <project-settings> "
+            + " and parameter-autocovariance is given for " + NRLib::ToString(n_intervalfiles) + " intervals.\n";
+
+  if (auto_cov_file != "" && n_intervals > 0)
+    errTxt += "You cannot use both a parameter-autocovariance file and parameter autocovariance for intervals under " + node->ValueStr() + ".\n";
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+}
+
+bool
+XmlModelFile::parseIntervalAutoCovariance(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("interval");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("name");
+  legalCommands.push_back("file-name");
+
+  std::string interval_name;
+  parseValue(root, "name", interval_name, errTxt);
+
+  const std::vector<std::string> interval_names =  modelSettings_->getIntervalNames();
+
+  bool correct_interval_name = false;
+  for(size_t i = 0; i < interval_names.size(); i++){
+    if (interval_names[i] == interval_name){
+      correct_interval_name = true;
+      break;
+    }
+  }
+  if(correct_interval_name == false){
+    errTxt += "The interval name \'" + interval_name + "\' specified under <parameter-autocovariance> does not match any of the intervals under <project-settings>.\n";
+  }
+
+  std::string filename;
+  if(parseFileName(root, "file-name", filename, errTxt) == true) {
+    inputFiles_->setParamAutoCovFile(interval_name, filename);
+  }
 
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
