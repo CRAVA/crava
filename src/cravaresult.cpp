@@ -220,7 +220,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
-  CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, common_data, &output_simbox); //Combine and resample logs create during inversion
+ CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, common_data, &output_simbox); //Combine and resample logs create during inversion
   LogKit::LogFormatted(LogKit::Low,"ok");
 
   //If we want to write grids on CRAVA-format we do not delete the fft-grids in CombineResult so we can write the grids with padding in WriteResults
@@ -613,6 +613,22 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
   printf("\n  |    |    |    |    |    |    |    |    |    |    |");
   printf("\n  ^");
 
+  std::vector<int> nz_old(n_intervals_);
+  for(size_t zone=0;zone<nz_old.size();zone++) {
+    if (use_nrlib_grids == false)
+      nz_old[zone] = interval_grids[zone]->getNzp();
+    else
+      nz_old[zone] = CommonData::FindClosestFactorableNumber(multi_interval_grid->GetIntervalSimbox(zone)->getnz()+100);
+  }
+
+  std::vector<rfftwnd_plan> small_plans;
+  std::vector<rfftwnd_plan> big_plans;
+  int scale = 10; //How densely to sample "fine" values.
+  CreateDownscalingPlans(nz_old,
+                         scale,
+                         small_plans,
+                         big_plans);
+
   //Resample
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
@@ -620,25 +636,26 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
       std::vector<std::vector<float> > new_traces(n_intervals_); //Finely interpolated values
 
       //Resample each trace to new nz
-      for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
-
-        Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
-
+      for (int zone = 0; zone < n_intervals_; zone++) {
         std::vector<float> old_trace;
         if (use_nrlib_grids == false) {
-          FFTGrid * interval_grid  = interval_grids[i_interval];
+          FFTGrid * interval_grid  = interval_grids[zone];
           old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
         }
         else {
-          old_trace = GetNRLibGridTrace(interval_grids_nrlib[i_interval], i, j);
+          old_trace = GetNRLibGridTrace(interval_grids_nrlib[zone], i, j);
         }
+        int prepad_size = static_cast<int>(old_trace.size());
+        AddPadding(old_trace, nz_old[zone]);
 
-        int nz_old       = interval_simbox->getnz();
+        new_traces[zone].resize(nz_old[zone]*scale);
 
-        int scale = 10; //How densely to sample "fine" values.
-        new_traces[i_interval].resize(nz_old*scale);
-
-        DownscaleTrace(old_trace, new_traces[i_interval], scale);
+        DownscaleTrace(old_trace,
+                       new_traces[zone],
+                       scale,
+                       prepad_size,
+                       small_plans[zone],
+                       big_plans[zone]);
 
       } //n_intervals
 
@@ -651,9 +668,9 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
 
         double value = 0;
         final_grid->FindCenterOfCell(i, j, k, global_x, global_y, global_z);
-        for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
-          if(zone_probability[i_interval](i,j,k) > 0) {
-            Simbox * z_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+        for (int zone = 0; zone < n_intervals_; zone++) {
+          if(zone_probability[zone](i,j,k) > 0) {
+            Simbox * z_simbox = multi_interval_grid->GetIntervalSimbox(zone);
             double dummy1, dummy2, rel_index;
             z_simbox->getInterpolationIndexes(global_x, global_y, global_z, dummy1, dummy2, rel_index);
             rel_index -= 0.5; //First half grid cell is outside interpolation vector.
@@ -663,8 +680,8 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
             else if(rel_index > 1)
               rel_index = 1;
 
-            int index = static_cast<int>(floor(0.5+rel_index*(new_traces[i_interval].size()-1))); //0 to first item, 1 to last item.
-            value += zone_probability[i_interval](i,j,k)*new_traces[i_interval][index];
+            int index = static_cast<int>(floor(0.5+rel_index*(new_traces[zone].size()-1))); //0 to first item, 1 to last item.
+            value += zone_probability[zone](i,j,k)*new_traces[zone][index];
           }
         }
         (*final_grid)(i,j,k) = static_cast<float>(value);
@@ -686,6 +703,10 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
     }
   }
 
+  for(size_t zone=0;zone<small_plans.size();zone++) {
+    fftwnd_destroy_plan(small_plans[zone]);
+    fftwnd_destroy_plan(big_plans[zone]);
+  }
 }
 
 std::vector<float>
@@ -774,7 +795,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   ModelAVODynamic::AddSeismicLogsFromStorage(blocked_logs_,
                                              seismic_data,
                                              *output_simbox,
-                                             n_angles);
+                                            n_angles);
 
   //Loop over wells
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_output.begin(); it != blocked_logs_output.end(); it++) {
@@ -1255,7 +1276,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         }
 
         if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, offset[j], time_depth_mapping);
+          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
 
         if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
           StormContGrid residual(*(synt_seismic_data_[j]));
@@ -1270,7 +1291,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
           std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
 
-          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
         }
       }
     }
@@ -1462,7 +1483,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
         (model_settings->getForwardModeling() == true))
-        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label);
+        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
     }
   }
 
@@ -1473,7 +1494,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     for (size_t i = 0; i < trend_cubes_.size(); i++) {
       std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
-      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, "trend cube");
+      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, false, "trend cube", time_depth_mapping);
     }
   }
 }
@@ -1707,22 +1728,22 @@ void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
 
   std::string file_name;
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vp");
+  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for Vs");
+  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior covariance for density");
+  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,Vs)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vp,density)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
 
   file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, "Posterior cross-covariance for (Vs,density)");
+  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
 }
 
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
@@ -1864,13 +1885,13 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
   std::string file_name_rho = IO::PrefixBackground() + "Rho";
 
   ExpTransf(background_vp_);
-  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_vs_);
-  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_rho_);
-  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", 0, depth_mapping, thf);
+  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
 
   //
   // For debugging: write cubes not in ASCII, with padding, and with flat top.
@@ -2117,27 +2138,47 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   }
 }
 
- void
- CravaResult::DownscaleTrace(const std::vector<float> & trace_in,
-                             std::vector<float>       & trace_out,
-                             int                         scale)
-{
-  std::vector<float> input_pad = trace_in;
-  size_t pad = 101; //Want odd length vector in fft, better for interpolation.
-  if(trace_in.size() % 2 == 1)
-    pad = 100;
-  size_t n_data = trace_in.size();
-  input_pad.resize(n_data+pad);
-  double step = 1.0/static_cast<float>(pad);
-  for(size_t i=n_data; i<input_pad.size();i++) {
-    double t = (i-trace_in.size())*step;
-    input_pad[i] = static_cast<float>((1-t)*trace_in[n_data-1]+t*trace_in[0]);
-  }
 
-  int nt = static_cast<int>(input_pad.size());
+void
+CravaResult::CreateDownscalingPlans(const std::vector<int>    & nzp,
+                                    int                         scale,
+                                    std::vector<rfftwnd_plan> & small_plans,
+                                    std::vector<rfftwnd_plan> & big_plans)
+{
+  small_plans.resize(nzp.size());
+  big_plans.resize(nzp.size());
+  for(size_t zone=0;zone<small_plans.size();zone++) {
+    int nt = nzp[zone];;
+    int mt = nt*scale;
+    small_plans[zone] = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+    big_plans[zone]   = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  }
+}
+
+
+void
+CravaResult::AddPadding(std::vector<float> & trace,
+                        int                  nzp)
+{
+  int old_size = static_cast<int>(trace.size());
+  trace.resize(nzp);
+  for(int i = old_size;i<nzp;i++) { //Tapering
+    double t = static_cast<double>(i-old_size+1)/static_cast<double>(nzp-old_size+1);
+    trace[i] = (1-t)*trace[old_size-1]+t*trace[0];
+  }
+}
+
+void
+CravaResult::DownscaleTrace(const std::vector<float> & trace_in,
+                            std::vector<float>       & trace_out,
+                            int                        scale,
+                            int                        prepad_size,
+                            const rfftwnd_plan       & small_plan,
+                            const rfftwnd_plan       & big_plan)
+{
+  //Assumes trace_in is already padded.
+  int nt = static_cast<int>(trace_in.size());
   int mt = nt*scale;
-  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
   int cnt = nt/2 + 1;
   int rnt = 2*cnt;
@@ -2147,9 +2188,9 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   fftw_real * rAmpData = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnt));
   fftw_real * rAmpFine = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rmt));
 
-  CommonData::ResampleTrace(input_pad,
-                            fftplan1,
-                            fftplan2,
+  CommonData::ResampleTrace(trace_in,
+                            small_plan,
+                            big_plan,
                             rAmpData,
                             rAmpFine,
                             nt,
@@ -2159,7 +2200,7 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
                             rmt);
 
   //Add trend
-  size_t out_len = trace_in.size()*scale-(scale-1); //Points beyond this are contaminated by padding.
+  size_t out_len = prepad_size*scale-(scale-1); //Points beyond this are contaminated by padding.
   trace_out.resize(out_len);
   for (size_t k = 0; k < out_len; k++) {
     trace_out[k] = rAmpFine[k];
@@ -2167,6 +2208,4 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
 
   fftw_free(rAmpData);
   fftw_free(rAmpFine);
-  fftwnd_destroy_plan(fftplan1);
-  fftwnd_destroy_plan(fftplan2);
 }

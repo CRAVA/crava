@@ -3381,10 +3381,14 @@ void  BlockedLogsCommon::SetLogFromGrid(SegY         * segy,
   double z     = 0.0;
   double value = 0.0;
 
+  double shift = 0.0;
+  if (type == "SEISMIC_DATA")
+    shift = 0.5*segy->GetDz();
+
   for (size_t m = 0 ; m < n_blocks_ ; m++) {
 
     simbox.getCoord(i_pos_[m], j_pos_[m], k_pos_[m], x, y, z);
-    value = segy->GetValue(x, y, z);
+    value = segy->GetValue(x, y, z+shift);
     blocked_log[m] = value;
 
     //blocked_log[m] = grid->getRealValue(i_pos_[m], j_pos_[m], k_pos_[m]);

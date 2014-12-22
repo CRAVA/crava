@@ -368,8 +368,8 @@ SegY::SegY(const StormContGrid     * storm_grid,
       x  = float(geometry_->GetX0()+xt*geometry_->GetCosRot()-yt*geometry_->GetSinRot());
       y  = float(geometry_->GetY0()+yt*geometry_->GetCosRot()+xt*geometry_->GetSinRot());
 
-      double z_bot      = storm_grid->GetBotSurface().GetZ(x,y);
-      double z_top      = storm_grid->GetTopSurface().GetZ(x,y);
+      double z_bot      = storm_grid->GetBotSurface().GetZ(x,y)-z0;
+      double z_top      = storm_grid->GetTopSurface().GetZ(x,y)-z0;
       int    first_data = static_cast<int>(floor((z_top+z_shift)/dz));
       int    end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
 

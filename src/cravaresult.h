@@ -174,8 +174,18 @@ public:
 
   void DownscaleTrace(const std::vector<float> & trace_in,
                       std::vector<float>       & trace_out,
-                      int                         scale);
+                      int                        scale,
+                      int                        prepad_size,
+                      const rfftwnd_plan       & small_plan,
+                      const rfftwnd_plan       & big_plan);
 
+  void AddPadding(std::vector<float> & trace,
+                  int                  nzp);
+
+  void CreateDownscalingPlans(const std::vector<int>       & nz_old,
+                              int                            scale,
+                              std::vector<rfftwnd_plan>    & small_plans,
+                              std::vector<rfftwnd_plan>    & big_plans);
   //GET FUNCTIONS
 
   //SET FUNCTIONS
