@@ -19,7 +19,6 @@ InputFiles::InputFiles(void)
     reflMatrFile_(""),
     paramCovFile_(""),
     tempCorrFile_(""),
-    paramAutoCovFile_(""),
     timeSurfTopFile_(""),
     depthSurfTopFile_(""),
     areaSurfaceFile_("")
@@ -109,12 +108,14 @@ InputFiles::addInputPathAndCheckFiles()
   for(j=corrDirBaseFiles_.begin();j != corrDirBaseFiles_.end();j++) {
     errTxt += addPathAndCheck(j->second);
   }
+  for(j=paramAutoCovFiles_.begin();j != paramAutoCovFiles_.end();j++) {
+    errTxt += addPathAndCheck(j->second);
+  }
 
   errTxt += addPathAndCheck(backVelFile_);
   errTxt += addPathAndCheck(reflMatrFile_);
   errTxt += addPathAndCheck(paramCovFile_);
   errTxt += addPathAndCheck(tempCorrFile_);
-  errTxt += addPathAndCheck(paramAutoCovFile_);
   errTxt += addPathAndCheck(refSurfaceFile_,true);
   errTxt += addPathAndCheck(areaSurfaceFile_);
 

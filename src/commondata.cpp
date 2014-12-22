@@ -47,7 +47,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   estimation_simbox_(),
   time_line_(NULL),
   refmat_from_file_global_vpvs_(false),
-  prior_cov_estimated_(false),
+  prior_cov_estimated_or_file_(false),
   time_depth_mapping_(NULL),
   velocity_from_inversion_(false)
 {
@@ -193,7 +193,7 @@ CommonData::CommonData(ModelSettings * model_settings,
             setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                              multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                              background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
-                                                             prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+                                                             prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_or_file_, err_text);
           }
         }
       }
@@ -201,7 +201,7 @@ CommonData::CommonData(ModelSettings * model_settings,
         setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
-                                                         prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_, err_text);
+                                                         prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_or_file_, err_text);
       }
     }
 
@@ -7958,7 +7958,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                        std::vector<NRLib::Matrix>                                  & prior_param_cov,
                                        std::vector<Surface *>                                      & prior_corr_XY,
                                        std::vector<std::vector<NRLib::Matrix> >                    & prior_auto_cov,
-                                       bool                                                        & prior_cov_estimated, //or prior_auto_cov read from file
+                                       bool                                                        & prior_cov_estimated_or_file, //or prior_auto_cov read from file
                                        std::string                                                 & err_text_common) const
 {
 
@@ -7992,35 +7992,47 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     //If only timeCorr is given, it is discarded and a complete auto_cov is estimated.
     //If both param_corr and CorrT given from file we don't set up the auto_cov (prior_cov_estimated = false, different setup in seismicparametersholder)
 
+    //H-TODO We should allow to read parameter autocovariance from file for some intervals, and estimate for others.
+    //Now we require files to be given for each interval
+
     //Read auto_covariance from file, this overrides estimate_param_cov and estimate_temp_corr
-    const std::string & param_auto_cov_file = input_files->getParamAutoCovFile();
+    const std::map<std::string, std::string> & param_auto_cov_files = input_files->getParamAutoCovFiles();
     bool failed_auto_cov = false;
-    if (param_auto_cov_file != "") { //Parameter autocovariance from file
 
-      prior_cov_estimated      = true;
-      std::string tmp_err_text = "";
-      ReadPriorAutoCovariance(param_auto_cov_file, prior_auto_cov, interval_simboxes[0]->GetNZpad(), tmp_err_text);
-      ValidatePriorAutoCovMatrices(prior_auto_cov, model_settings, tmp_err_text);
+    for (size_t i = 0; i < n_intervals; i++) {
+      if (param_auto_cov_files.find(interval_names[i]) != param_auto_cov_files.end()) {
 
-      //Set prior_param_cov equal to auto_cov[0]
-      for (size_t i = 0; i < n_intervals; i++)
-        prior_param_cov[i].resize(3,3);
-      prior_param_cov[0] = prior_auto_cov[0][0];
+        std::string param_auto_cov_file = input_files->getParamAutoCovFile(interval_names[i]);
 
-      // B Lateral correlation -------------------------------------------------------------------
-      for (size_t i = 0; i < n_intervals; i++) {
+        prior_cov_estimated_or_file      = true;
+        std::string tmp_err_text = "";
+        ReadPriorAutoCovariance(param_auto_cov_file, prior_auto_cov, interval_simboxes[i]->GetNZpad(), static_cast<int>(i), tmp_err_text);
+        ValidatePriorAutoCovMatrices(prior_auto_cov, model_settings, tmp_err_text);
+
+        //Set prior_param_cov equal to auto_cov[0]
+        prior_param_cov[i] = prior_auto_cov[i][0];
+
+        // B Lateral correlation -------------------------------------------------------------------
         prior_corr_XY[i] = FindCorrXYGrid(interval_simboxes[i], model_settings);
-      }
 
-      if (tmp_err_text != "") {
-        failed_auto_cov = true;
-        err_text += tmp_err_text;
+        if (tmp_err_text != "") {
+          failed_auto_cov = true;
+          err_text += tmp_err_text;
+        }
+        else if (print_result == true) {
+          std::string base_name;
+          if (interval_names[i] != "")
+            base_name = IO::PrefixPrior() + IO::FileLateralCorr() + "_" + interval_names[i];
+          else
+            base_name = IO::PrefixPrior() + IO::FileLateralCorr();
+          std::string file_name = IO::makeFullFileName(IO::PathToCorrelations(), base_name);
+
+          IO::writeSurfaceToFile(*prior_corr_XY[i], file_name, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+        }
       }
-      else if (print_result == true)
-        WriteFilePriorVariances(model_settings, prior_auto_cov[0], prior_corr_XY[0], interval_names[0], interval_simboxes[0]->getdz());
     }
-    else {
 
+    if (prior_cov_estimated_or_file == false) {
       // A Parameter covariance -----------------------------------------------------------------------
       // 1. From file
       // 2. From rock physics
@@ -8193,7 +8205,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           // C.3 Estimation of temporal correlation from data
 
           if (estimate_param_cov || estimate_temp_corr) {
-            prior_cov_estimated = true;
+            prior_cov_estimated_or_file = true;
             prior_auto_cov[i].resize(n_corr_T);
             std::string tmp_err_txt = "";
 
@@ -8321,6 +8333,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 void CommonData::ReadPriorAutoCovariance(const std::string                        & file_name,
                                          std::vector<std::vector<NRLib::Matrix> > & prior_auto_cov,
                                          int                                        nz_pad,
+                                         int                                        i_interval,
                                          std::string                              & err_txt) const
 {
   int n_corr_T = nz_pad;
@@ -8329,7 +8342,7 @@ void CommonData::ReadPriorAutoCovariance(const std::string                      
   else
     n_corr_T = n_corr_T/2;
 
-  prior_auto_cov[0].resize(n_corr_T);
+  prior_auto_cov[i_interval].resize(n_corr_T);
 
   std::ifstream file;
   NRLib::OpenRead(file, file_name);
@@ -8371,16 +8384,16 @@ void CommonData::ReadPriorAutoCovariance(const std::string                      
   int n_matrices_file = static_cast<int>(tmp_cov_matrices.size());
   if (n_matrices_file >= n_corr_T) {
     for (int i = 0; i < n_corr_T; i++) {
-      prior_auto_cov[0][i] = tmp_cov_matrices[i];
+      prior_auto_cov[i_interval][i] = tmp_cov_matrices[i];
     }
   }
   else {
     for (int i = 0; i < n_matrices_file; i++) {
-      prior_auto_cov[0][i] = tmp_cov_matrices[i];
+      prior_auto_cov[i_interval][i] = tmp_cov_matrices[i];
     }
     for (int i = n_matrices_file; i < n_corr_T; i++) {
       NRLib::Matrix matrix_tmp(3,3);
-      prior_auto_cov[0][i] = matrix_tmp;
+      prior_auto_cov[i_interval][i] = matrix_tmp;
     }
   }
 
@@ -9362,7 +9375,7 @@ void CommonData::WriteFilePriorVariances(const ModelSettings                * mo
   }
   file.close();
 
-  IO::writeSurfaceToFile(*prior_corr_XY, base_name2, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+  IO::writeSurfaceToFile(*prior_corr_XY, file_name2, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
 }
 
 //--------------------------------------------------------------------
