@@ -1306,10 +1306,10 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
 
       ExpTransf(background_vs_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
+      background_vs_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
 
       ExpTransf(background_rho_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+      background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
     }
   }
 
@@ -1449,8 +1449,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         std::string file_name_vs  = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Vs" + suffix);
         std::string file_name_rho = IO::makeFullFileName(IO::PathToInversionResults(), prefix + "Rho" + suffix);
         seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vp,  &simbox);
-        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_vs,  &simbox);
-        seismic_parameters.GetSimulationSeed0(i)->writeCravaFile(file_name_rho, &simbox);
+        seismic_parameters.GetSimulationSeed1(i)->writeCravaFile(file_name_vs,  &simbox);
+        seismic_parameters.GetSimulationSeed2(i)->writeCravaFile(file_name_rho, &simbox);
       }
     }
   }
@@ -2197,142 +2197,4 @@ CravaResult::DownscaleTrace(const std::vector<float> & trace_in,
 
   fftw_free(rAmpData);
   fftw_free(rAmpFine);
-}
-
- //-------------------------------------------------------------------------------
-void CravaResult::doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
-                                        bool                                       useVpRhoFilter,
-                                        int                                        nAngles,
-                                        const std::vector<Grid2D *>              & noiseScale,
-                                        SeismicParametersHolder                  & seismicParameters)
-{
-
-
-  std::vector<NRLib::Matrix> sigmaeVpRho;
-
-  double ** sigmapost;
-  double ** sigmapri;
-
-  int lastn = 0;
-  int n = 0;
-  int nDim = 1;
-  for(int i=0;i<nAngles;i++)
-    nDim *= 2;
-
-
-  bool no_wells_filtered = true;
-  int w1 = 0;
-
-  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    n = blocked_log->GetNumberOfBlocks();
-
-    if (blocked_log->GetUseForFiltering() == true)
-    {
-      LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+blocked_log->GetWellName());
-      no_wells_filtered = false;
-
-      sigmapost = new double * [3*n];
-      for(int i=0;i<3*n;i++)
-        sigmapost[i] = new double[3*n];
-
-      sigmapri = new double * [3*n];
-      for(int i=0;i<3*n;i++)
-        sigmapri[i] = new double[3*n];
-
-      const std::vector<int> & ipos = blocked_log->GetIposVector();
-      const std::vector<int> & jpos = blocked_log->GetJposVector();
-      const std::vector<int> & kpos = blocked_log->GetKposVector();
-
-      float regularization = Definitions::SpatialFilterRegularisationValue();
-
-      // Fill the upper triangular submatrices
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVp()     , n, 0  , 0   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVs()     , n, n  , n   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovRho()    , n, 2*n, 2*n );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpVs() , n, 0  , n   );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpRho(), n, 0  , 2*n );
-      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVsRho(), n, n, 2*n   );
-
-      for(int l1=0 ; l1 < n ; l1++) {
-        for(int l2=0 ; l2 < n ; l2++) {
-
-          sigmapri [l1      ][l2      ] = prior_cov_vp_[w1](l1,l2);
-          sigmapri [l1 + n  ][l2 + n  ] = prior_cov_vs_[w1](l1,l2);
-          sigmapri [l1 + 2*n][l2 + 2*n] = prior_cov_rho_[w1](l1,l2);
-          if(l1==l2)
-          {
-            sigmapost[l1      ][l2      ] += regularization*sigmapost[l1      ][l2      ]/sigmapri[l1      ][l2      ];
-            sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[l1 + n  ][l2 + n  ]/sigmapri[l1 + n  ][l2 + n  ];
-            sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[l1 + 2*n][l2 + 2*n]/sigmapri[l1 + 2*n][l2 + 2*n];
-            sigmapri [l1      ][l2      ] += regularization;
-            sigmapri [l1 + n  ][l2 + n  ] += regularization;
-            sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
-          }
-          // submat (0,1)
-          sigmapri[l1      ][l2 + n  ] = prior_cov_vpvs_[w1](l1,l2);
-          sigmapri[l2      ][l1 + n  ] = prior_cov_vpvs_[w1](l2,l1);
-          // submat(1,0)
-          //sigmapri[l1 + n  ][l2      ];//priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
-          //sigmapri[l2 + n  ][l2      ];
-          // submat(0,2)
-          sigmapri[l1      ][l2+2*n  ]  = prior_cov_vprho_[w1](l1,l2);//priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l2      ][l1+2*n  ]  = prior_cov_vprho_[w1](l2,l1);//priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
-          // submat(2,0)
-          //sigmapri[l1 + 2*n][l2      ] = sigmapri[l2][l1+2*n];
-          //sigmapri[l2 + 2*n][l1      ] = sigmapri[l1][l2+2*n];
-          // submat(1,2)
-          sigmapri[l1 + n  ][l2 + 2*n] = prior_cov_vsrho_[w1](l1,l2);//priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
-          sigmapri[l2 + n  ][l1 + 2*n] = prior_cov_vsrho_[w1](l2,l1);//priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
-          // submat(2,1)
-          //sigmapri[l2 + 2*n][l1 + n] = sigmapri[l1 + n  ][l2 + 2*n];
-          //sigmapri[l1 + 2*n][l2+n] = sigmapri[l2 + n  ][l1 + 2*n];
-        }
-      }
-
-      NRLib::SymmetricMatrix Sprior(3*n);
-      NRLib::SymmetricMatrix Spost(3*n);
-
-      for(int i = 0 ; i < 3*n ; i++)
-        for(int j = i ; j < 3*n ; j++)
-          Sprior(i,j) = sigmapri[i][j];
-
-      for(int i = 0 ; i < 3*n ; i++)
-        for(int j = i ; j < 3*n ; j++)
-          Spost(i,j) = sigmapost[i][j];
-
-
-      //
-      // Filter = I - Sigma_post * inv(Sigma_prior)
-      //
-      NRLib::Matrix I = NRLib::IdentityMatrix(3*n);
-      NRLib::CholeskySolve(Sprior, I);
-
-      NRLib::Matrix Aw = Spost * I;
-
-      Aw = Aw * (-1);
-      for(int i=0 ; i<3*n ; i++) {
-        Aw(i,i) += 1.0;
-      }
-
-      calculateFilteredLogs(Aw,
-                            blocked_log,
-                            n,
-                            true);
-
-      lastn += n;
-
-      for(int i=0;i<3*n;i++)
-      {
-        delete [] sigmapost[i];
-        delete [] sigmapri[i];
-      }
-      delete [] sigmapri;
-      delete [] sigmapost;
-    }
-    w1++;
-  }
-
 }
