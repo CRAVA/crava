@@ -4257,7 +4257,7 @@ void BlockedLogsCommon::CalculateBulkShear(const int                         & n
         double bulk;
         double shear;
 
-        DEMTools::CalcElasticParamsFromSeismicParams(vp_for_facies_[i][j], vs_for_facies_[i][j], rho_for_facies_[i][j], bulk, shear);
+        DEMTools::CalcElasticParamsFromSeismicParams(exp(vp_for_facies_[i][j]), exp(vs_for_facies_[i][j]), exp(rho_for_facies_[i][j]), bulk, shear);
 
         bulk_modulus[i][j]  = static_cast<float>(bulk);
         shear_modulus[i][j] = static_cast<float>(shear);
@@ -4276,6 +4276,11 @@ BlockedLogsCommon::GetVpForFacies(const std::string & facies_name)
       vp_given_facies = vp_for_facies_[i];
   }
 
+  for(size_t i=0;i<vp_given_facies.size();i++) {
+    if(vp_given_facies[i] != RMISSING)
+      vp_given_facies[i] = exp(vp_given_facies[i]);
+  }
+
   return vp_given_facies;
 }
 
@@ -4289,6 +4294,11 @@ BlockedLogsCommon::GetVsForFacies(const std::string & facies_name)
       vs_given_facies = vs_for_facies_[i];
   }
 
+  for(size_t i=0;i<vs_given_facies.size();i++) {
+    if(vs_given_facies[i] != RMISSING)
+      vs_given_facies[i] = exp(vs_given_facies[i]);
+  }
+
   return vs_given_facies;
 }
 
@@ -4300,6 +4310,11 @@ BlockedLogsCommon::GetRhoForFacies(const std::string & facies_name)
   for (size_t i = 0; i < facies_names_.size(); i++) {
     if (facies_name == facies_names_[i])
       rho_given_facies = rho_for_facies_[i];
+  }
+
+  for(size_t i=0;i<rho_given_facies.size();i++) {
+    if(rho_given_facies[i] != RMISSING)
+      rho_given_facies[i] = exp(rho_given_facies[i]);
   }
 
   return rho_given_facies;

@@ -23,7 +23,7 @@ void EstimateConstantTrend(const std::vector<std::vector<double> > & blocked_log
       if(blocked_logs[w].size() > 0) {
         for (int k = 0 ; k < nBlocks ; k++) {
           if(blocked_logs[w][k] != RMISSING) {
-            trend += exp(blocked_logs[w][k]);
+            trend += blocked_logs[w][k];
             count++;
           }
         }
@@ -47,7 +47,7 @@ void PreprocessData0D(const std::vector<std::vector<double> > & blocked_logs,
         for (size_t j = 0; j < blocked_logs[i].size(); j++) {
           double y_j_log = blocked_logs[i][j];
           if (y_j_log != RMISSING) {
-            y.push_back(std::exp(y_j_log));
+            y.push_back(y_j_log);
           }
         }
       }
@@ -352,7 +352,7 @@ void PreprocessData1D(const std::vector<std::vector<double> > & s,
 
           if (x_j != RMISSING && y_j_log != RMISSING) {
             x.push_back(x_j + x_min);
-            y.push_back(std::exp(y_j_log));
+            y.push_back(y_j_log);
           }
         }
       }
@@ -878,7 +878,7 @@ void PreprocessData2D(const std::vector<std::vector<double> > & s1,
           if (x_j != RMISSING && y_j != RMISSING && z_j_log != RMISSING) {
             x.push_back(x_j + x_min);
             y.push_back(y_j + y_min);
-            z.push_back(std::exp(z_j_log));
+            z.push_back(z_j_log);
           }
         }
       }
