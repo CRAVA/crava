@@ -390,6 +390,18 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
     }
 
+    //Set facies prob in blocked logs
+    if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        for (int j = 0; j < n_facies; j++) {
+          blocked_log->SetLogFromGrid(facies_prob_[j], j , n_facies, "FACIES_PROB");
+        }
+      }
+    }
+
     //Undef
     facies_prob_undef_ = new StormContGrid(output_simbox, nx, ny, nz_output);
     std::vector<FFTGrid *> facies_prob_intervals_undef(n_intervals_);
@@ -787,31 +799,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
     LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
 
-    //Facies prob
-    bool got_facies_prob = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb() > 0;
-    if (got_facies_prob) {
-       LogKit::LogFormatted(LogKit::Low,"\n    facies prob... ");
-
-      int n_faices = blocked_logs_intervals[0].find(well_name)->second->GetNFaciesProb();
-
-      for (int j = 0; j < n_faices; j++) {
-
-        std::vector<double> facies_prob_final(n_blocks);
-        std::vector<std::vector<double> > facies_prob_intervals(n_intervals_);
-
-        //Get well logs, missing values are interpolated
-        for (int i = 0; i < n_intervals_; i++) {
-          CopyWellLog(facies_prob_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetFaciesProb(j));
-        }
-
-        ResampleLog(facies_prob_final, facies_prob_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-        blocked_log_final->SetFaciesProb(j, facies_prob_final);
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok");
-    }
-
     //Cpp
+    //H These are never set?
     bool got_cpp = blocked_logs_intervals[0].find(well_name)->second->GetNCpp() > 0;
     if (got_cpp) {
       LogKit::LogFormatted(LogKit::Low,"\n    cpp... ");
@@ -2169,4 +2158,142 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   fftw_free(rAmpFine);
   fftwnd_destroy_plan(fftplan1);
   fftwnd_destroy_plan(fftplan2);
+}
+
+ //-------------------------------------------------------------------------------
+void CravaResult::doFiltering(std::map<std::string, BlockedLogsCommon *> blocked_logs,
+                                        bool                                       useVpRhoFilter,
+                                        int                                        nAngles,
+                                        const std::vector<Grid2D *>              & noiseScale,
+                                        SeismicParametersHolder                  & seismicParameters)
+{
+
+
+  std::vector<NRLib::Matrix> sigmaeVpRho;
+
+  double ** sigmapost;
+  double ** sigmapri;
+
+  int lastn = 0;
+  int n = 0;
+  int nDim = 1;
+  for(int i=0;i<nAngles;i++)
+    nDim *= 2;
+
+
+  bool no_wells_filtered = true;
+  int w1 = 0;
+
+  for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
+    BlockedLogsCommon * blocked_log = iter->second;
+
+    n = blocked_log->GetNumberOfBlocks();
+
+    if (blocked_log->GetUseForFiltering() == true)
+    {
+      LogKit::LogFormatted(LogKit::Low,"\nFiltering well "+blocked_log->GetWellName());
+      no_wells_filtered = false;
+
+      sigmapost = new double * [3*n];
+      for(int i=0;i<3*n;i++)
+        sigmapost[i] = new double[3*n];
+
+      sigmapri = new double * [3*n];
+      for(int i=0;i<3*n;i++)
+        sigmapri[i] = new double[3*n];
+
+      const std::vector<int> & ipos = blocked_log->GetIposVector();
+      const std::vector<int> & jpos = blocked_log->GetJposVector();
+      const std::vector<int> & kpos = blocked_log->GetKposVector();
+
+      float regularization = Definitions::SpatialFilterRegularisationValue();
+
+      // Fill the upper triangular submatrices
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVp()     , n, 0  , 0   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovVs()     , n, n  , n   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCovRho()    , n, 2*n, 2*n );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpVs() , n, 0  , n   );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVpRho(), n, 0  , 2*n );
+      fillValuesInSigmapost(sigmapost, &ipos[0], &jpos[0], &kpos[0], seismicParameters.GetCrCovVsRho(), n, n, 2*n   );
+
+      for(int l1=0 ; l1 < n ; l1++) {
+        for(int l2=0 ; l2 < n ; l2++) {
+
+          sigmapri [l1      ][l2      ] = prior_cov_vp_[w1](l1,l2);
+          sigmapri [l1 + n  ][l2 + n  ] = prior_cov_vs_[w1](l1,l2);
+          sigmapri [l1 + 2*n][l2 + 2*n] = prior_cov_rho_[w1](l1,l2);
+          if(l1==l2)
+          {
+            sigmapost[l1      ][l2      ] += regularization*sigmapost[l1      ][l2      ]/sigmapri[l1      ][l2      ];
+            sigmapost[l1 + n  ][l2 + n  ] += regularization*sigmapost[l1 + n  ][l2 + n  ]/sigmapri[l1 + n  ][l2 + n  ];
+            sigmapost[l1 + 2*n][l2 + 2*n] += regularization*sigmapost[l1 + 2*n][l2 + 2*n]/sigmapri[l1 + 2*n][l2 + 2*n];
+            sigmapri [l1      ][l2      ] += regularization;
+            sigmapri [l1 + n  ][l2 + n  ] += regularization;
+            sigmapri [l1 + 2*n][l2 + 2*n] += regularization;
+          }
+          // submat (0,1)
+          sigmapri[l1      ][l2 + n  ] = prior_cov_vpvs_[w1](l1,l2);
+          sigmapri[l2      ][l1 + n  ] = prior_cov_vpvs_[w1](l2,l1);
+          // submat(1,0)
+          //sigmapri[l1 + n  ][l2      ];//priorCov0(1,0)*priorSpatialCorr_[w1][l1][l2];
+          //sigmapri[l2 + n  ][l2      ];
+          // submat(0,2)
+          sigmapri[l1      ][l2+2*n  ]  = prior_cov_vprho_[w1](l1,l2);//priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2      ][l1+2*n  ]  = prior_cov_vprho_[w1](l2,l1);//priorCov0(2,0)*priorSpatialCorr_[w1][l1][l2];
+          // submat(2,0)
+          //sigmapri[l1 + 2*n][l2      ] = sigmapri[l2][l1+2*n];
+          //sigmapri[l2 + 2*n][l1      ] = sigmapri[l1][l2+2*n];
+          // submat(1,2)
+          sigmapri[l1 + n  ][l2 + 2*n] = prior_cov_vsrho_[w1](l1,l2);//priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
+          sigmapri[l2 + n  ][l1 + 2*n] = prior_cov_vsrho_[w1](l2,l1);//priorCov0(2,1)*priorSpatialCorr_[w1][l1][l2];
+          // submat(2,1)
+          //sigmapri[l2 + 2*n][l1 + n] = sigmapri[l1 + n  ][l2 + 2*n];
+          //sigmapri[l1 + 2*n][l2+n] = sigmapri[l2 + n  ][l1 + 2*n];
+        }
+      }
+
+      NRLib::SymmetricMatrix Sprior(3*n);
+      NRLib::SymmetricMatrix Spost(3*n);
+
+      for(int i = 0 ; i < 3*n ; i++)
+        for(int j = i ; j < 3*n ; j++)
+          Sprior(i,j) = sigmapri[i][j];
+
+      for(int i = 0 ; i < 3*n ; i++)
+        for(int j = i ; j < 3*n ; j++)
+          Spost(i,j) = sigmapost[i][j];
+
+
+      //
+      // Filter = I - Sigma_post * inv(Sigma_prior)
+      //
+      NRLib::Matrix I = NRLib::IdentityMatrix(3*n);
+      NRLib::CholeskySolve(Sprior, I);
+
+      NRLib::Matrix Aw = Spost * I;
+
+      Aw = Aw * (-1);
+      for(int i=0 ; i<3*n ; i++) {
+        Aw(i,i) += 1.0;
+      }
+
+      calculateFilteredLogs(Aw,
+                            blocked_log,
+                            n,
+                            true);
+
+      lastn += n;
+
+      for(int i=0;i<3*n;i++)
+      {
+        delete [] sigmapost[i];
+        delete [] sigmapri[i];
+      }
+      delete [] sigmapri;
+      delete [] sigmapost;
+    }
+    w1++;
+  }
+
 }
