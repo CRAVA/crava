@@ -4280,7 +4280,7 @@ BlockedLogsCommon::GetVpForFacies(const std::string & facies_name)
   }
 
   for(size_t i=0;i<vp_given_facies.size();i++) {
-    if(vp_given_facies[i]  RMISSING)
+    if(vp_given_facies[i] != RMISSING)
       vp_given_facies[i] = exp(vp_given_facies[i]);
   }
 
@@ -4298,7 +4298,7 @@ BlockedLogsCommon::GetVsForFacies(const std::string & facies_name)
   }
 
   for(size_t i=0;i<vs_given_facies.size();i++) {
-    if(vs_given_facies[i]  RMISSING)
+    if(vs_given_facies[i] != RMISSING)
       vs_given_facies[i] = exp(vs_given_facies[i]);
   }
 
@@ -4316,7 +4316,7 @@ BlockedLogsCommon::GetRhoForFacies(const std::string & facies_name)
   }
 
   for(size_t i=0;i<rho_given_facies.size();i++) {
-    if(rho_given_facies[i]  RMISSING)
+    if(rho_given_facies[i] != RMISSING)
       rho_given_facies[i] = exp(rho_given_facies[i]);
   }
 
