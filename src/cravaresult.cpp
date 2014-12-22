@@ -820,31 +820,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
     LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
 
-    //Cpp
-    //H These are never set?
-    bool got_cpp = blocked_logs_intervals[0].find(well_name)->second->GetNCpp() > 0;
-    if (got_cpp) {
-      LogKit::LogFormatted(LogKit::Low,"\n    cpp... ");
-
-      int n_angles = blocked_logs_intervals[0].find(well_name)->second->GetNCpp();
-
-      for (int j = 0; j < n_angles; j++) {
-
-        std::vector<double> cpp_final(n_blocks);
-        std::vector<std::vector<double> > cpp_intervals(n_intervals_);
-
-        //Get well logs, missing values are interpolated
-        for (int i = 0; i < n_intervals_; i++) {
-          CopyWellLog(cpp_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetCpp(j));
-        }
-
-        ResampleLog(cpp_final, cpp_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac);
-
-        blocked_log_final->SetCpp(j, cpp_final);
-      }
-      LogKit::LogFormatted(LogKit::Low,"ok");
-    }
-
     //ForFacies logs (vp, rho)
     bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpFaciesFiltered().size() > 0;
     if (got_vp_rho_fac_log) {

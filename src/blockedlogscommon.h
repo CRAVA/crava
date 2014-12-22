@@ -126,14 +126,12 @@ public:
   const std::vector<double>            & GetVpFaciesFiltered(void)  const { return vp_facies_filtered_                                                ;}
   const std::vector<double>            & GetRhoFaciesFiltered(void) const { return rho_facies_filtered_                                               ;}
 
-  const std::vector<double>            & GetCpp(int angle)             const { return cpp_.find(angle)->second                                        ;}
   const std::vector<double>            & GetFaciesProb(int facies)     const { return facies_prob_.find(facies)->second                               ;}
   const std::vector<double>            & GetRealSeismicData(int angle) const { return real_seismic_data_.find(angle)->second                          ;}
   std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
   std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
 
   int                                    GetNRealSeismicData()               { return static_cast<int>(real_seismic_data_.size())                     ;}
-  int                                    GetNCpp()                           { return static_cast<int>(cpp_.size())                                   ;}
   int                                    GetNFaciesProb()                    { return static_cast<int>(facies_prob_.size())                           ;}
 
   int                                    GetNAngles()                        { return n_angles_                                                       ;}
@@ -216,7 +214,6 @@ public:
 
   void                                   SetRealSeismicData(int angle, std::vector<double> log)         { real_seismic_data_.insert(std::pair<int, std::vector<double> >(angle, log)) ;}
   void                                   SetFaciesProb(int facies, std::vector<double> log)             { facies_prob_.insert(std::pair<int, std::vector<double> >(facies, log))      ;}
-  void                                   SetCpp(int angle, std::vector<double> log)                     { cpp_.insert(std::pair<int, std::vector<double> >(angle, log))               ;}
 
   void                                   SetVpFaciesFiltered(std::vector<double> vp_facies)             { vp_facies_filtered_  = vp_facies                                             ;}
   void                                   SetRhoFaciesFiltered(std::vector<double> rho_facies)           { rho_facies_filtered_ = rho_facies                                            ;}
@@ -737,7 +734,6 @@ private:
   std::map<std::string, std::vector<int> >    discrete_raw_logs_;    // Map between variable name and raw discrete logs
 
   //Variables needed in SetLogFromGrid and later used in WriteWell
-  std::map<int, std::vector<double> >         cpp_;                        ///< Mapped reflection coefficients for angles
   std::map<std::string, std::vector<double> > continuous_logs_predicted_;  ///< Map between variable name and predicted continuous log
   std::map<int, std::vector<double> >         real_seismic_data_;          ///< Map between angle and real seismic data
   std::map<int, std::vector<double> >         facies_prob_;                ///< Map between facies and facies prob
