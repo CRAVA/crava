@@ -54,6 +54,7 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
                                     std::string                             & errTxt) const
 {
   Trend * trend = NULL;
+  std::string tmp_err_txt;
 
   double estimated_constant = 0.0;
 
@@ -94,7 +95,7 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
         }
         else {
           var = RMISSING;
-          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
+          tmp_err_txt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
         }
       }
       else if (typeid(*mean_trend) == typeid(NRLib::Trend1D)) {
@@ -148,7 +149,7 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
           var = var/(z_n - 1);
         else {
           var = RMISSING;
-          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
+          tmp_err_txt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
         }
       }
 
@@ -189,15 +190,17 @@ TrendConstantStorage::GenerateTrend(const std::string                       & /*
           var = var/(z_n - 1);
         else {
           var = RMISSING;
-          errTxt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
+          tmp_err_txt +=  "Error: Unable to estimate variance as the wells only contain missing values.\n";
         }
       }
       estimated_constant = var;
     }
   }
 
-  if (errTxt == "")
+  if (tmp_err_txt == "")
     trend = new TrendConstant(estimated_constant);
+  else
+    errTxt += tmp_err_txt;
 
   return trend;
 }
