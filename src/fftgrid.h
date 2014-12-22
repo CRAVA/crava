@@ -210,7 +210,7 @@ public:
   float                getDistToBoundary(int i, int n , int np);
   virtual void         getRealTrace(float * value, int i, int j);
   virtual int          setRealTrace(int i, int j, float *value);
-  std::vector<float>   getRealTrace(int i, int j) const;
+  std::vector<float>   getRealTrace(int i, int j, bool add_padding = false) const;
 
 
   static void          reportFFTMemoryAndWait(const std::string & msg) {

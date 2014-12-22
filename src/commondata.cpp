@@ -6239,8 +6239,11 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       //                     +NRLib::ToString(missingTracesPadding)+" of "+NRLib::ToString(nxypad)+"\n");
       //}
       if (dead_traces_simbox > 0) {
-        LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+        if (grid_type == DATA)
+          LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                             +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+        else
+          err_text += "Grid in file "+file_name+" has dead tradces in inversion area.\n";
       }
     } //i_interval
   }
@@ -6335,8 +6338,8 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
   //
   // Create FFT plans
   //
-  //rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-  //rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
+  rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
 
   //
   // Do resampling
@@ -6347,10 +6350,6 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
   for (int j = 0; j < nyp; j++) {
     for (int i = 0; i < rnxp; i++) {
-
-      rfftwnd_plan fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-      rfftwnd_plan fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-
       int refi = GetFillNumber(i, nx, nxp); // Find index (special treatment for padding)
       int refj = GetFillNumber(j, ny, nyp); // Find index (special treatment for padding)
       int refk = 0;
@@ -6427,19 +6426,16 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           }
 
           n_samples = data_trace.size();
-          nt = FindClosestFactorableNumber(static_cast<int>(n_samples));
-          mt = static_cast<int>(res_fac)*nt;
-          fftwnd_destroy_plan(fftplan1);
-          fftwnd_destroy_plan(fftplan2);
-          fftplan1 = rfftwnd_create_plan(1, &nt, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE);
-          fftplan2 = rfftwnd_create_plan(1, &mt, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE);
-
-          //Remove trend from trace
-          trend_first = data_trace[0];
-          trend_last = data_trace[n_trace - 1];
-          float trend_inc = (trend_last - trend_first) / (n_trace - 1);
-          for (size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
-            data_trace[k_trace] -= trend_first + k_trace * trend_inc;
+          if(n_samples == 0)
+            missing = true;
+          else {
+            //Remove trend from trace
+            trend_first = data_trace[0];
+            trend_last = data_trace[n_trace - 1];
+            float trend_inc = (trend_last - trend_first) / (n_trace - 1);
+            for (size_t k_trace = 0; k_trace < data_trace.size(); k_trace++) {
+              data_trace[k_trace] -= trend_first + k_trace * trend_inc;
+            }
           }
         }
 
@@ -6551,13 +6547,16 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         printf("^");
         fflush(stdout);
       }
-      fftwnd_destroy_plan(fftplan1);
-      fftwnd_destroy_plan(fftplan2);
+      if(grid_type != DATA && (missing_traces_simbox > 0 || dead_traces_simbox > 0)) {
+        i = rnxp-1; //Breaking double loop.
+        j = nyp-1;
+      }
     }
   }
   LogKit::LogFormatted(LogKit::Low,"\n");
 
-
+  fftwnd_destroy_plan(fftplan1);
+  fftwnd_destroy_plan(fftplan2);
 
   Timings::setTimeResamplingSeismic(wall,cpu);
 }

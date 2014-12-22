@@ -427,10 +427,6 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
                              const std::string   & sgri_label,
                              bool                  padding)
 {
-
-  float seismic_start_time   = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-  TraceHeaderFormat * format = model_settings->getTraceHeaderFormatOutput();
-
   WriteFile(model_settings,
             grid,
             file_name,
@@ -438,9 +434,7 @@ ParameterOutput::WriteToFile(const Simbox        * simbox,
             simbox,
             false,
             sgri_label,
-            seismic_start_time,
             time_depth_mapping,
-            *format,
             padding);
 }
 
@@ -472,9 +466,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                            const Simbox            * simbox,
                            bool                      is_seismic,
                            const std::string         label,
-                           const float               z0,
                            const GridMapping       * depth_map,
-                           const TraceHeaderFormat & thf,
                            bool                      padding)
 {
   //All crava files are written out directly in CravaResult
@@ -516,6 +508,8 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
 
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((format_flag & IO::SEGY) > 0) {
+        const TraceHeaderFormat * thf = model_settings->getTraceHeaderFormatOutput();
+        double z0 = model_settings->getSegyOffset(0);
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
 
@@ -529,7 +523,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                                z0,
                                file_name_segy,
                                true, //Write to file
-                               thf,
+                               *thf,
                                is_seismic);
 
         LogKit::LogFormatted(LogKit::Low,"done\n");
@@ -578,6 +572,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           output->WriteToFile(file_name_ascii, header, true);
           LogKit::LogFormatted(LogKit::Low,"done\n");
         }
+        /* Not supposed to be part of CRAVA.
         if ((format_flag & IO::SEGY) >0) {
           //makeDepthCubeForSegy(depth_map->getSimbox(),depth_name);
           StormContGrid * storm_cube_depth = new StormContGrid(*depth_map->getSimbox(), output->GetNI(), output->GetNJ(), output->GetNK());
@@ -604,6 +599,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           delete storm_cube_depth;
           LogKit::LogFormatted(LogKit::Low,"done\n");
         }
+        */
       }
       else {
         if (depth_map->getSimbox() == NULL) {
@@ -612,7 +608,8 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         // Writes also segy in depth if required
-        WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0);
+        double z0 = model_settings->getSegyOffset(0);
+        WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0, true);
       }
     }
 
@@ -631,7 +628,8 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
                                          const std::string   & file_name,
                                          const Simbox        * simbox,
                                          const int             format,
-                                         float                 z0)
+                                         float                 z0,
+                                         bool                  is_depth)
 {
   // simbox is related to the cube we resample from. gridmapping contains simbox for the cube we resample to.
 
@@ -678,7 +676,7 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
     outgrid->WriteToFile(gf_name,header);
     LogKit::LogFormatted(LogKit::Low,"done\n");
   }
-  if((format & IO::SEGY) > 0) {
+  if((format & IO::SEGY) > 0 && is_depth == false) {
     gf_name =  file_name + IO::SuffixSegy();
 
     SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
