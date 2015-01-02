@@ -68,7 +68,8 @@ public:
                    MultiIntervalGrid                                              * multi_interval_grid,
                    const BlockedLogsCommon                                        * blocked_log_final,
                    std::string                                                      well_name,
-                   float                                                            res_fac);
+                   float                                                            res_fac,
+                   std::vector<int>                                               & interval_log);
 
   void ResampleTrace(std::vector<double> & old_trace,
                      std::vector<double> & new_trace,
@@ -82,7 +83,8 @@ public:
                      const BlockedLogsCommon                 * blocked_log_final,
                      MultiIntervalGrid                       * multiple_interval_grid,
                      const std::vector<std::vector<double> > & resampled_logs,
-                     const std::vector<std::vector<double> > & z_pos_resampled);
+                     const std::vector<std::vector<double> > & z_pos_resampled,
+                     std::vector<int>                        & interval_log);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,

@@ -81,6 +81,8 @@ public:
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
 
+  bool                                                                 HasSeismicData()                                       { return seismic_data_.size() > 0                       ;}
+
   bool                                                                 GetRefMatFromFileGlobalVpVs()                          { return refmat_from_file_global_vpvs_                  ;}
   NRLib::Matrix                                                      & GetReflectionMatrixTimeLapse(int time_lapse)           { return reflection_matrix_[time_lapse]                 ;}
 

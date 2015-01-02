@@ -131,6 +131,8 @@ public:
   std::vector<std::vector<double> >    & GetActualSyntSeismicData()          { return actual_synt_seismic_data_                                       ;}
   std::vector<std::vector<double> >    & GetWellSyntSeismicData()            { return well_synt_seismic_data_                                         ;}
 
+  const std::vector<int>               & GetIntervalLog()              const { return interval_log_                                                   ;}
+
   int                                    GetNRealSeismicData()               { return static_cast<int>(real_seismic_data_.size())                     ;}
   int                                    GetNFaciesProb()                    { return static_cast<int>(facies_prob_.size())                           ;}
 
@@ -217,6 +219,8 @@ public:
 
   void                                   SetVpFaciesFiltered(std::vector<double> vp_facies)             { vp_facies_filtered_  = vp_facies                                             ;}
   void                                   SetRhoFaciesFiltered(std::vector<double> rho_facies)           { rho_facies_filtered_ = rho_facies                                            ;}
+
+  void                                   SetIntervalLog(std::vector<int> interval_log)                  { interval_log_ = interval_log                                                 ;}
 
   void                                   SetVpPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", log))     ;}
   void                                   SetVsPredicted(std::vector<double> log)                        { continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vs", log))     ;}
@@ -740,6 +744,8 @@ private:
 
   std::vector<double>                         vp_facies_filtered_;         //Vp filtered from spatialwellfilter
   std::vector<double>                         rho_facies_filtered_;
+
+  std::vector<int>                            interval_log_; //Log with interval number for each block, used with writing of filtered and seismic resolution logs (they are resampled for intervals, not created to output_blocked_logs)
 
   int                                         n_angles_;                  ///< Number of AVA stacks
 
