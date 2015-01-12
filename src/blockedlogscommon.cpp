@@ -3488,6 +3488,8 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0);
   bool got_predicted           = (continuous_logs_predicted_.size() > 0);
 
+  bool got_interval_log        = (interval_log_.size() > 0);
+
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz}
   if (got_filtered_log)
     n_logs += 3;
@@ -3505,6 +3507,10 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     n_logs += n_angles_;
   if (got_predicted)
     n_logs += 3;
+  if (got_interval_log && got_filtered_log)
+    n_logs += 1;
+  if (got_interval_log && got_vp_rho_fac_log)
+    n_logs += 1;
 
   std::vector<std::string> params(3);
   params[0] = "Vp";
@@ -3529,6 +3535,9 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     for (int i=0;i<3;i++)
       file << params[i] << "_SeismicResolution UNK lin\n";
   }
+  if (got_interval_log) {
+    file << "Interval Log for SeismicResolution UNK lin\n";
+  }
   if (got_predicted) {
     for (int i = 0; i < 3; i++)
       file << params[i] << "_Predicted UNK lin\n";
@@ -3536,6 +3545,9 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   if (got_vp_rho_fac_log) {
     file << params[0] << "_ForFacies UNK lin\n";
     file << params[2] << "_ForFacies UNK lin\n";
+  }
+  if (got_interval_log) {
+    file << "Interval Log for ForFacies UNK lin\n";
   }
   if (got_facies) {
     file << "FaciesLog  DISC ";
@@ -3583,6 +3595,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
   const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
 
+  const std::vector<int>    & interval_log = GetIntervalLog();
 
   for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
@@ -3606,6 +3619,8 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
            << std::setw(7) << (vs_seismic_resolution[i]==RMISSING  ? WELLMISSING : exp(vs_seismic_resolution[i]))  << "  "
            << std::setw(7) << (rho_seismic_resolution[i]==RMISSING ? WELLMISSING : exp(rho_seismic_resolution[i])) << "  ";
     }
+    if (got_interval_log == true)
+      file << std::setw(7) << (interval_log[i]==IMISSING  ? WELLMISSING : interval_log[i])  << "  ";
     if (got_predicted == true && vp_predicted.size() > 0) {
       file << std::setw(7) << (vp_predicted[i]==RMISSING  ? WELLMISSING : exp(vp_predicted[i]))  << "  "
            << std::setw(7) << (vs_predicted[i]==RMISSING  ? WELLMISSING : exp(vs_predicted[i]))  << "  "
@@ -3615,6 +3630,8 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << std::setw(7) << (vp_facies_filtered_[i]==RMISSING  ? WELLMISSING : exp(vp_facies_filtered_[i]))  << "  "
            << std::setw(7) << (rho_facies_filtered_[i]==RMISSING ? WELLMISSING : exp(rho_facies_filtered_[i])) << "  ";
     }
+    if (got_interval_log == true)
+      file << std::setw(7) << (interval_log[i]==IMISSING  ? WELLMISSING : interval_log[i])  << "  ";
     if (got_facies)
       file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
     file << std::scientific;

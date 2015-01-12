@@ -99,12 +99,6 @@
     <ClCompile Include="src\background.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\blockedlogs.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\blockedlogsforzone.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\box.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -984,9 +978,6 @@
     <ClCompile Include="src\multiintervalgrid.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\intervalsimbox.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\gravimetricinversion.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
@@ -1006,9 +997,6 @@
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="src\spatialsyntwellfilter.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\blockedlogsforrockphysics.cpp">
       <Filter>Source Files\src</Filter>
     </ClCompile>
     <ClCompile Include="libs\nrlib\random\dSFMT.cpp">
@@ -1092,12 +1080,6 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\background.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\blockedlogs.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\blockedlogsforzone.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\box.h">
@@ -1742,9 +1724,6 @@
     <ClInclude Include="src\multiintervalgrid.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
-    <ClInclude Include="src\intervalsimbox.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
     <ClInclude Include="src\gravimetricinversion.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
@@ -1767,9 +1746,6 @@
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="src\spatialsyntwellfilter.h">
-      <Filter>Header Files\src No. 1</Filter>
-    </ClInclude>
-    <ClInclude Include="src\blockedlogsforrockphysics.h">
       <Filter>Header Files\src No. 1</Filter>
     </ClInclude>
     <ClInclude Include="libs\nrlib\random\dSFMT.h">

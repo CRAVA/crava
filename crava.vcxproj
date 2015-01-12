@@ -287,10 +287,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="src\background.cpp" />
-    <ClCompile Include="src\blockedlogs.cpp" />
     <ClCompile Include="src\blockedlogscommon.cpp" />
-    <ClCompile Include="src\blockedlogsforrockphysics.cpp" />
-    <ClCompile Include="src\blockedlogsforzone.cpp" />
     <ClCompile Include="src\box.cpp">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -331,7 +328,6 @@
     <ClCompile Include="src\gravimetricinversion.cpp" />
     <ClCompile Include="src\gridmapping.cpp" />
     <ClCompile Include="src\inputfiles.cpp" />
-    <ClCompile Include="src\intervalsimbox.cpp" />
     <ClCompile Include="src\io.cpp" />
     <ClCompile Include="src\kriging2d.cpp" />
     <ClCompile Include="src\krigingadmin.cpp">
@@ -1392,10 +1388,8 @@
     <ClInclude Include="rplib\table_vp2.h" />
     <ClInclude Include="rplib\table_vp_2.h" />
     <ClInclude Include="rplib\table_vp_3.h" />
-    <ClInclude Include="src\blockedlogsforrockphysics.h" />
     <ClInclude Include="src\commondata.h" />
     <ClInclude Include="src\gravimetricinversion.h" />
-    <ClInclude Include="src\intervalsimbox.h" />
     <ClInclude Include="src\modelgravitydynamic.h" />
     <ClInclude Include="src\modelgravitystatic.h" />
     <ClInclude Include="src\multiintervalgrid.h" />
@@ -1409,8 +1403,6 @@
     <ClInclude Include="src\tasklist.h" />
     <ClInclude Include="src\analyzelog.h" />
     <ClInclude Include="src\background.h" />
-    <ClInclude Include="src\blockedlogs.h" />
-    <ClInclude Include="src\blockedlogsforzone.h" />
     <ClInclude Include="src\box.h" />
     <ClInclude Include="src\bWellPt.h" />
     <ClInclude Include="src\correlatedrocksamples.h" />

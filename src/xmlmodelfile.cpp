@@ -1993,7 +1993,7 @@ XmlModelFile::parseAutoCovariance(TiXmlNode * node, std::string & errTxt)
 
   int n_intervals = static_cast<int>(modelSettings_->getIntervalNames().size());
 
-  if (n_intervalfiles > 0 && n_intervals != n_intervalfiles)
+  if ((n_intervalfiles > 0 || n_intervals > 1) && n_intervals != n_intervalfiles)
     errTxt += "Parameter-autocovariance is not given for all intervals under " + node->ValueStr() + ". There are " + NRLib::ToString(n_intervals) + " intervals under <project-settings> "
             + " and parameter-autocovariance is given for " + NRLib::ToString(n_intervalfiles) + " intervals.\n";
 

@@ -107,7 +107,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     SegY          * segy  = NULL;
     StormContGrid * storm = NULL;
 
-    seismic_types_.push_back(seismic_type);
+    seismic_types_[i] = seismic_type;
 
     if (seismic_type == 0) { //SEGY
       segy    = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSegY();
@@ -318,6 +318,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         delete shift_grid_tmp;
       if (gain_grid_tmp != NULL)
         delete gain_grid_tmp;
+
+      if (err_text != "")
+        LogKit::LogFormatted(LogKit::Error, "Error when calculating S-N-Ratio for interval " + NRLib::ToString(i_interval) + ": \n" + err_text +"\n");
 
     }
     else {
