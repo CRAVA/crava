@@ -57,7 +57,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
 
 // CRA-257: New correlation estimation routine
 Analyzelog::Analyzelog(const std::vector<NRLib::Well *>                        & wells,
-                       const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
+                       const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs,
                        const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
                        const std::vector<Simbox *>                             & interval_simboxes,
                        double                                                    dz_min,
@@ -70,7 +70,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   interval_name_                    = "";
   var_0_.resize(3,3);
 
-  n_wells_       = static_cast<int>(mapped_blocked_logs_for_correlation.size());
+  n_wells_       = static_cast<int>(mapped_blocked_logs.size());
   well_names_.resize(n_wells_);
   for (int i = 0; i < n_wells_; i++){
     well_names_[i] = wells[i]->GetWellName();
@@ -85,7 +85,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   EstimateCorrelation(model_settings,
                       wells,
                       well_names_,
-                      mapped_blocked_logs_for_correlation,
+                      mapped_blocked_logs,
                       interval_simboxes,
                       enough_data_for_corr_estimation_,
                       regression_coef_vs_,
@@ -133,7 +133,7 @@ Analyzelog::~Analyzelog(void)
 void  Analyzelog::EstimateCorrelation(const ModelSettings                                       * model_settings,
                                       const std::vector<NRLib::Well *>                          & wells,
                                       const std::vector<std::string>                            & well_names,
-                                      const std::map<std::string, BlockedLogsCommon *>          & mapped_blocked_logs_for_correlation,
+                                      const std::map<std::string, BlockedLogsCommon *>          & mapped_blocked_logs,
                                       const std::vector<Simbox *>                               & interval_simboxes,
                                       bool                                                      & enough_data_for_corr_estimation,
                                       NRLib::Vector                                             & regression_coef,
@@ -159,7 +159,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     std::string well_name_tmp = wells[i]->GetWellName();
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name = interval_simboxes[j]->GetIntervalName();
-      n_blocks_tot += mapped_blocked_logs_for_correlation.find(well_name_tmp)->second->GetNBlocksWithData(interval_name);
+      n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithData(interval_name);
     }
   }
   enough_data_for_corr_estimation = (min_blocks_with_data_for_corr_estim_ <= n_blocks_tot);
@@ -189,7 +189,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     for(int i=0 ; i<n_wells_ ; i++)
     {
       std::string well_name_tmp = wells[i]->GetWellName();
-      bool synt_vs_log          = mapped_blocked_logs_for_correlation.find(well_name_tmp)->second->HasSyntheticVsLog();
+      bool synt_vs_log          = mapped_blocked_logs.find(well_name_tmp)->second->HasSyntheticVsLog();
       all_Vs_logs_synthetic     = all_Vs_logs_synthetic && synt_vs_log;
       all_Vs_logs_non_synthetic = all_Vs_logs_non_synthetic && !synt_vs_log;
     }
@@ -207,14 +207,14 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
       temp_null.resize(n_wells_);
       for(int j = 0; j < n_wells_; j++)
         temp_null[j].resize(3);
-      EstimateLnData(log_data_vp, temp_null, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vp", err_txt);
-      EstimateLnData(log_data_vs, temp_null, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vs", err_txt);
-      EstimateLnData(log_data_rho, temp_null, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Rho", err_txt);
+      EstimateLnData(log_data_vp, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Vp", err_txt);
+      EstimateLnData(log_data_vs, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Vs", err_txt);
+      EstimateLnData(log_data_rho, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Rho", err_txt);
     }
     else{
-      EstimateLnData(log_data_vp, background, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vp", err_txt);
-      EstimateLnData(log_data_vs, background, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Vs", err_txt);
-      EstimateLnData(log_data_rho, background, well_names_, mapped_blocked_logs_for_correlation, interval_simboxes, "Rho", err_txt);
+      EstimateLnData(log_data_vp, background, well_names_, mapped_blocked_logs, interval_simboxes, "Vp", err_txt);
+      EstimateLnData(log_data_vs, background, well_names_, mapped_blocked_logs, interval_simboxes, "Vs", err_txt);
+      EstimateLnData(log_data_rho, background, well_names_, mapped_blocked_logs, interval_simboxes, "Rho", err_txt);
     }
 
     //EstimatePointVar0(point_var_0_, log_data_vp, log_data_vs, log_data_rho, err_txt);
@@ -227,7 +227,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     //corr_T_.resize(n_lags, 0);
     auto_cov_.resize(n_lags);
 
-    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs_for_correlation, interval_simboxes, log_data_vp, log_data_vs, log_data_rho,
+    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs, interval_simboxes, log_data_vp, log_data_vs, log_data_rho,
       all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, residual_variance_vs, static_cast<float>(dz_min), n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
 
     SetParameterCov(auto_cov_[0], var_0_, 3);
@@ -399,7 +399,7 @@ Analyzelog::CalculateNumberOfLags(int                                           
 void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >           & ln_data_map, //map from well to log
                                 const std::vector<std::vector<NRLib::Grid<float> *> > & background,
                                 const std::vector<std::string>                        & well_names,
-                                const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
+                                const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs,
                                 const std::vector<Simbox *>                           & interval_simboxes,
                                 const std::string                                     & log_name,
                                 std::string                                           & err_txt){
@@ -418,65 +418,117 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
 
   assert(log_name == "Vp" || log_name == "Vs" || log_name == "Rho");
 
-  for (int i = 0; i < n_wells_; i++){
+  for (int i = 0; i < n_wells_; i++) {
     std::vector<double>              temp_log(0);
     ln_data_map.insert(std::pair<std::string, std::vector<double> >(well_names[i], temp_log));
 
-    std::vector<double> temp_low_freq_log =  mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetContLogHighCutBackground(log_name);
+    std::vector<double> temp_low_freq_log =  mapped_blocked_logs.find(well_names[i])->second->GetContLogHighCutBackground(log_name);
 
+    std::vector<double>   mean;
+    nd = mapped_blocked_logs.find(well_names[i])->second->GetNumberOfBlocks();
 
-    for (size_t j = 0; j < interval_simboxes.size(); j++){
-      std::vector<double>   mean;
-      std::string           interval_name = interval_simboxes[j]->GetIntervalName();
-      nd                    = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNumberOfBlocks();
+    const std::vector<int>    & i_pos = mapped_blocked_logs.find(well_names[i])->second->GetIposVector();
+    const std::vector<int>    & j_pos = mapped_blocked_logs.find(well_names[i])->second->GetJposVector();
+    const std::vector<int>    & k_pos = mapped_blocked_logs.find(well_names[i])->second->GetKposVector();
 
-      const std::vector<int>    & i_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetIposVector();
-      const std::vector<int>    & j_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetJposVector();
-      const std::vector<int>    & k_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetKposVector();
+    const std::vector<double> & x_pos_blocked = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
+    const std::vector<double> & y_pos_blocked = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
+    const std::vector<double> & z_pos_blocked = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
 
-      std::vector<double> blocked_well_log;
+    std::vector<double> blocked_well_log;
 
-      if(log_name      == "Vp"){
-        blocked_well_log     = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVpBlocked();
-        log_nr               = 0;
-      }
-      else if(log_name == "Vs"){
-        blocked_well_log     = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetVsBlocked();
-        log_nr               = 1;
-      }
-      else if(log_name == "Rho"){
-        blocked_well_log     = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetRhoBlocked();
-        log_nr               = 2;
-      }
+    if(log_name      == "Vp"){
+      blocked_well_log     = mapped_blocked_logs.find(well_names[i])->second->GetVpBlocked();
+      log_nr               = 0;
+    }
+    else if(log_name == "Vs"){
+      blocked_well_log     = mapped_blocked_logs.find(well_names[i])->second->GetVsBlocked();
+      log_nr               = 1;
+    }
+    else if(log_name == "Rho"){
+      blocked_well_log     = mapped_blocked_logs.find(well_names[i])->second->GetRhoBlocked();
+      log_nr               = 2;
+    }
 
-      if (background[j][log_nr]->GetN() > 0){
-          for(int n = 0; n < nd; n++){
-            mean_vector.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
-            mean.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
-          }
+    if (interval_simboxes.size() == 1) {
+
+      if (background[0][log_nr]->GetN() > 0) {
+        for(int n = 0; n < nd; n++) {
+          mean_vector.push_back( (*background[0][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
+          mean.push_back( (*background[0][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
+        }
       }
       else{
         for(int n = 0; n < nd; n++){
           mean_vector.push_back(0);
-          mean.push_back( (*background[j][log_nr])(i_pos[n], j_pos[n], k_pos[n]));
+          mean.push_back(0);
         }
       }
 
-
-      for (int j = 0; j < nd; j++){
-        low_freq_log.push_back(temp_low_freq_log[j]);
-        if(blocked_well_log[j] != RMISSING && mean_vector[j] != RMISSING){
-          ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[j] - mean[j]);
-          global_mean   += blocked_well_log[j] - mean[j];
-          ln_data_vector.push_back(blocked_well_log[j] - mean[j]);
+      for (int n = 0; n < nd; n++) {
+        low_freq_log.push_back(temp_low_freq_log[n]);
+        if (blocked_well_log[n] != RMISSING && mean[n] != RMISSING) {
+          ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[n] - mean[n]);
+          global_mean   += blocked_well_log[n] - mean[n];
+          ln_data_vector.push_back(blocked_well_log[n] - mean[n]);
           count++;
         }
-        else{
+        else {
           ln_data_vector.push_back(RMISSING);
           ln_data_map.find(well_names[i])->second.push_back(RMISSING);
         }
       }
     }
+    //For multiple intervals the blocked logs are common for all intervals with an adjusted resolution, but the background models are created in interval-simbox resolutions
+    else {
+      //Get correct background values
+      for (int n = 0; n < nd; n++) {
+
+        //Find simbox
+        double x = x_pos_blocked[n];
+        double y = y_pos_blocked[n];
+        double z = z_pos_blocked[n];
+        int simbox_num = -1;
+        for (size_t i = 0; i < interval_simboxes.size(); i++) {
+          if (interval_simboxes[i]->IsPointBetweenOriginalSurfaces(x,y,z)) {
+            simbox_num = static_cast<int>(i);
+            break;
+          }
+        }
+
+        //Find correct kpos
+        int i = 0;
+        int j = 0;
+        int k = 0;
+        if (simbox_num > -1)
+          interval_simboxes[simbox_num]->getIndexes(x, y, z, i, j, k);
+
+        if (simbox_num > -1 && background[simbox_num][log_nr]->GetN() > 0) { //if simbox_num = -1 then well_log should be RMISSING
+          mean_vector.push_back( (*background[simbox_num][log_nr])(i_pos[n], j_pos[n], k));
+          mean.push_back( (*background[simbox_num][log_nr])(i_pos[n], j_pos[n], k));
+        }
+        else {
+          mean_vector.push_back(0);
+          mean.push_back(0);
+        }
+      }
+
+      //Subtract background
+      for (int n = 0; n < nd; n++) {
+        low_freq_log.push_back(temp_low_freq_log[n]);
+        if (blocked_well_log[n] != RMISSING && mean[n] != RMISSING) {
+          ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[n] - mean[n]);
+          global_mean   += blocked_well_log[n] - mean[n];
+          ln_data_vector.push_back(blocked_well_log[n] - mean[n]);
+          count++;
+        }
+        else {
+          ln_data_vector.push_back(RMISSING);
+          ln_data_map.find(well_names[i])->second.push_back(RMISSING);
+        }
+      }
+    }
+
     nd_tot += nd;
   }
 
@@ -764,7 +816,7 @@ Analyzelog::estimatePointVar0(float      ** Var0,
 //
 void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >                        & auto_cov,
                                                            const std::vector<std::string>                     & well_names,
-                                                           const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs_for_correlation,
+                                                           const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs,
                                                            const std::vector<Simbox *>                        & interval_simboxes,
                                                            const std::map<std::string, std::vector<double> >  & log_data_vp,
                                                            const std::map<std::string, std::vector<double> >  & log_data_vs,
@@ -818,14 +870,14 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     std::vector<double>                 rho;
     std::vector<double>                 vs;
     for (size_t i = 0; i < well_names.size(); i++){
-      if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
+      if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
         //int n_lags;
         for (size_t j = 0; j<interval_simboxes.size(); j++){
           const std::string interval_name           = interval_simboxes[j]->GetIntervalName();
           const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
           const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
           const std::vector<double> well_log_vs     = log_data_vs.find(well_names[i])->second;
-          //const std::vector<double> z_pos         = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
+          //const std::vector<double> z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
           // Loop over all blocks
           for (int k = 0; k < static_cast<float>(well_log_vp.size()); k++){
             if(well_log_vp[k] != RMISSING && well_log_rho[k] != RMISSING && well_log_vs[k] != RMISSING){
@@ -860,14 +912,14 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       int last_obs = 0;
       int lag = 0;
       for (size_t i = 0; i < well_names.size(); i++){
-        if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
+        if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
         //int n_lags;
           const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
           const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
           const std::vector<double> well_log_vs     = log_data_vs.find(well_names[i])->second;
-          const std::vector<double> x_pos           = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetXposBlocked();
-          const std::vector<double> y_pos           = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetYposBlocked();
-          const std::vector<double> z_pos           = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
+          const std::vector<double> & x_pos         = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
+          const std::vector<double> & y_pos         = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
+          const std::vector<double> & z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
 
           for (size_t j = 0; j<interval_simboxes.size(); j++){
             const std::string interval_name           = interval_simboxes[j]->GetIntervalName();
@@ -918,10 +970,10 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     time(&timestart);
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name = interval_simboxes[j]->GetIntervalName();
-      size_t nd = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetNBlocksWithData(interval_name);
-      const std::vector<double> x_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetXposBlocked();
-      const std::vector<double> y_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetYposBlocked();
-      const std::vector<double> z_pos = mapped_blocked_logs_for_correlation.find(well_names[i])->second->GetZposBlocked();
+      size_t nd = mapped_blocked_logs.find(well_names[i])->second->GetNBlocksWithData(interval_name);
+      const std::vector<double> & x_pos = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
+      const std::vector<double> & y_pos = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
+      const std::vector<double> & z_pos = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
       std::vector<double> z(nd);
       const std::vector<double> log_vp   = log_data_vp.find(well_names[i])->second;
       const std::vector<double> log_vs   = log_data_vs.find(well_names[i])->second;
@@ -979,7 +1031,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
               //
               // If this Vs log is synthetic and there exist real Vs logs: use regression coefficients
               //
-              if(!all_Vs_logs_synthetic && mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == true){
+              if(!all_Vs_logs_synthetic && mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == true){
                 // Use the relation Vs = a*Vp + b*Rho + e, where e is iid
                 // cov[t](vs_i, vs_j) = cov[t](a*vp_k + b*rho_k + e_k, a*vp_l + b*rho_l + e_l) = a*a*cov(vp_k,vp_l) + a*b*cov(vp_k, rho_l) + a*b*cov(vp_l, rho_k) + b*b*cov(rho_k, rho_l) + I(k = l) var(e)
                 if(log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING){
@@ -1031,7 +1083,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
               //
               // Non-synthetic Vs log
               //
-              else if(mapped_blocked_logs_for_correlation.find(well_names[i])->second->HasSyntheticVsLog() == false){
+              else if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
                 // cov[t](vs, vs)
                 if(log_vs[k] != RMISSING && log_vs[l] != RMISSING){
                   if (lag > max_lag_with_data)

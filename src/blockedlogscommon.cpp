@@ -22,7 +22,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   well_name_                    = well_data->GetWellName();
   n_layers_                     = estimation_simbox->getnz();
   n_blocks_                     = 0;
-  n_blocks_with_data_.insert(std::pair<std::string, int>("",0));
+  n_blocks_with_data_.insert(std::pair<std::string, int>(estimation_simbox->GetIntervalName(),0));
   n_blocks_with_data_tot_       = 0;
   interpolate_                  = interpolate;
   bool failed                   = false;
@@ -556,7 +556,6 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
                                                           bool                                                & failed,
                                                           std::string                                         & err_text) const{
   std::vector<int> b_ind(n_data); // Which block each well log entry contributes to
-  //const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
 
   try{
 
@@ -744,7 +743,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
       }
 
       CountBlocksWithData(x_pos_blocked, y_pos_blocked, z_pos_blocked, continuous_logs_blocked,
-                                      n_blocks, n_blocks_with_data, n_blocks_with_data_tot);
+                          estimation_simbox->GetIntervalName(), n_blocks, n_blocks_with_data, n_blocks_with_data_tot);
 
       // Discrete logs
       if (facies_log_defined)
@@ -963,7 +962,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   for (int i=0; i<first_S_; i++)
     n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                   // 1. Add number of blocks from intervals above the first well obs
   for (int i=last_S_+1; i<n_intervals; i++)
-    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;;                  // 2. Add number of blocks from intervals below the last well obs
+    n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[i]->GetIntervalName())->second;                   // 2. Add number of blocks from intervals below the last well obs
   n_blocks += first_K;                                                                                                  // 3. Add number of layers above the first well observation in the simbox with the first well obs
   n_blocks += n_layers_adjusted_per_interval.find(interval_simboxes[last_S_]->GetIntervalName())->second - last_K;      // 4. Add remaining layers below the last well observation in the simbox with the last well obs
   n_blocks += n_defined_blocks;                                                                                         // 5. Add number of defined blocks between first_K and last_K
@@ -1223,6 +1222,7 @@ void    BlockedLogsCommon::CountBlocksWithData(const std::vector<double>        
                                                const std::vector<double>                          & y_pos_blocked,
                                                const std::vector<double>                          & z_pos_blocked,
                                                const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                                               std::string                                          interval_name,
                                                unsigned int                                         n_blocks,
                                                std::map<std::string, int>                         & n_blocks_with_data,
                                                int                                                & n_blocks_with_data_tot) const
@@ -1233,7 +1233,7 @@ void    BlockedLogsCommon::CountBlocksWithData(const std::vector<double>        
 
   for (size_t i = 0; i < n_blocks; i++) {
     if (vp_log_blocked[i] != RMISSING && x_pos_blocked[i] != RMISSING && y_pos_blocked[i] != RMISSING && z_pos_blocked[i] != RMISSING) {
-      n_blocks_with_data.find("")->second++;
+      n_blocks_with_data.find(interval_name)->second++;
       n_blocks_with_data_tot++;
     }
   }
@@ -1401,10 +1401,9 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
         b++;
         k = 0;
         interval_simboxes[s]->getIndexes(x_pos_raw_logs[m], y_pos_raw_logs[m], z_pos_raw_logs[m], i, j, k);
-        s_pos[b] = first_S_;
+        s_pos[b] = s;
         i_pos[b] = i;
         j_pos[b] = j;
-
         k_pos[b] = static_cast<int>(k*dz_rel[s]);
       }
     }

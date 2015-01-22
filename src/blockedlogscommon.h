@@ -621,6 +621,7 @@ private:
                               const std::vector<double>                          & y_pos_blocked,
                               const std::vector<double>                          & z_pos_blocked,
                               const std::map<std::string, std::vector<double> >  & continuous_logs_blocked,
+                              std::string                                          interval_name,
                               unsigned int                                         n_blocks,
                               std::map<std::string, int>                         & n_blocks_with_data,
                               int                                                & n_blocks_with_data_tot) const;
