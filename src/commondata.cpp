@@ -15,7 +15,6 @@
 #include "nrlib/segy/segy.hpp"
 #include "nrlib/segy/segytrace.hpp"
 #include "rplib/distributionsrock.h"
-#include "src/blockedlogsforrockphysics.h"
 
 #include "lib/timekit.hpp"
 #include "src/timings.h"
@@ -190,7 +189,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
           model_settings->SetMinBlocksForCorrEstimation(100); // Erik N: as a guesstimate, the min number of blocks is set to 100 after discussions with Ragnar Hauge
           if (setup_multigrid_ == true && correlation_wells_ == true && setup_background_model_ == true) {
-            setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+            setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_blocked_logs_for_correlation_,
                                                              multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                              background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                              prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_or_file_, err_text);
@@ -198,7 +197,7 @@ CommonData::CommonData(ModelSettings * model_settings,
         }
       }
       else if (model_settings->getEstimationMode() == false) {
-        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_for_correlation_,
+        setup_prior_correlation_ = SetupPriorCorrelation(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_blocked_logs_for_correlation_,
                                                          multiple_interval_grid_->GetIntervalSimboxes(), facies_names_, trend_cubes_,
                                                          background_parameters_, multiple_interval_grid_->GetDzMin(), prior_corr_T_,
                                                          prior_param_cov_, prior_corr_XY_, prior_auto_cov_, prior_cov_estimated_or_file_, err_text);
@@ -7945,21 +7944,22 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
 }
 
 
-bool CommonData::SetupPriorCorrelation(const ModelSettings                                         * model_settings,
-                                       const InputFiles                                            * input_files,
-                                       const std::vector<NRLib::Well *>                            & wells,
-                                       const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                                       const std::vector<Simbox *>                                 & interval_simboxes,
-                                       const std::vector<std::string>                              & facies_names,
-                                       const std::vector<CravaTrend>                               & trend_cubes,
-                                       const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
-                                       double                                                        dz_min,
-                                       std::vector<std::vector<double> >                           & prior_corr_T,
-                                       std::vector<NRLib::Matrix>                                  & prior_param_cov,
-                                       std::vector<Surface *>                                      & prior_corr_XY,
-                                       std::vector<std::vector<NRLib::Matrix> >                    & prior_auto_cov,
-                                       bool                                                        & prior_cov_estimated_or_file, //or prior_auto_cov read from file
-                                       std::string                                                 & err_text_common) const
+bool CommonData::SetupPriorCorrelation(const ModelSettings                                              * model_settings,
+                                       const InputFiles                                                 * input_files,
+                                       const std::vector<NRLib::Well *>                                 & wells,
+                                       const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                       const std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
+                                       const std::vector<Simbox *>                                      & interval_simboxes,
+                                       const std::vector<std::string>                                   & facies_names,
+                                       const std::vector<CravaTrend>                                    & trend_cubes,
+                                       const std::vector<std::vector<NRLib::Grid<float> *> >            & background,
+                                       double                                                             dz_min,
+                                       std::vector<std::vector<double> >                                & prior_corr_T,
+                                       std::vector<NRLib::Matrix>                                       & prior_param_cov,
+                                       std::vector<Surface *>                                           & prior_corr_XY,
+                                       std::vector<std::vector<NRLib::Matrix> >                         & prior_auto_cov,
+                                       bool                                                             & prior_cov_estimated_or_file, //or prior_auto_cov read from file
+                                       std::string                                                      & err_text_common) const
 {
 
   if (model_settings->getForwardModeling())
@@ -8165,6 +8165,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           else
             n_corr_T = n_corr_T/2;
 
+          if (interval_names[i] != "")
+            LogKit::LogFormatted(LogKit::Low,"\nInterval: " + interval_names[i] + "\n\n");
+
           if (!estimate_temp_corr) {
             // 2. Use variogram with correlation range
             if (temporal_corr_range_given == true) {
@@ -8214,14 +8217,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             temp_simbox.push_back(interval_simboxes[i]);
             std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
             current_background_interval.push_back(background[i]);
-            Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_for_correlation, current_background_interval, temp_simbox, interval_simboxes[i]->getdz(), model_settings, tmp_err_txt);
+
+            Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_intervals.find(static_cast<int>(i))->second, current_background_interval, temp_simbox, interval_simboxes[i]->getdz(), model_settings, tmp_err_txt);
             if (tmp_err_txt != "") {
               err_text += tmp_err_txt;
               failed_param_cov = true;
             }
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
             // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
-            /*
             else if (analyze->GetEnoughData() == false && interval_names.size() > 1 && analyze_all == NULL) {
               std::vector<Simbox *> temp_simboxes;
               for (size_t j = 0; j < interval_simboxes.size(); j++)
@@ -8233,7 +8236,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 failed_temp_corr = true;
               }
             }
-            */
 
             if (err_text == "") {
               NRLib::Matrix param_cov_array_temp;
@@ -8251,7 +8253,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 }
               }
 
-              std::vector<NRLib::Matrix> prior_auto_cov_temp;
+              std::vector<NRLib::Matrix> prior_auto_cov_temp(interval_simboxes[i]->getnz());
               int n_est_nonzero = 0;
               if (analyze->GetEnoughData() == true) {
                 prior_auto_cov_temp   = analyze->GetAutoCovariance();
@@ -8262,10 +8264,9 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 // If dz for interval i is not equal to the minimum resolution min_dz, resample auto_cov
                 if (dz_min != interval_simboxes[i]->getdz())
                   ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i]->getdz());
-                else {
+                else
                   prior_auto_cov_temp   = analyze_all->GetAutoCovariance();
-                  n_est_nonzero         = analyze_all->GetMaxLagWithNonZeroAutoCovData();
-                }
+                n_est_nonzero         = analyze_all->GetMaxLagWithNonZeroAutoCovData();
               }
 
               int n_est = std::min(n_est_nonzero, n_corr_T);
@@ -8299,7 +8300,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           if (!failed) {
 
             CheckCovarianceParameters(prior_param_cov[i]);
-            PrintPriorVariances(interval_names);
+            PrintPriorVariances(prior_param_cov[i]);
 
             if (print_result == true) {
               if (estimate_param_cov || estimate_temp_corr)
@@ -9242,7 +9243,6 @@ void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>   
                                              double                                                  dz) const
 {
   // prior_auto_cov_dz_min has been estimated over all intervals, so its size must be >= the size of prior_auto_cov
-  assert (prior_auto_cov.size() != prior_auto_cov.size());
   double    fraction_1            = 0;
   double    fraction_2            = 0;
   size_t    cell_coarse           = 0;
@@ -9264,6 +9264,7 @@ void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>   
 
   while (cell_coarse < prior_auto_cov.size()) {
     if (cell_coarse == 0) {
+      prior_auto_cov[0].resize(3,3);
       for (int i = 0;  i < 3; i++) {
         for (int j = 0; j < 3; j++) {
           prior_auto_cov[0](i,j) = prior_auto_cov_dz_min[0](i,j);
@@ -9271,6 +9272,7 @@ void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>   
       }
     }
     else {
+      prior_auto_cov[cell_coarse].resize(3,3);
       cell_fine_1 = static_cast<int>((cell_coarse*dz)/dz_min);
       cell_fine_2 = cell_fine_1 + 1;
       for (int i = 0;  i < 3; i++) {
@@ -9346,7 +9348,7 @@ void CommonData::WriteFilePriorVariances(const ModelSettings                * mo
   std::string base_name1;
   std::string base_name2;
   if (interval_name != "") {
-    base_name1 = IO::PrefixPrior() + IO::FileParameterAutoCov() + "_" + interval_name + "_" + IO::SuffixCrava();
+    base_name1 = IO::PrefixPrior() + IO::FileParameterAutoCov() + "_" + interval_name + IO::SuffixCrava();
     base_name2 = IO::PrefixPrior() + IO::FileLateralCorr()      + "_" + interval_name;
   }
   else {
@@ -9354,7 +9356,6 @@ void CommonData::WriteFilePriorVariances(const ModelSettings                * mo
     base_name2 = IO::PrefixPrior() + IO::FileLateralCorr();
   }
   std::string file_name1 = IO::makeFullFileName(IO::PathToCorrelations(), base_name1);
-  std::string file_name2 = IO::makeFullFileName(IO::PathToCorrelations(), base_name2);
 
   std::ofstream file;
   NRLib::OpenWrite(file, file_name1);
@@ -9375,46 +9376,42 @@ void CommonData::WriteFilePriorVariances(const ModelSettings                * mo
   }
   file.close();
 
-  IO::writeSurfaceToFile(*prior_corr_XY, file_name2, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
+  IO::writeSurfaceToFile(*prior_corr_XY, base_name2, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
 }
 
 //--------------------------------------------------------------------
 
-void  CommonData::PrintPriorVariances(const std::vector<std::string> & interval_names) const
+void  CommonData::PrintPriorVariances(const NRLib::Matrix & prior_param_cov) const
 {
 
-  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n");
-  for (size_t i = 0; i < interval_names.size(); i++) {
-    LogKit::LogFormatted(LogKit::Low,"\n");
-    if (interval_names[i] != "")
-      LogKit::LogFormatted(LogKit::Low,"Interval: " + interval_names[i] + "\n\n");
-    LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
-    LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::Low,"Interval + + :   %.1e   %.1e   %.1e (used by program)\n",prior_param_cov_[i](0,0),prior_param_cov_[i](1,1),prior_param_cov_[i](2,2));
+  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n\n");
 
-    float corr01 = static_cast<float>(prior_param_cov_[i](0,1)/(sqrt(prior_param_cov_[i](0,0)*prior_param_cov_[i](1,1))));
-    float corr02 = static_cast<float>(prior_param_cov_[i](0,2)/(sqrt(prior_param_cov_[i](0,0)*prior_param_cov_[i](2,2))));
-    float corr12 = static_cast<float>(prior_param_cov_[i](1,2)/(sqrt(prior_param_cov_[i](1,1)*prior_param_cov_[i](2,2))));
-    LogKit::LogFormatted(LogKit::Low,"\n");
-    LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
-    LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-    LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-    LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-    LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
-    LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Interval + + :   %.1e   %.1e   %.1e (used by program)\n",prior_param_cov(0,0),prior_param_cov(1,1),prior_param_cov(2,2));
 
-    if (std::abs(corr01) > 1.0) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
-      TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
-    }
-    if (std::abs(corr02) > 1.0) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
-      TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
-    }
-    if (std::abs(corr12) > 1.0) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
-      TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
-    }
+  float corr01 = static_cast<float>(prior_param_cov(0,1)/(sqrt(prior_param_cov(0,0)*prior_param_cov(1,1))));
+  float corr02 = static_cast<float>(prior_param_cov(0,2)/(sqrt(prior_param_cov(0,0)*prior_param_cov(2,2))));
+  float corr12 = static_cast<float>(prior_param_cov(1,2)/(sqrt(prior_param_cov(1,1)*prior_param_cov(2,2))));
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low,"\n");
+
+  if (std::abs(corr01) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
+  }
+  if (std::abs(corr02) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
+  }
+  if (std::abs(corr12) > 1.0) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
   }
 }
 

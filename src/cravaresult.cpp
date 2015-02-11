@@ -219,7 +219,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int nz_output    = output_simbox.getnz();
 
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
-  CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, common_data, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
+  CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
 
   //Add seismic data to blocked logs
   if ((n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) && common_data->HasSeismicData()) {
@@ -788,7 +788,6 @@ double CravaResult::GetResampledTraceValue(const std::vector<double> & resampled
 void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output, //blocked to ouput_simbox in CommonData
                                      const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
                                      MultiIntervalGrid                                              * multi_interval_grid,
-                                     CommonData                                                     * common_data,
                                      const Simbox                                                   * output_simbox)
 {
   //Resample blocked logs to output_simbox and combine if multiple intervals

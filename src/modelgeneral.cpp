@@ -22,7 +22,6 @@
 #include "src/modelgeneral.h"
 #include "src/modelsettings.h"
 #include "src/simbox.h"
-#include "src/blockedlogsforrockphysics.h"
 #include "src/fftgrid.h"
 #include "src/fftfilegrid.h"
 #include "src/gridmapping.h"

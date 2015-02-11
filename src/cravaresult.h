@@ -52,7 +52,6 @@ public:
   void CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *>                     & blocked_logs_output,
                           const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
                           MultiIntervalGrid                                              * multi_interval_grid,
-                          CommonData                                                     * common_data,
                           const Simbox                                                   * output_simbox);
 
   void CopyWellLog(std::vector<double>       & log_out,

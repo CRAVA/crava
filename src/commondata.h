@@ -829,21 +829,22 @@ private:
                                                    int            other_output,
                                                    std::string    interval_name) const;
 
-  bool               SetupPriorCorrelation(const ModelSettings                                         * model_settings,
-                                           const InputFiles                                            * input_files,
-                                           const std::vector<NRLib::Well *>                            & wells,
-                                           const std::map<std::string, BlockedLogsCommon *>            & mapped_blocked_logs_for_correlation,
-                                           const std::vector<Simbox *>                                 & interval_simboxes,
-                                           const std::vector<std::string>                              & facies_names,
-                                           const std::vector<CravaTrend>                               & trend_cubes,
-                                           const std::vector<std::vector<NRLib::Grid<float> *> >       & background,
-                                           double                                                        dz_min,
-                                           std::vector<std::vector<double> >                           & prior_corr_T,
-                                           std::vector<NRLib::Matrix>                                  & prior_param_cov,
-                                           std::vector<Surface *>                                      & prior_corr_XY,
-                                           std::vector<std::vector<NRLib::Matrix> >                    & prior_auto_cov,
-                                           bool                                                        & prior_cov_estimated,
-                                           std::string                                                 & err_text_common) const;
+  bool               SetupPriorCorrelation(const ModelSettings                                              * model_settings,
+                                           const InputFiles                                                 * input_files,
+                                           const std::vector<NRLib::Well *>                                 & wells,
+                                           const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
+                                           const std::map<std::string, BlockedLogsCommon *>                 & mapped_blocked_logs_for_correlation,
+                                           const std::vector<Simbox *>                                      & interval_simboxes,
+                                           const std::vector<std::string>                                   & facies_names,
+                                           const std::vector<CravaTrend>                                    & trend_cubes,
+                                           const std::vector<std::vector<NRLib::Grid<float> *> >            & background,
+                                           double                                                             dz_min,
+                                           std::vector<std::vector<double> >                                & prior_corr_T,
+                                           std::vector<NRLib::Matrix>                                       & prior_param_cov,
+                                           std::vector<Surface *>                                           & prior_corr_XY,
+                                           std::vector<std::vector<NRLib::Matrix> >                         & prior_auto_cov,
+                                           bool                                                             & prior_cov_estimated,
+                                           std::string                                                      & err_text_common) const;
 
   void               ReadPriorAutoCovariance(const std::string                        & file_name,
                                              std::vector<std::vector<NRLib::Matrix> > & prior_auto_cov,
@@ -925,8 +926,6 @@ private:
   //                                           const Surface             * prior_corr_XY,
   //                                           const float               & dt) const;
 
-  void               PrintPriorVariances() const;
-
   void               WriteFilePriorVariances(const ModelSettings               * model_settings,
                                              const NRLib::Matrix               & prior_param_cov,
                                              const std::vector<double>         & prior_corr_T,
@@ -942,7 +941,7 @@ private:
 
   int                ComputeTime(int year, int month, int day) const;
 
-  void               PrintPriorVariances(const std::vector<std::string> & interval_names) const;
+  void               PrintPriorVariances(const NRLib::Matrix & prior_param_cov) const;
 
   void               ReadAngularCorrelations(ModelSettings                                  * model_settings,
                                              std::vector<std::vector<std::vector<float> > > & angular_correlations) const;
