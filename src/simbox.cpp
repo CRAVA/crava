@@ -293,6 +293,11 @@ base_eroded_surface_(NULL)
   mean_surface->Multiply(0.5);
   NRLib::Vector ref_plane_parameters = FindPlane(mean_surface);
 
+  top_surface.WriteToFile("top_surface.storm");
+  bot_surface.WriteToFile("bot_surface.storm");
+  mean_surface->WriteToFile("mean_surface.storm");
+  single_corr_surface->WriteToFile("orig_corr.storm");
+
   // tilt the mean plane with the correlation plane
   ref_plane_parameters -= corr_plane_parameters;
   grad_x_ = ref_plane_parameters(1);
@@ -300,7 +305,9 @@ base_eroded_surface_(NULL)
 
   // Create plane from parameters and add the original corr surface
   Surface * ref_plane = CreatePlaneSurface(ref_plane_parameters, mean_surface);
+  ref_plane->WriteToFile("ref_plane.storm");
   ref_plane->AddNonConform(single_corr_surface);
+  ref_plane->WriteToFile("corr_surf.storm");
 
   // Create new top surface
   Surface new_top_surface(*ref_plane);

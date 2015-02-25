@@ -28,24 +28,33 @@ class Background
 {
 public:
 
-  Background(std::vector<NRLib::Grid<float> *>                & parameters,
-             NRLib::Grid<float>                               * velocity,
-             const Simbox                                     * time_simbox,
-             const Simbox                                     * time_bg_simbox,
-             const std::map<std::string, BlockedLogsCommon *> & bl,
-             const std::map<std::string, BlockedLogsCommon *> & bg_bl,
-             const ModelSettings                              * modelSettings,
-             const std::string                                & interval_name,
-             std::string                                      & err_text);
+  static
+  void SetupBackground(std::vector<NRLib::Grid<float> *>                & parameters,
+                       std::vector<std::vector<double> >                & vertical_trends,
+                       NRLib::Grid<float>                               * velocity,
+                       const Simbox                                     * time_simbox,
+                       const Simbox                                     * time_bg_simbox,
+                       const std::map<std::string, BlockedLogsCommon *> & bl,
+                       const std::map<std::string, BlockedLogsCommon *> & bg_bl,
+                       const ModelSettings                              * modelSettings,
+                       const std::string                                & interval_name,
+                       std::string                                      & err_text);
 
-  Background(FFTGrid ** grids);
-  ~Background(void);
+  static
+  void SetupBackground(FFTGrid ** grids);
+
+  static
+  void         FillInVerticalTrend(FFTGrid                   * bgTrend,
+                                   const std::vector<double> & trend);
+
 
 private:
 
+  static
   void         GenerateBackgroundModel(NRLib::Grid<float>                               * bg_vp,
                                        NRLib::Grid<float>                               * bg_vs,
                                        NRLib::Grid<float>                               * bg_rho,
+                                       std::vector<std::vector<double> >                & vertical_trends,
                                        NRLib::Grid<float>                               * velociy,
                                        const Simbox                                     * simbox,
                                        const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -53,12 +62,14 @@ private:
                                        const std::string                                & interval_name,
                                        std::string                                      & err_text);
 
+  static
   void         ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
                                        NRLib::Grid<float>  * & bg_vs,
                                        NRLib::Grid<float>  * & bg_rho,
                                        const Simbox        *   bg_simbox,
                                        const Simbox        *   simbox);
 
+  static
   void         CalculateBackgroundTrend(std::vector<double>               & trend,
                                         std::vector<double>               & avgDev,
                                         const int                           nz,
@@ -70,6 +81,7 @@ private:
                                         std::vector<std::vector<double> > & highCutWellTrend,
                                         const std::string                 & name);
 
+  static
   void         GetKrigingWellTrends(std::vector<std::vector<double> >                & bl_vp,
                                     std::vector<std::vector<double> >                & bl_vs,
                                     std::vector<std::vector<double> >                & bl_rho,
@@ -82,15 +94,18 @@ private:
                                     std::vector<int>                                 & n_blocks,
                                     int                                              & tot_blocks,
                                     const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                    const int                                        & n_wells) const;
+                                    const int                                        & n_wells);
 
+  static
   void         GetWellTrends(std::vector<std::vector<double> >                & well_trend,
                              std::vector<std::vector<double> >                & high_cut_Well_trend,
                              const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                              const int                                        & nz,
                              const std::string                                & name,
-                             std::string                                      & err_text) const;
+                             std::string                                      & err_text);
 
+
+  static
   void         WriteTrendsToFile(std::vector<double> & trend,
                                  const Simbox        * simbox,
                                  bool                  write1D,
@@ -100,11 +115,15 @@ private:
                                  bool                  isFile,
                                  const std::string   & interval_name);
 
+
+  static
   const CovGrid2D & MakeCovGrid2D(const Simbox      * simbox,
                                   Vario             * vario,
                                   int                 debugFlag,
                                   const std::string & interval_name);
 
+
+  static
   void         SetupKrigingData2D(std::vector<KrigingData2D>                 & kriging_data_vp,
                                   std::vector<KrigingData2D>                 & kriging_data_vs,
                                   std::vector<KrigingData2D>                 & kriging_data_rho,
@@ -125,16 +144,20 @@ private:
                                   const std::vector<const std::vector<int> *>  ipos,
                                   const std::vector<const std::vector<int> *>  jpos,
                                   const std::vector<const std::vector<int> *>  kpos,
-                                  const std::string                          & interval_name) const;
+                                  const std::string                          & interval_name);
 
+
+  static
   void         MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data,
                                     NRLib::Grid<float>               * bg_grid,
                                     std::vector<double>              & trend,
                                     const Simbox                     * simbox,
                                     const CovGrid2D                  & cov_grid_2D,
                                     const std::string                & type,
-                                    int                                n_threads) const;
+                                    int                                n_threads);
 
+
+  static
   void         CalculateVelocityDeviations(NRLib::Grid<float>                               * velocity,
                                            const Simbox                                     * simbox,
                                            const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -144,11 +167,15 @@ private:
                                            //int                                                outputFlag,
                                            int                                                n_wells);
 
+
+  static
   void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
                                  NRLib::Grid<float> *  p_old, // Resample from
                                  const Simbox       *  simbox_new,
                                  const Simbox       *  simbox_old);
 
+
+  static
   void         CalculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
                                       std::vector<double>               & trend,
                                       float                               logMin,
@@ -158,17 +185,23 @@ private:
                                       float                               dz,
                                       const std::string                 & name);
 
+
+  static
   void         WriteVerticalTrend(std::vector<double> & trend,
                                   float                 dz,
                                   int                   nz,
                                   std::string           name,
                                   const std::string   & interval_name);
 
+
+  static
   void         CalculateDeviationFromVerticalTrend(std::vector<std::vector<double> > & wellTrend,
                                                    const std::vector<double>         & trend,
                                                    std::vector<double>               & avg_dev,
                                                    const int                           nd);
 
+
+  static
   void         WriteDeviationsFromVerticalTrend(const std::vector<double>                        & avg_dev_vp,
                                                 const std::vector<double>                        & avg_dev_vs,
                                                 const std::vector<double>                        & avg_dev_rho,
@@ -179,6 +212,8 @@ private:
                                                 const int                                          n_wells,
                                                 const int                                          nz);
 
+
+  static
   void         SmoothTrendWithLocalLinearRegression(std::vector<double> & trend,
                                                     int                 * count,
                                                     int                   nWells,
@@ -188,14 +223,13 @@ private:
                                                     float                 max_value,
                                                     std::string           parName);
 
-  void         FillInVerticalTrend(FFTGrid                   * bgTrend,
-                                   const std::vector<double> & trend);
 
+
+  static
   FFTGrid    * CopyFFTGrid(FFTGrid   * origGrid,
                            const bool  expTrans,
-                           const bool  fileGrid) const;
+                           const bool  fileGrid);
 
-  int          DataTarget_;         // Number of data requested in a kriging block
 };
 
 #endif

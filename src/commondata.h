@@ -107,6 +107,7 @@ public:
   NRLib::Grid<float>                                                 * GetBackgroundVpInterval(int i)                   const { return background_parameters_[i][0]                   ;}
   NRLib::Grid<float>                                                 * GetBackgroundVsInterval(int i)                   const { return background_parameters_[i][1]                   ;}
   NRLib::Grid<float>                                                 * GetBackgroundRhoInterval(int i)                  const { return background_parameters_[i][2]                   ;}
+  const NRLib::Grid2D<std::vector<double> >                          & GetBackgroundVerticalTrends()                    const { return background_vertical_trends_                    ;}
 
   const std::vector<CravaTrend>                                      & GetTrendCubes()                                  const { return trend_cubes_                                   ;}
   const CravaTrend                                                   & GetTrendCube(int i)                              const { return trend_cubes_[i]                                ;}
@@ -780,6 +781,7 @@ private:
                                           MultiIntervalGrid                                          * multi_interval_grid,
                                           Simbox                                                     * inversion_simbox,
                                           std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters,
+                                          NRLib::Grid2D<std::vector<double> >                        & vertical_trends,
                                           std::vector<double>                                        & background_vs_vp_ratios,
                                           const std::vector<CravaTrend>                              & trend_cubes,
                                           std::string                                                & err_text_common) const;
@@ -1020,8 +1022,9 @@ private:
   std::vector<Surface *>                                       facies_estim_interval_;
 
   // background model
-  std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;    // outer vector: intervals, inner vector: parameters
-  std::vector<double>                                          background_vs_vp_ratios_;  // vs_vp_ratios from generation of backgroundmodel
+  std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;      // outer vector: intervals, inner vector: parameters
+  NRLib::Grid2D<std::vector<double> >                          background_vertical_trends_; // First index is interval, other is vp, vs, rho.
+  std::vector<double>                                          background_vs_vp_ratios_;    // vs_vp_ratios from generation of backgroundmodel
 
   // Timeline
   TimeLine                                                   * time_line_;

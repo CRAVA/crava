@@ -162,14 +162,14 @@ CommonData::CommonData(ModelSettings * model_settings,
       if ((model_settings->getEstimationMode() == false && model_settings->getGenerateBackground()) || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_ && inversion_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
         else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
       }
       else //Not estimation
         setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                      multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                      multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
     }
 
 
@@ -7115,6 +7115,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       MultiIntervalGrid                                          * multi_interval_grid,
                                       Simbox                                                     * inversion_simbox,
                                       std::vector<std::vector<NRLib::Grid<float> *> >            & background_parameters, //vector (intervals) vector (parameters)
+                                      NRLib::Grid2D<std::vector<double> >                        & vertical_trends,
                                       std::vector<double>                                        & background_vs_vp_ratios,
                                       const std::vector<CravaTrend>                              & trend_cubes,
                                       std::string                                                & err_text_common) const
@@ -7145,6 +7146,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
   if (model_settings->getGenerateBackground()) {
 
     if (model_settings->getGenerateBackgroundFromRockPhysics() == false) {
+      vertical_trends.Resize(n_intervals, 3);
 
       if (model_settings->getBackgroundVario() == NULL) {
         err_text += "There is no variogram available for the background modelling.\n";
@@ -7195,96 +7197,112 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
           SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, output_format,
                                         model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+        }
+        else {
+          Surface * top_corr_surface = NULL;
+          Surface * bot_corr_surface = NULL;
+          bool top_conform = false;
+          bool bot_conform = false;
+
+          if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end())
+            top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+          else if(model_settings->getCorrDirTopConforms().find(interval_name) != model_settings->getCorrDirTopConforms().end() &&
+                  model_settings->getCorrDirTopConform(interval_name) == true) {
+            top_conform      = true;
+            top_corr_surface = new Surface(multi_interval_grid->GetSurface(i));
+          }
+
+          if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
+            bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
+          else if(model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end() &&
+                  model_settings->getCorrDirBaseConform(interval_name) == true) {
+            bot_conform      = true;
+            bot_corr_surface = new Surface(multi_interval_grid->GetSurface(i+1));
+          }
+
+          if(top_conform == true && bot_conform == true) {//top and base conform, leave to SetupBackground to handle.
+            delete top_corr_surface;
+            delete bot_corr_surface;
+            top_corr_surface = NULL;
+            bot_corr_surface = NULL;
+          }
+
+          if (top_corr_surface != NULL) {
+            if(bot_corr_surface != NULL) {
+              SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+              delete top_corr_surface;
+              delete bot_corr_surface;
+            }
+            else { //Top conform
+              SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+              delete top_corr_surface;
+            }
+          }
+          else if (top_corr_surface != NULL) {//Base conform
+            SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+            delete bot_corr_surface;
+          }
+        }//Note: Default case when no correlation is given is handled in cons
+
+        //Block logs to bg_simbox
+        std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_tmp;
+        if (bg_simbox != NULL) {
           std::string err_text_tmp = "";
           int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
           if (status != Simbox::BOXOK) {
             err_text += "Could not make the grid for background model" + interval_text + ".\n";
             err_text += err_text_tmp;
           }
-        }
-        else if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()
-              || ((model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end()) && model_settings->getCorrDirBaseConform(interval_name) == true))
-        {
-          //Top and base correlation surfaces
-          if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end() &&
-              input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
-          {
-            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
-            Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
-            //Extend both with top corr and bot corr surface
-            SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
-          }
-          //Top conform and base correlation surface
-          else if (model_settings->getCorrDirTopConform(interval_name) == true &&
-                    input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
-          {
-            Surface * bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
-            //Extend only with bot corr surface
-            int output_format = model_settings->getOutputGridFormat();
-            if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
-              output_format += IO::ASCII;
+          else{
+            int n_intervals_inside = 0;
+            for (size_t j = 0; j < wells.size(); j++) {
+              bg_blocked_log = NULL;
 
-            SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, output_format,
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
-          }
-          //Top correlation surface and base conform
-          else if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end() &&
-                    model_settings->getCorrDirBaseConform(interval_name) == true)
-          {
-            Surface * top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
-            //Exted only with top corr surface
-            SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
-          }
-        }
+              bool is_inside = true;
+              bg_blocked_log = new BlockedLogsCommon(wells[j],
+                                                     cont_logs_to_be_blocked,
+                                                     disc_logs_to_be_blocked,
+                                                     bg_simbox,
+                                                     false,
+                                                     is_inside,
+                                                     err_text);
 
-        //Block logs to bg_simbox
-        std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_tmp;
-        if (bg_simbox != NULL) {
-          int n_intervals_inside = 0;
-          for (size_t j = 0; j < wells.size(); j++) {
-            bg_blocked_log = NULL;
+              std::string bg_well_name = "bg_" + wells[j]->GetWellName();
+              bg_blocked_log->SetWellName(bg_well_name);
 
-            bool is_inside = true;
-            bg_blocked_log = new BlockedLogsCommon(wells[j],
-                                                   cont_logs_to_be_blocked,
-                                                   disc_logs_to_be_blocked,
-                                                   bg_simbox,
-                                                   false,
-                                                   is_inside,
-                                                   err_text);
-
-            std::string bg_well_name = "bg_" + wells[j]->GetWellName();
-            bg_blocked_log->SetWellName(bg_well_name);
-
-            if (is_inside == true) {
-              bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
-              n_intervals_inside++;
-            }
-            else {
-              if (n_intervals > 1) {
-                LogKit::LogFormatted(LogKit::Low,"\nWell " + wells[j]->GetWellName() + " is not inside the simbox for interval " + interval_name + ". This well will not be used for background estimation for this interval.\n");
+              if (is_inside == true) {
+                bg_blocked_logs_tmp.insert(std::pair<std::string, BlockedLogsCommon *>(bg_well_name, bg_blocked_log));
+                n_intervals_inside++;
               }
               else {
-                LogKit::LogFormatted(LogKit::Low,"\nBlocking wells failed: well " + wells[j]->GetWellName() + " is not inside the simbox.");
-                err_text += "Well " + wells[j]->GetWellName() + " was not found within the estimation simbox surrounding the inversion intervals.\n";
+                if (n_intervals > 1) {
+                  LogKit::LogFormatted(LogKit::Low,"\nWell " + wells[j]->GetWellName() + " is not inside the simbox for interval " + interval_name + ". This well will not be used for background estimation for this interval.\n");
+                }
+                else {
+                  LogKit::LogFormatted(LogKit::Low,"\nBlocking wells failed: well " + wells[j]->GetWellName() + " is not inside the simbox.");
+                  err_text += "Well " + wells[j]->GetWellName() + " was not found within the estimation simbox surrounding the inversion intervals.\n";
+                }
               }
             }
-          }
 
-          if (n_intervals_inside == 0) {
-              LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for interval " + interval_name + " failed: No wells inside the simbox.\n");
-              err_text += "No wells was inside interval simbox for interval " + interval_name + ".\n";
+            if (n_intervals_inside == 0) {
+                LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for interval " + interval_name + " failed: No wells inside the simbox.\n");
+                err_text += "No wells was inside interval simbox for interval " + interval_name + ".\n";
+            }
           }
-
         }
-
         for (int j = 0; j < 3; j++)
           background_parameters[i][j] = new NRLib::Grid<float>();
 
         //Create background
-        Background(background_parameters[i], velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
+        std::vector<std::vector<double> > interval_vertical_trends;
+        Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
+        for (int j = 0; j < 3; j++)
+          vertical_trends(i,j) = interval_vertical_trends[j];
+
 
         //These logs are written out in CravaResult if multiple interval isn't used
         if (n_intervals == 1)
@@ -8217,8 +8235,15 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             temp_simbox.push_back(interval_simboxes[i]);
             std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
             current_background_interval.push_back(background[i]);
-
-            Analyzelog * analyze = new Analyzelog(wells, mapped_blocked_logs_intervals.find(static_cast<int>(i))->second, current_background_interval, temp_simbox, interval_simboxes[i]->getdz(), model_settings, tmp_err_txt);
+            bool multi_zone_available = (n_intervals > 1);
+            Analyzelog * analyze = new Analyzelog(wells,
+                                                  mapped_blocked_logs_intervals.find(static_cast<int>(i))->second,
+                                                  current_background_interval,
+                                                  temp_simbox,
+                                                  interval_simboxes[i]->getdz(),
+                                                  model_settings,
+                                                  multi_zone_available,
+                                                  tmp_err_txt);
             if (tmp_err_txt != "") {
               err_text += tmp_err_txt;
               failed_param_cov = true;
@@ -8229,7 +8254,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               std::vector<Simbox *> temp_simboxes;
               for (size_t j = 0; j < interval_simboxes.size(); j++)
                 temp_simboxes.push_back(interval_simboxes[j]);
-              analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, tmp_err_txt);
+              analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, false, tmp_err_txt);
               if (analyze_all->GetEnoughData() == false) {
                 err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
                 failed_param_cov = true;

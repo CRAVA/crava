@@ -62,6 +62,7 @@ Analyzelog::Analyzelog(const std::vector<NRLib::Well *>                        &
                        const std::vector<Simbox *>                             & interval_simboxes,
                        double                                                    dz_min,
                        const ModelSettings                                     * model_settings,
+                       bool                                                      multi_zone_available,
                        std::string                                             & err_txt):
 min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimation()){
 
@@ -94,6 +95,7 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
                       dz_rel,
                       background,
                       n_lags_,
+                      multi_zone_available,
                       err_txt);
 }
 
@@ -142,7 +144,9 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
                                       std::vector<double>                                         dz_rel,
                                       const std::vector<std::vector<NRLib::Grid<float> *> >     & background,
                                       int                                                       & n_lags,
-                                      std::string                                               & err_txt){
+                                      bool                                                        multi_zone_available,
+                                      std::string                                               & err_txt)
+{
   //
   // Covariance and correlation estimation with blocked logs
   //
@@ -171,10 +175,14 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in all intervals.\n");
     }
     else{
-      std::string interval_name = interval_simboxes[0]->GetIntervalName();
-      TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
-        " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
-      LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in interval '"+ interval_name + "'.\n");
+      if(multi_zone_available == true)
+        return;
+      else {
+        std::string interval_name = interval_simboxes[0]->GetIntervalName();
+        TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+          " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
+        LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in interval '"+ interval_name + "'.\n");
+      }
     }
     return;
   }

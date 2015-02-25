@@ -130,12 +130,14 @@ public:
                        FFTGrid       * fft_grid,
                        bool            allow_delete = true); //If false, we are sure the fft-grid survives.
 
-  void WriteBackgrounds(const ModelSettings     * model_settings,
+  void WriteGridPackage(const ModelSettings     * model_settings,
                         const Simbox            * simbox,
                         StormContGrid           * background_vp,
                         StormContGrid           * background_vs,
                         StormContGrid           * background_rho,
                         GridMapping             * depth_mapping,
+                        const std::string       & prefix,
+                        const std::string       & path,
                         const TraceHeaderFormat & thf);
 
   void ExpTransf(StormContGrid * grid);
@@ -199,6 +201,13 @@ public:
   void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
 
 private:
+  void CombineVerticalTrends(MultiIntervalGrid                         * multiple_interval_grid,
+                             const NRLib::Grid2D<std::vector<double> > & vertical_trend,
+                             const std::vector<StormContGrid>          & zone_probability,
+                             StormContGrid                            *& background_trend_vp,
+                             StormContGrid                            *& background_trend_vs,
+                             StormContGrid                            *& background_trend_rho);
+
 
   //Resuls per interval
   std::vector<FFTGrid *>                                   background_vp_intervals_;
@@ -234,6 +243,10 @@ private:
   StormContGrid                                          * background_vp_;
   StormContGrid                                          * background_vs_;
   StormContGrid                                          * background_rho_;
+
+  StormContGrid                                          * background_trend_vp_;
+  StormContGrid                                          * background_trend_vs_;
+  StormContGrid                                          * background_trend_rho_;
 
   std::map<std::string, BlockedLogsCommon *>               blocked_logs_;
   std::map<std::string, BlockedLogsCommon *>               bg_blocked_logs_;

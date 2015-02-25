@@ -34,6 +34,7 @@ public:
              const std::vector<Simbox *>                             & interval_simboxes,
              double                                                    dz_min,
              const ModelSettings                                     * model_settings,
+             bool                                                      multi_zone_available,
              std::string                                             & err_txt);
 
   /*
@@ -89,6 +90,7 @@ private:
                                       std::vector<double>                                        dz_rel,
                                       const std::vector<std::vector<NRLib::Grid<float> *> >    & background,
                                       int                                                      & n_lags,
+                                      bool                                                       multi_zone_available,
                                       std::string                                              & errTxt);
 
   void            EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >                        & auto_cov,
