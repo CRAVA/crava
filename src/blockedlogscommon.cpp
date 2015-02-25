@@ -842,7 +842,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if (interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
         if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
-          first_K = first_K*static_cast<int>(dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
+          first_K = static_cast<int>(first_K*dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
           first_S = n;
           first_M = m;
           break;
@@ -868,7 +868,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if (interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
         if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
-          last_K = last_K*static_cast<int>(dz_rel[n]);
+          last_K = static_cast<int>(last_K*dz_rel[n]);
           last_S = n;
           last_M = m;
           break;

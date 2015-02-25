@@ -18,6 +18,7 @@
 #include "src/parameteroutput.h"
 #include "src/wavelet1D.h"
 #include "src/modelavodynamic.h"
+#include "src/modelgeneral.h"
 
 CravaResult::CravaResult():
 cov_vp_(NULL),
@@ -336,6 +337,18 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     }
   }
 
+  //Background trends
+  if((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+    const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
+    if (vertical_trends.GetNI() > 0) {
+      CombineVerticalTrends(multi_interval_grid,
+                            vertical_trends,
+                            zone_prob_grid,
+                            background_trend_vp_,
+                            background_trend_vs_,
+                            background_trend_rho_);
+    }
+  }
   //Covariance grids
   if (!model_settings->getForwardModeling()) {
     LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids");
@@ -593,7 +606,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++)
       seismic_parameters_intervals[i].releaseExpGrids();
   }
-
 }
 
 void CravaResult::CombineResult(StormContGrid                    *& final_grid,
@@ -724,6 +736,53 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
     fftwnd_destroy_plan(big_plans[zone]);
   }
 }
+
+
+void
+CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * multiple_interval_grid,
+                                   const NRLib::Grid2D<std::vector<double> > & vertical_trend,
+                                   const std::vector<StormContGrid>          & zone_probability,
+                                   StormContGrid                            *& background_trend_vp,
+                                   StormContGrid                            *& background_trend_vs,
+                                   StormContGrid                            *& background_trend_rho)
+{
+  int nx = multiple_interval_grid->GetIntervalSimbox(0)->getnx();
+  int ny = multiple_interval_grid->GetIntervalSimbox(0)->getny();
+  int n_intervals = multiple_interval_grid->GetNIntervals();
+  std::vector<NRLib::Grid<float> *> dummy_grids;
+  LogKit::LogFormatted(LogKit::Low,"\nCombine Background Trend Grids");
+
+  LogKit::LogFormatted(LogKit::Low,"\n Vp ");
+  std::vector<FFTGrid *> bg_trend_vp_intervals(n_intervals);
+  for(int i=0;i<n_intervals;i++) {
+    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
+    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,0));
+    bg_trend_vp_intervals[i] = trend_grid;
+  }
+  CombineResult(background_trend_vp, bg_trend_vp_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+
+  LogKit::LogFormatted(LogKit::Low,"\n Vs ");
+  std::vector<FFTGrid *> bg_trend_vs_intervals(n_intervals);
+  for(int i=0;i<n_intervals;i++) {
+    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
+    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,1));
+    bg_trend_vs_intervals[i] = trend_grid;
+  }
+  CombineResult(background_trend_vs, bg_trend_vs_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+
+  LogKit::LogFormatted(LogKit::Low,"\n Rho ");
+  std::vector<FFTGrid *> bg_trend_rho_intervals(n_intervals);
+  for(int i=0;i<n_intervals;i++) {
+    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
+    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,2));
+    bg_trend_rho_intervals[i] = trend_grid;
+  }
+  CombineResult(background_trend_rho, bg_trend_rho_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+}
+
 
 std::vector<float>
 CravaResult::GetNRLibGridTrace(NRLib::Grid<float> * grid,
@@ -1270,13 +1329,15 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //Write Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
-    WriteBackgrounds(model_settings,
-                      &simbox,
-                      background_vp_,
-                      background_vs_,
-                      background_rho_,
-                      time_depth_mapping,
-                      *model_settings->getTraceHeaderFormatOutput());
+    WriteGridPackage(model_settings,
+                     &simbox,
+                     background_vp_,
+                     background_vs_,
+                     background_rho_,
+                     time_depth_mapping,
+                     IO::PrefixBackground(),
+                     IO::PathToBackground(),
+                     *model_settings->getTraceHeaderFormatOutput());
 
     if (write_crava_) {
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
@@ -1291,6 +1352,25 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
       ExpTransf(background_rho_intervals_[0]);
       background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+    }
+  }
+
+  //Write bacground vertical trend grids
+  if((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+    const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
+    if (vertical_trends.GetNI() > 0) {
+      LogKit::LogFormatted(LogKit::Low,"\nWrite Background Vertical Trend Grids\n");
+
+      std::string prefix = IO::PrefixBackground()+IO::PrefixTrend();
+      WriteGridPackage(model_settings,
+                       &simbox,
+                       background_vp_,
+                       background_vs_,
+                       background_rho_,
+                       time_depth_mapping,
+                       prefix,
+                       IO::PathToBackground(),
+                       *model_settings->getTraceHeaderFormatOutput());
     }
   }
 
@@ -1590,12 +1670,14 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
     }
 
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
-    WriteBackgrounds(model_settings,
+    WriteGridPackage(model_settings,
                      &simbox,
                      background_vp_,
                      background_vs_,
                      background_rho_,
                      time_depth_mapping,
+                     IO::PrefixBackground(),
+                     IO::PathToBackground(),
                      *model_settings->getTraceHeaderFormatOutput());
 
     if (write_crava_) {
@@ -1834,12 +1916,14 @@ void CravaResult::CreateStormGrid(StormContGrid & grid_new,
     delete fft_grid;
 }
 
-void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
+void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    const Simbox            * simbox,
-                                   StormContGrid           * background_vp,
-                                   StormContGrid           * background_vs,
-                                   StormContGrid           * background_rho,
+                                   StormContGrid           * grid_vp,
+                                   StormContGrid           * grid_vs,
+                                   StormContGrid           * grid_rho,
                                    GridMapping             * depth_mapping,
+                                   const std::string       & prefix,
+                                   const std::string       & path,
                                    const TraceHeaderFormat & thf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
@@ -1847,29 +1931,23 @@ void CravaResult::WriteBackgrounds(const ModelSettings     * model_settings,
     if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
       output_format += IO::ASCII;
 
-    depth_mapping->setMappingFromVelocity(background_vp, simbox, model_settings->getOutputGridFormat());
+    depth_mapping->setMappingFromVelocity(grid_vp, simbox, model_settings->getOutputGridFormat());
   }
 
-  std::string file_name_vp  = IO::PrefixBackground() + "Vp" ;
-  std::string file_name_vs  = IO::PrefixBackground() + "Vs" ;
-  std::string file_name_rho = IO::PrefixBackground() + "Rho";
+  std::string file_name_vp  = prefix + "Vp" ;
+  std::string file_name_vs  = prefix + "Vs" ;
+  std::string file_name_rho = prefix + "Rho";
 
   ExpTransf(background_vp_);
-  ParameterOutput::WriteFile(model_settings, background_vp, file_name_vp, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
+  ParameterOutput::WriteFile(model_settings, grid_vp, file_name_vp, path, simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_vs_);
-  ParameterOutput::WriteFile(model_settings, background_vs, file_name_vs, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
+  ParameterOutput::WriteFile(model_settings, grid_vs, file_name_vs, path, simbox, false, "NO_LABEL", depth_mapping);
 
   ExpTransf(background_rho_);
-  ParameterOutput::WriteFile(model_settings, background_rho, file_name_rho, IO::PathToBackground(), simbox, false, "NO_LABEL", depth_mapping);
-
-  //
-  // For debugging: write cubes not in ASCII, with padding, and with flat top.
-  //
-  //backModel_[0]->writeStormFile(fileName1, simbox, true, false, true, true);
-  //backModel_[1]->writeStormFile(fileName2, simbox, true, false, true, true);
-  //backModel_[2]->writeStormFile(fileName3, simbox, true, false, true, true);
+  ParameterOutput::WriteFile(model_settings, grid_rho, file_name_rho, path, simbox, false, "NO_LABEL", depth_mapping);
 }
+
 
 void CravaResult::ExpTransf(StormContGrid * grid)
 {

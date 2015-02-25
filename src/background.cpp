@@ -35,16 +35,17 @@
 #include "src/io.h"
 #include "src/multiintervalgrid.h"
 
-Background::Background(std::vector<NRLib::Grid<float> *>                & parameters,
-                       NRLib::Grid<float>                               * velocity,
-                       const Simbox                                     * simbox,
-                       const Simbox                                     * bg_simbox,
-                       const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                       const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
-                       const ModelSettings                              * model_settings,
-                       const std::string                                & interval_name,
-                       std::string                                      & err_text)
-  : DataTarget_(250) // For kriging: Increase surrounding until 250 data points is aquired
+void
+Background::SetupBackground(std::vector<NRLib::Grid<float> *>                & parameters,
+                            std::vector<std::vector<double> >                & vertical_trends,
+                            NRLib::Grid<float>                               * velocity,
+                            const Simbox                                     * simbox,
+                            const Simbox                                     * bg_simbox,
+                            const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
+                            const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
+                            const ModelSettings                              * model_settings,
+                            const std::string                                & interval_name,
+                            std::string                                      & err_text)
 {
 
   int nx_pad, ny_pad, nz_pad;
@@ -65,6 +66,7 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
 
   if (bg_simbox == NULL) {
     GenerateBackgroundModel(parameters[0], parameters[1], parameters[2],
+                            vertical_trends,
                             velocity,
                             simbox,
                             blocked_logs,
@@ -74,6 +76,7 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
   }
   else {
     GenerateBackgroundModel(parameters[0], parameters[1], parameters[2],
+                            vertical_trends,
                             velocity,
                             bg_simbox,
                             bg_blocked_logs,
@@ -86,15 +89,6 @@ Background::Background(std::vector<NRLib::Grid<float> *>                & parame
                             simbox);
 
   }
-
-}
-
-//-------------------------------------------------------------------------------
-Background::~Background(void)
-{
-  //for (int i=0 ; i<3 ; i++)
-  //  if (back_model_[i] != NULL)
-  //    delete back_model_[i];
 }
 
 //-------------------------------------------------------------------------------
@@ -102,6 +96,7 @@ void
 Background::GenerateBackgroundModel(NRLib::Grid<float>                               * bg_vp,
                                     NRLib::Grid<float>                               * bg_vs,
                                     NRLib::Grid<float>                               * bg_rho,
+                                    std::vector<std::vector<double> >                & vertical_trends,
                                     NRLib::Grid<float>                               * velocity,
                                     const Simbox                                     * simbox,
                                     const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
@@ -262,6 +257,11 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     MakeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs",  model_settings->getNumberOfThreads());
     MakeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho", model_settings->getNumberOfThreads());
 
+    vertical_trends.resize(3);
+    vertical_trends[0] = trend_vp;
+    vertical_trends[1] = trend_vs;
+    vertical_trends[2] = trend_rho;
+
     delete &covGrid2D;
   }
 }
@@ -393,7 +393,7 @@ Background::GetKrigingWellTrends(std::vector<std::vector<double> >              
                                  std::vector<int>                                 & n_blocks,
                                  int                                              & tot_blocks,
                                  const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
-                                 const int                                        & n_wells) const
+                                 const int                                        & n_wells)
 {
   int max_blocks = 0;
   tot_blocks     = 0;
@@ -447,7 +447,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
                           const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                           const int                                        & nz,
                           const std::string                                & name,
-                          std::string                                      & err_text) const
+                          std::string                                      & err_text)
 {
   //int n_wells = static_cast<int>(well_trend.size());
   int i_wells = 0;
@@ -530,6 +530,7 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
     WriteVerticalTrend(trend, dz, nz, name, interval_name);
   }
 
+  /*
   if (write3D == true && !(name=="Vp" && has_velocity_trend)) {
     const int nx = simbox->getnx();
     const int ny = simbox->getny();
@@ -546,6 +547,7 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
     exp_trend->writeFile(file_name, IO::PathToBackground(), simbox);
     delete exp_trend;
   }
+  */
 }
 
 //-------------------------------------------------------------------------------
@@ -570,7 +572,7 @@ Background::SetupKrigingData2D(std::vector<KrigingData2D>                & krigi
                                const std::vector<const std::vector<int> *> ipos,
                                const std::vector<const std::vector<int> *> jpos,
                                const std::vector<const std::vector<int> *> kpos,
-                               const std::string                         & interval_name) const
+                               const std::string                         & interval_name)
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -684,7 +686,7 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
                                  const Simbox                     * simbox,
                                  const CovGrid2D                  & cov_grid_2D,
                                  const std::string                & type,
-                                 int                                n_threads) const
+                                 int                                n_threads)
 {
   std::string text = "\nBuilding "+type+" background:";
   LogKit::LogFormatted(LogKit::Low,text);
@@ -1371,7 +1373,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
 FFTGrid *
 Background::CopyFFTGrid(FFTGrid   * orig_grid,
                         const bool  exp_trans,
-                        const bool  file_grid) const
+                        const bool  file_grid)
 {
   FFTGrid * new_grid;
 

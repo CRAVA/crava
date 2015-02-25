@@ -121,21 +121,25 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[0] = *top_surface;
+        surfaces[0]         = *top_surface;
 
         base_surface_file_name_temp = input_files->getBaseTimeSurface("");
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[1] = *base_surface;
+        surfaces[1]         = *base_surface;
 
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
         top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[0] = *top_surface;
+        surfaces[0]         = *top_surface;
 
         base_surface = new Surface(*top_surface);
         double lz = model_settings->getTimeLz();
         base_surface->Add(lz);
         eroded_surfaces_[1] = *base_surface;
+        surfaces[1]         = *base_surface;
 
         double dz = model_settings->getTimeDz();
         if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
@@ -147,6 +151,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       int nz = model_settings->getTimeNz("");
       desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
     }
+    surfaces_ = surfaces;
   }
   catch(NRLib::Exception & e) {
     failed = true;
@@ -164,7 +169,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         SetupIntervalSimboxes(model_settings,
                               estimation_simbox,
                               interval_names_,
-                              eroded_surfaces_,
+                              surfaces,
                               interval_simboxes_,
                               input_files->getCorrDirFiles(),
                               input_files->getCorrDirTopSurfaceFiles(),
@@ -809,7 +814,7 @@ double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
 void
 MultiIntervalGrid::FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid)
 {
-  size_t n_surf = eroded_surfaces_.size();
+  size_t n_surf = surfaces_.size();
   std::vector<NRLib::Beta> uc_dist(n_surf-2); //Top and base are certain. Shifted 1 compared to surf.
 
   for(size_t i=0;i<n_surf-2;i++) {
@@ -825,7 +830,7 @@ MultiIntervalGrid::FindZoneProbGrid(std::vector<StormContGrid> & zone_prob_grid)
         double x,y,z;
         zone_prob_grid[0].FindCenterOfCell(i, j, k, x, y, z);
         for(size_t s=1;s<n_surf-1;s++)
-          rel_z[s] = z-eroded_surfaces_[s].GetZ(x,y);
+          rel_z[s] = z-surfaces_[s].GetZ(x,y);
         ComputeZoneProbability(rel_z, uc_dist, erosion_priorities_, prob_zone);
         for(size_t s=0;s<prob_zone.size();s++)
           zone_prob_grid[s](i,j,k) = static_cast<float>(prob_zone[s]);

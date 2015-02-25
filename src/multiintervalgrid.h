@@ -47,6 +47,8 @@ public:
   const std::vector<double>                              & GetDesiredGridResolution()             const { return desired_grid_resolution_     ;}
   double                                                   GetDzMin()                             const { return dz_min_                      ;}
   const std::vector<double>                              & GetDzRel()                             const { return dz_rel_                      ;}
+  const Surface                                          & GetSurface(int i)                      const { return surfaces_[i]                 ;}
+
 
   // SET FUNCTIONS
   void SetDzRel(std::vector<double> & dz_rel)                                                           { dz_rel_ = dz_rel                    ;}
@@ -148,6 +150,7 @@ private:
   std::vector<std::string>                             interval_names_;
   std::vector<int>                                     erosion_priorities_;
   std::vector<double>                                  uncertainties_;
+  std::vector<Surface>                                 surfaces_;
   std::vector<Surface>                                 eroded_surfaces_;
   std::vector<std::string>                             surface_files_;
 
