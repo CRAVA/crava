@@ -1689,10 +1689,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
 
       ExpTransf(background_vs_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
+      background_vs_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
 
       ExpTransf(background_rho_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+      background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
     }
   }
 }
