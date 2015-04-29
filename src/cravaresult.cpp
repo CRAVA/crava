@@ -1423,6 +1423,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
   //FaciesProb: prob, undefined, qualitygrid, lhcube
   if (model_settings->getEstimateFaciesProb()) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Facies Probability Grids\n");
     std::vector<std::string> facies_names = common_data->GetFaciesNames();
     int n_facies = static_cast<int>(facies_names.size());
 
@@ -1492,6 +1493,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
   //Simulations
   if (model_settings->getNumberOfSimulations() > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Simulation Grids\n");
     int n_simulations = static_cast<int>(simulations_seed0_.size());
     bool kriging      = model_settings->getKrigingParameter() > 0;
     for (int i = 0; i < n_simulations; i++) {
@@ -1531,20 +1533,23 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
       std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
 
-      if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-        (model_settings->getForwardModeling() == true))
+      if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) || (model_settings->getForwardModeling() == true)) {
+        if (i == 0)
+          LogKit::LogFormatted(LogKit::Low,"\nWrite Synthetic Seismic\n");
         ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+      }
     }
   }
 
   //Trend Cubes
   if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Trend Cubes\n");
 
     const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
 
     for (size_t i = 0; i < trend_cubes_.size(); i++) {
-      std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
-      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, false, "trend cube", time_depth_mapping);
+      std::string file_name = IO::PrefixTrendCubes() + trend_cube_parameters[i];
+      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToRockPhysics(), &simbox, false, "trend cube", time_depth_mapping);
     }
   }
 }
