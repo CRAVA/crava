@@ -3061,7 +3061,9 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   TimeKit::getTime(wall,cpu);
 
   if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
-    SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
+    //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
+    if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
+      SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
 
   shift_grids.resize(n_timelapses);
   gain_grids.resize(n_timelapses);
