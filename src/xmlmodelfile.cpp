@@ -2257,16 +2257,28 @@ XmlModelFile::parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errT
     }
   }
 
+  bool interval_used = false;
+  while(parseFaciesInterval(root,errTxt)==true) {
+    interval_used = true;
+
+    //Check that prior prob is not given as a general setting and per interval
+    std::map<std::string, std::map<std::string, float> > prior_facies_probs = modelSettings_->getPriorFaciesProbs();
+    if (prior_facies_probs.find("") != prior_facies_probs.end()) {
+      errTxt += "Prior facies probabilities are given as a general setting and for intervals.\n";
+      break;
+    }
+  }
+
   //If facies are given as probabilities and we use multiple intervals, we set all intervals equal to this value.
-  if(modelSettings_->GetMultipleIntervalSetting() == true && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE) {
+  if (modelSettings_->GetMultipleIntervalSetting() == true && modelSettings_->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_MODEL_FILE && interval_used == false) {
     for(int i = 0; i < static_cast<int>(modelSettings_->getIntervalNames().size()); i++) {
       const std::string & interval_name_tmp = modelSettings_->getIntervalName(i);
       const std::map<std::string, float> & facies_map_tmp = modelSettings_->getPriorFaciesProb("");
       modelSettings_->addPriorFaciesProbs(interval_name_tmp, facies_map_tmp);
     }
+    //Remove facies prob for empty interval
+    modelSettings_->removePriorFaciesProb("");
   }
-
-  while(parseFaciesInterval(root,errTxt)==true);
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -6399,16 +6411,13 @@ XmlModelFile::checkRockPhysicsConsistency(std::string & errTxt)
       std::vector<std::string> interval_names = modelSettings_->getIntervalNames();
       int n_intervals                         = static_cast<int>(interval_names.size());
 
-      //if (interval_names.size() == 0)
-      //  n_intervals = 1;
-
       for (int i = 0; i < n_intervals; i++) {
         std::map<std::string, float> facies_probabilities;
 
         if (interval_names.size() == 0)
           facies_probabilities = modelSettings_->getPriorFaciesProb("");
         else
-          facies_probabilities = modelSettings_->getPriorFaciesProb(interval_names[i]);
+          facies_probabilities = modelSettings_->getPriorFaciesProb(interval_names[i]); //H-TODO This fails if interval names are different in <prior-probabilities> and <multiple-intervals>
 
         for(std::map<std::string, float>::const_iterator it = facies_probabilities.begin(); it != facies_probabilities.end(); it++) {
           std::map<std::string, DistributionsRockStorage *>::const_iterator iter = rock_storage.find(it->first);
