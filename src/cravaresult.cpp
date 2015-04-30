@@ -1680,7 +1680,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       LogKit::LogFormatted(LogKit::Low,"\n Vs");
       CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, true, model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Rho");
-      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_vs_intervals, true, model_settings->getMaxHzBackground());
+      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, true, model_settings->getMaxHzBackground());
 
       for (int i = 0; i < n_intervals_; i++) {
         common_data->ReleaseBackgroundGrids(i, 0);
