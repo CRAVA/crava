@@ -341,6 +341,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   if((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
     const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
     if (vertical_trends.GetNI() > 0) {
+
+      background_trend_vp_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+      background_trend_vs_  = new StormContGrid(output_simbox, nx, ny, nz_output);
+      background_trend_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
+
       CombineVerticalTrends(multi_interval_grid,
                             vertical_trends,
                             zone_prob_grid,
@@ -1381,8 +1386,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
     }
   }
 
-  //Write bacground vertical trend grids
-  if((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+  //Write background vertical trend grids
+  if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
     const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
     if (vertical_trends.GetNI() > 0) {
       LogKit::LogFormatted(LogKit::Low,"\nWrite Background Vertical Trend Grids\n");
@@ -1688,6 +1693,23 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
         common_data->ReleaseBackgroundGrids(i, 2);
       }
 
+      //Background trends
+      if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+        const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
+        if (vertical_trends.GetNI() > 0) {
+
+          background_trend_vp_  = new StormContGrid(simbox, nx, ny, nz);
+          background_trend_vs_  = new StormContGrid(simbox, nx, ny, nz);
+          background_trend_rho_ = new StormContGrid(simbox, nx, ny, nz);
+
+          CombineVerticalTrends(multi_interval_grid,
+                                vertical_trends,
+                                zone_prob_grid,
+                                background_trend_vp_,
+                                background_trend_vs_,
+                                background_trend_rho_);
+        }
+      }
     }
     else {
       std::vector<NRLib::Grid<float> *> bg = common_data->GetBackgroundParametersInterval(0);
@@ -1698,6 +1720,33 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       common_data->ReleaseBackgroundGrids(0, 0);
       common_data->ReleaseBackgroundGrids(0, 1);
       common_data->ReleaseBackgroundGrids(0, 2);
+
+      //Background trends
+      if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+
+        int nx = simbox.getnx();
+        int ny = simbox.getny();
+        int nz = simbox.getnz();
+
+        background_trend_vp_  = new StormContGrid(simbox, nx, ny, nz);
+        background_trend_vs_  = new StormContGrid(simbox, nx, ny, nz);
+        background_trend_rho_ = new StormContGrid(simbox, nx, ny, nz);
+
+        const NRLib::Grid2D<std::vector<double> > & vertical_trends = common_data->GetBackgroundVerticalTrends();
+
+        FFTGrid * trend_grid_vp = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+        Background::FillInVerticalTrend(trend_grid_vp, vertical_trends(0,0));
+        CreateStormGrid(*background_trend_vp_, trend_grid_vp);
+
+        FFTGrid * trend_grid_vs = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+        Background::FillInVerticalTrend(trend_grid_vs, vertical_trends(0,1));
+        CreateStormGrid(*background_trend_vs_, trend_grid_vs);
+
+        FFTGrid * trend_grid_rho = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
+        Background::FillInVerticalTrend(trend_grid_rho, vertical_trends(0,2));
+        CreateStormGrid(*background_trend_rho_, trend_grid_rho);
+
+      }
     }
 
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
@@ -1724,6 +1773,21 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
 
       ExpTransf(background_rho_intervals_[0]);
       background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+    }
+
+    if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0) {
+      LogKit::LogFormatted(LogKit::Low,"\nWrite Background Vertical Trend Grids\n");
+
+      std::string prefix = IO::PrefixBackground()+IO::PrefixTrend();
+      WriteGridPackage(model_settings,
+                        &simbox,
+                        background_trend_vp_,
+                        background_trend_vs_,
+                        background_trend_rho_,
+                        time_depth_mapping,
+                        prefix,
+                        IO::PathToBackground(),
+                        *model_settings->getTraceHeaderFormatOutput());
     }
   }
 }
