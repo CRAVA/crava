@@ -450,6 +450,8 @@ public:
 
   void addPriorFaciesProbs(std::string interval_name, std::map<std::string, float> prior_int_map)     { priorFaciesProb_[interval_name]              = prior_int_map       ;}
   void addPriorFaciesProb(std::string interval_name, std::string facies_name, float value)            { priorFaciesProb_[interval_name][facies_name] = value               ;}
+  void removePriorFaciesProb(std::string interval_name)                                               { std::map<std::string, std::map<std::string, float> >::iterator iter = priorFaciesProb_.find(interval_name);
+                                                                                                        if (iter !=priorFaciesProb_.end()) priorFaciesProb_.erase(iter)    ;}
   void addVolumeFraction(std::string interval_name, std::map<std::string, float> volumefractions_map) { volumeFraction_[interval_name]               = volumefractions_map ;}
 
   void addDefaultVintage(void);

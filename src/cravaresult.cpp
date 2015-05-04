@@ -320,11 +320,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
   }
   else { //These background grids are not used later if we are not going to write them to file
     for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
@@ -612,7 +612,9 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
                                 std::vector<FFTGrid *>            & interval_grids,
                                 MultiIntervalGrid                 * multi_interval_grid,
                                 const std::vector<StormContGrid>  & zone_probability,
-                                std::vector<NRLib::Grid<float> *> & interval_grids_nrlib) //Optional, send in an empty vector if FFTGrids are used
+                                std::vector<NRLib::Grid<float> *> & interval_grids_nrlib, //Optional, send in an empty vector if FFTGrids are used
+                                bool                                apply_filter, //filter combined grid to a maxHz
+                                float                               max_hz)
 {
   int nx = static_cast<int>(final_grid->GetNI());
   int ny = static_cast<int>(final_grid->GetNJ());
@@ -689,6 +691,8 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
 
 
       //Combine vectors for each interval to one trace in stormgrid
+      std::vector<float> combined_trace_tmp(nz);
+
       for (int k = 0; k < nz; k++) {
         double global_x = 0.0;
         double global_y = 0.0;
@@ -712,8 +716,30 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
             value += zone_probability[zone](i,j,k)*new_traces[zone][index];
           }
         }
-        (*final_grid)(i,j,k) = static_cast<float>(value);
+        combined_trace_tmp[k] = static_cast<float>(value);
       }
+
+      //Filter background grids
+      if (apply_filter == true) {
+
+        std::vector<float> filtered_trace(nz);
+        double lz = final_grid->GetLZ();
+        double dz = lz/nz;
+        CommonData::ApplyFilter(filtered_trace,
+                                combined_trace_tmp,
+                                nz,
+                                dz,
+                                max_hz);
+
+        for (int k = 0; k < nz; k++) {
+          combined_trace_tmp[k] = filtered_trace[k];
+        }
+      }
+
+      for (int k = 0; k < nz; k++) {
+        (*final_grid)(i,j,k) = combined_trace_tmp[k];
+      }
+
       // Log progress
       if (ny*i + j + 1 >= static_cast<int>(next_monitor)) {
         next_monitor += monitor_size;
@@ -1364,9 +1390,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       std::string prefix = IO::PrefixBackground()+IO::PrefixTrend();
       WriteGridPackage(model_settings,
                        &simbox,
-                       background_vp_,
-                       background_vs_,
-                       background_rho_,
+                       background_trend_vp_,
+                       background_trend_vs_,
+                       background_trend_rho_,
                        time_depth_mapping,
                        prefix,
                        IO::PathToBackground(),
@@ -1423,6 +1449,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
   //FaciesProb: prob, undefined, qualitygrid, lhcube
   if (model_settings->getEstimateFaciesProb()) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Facies Probability Grids\n");
     std::vector<std::string> facies_names = common_data->GetFaciesNames();
     int n_facies = static_cast<int>(facies_names.size());
 
@@ -1492,6 +1519,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
   //Simulations
   if (model_settings->getNumberOfSimulations() > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Simulation Grids\n");
     int n_simulations = static_cast<int>(simulations_seed0_.size());
     bool kriging      = model_settings->getKrigingParameter() > 0;
     for (int i = 0; i < n_simulations; i++) {
@@ -1531,20 +1559,23 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       std::string sgri_label = " Synthetic seismic for incidence angle "+angle;
       std::string file_name  = IO::PrefixSyntheticSeismicData() + angle;
 
-      if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) ||
-        (model_settings->getForwardModeling() == true))
+      if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) || (model_settings->getForwardModeling() == true)) {
+        if (i == 0)
+          LogKit::LogFormatted(LogKit::Low,"\nWrite Synthetic Seismic\n");
         ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+      }
     }
   }
 
   //Trend Cubes
   if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Trend Cubes\n");
 
     const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
 
     for (size_t i = 0; i < trend_cubes_.size(); i++) {
-      std::string file_name = IO::PrefixTrendCubes() + "_" + trend_cube_parameters[i];
-      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToSeismicData(), &simbox, false, "trend cube", time_depth_mapping);
+      std::string file_name = IO::PrefixTrendCubes() + trend_cube_parameters[i];
+      ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToRockPhysics(), &simbox, false, "trend cube", time_depth_mapping);
     }
   }
 }
@@ -1645,11 +1676,11 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
 
       LogKit::LogFormatted(LogKit::Low,"\n Vp");
-      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals);
+      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals, true, model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Vs");
-      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals);
+      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, true, model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Rho");
-      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_vs_intervals);
+      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, true, model_settings->getMaxHzBackground());
 
       for (int i = 0; i < n_intervals_; i++) {
         common_data->ReleaseBackgroundGrids(i, 0);
@@ -1689,10 +1720,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       background_vp_intervals_[0]->writeCravaFile(file_name_vp, &simbox);
 
       ExpTransf(background_vs_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
+      background_vs_intervals_[0]->writeCravaFile(file_name_vs, &simbox);
 
       ExpTransf(background_rho_intervals_[0]);
-      background_vp_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
+      background_rho_intervals_[0]->writeCravaFile(file_name_rho, &simbox);
     }
   }
 }

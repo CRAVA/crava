@@ -37,7 +37,9 @@ public:
                      std::vector<FFTGrid *>            & interval_grids,
                      MultiIntervalGrid                 * multi_interval_grid,
                      const std::vector<StormContGrid>  & zone_probability,
-                     std::vector<NRLib::Grid<float> *> & interval_grids_nrlib);
+                     std::vector<NRLib::Grid<float> *> & interval_grids_nrlib,
+                     bool                                apply_filter = false,//Filter grid to a maxHz
+                     float                               max_hz = 9999.0);
 
   float GetResampledTraceValue(const std::vector<float> & resampled_trace,
                                const double             & dz_resampled,

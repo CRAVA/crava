@@ -54,7 +54,7 @@ SpatialSyntWellFilter::SpatialSyntWellFilter(const std::map<std::string, Distrib
     trend_1_bin_size_ = (trend_max[0] - trend_min[0])/n_bins_trend_;
     trend_2_bin_size_ = (trend_max[1] - trend_min[1])/n_bins_trend_;
 
-    for (int i = 0; i < n_bins_trend_ + 1; i++) {
+    for (int i = 0; i < n_bins_trend_; i++) {
       trend_1_[i] = trend_min[0] + i*trend_1_bin_size_;
       trend_2_[i] = trend_min[1] + i*trend_2_bin_size_;
     }
