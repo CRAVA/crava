@@ -419,122 +419,131 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
   if (forward_modeling_)
     grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
-    if (model_settings->getEstimationMode() == false || estimation_mode_need_ILXL)
-      grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
+    if (model_settings->getEstimationMode() == false || estimation_mode_need_ILXL) {
+      if (input_files->getNumberOfSurveys() > 0) {
+        grid_file = input_files->getSeismicFile(0,0); // Get area from first seismic data volume
+      }
+      else {
+        err_text += "Seismic data are needed for the inversion area, but there are no surveys present.\n";
+        err_text += "Are you running in estimation mode and asking for SegY output?\n";
+      }
+    }
   }
   SegyGeometry * ILXL_geometry = NULL; //Geometry with correct XL and IL settings.
 
   std::string area_type;
 
-  // tilfelle i uten snap to seismic
-  if (area_specification == ModelSettings::AREA_FROM_UTM)
-  {
-    // The geometry is already present in model_settings (geometry_ or geometry_full_ ? )
-    area_type = "Model file";
-    LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
-  }
-  // tilfelle ii uten snap to seismic
-  else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
-    LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
-    area_type = "Surface";
-    RotatedSurface surf(input_files->getAreaSurfaceFile());
-    SegyGeometry geometry(surf);
-    model_settings->setAreaParameters(&geometry);
-  }
+  if (err_text == "") {
+    // tilfelle i uten snap to seismic
+    if (area_specification == ModelSettings::AREA_FROM_UTM)
+    {
+      // The geometry is already present in model_settings (geometry_ or geometry_full_ ? )
+      area_type = "Model file";
+      LogKit::LogFormatted(LogKit::High,"\nArea information has been taken from model file\n");
+    }
+    // tilfelle ii uten snap to seismic
+    else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
+      LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
+      area_type = "Surface";
+      RotatedSurface surf(input_files->getAreaSurfaceFile());
+      SegyGeometry geometry(surf);
+      model_settings->setAreaParameters(&geometry);
+    }
 
-  else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA || // tilfelle iii
-           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM || // tilfelle i med snap to seismic
-           area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) { // tilfelle ii med snap to seismic
-    LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+grid_file+"\'\n");
-    area_type = "Grid data";
-    std::string tmp_err_text;
-    SegyGeometry * geometry;
-    TraceHeaderFormat * thf = NULL;
-    if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
-      thf = model_settings->getTraceHeaderFormat(0,0);
-    GetGeometryFromGridOnFile(grid_file,
-                              thf, //Trace header format is the same for all time lapses
-                              geometry,
-                              tmp_err_text);
-    if (geometry!=NULL) {
-      geometry->WriteGeometry();
-      //tilfelle iv og v
-      if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
-        SegyGeometry * full_geometry = geometry;
+    else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA || // tilfelle iii
+             area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM || // tilfelle i med snap to seismic
+             area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) { // tilfelle ii med snap to seismic
+      LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+grid_file+"\'\n");
+      area_type = "Grid data";
+      std::string tmp_err_text;
+      SegyGeometry * geometry;
+      TraceHeaderFormat * thf = NULL;
+      if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
+        thf = model_settings->getTraceHeaderFormat(0,0);
+      GetGeometryFromGridOnFile(grid_file,
+                                thf, //Trace header format is the same for all time lapses
+                                geometry,
+                                tmp_err_text);
+      if (geometry!=NULL) {
+        geometry->WriteGeometry();
+        //tilfelle iv og v
+        if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
+          SegyGeometry * full_geometry = geometry;
 
-        std::vector<int> area_ILXL;
-        bool got_area = true;
+          std::vector<int> area_ILXL;
+          bool got_area = true;
 
-        //
-        // Geometry is given as XY, but we snap it to IL and XL.
-        //
-        if (model_settings->getSnapGridToSeismicData()) {
-          SegyGeometry * template_geometry = NULL;
-          if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
-            template_geometry = model_settings->getAreaParameters();
-          }
-          else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-            RotatedSurface surf(input_files->getAreaSurfaceFile());
-            template_geometry = new SegyGeometry(surf);
+          //
+          // Geometry is given as XY, but we snap it to IL and XL.
+          //
+          if (model_settings->getSnapGridToSeismicData()) {
+            SegyGeometry * template_geometry = NULL;
+            if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM) {
+              template_geometry = model_settings->getAreaParameters();
+            }
+            else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
+              RotatedSurface surf(input_files->getAreaSurfaceFile());
+              template_geometry = new SegyGeometry(surf);
+            }
+            else {
+              err_text += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
+              err_text += "on XY input information, but no UTM coordinates or surface have\n";
+              err_text += "been specified in model file.\n";
+              got_area = false;
+            }
+            if (got_area) {
+              area_ILXL = full_geometry->findAreaILXL(template_geometry);
+            }
           }
           else {
-            err_text += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
-            err_text += "on XY input information, but no UTM coordinates or surface have\n";
-            err_text += "been specified in model file.\n";
-            got_area = false;
+            area_ILXL = model_settings->getAreaILXL();
           }
+
           if (got_area) {
-            area_ILXL = full_geometry->findAreaILXL(template_geometry);
+            try {
+              bool interpolated, aligned;
+              geometry = full_geometry->GetILXLSubGeometry(area_ILXL, interpolated, aligned);
+
+              std::string text;
+              if (interpolated == true) {
+                if (aligned == true) {
+                  text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                  text += "   of those found in the seismic data. Furthermore, the distance between first\n";
+                  text += "   and last XL and/or IL does not match the step size.\n";
+                  TaskList::addTask(text);
+                }
+                else {
+                  text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
+                  text += "   of those found in the seismic data.\n";
+                  TaskList::addTask(text);
+                }
+              }
+              else if (aligned == true) {
+                text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
+                text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
+                text += "   of steps away from the start.\n";
+                TaskList::addTask(text);
+              }
+            }
+            catch (NRLib::Exception & e) {
+              err_text += "Error: "+std::string(e.what());
+              geometry->WriteILXL(true);
+              geometry = NULL;
+            }
           }
+          delete full_geometry;
         }
         else {
-          area_ILXL = model_settings->getAreaILXL();
+          geometry->WriteILXL();
         }
-
-        if (got_area) {
-          try {
-            bool interpolated, aligned;
-            geometry = full_geometry->GetILXLSubGeometry(area_ILXL, interpolated, aligned);
-
-            std::string text;
-            if (interpolated == true) {
-              if (aligned == true) {
-                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-                text += "   of those found in the seismic data. Furthermore, the distance between first\n";
-                text += "   and last XL and/or IL does not match the step size.\n";
-                TaskList::addTask(text);
-              }
-              else {
-                text  = "Check IL/XL specification: Specified IL- or XL-step is not an integer multiple\n";
-                text += "   of those found in the seismic data.\n";
-                TaskList::addTask(text);
-              }
-            }
-            else if (aligned == true) {
-              text  = "Check IL/XL specification: Either start or end of IL and/or XL interval does not\n";
-              text += "   align with IL/XL in seismic data, or end IL and/or XL is not an integer multiple\n";
-              text += "   of steps away from the start.\n";
-              TaskList::addTask(text);
-            }
-          }
-          catch (NRLib::Exception & e) {
-            err_text += "Error: "+std::string(e.what());
-            geometry->WriteILXL(true);
-            geometry = NULL;
-          }
+        if (err_text == "") {
+          model_settings->setAreaParameters(geometry);
+          ILXL_geometry = geometry;
         }
-        delete full_geometry;
       }
       else {
-        geometry->WriteILXL();
+        err_text += tmp_err_text;
       }
-      if (err_text == "") {
-        model_settings->setAreaParameters(geometry);
-        ILXL_geometry = geometry;
-      }
-    }
-    else {
-      err_text += tmp_err_text;
     }
   }
 
@@ -3061,7 +3070,9 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   TimeKit::getTime(wall,cpu);
 
   if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
-    SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
+    //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
+    if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
+      SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
 
   shift_grids.resize(n_timelapses);
   gain_grids.resize(n_timelapses);
