@@ -35,6 +35,7 @@ public:
                     const std::vector<std::string>   & disc_logs_to_be_blocked,
                     const Simbox                     * const estimation_simbox,
                     bool                               interpolate,
+                    bool                               visible_only,
                     bool                             & is_inside,
                     std::string                      & err_text);
 
@@ -430,6 +431,7 @@ private:
                                                    int                                                 & n_blocks_with_data_tot,
                                                    bool                                                  facies_log_defined,
                                                    bool                                                  interpolate,
+                                                   bool                                                  visible_only,
                                                    double                                              & dz,
                                                    bool                                                & failed,
                                                    bool                                                & is_insde,
@@ -484,6 +486,7 @@ private:
                                    std::string                   & err_text) const;
 
   void    FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
+                                   bool                            visible_only,
                                    std::vector<int>              & b_ind,
                                    const int                     & n_layers,
                                    int                           & first_M,

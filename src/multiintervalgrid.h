@@ -66,8 +66,8 @@ private:
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
                               const Simbox                              * estimation_simbox,
                               const std::vector<std::string>            & interval_names,
-                              const std::vector<Surface>                & eroded_surfaces,
-                              std::vector<Simbox *>                       & interval_simboxes,
+                              const std::vector<std::vector<Surface> >  & eroded_surfaces,
+                              std::vector<Simbox *>                     & interval_simboxes,
                               const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_top_surfaces,
                               const std::map<std::string, std::string>  & corr_dir_base_surfaces,
@@ -109,6 +109,11 @@ private:
                         const std::vector<Surface>      & surface,
                         const Simbox                    & simbox,
                         std::string                     & err_text) const;
+
+  void CreateVisibleSurfaces(const std::vector<Surface> & surfaces,
+                             const std::vector<Surface> & eroded_surfaces,
+                             std::vector<std::vector<Surface> > & visible_surfaces);
+
 
   void  FindSmallestSurfaceGeometry(const double   x0,
                                     const double   y0,
