@@ -25,6 +25,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   erosion_priorities_.resize(n_intervals_+1);
   int n_surfaces                                                  = n_intervals_ + 1;
   eroded_surfaces_.resize(n_surfaces);
+  std::vector<std::vector<Surface> > visible_surfaces(n_intervals_); //These surfaces give same visible zone as eroded, but are truncated to uneroded. Gives best zone definition.
   int erosion_priority_top_surface                                = model_settings->getErosionPriorityTopSurface();
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   const std::map<std::string, double> uncertainty_base_surfaces   = model_settings->getUncertaintyBaseSurfaces();
@@ -93,6 +94,9 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                          *estimation_simbox,
                          err_text);
 
+        CreateVisibleSurfaces(surfaces, eroded_surfaces_, visible_surfaces);
+
+
         //Check if eroded surfaces have max distance greater than zero.
         //H-TODO Make removal of intervals automatic
         for (int i = 0; i<n_intervals_; i++) {
@@ -128,6 +132,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         eroded_surfaces_[1] = *base_surface;
         surfaces[1]         = *base_surface;
 
+        std::vector<Surface> v_surf_for_zone(2);
+        v_surf_for_zone[0] = *top_surface;
+        v_surf_for_zone[1] = *base_surface;
+        visible_surfaces[0] = v_surf_for_zone;
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
@@ -140,6 +148,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         base_surface->Add(lz);
         eroded_surfaces_[1] = *base_surface;
         surfaces[1]         = *base_surface;
+
+        std::vector<Surface> v_surf_for_zone(2);
+        v_surf_for_zone[0] = *top_surface;
+        v_surf_for_zone[1] = *base_surface;
+        visible_surfaces[0] = v_surf_for_zone;
 
         double dz = model_settings->getTimeDz();
         if (model_settings->getTimeNzs().find("") == model_settings->getTimeNzs().end()) { //Taken from simbox->SetDepth without nz
@@ -169,7 +182,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         SetupIntervalSimboxes(model_settings,
                               estimation_simbox,
                               interval_names_,
-                              surfaces,
+                              visible_surfaces,
                               interval_simboxes_,
                               input_files->getCorrDirFiles(),
                               input_files->getCorrDirTopSurfaceFiles(),
@@ -315,7 +328,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const
 void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                             * model_settings,
                                                 const Simbox                              * estimation_simbox,
                                                 const std::vector<std::string>            & interval_names,
-                                                const std::vector<Surface>                & eroded_surfaces,
+                                                const std::vector<std::vector<Surface> >  & eroded_surfaces,
                                                 std::vector<Simbox *>                     & interval_simboxes,
                                                 const std::map<std::string, std::string>  & corr_dir_single_surfaces,
                                                 const std::map<std::string, std::string>  & corr_dir_top_surfaces,
@@ -334,8 +347,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     bool                   failed_tmp                             = false;
     std::string            err_text_tmp                           = "";
     bool                   corr_dir                               = false;
-    Surface                top_surface                            = eroded_surfaces[i];
-    Surface                base_surface                           = eroded_surfaces[i+1];
+    Surface                top_surface                            = eroded_surfaces[i][0];
+    Surface                base_surface                           = eroded_surfaces[i][1];
     std::string            interval_name                          = interval_names[i];
     int                    n_layers                               = model_settings->getTimeNz(interval_name);
     std::map<std::string, std::string>::const_iterator it_single  = corr_dir_single_surfaces.find(interval_name);
@@ -660,6 +673,33 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   surface.SetName(name);
 
 }
+
+// --------------------------------------------------------------------------------
+void MultiIntervalGrid::CreateVisibleSurfaces(const std::vector<Surface> & surfaces,
+                                              const std::vector<Surface> & eroded_surfaces,
+                                              std::vector<std::vector<Surface> > & visible_surfaces)
+{
+  for(size_t i=0;i<surfaces.size()-1;i++) {
+    visible_surfaces[i].resize(2);
+    visible_surfaces[i][0] = eroded_surfaces[i];
+    visible_surfaces[i][1] = eroded_surfaces[i+1];
+    for(int j=0;j<2;j++) {
+      std::vector<double>::const_iterator above = surfaces[i].begin();
+      std::vector<double>::const_iterator below = surfaces[i+1].begin();
+      std::vector<double>::iterator       surf  = visible_surfaces[i][j].begin();
+      for(;surf != visible_surfaces[i][j].end();++surf) {
+        if(*surf < *above)
+          *surf = *above;
+        else if(*surf > *below)
+          *surf = *below;
+
+        ++above;
+        ++below;
+      }
+    }
+  }
+}
+
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
