@@ -15,6 +15,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
                                      const std::vector<std::string>   & disc_logs_to_be_blocked,
                                      const Simbox                     * const estimation_simbox,
                                      bool                               interpolate,
+                                     bool                               restrict_to_visible,
                                      bool                             & is_inside,
                                      std::string                      & err_text) {
 
@@ -70,7 +71,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               cont_logs_highcut_background_, discrete_logs_blocked_,
               x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, facies_blocked_,
               n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_,
-              n_blocks_with_data_tot_, facies_log_defined_, interpolate, dz_, failed, is_inside, err_text);
+              n_blocks_with_data_tot_, facies_log_defined_, interpolate, restrict_to_visible, dz_, failed, is_inside, err_text);
 
   if (err_text == "" && is_inside == true) {
     LogKit::LogFormatted(LogKit::Low,"-The following continuous logs from well \'"+well_name_+"\' were blocked into the simbox: ");
@@ -181,6 +182,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
                 n_blocks_with_data_tot_,
                 facies_log_defined_,
                 interpolate,
+                false,
                 dz_,
                 failed,
                 is_inside,
@@ -378,7 +380,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   double dz;
 
   bool is_inside = true;
-  FindSizeAndBlockPointers(simbox, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
+  FindSizeAndBlockPointers(simbox, true, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
 
   if (is_inside == false)
     err_text += "Well "+well->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
@@ -687,6 +689,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
                                   int                                                 & n_blocks_with_data_tot,
                                   bool                                                  facies_log_defined,
                                   bool                                                  interpolate,
+                                  bool                                                  visible_only,
                                   double                                              & dz,
                                   bool                                                & failed,
                                   bool                                                & is_inside,
@@ -696,7 +699,7 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
 
   try {
 
-    FindSizeAndBlockPointers(estimation_simbox, b_ind, n_layers_, first_M, last_M, n_blocks, is_inside);
+    FindSizeAndBlockPointers(estimation_simbox, visible_only, b_ind, n_layers_, first_M, last_M, n_blocks, is_inside);
     if (is_inside == true) {
       FindBlockIJK(estimation_simbox,
                    b_ind,
@@ -981,6 +984,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 }
 
 void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  * const estimation_simbox,
+                                                  bool                            visible_only,
                                                   std::vector<int>              & b_ind,
                                                   const int                     & n_layers,
                                                   int                           & first_M,
@@ -999,7 +1003,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  
   int first_J(IMISSING);
   int first_K(IMISSING);
   for (int m = 0 ; m < nd ; m++) {
-    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
+    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K, visible_only);
     if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
       first_M = m;
       break;
