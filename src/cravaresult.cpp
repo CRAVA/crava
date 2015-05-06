@@ -1368,7 +1368,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput());
+                     *model_settings->getTraceHeaderFormatOutput(),
+                     true);
 
     if (write_crava_) {
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
@@ -1401,7 +1402,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                        time_depth_mapping,
                        prefix,
                        IO::PathToBackground(),
-                       *model_settings->getTraceHeaderFormatOutput());
+                       *model_settings->getTraceHeaderFormatOutput(),
+                       true);
     }
   }
 
@@ -1758,7 +1760,8 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput());
+                     *model_settings->getTraceHeaderFormatOutput(),
+                     true);
 
     if (write_crava_) {
       std::string file_name_vp  = IO::makeFullFileName(IO::PathToBackground(), IO::PrefixBackground() + "Vp");
@@ -1787,7 +1790,8 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                         time_depth_mapping,
                         prefix,
                         IO::PathToBackground(),
-                        *model_settings->getTraceHeaderFormatOutput());
+                        *model_settings->getTraceHeaderFormatOutput(),
+                        true);
     }
   }
 }
@@ -2019,7 +2023,8 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    GridMapping             * depth_mapping,
                                    const std::string       & prefix,
                                    const std::string       & path,
-                                   const TraceHeaderFormat & thf)
+                                   const TraceHeaderFormat & thf,
+                                   bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
     int output_format = model_settings->getOutputGridFormat();
@@ -2033,14 +2038,16 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
   std::string file_name_vs  = prefix + "Vs" ;
   std::string file_name_rho = prefix + "Rho";
 
-  ExpTransf(background_vp_);
-  ParameterOutput::WriteFile(model_settings, grid_vp, file_name_vp, path, simbox, false, "NO_LABEL", depth_mapping);
+  if (exp_transf) {
+    ExpTransf(grid_vp);
+    ExpTransf(grid_vs);
+    ExpTransf(grid_rho);
+  }
 
-  ExpTransf(background_vs_);
-  ParameterOutput::WriteFile(model_settings, grid_vs, file_name_vs, path, simbox, false, "NO_LABEL", depth_mapping);
-
-  ExpTransf(background_rho_);
+  ParameterOutput::WriteFile(model_settings, grid_vp,  file_name_vp,  path, simbox, false, "NO_LABEL", depth_mapping);
+  ParameterOutput::WriteFile(model_settings, grid_vs,  file_name_vs,  path, simbox, false, "NO_LABEL", depth_mapping);
   ParameterOutput::WriteFile(model_settings, grid_rho, file_name_rho, path, simbox, false, "NO_LABEL", depth_mapping);
+
 }
 
 

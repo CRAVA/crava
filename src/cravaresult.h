@@ -140,7 +140,8 @@ public:
                         GridMapping             * depth_mapping,
                         const std::string       & prefix,
                         const std::string       & path,
-                        const TraceHeaderFormat & thf);
+                        const TraceHeaderFormat & thf,
+                        bool                      exp_transf = false);
 
   void ExpTransf(StormContGrid * grid);
 
