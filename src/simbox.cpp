@@ -652,7 +652,7 @@ Simbox::getClosestZIndex(double x, double y, double z)
 }
 
 void
-Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & zInd) const
+Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & zInd, bool visible_only) const
 {
   xInd = IMISSING;
   yInd = IMISSING;
@@ -667,13 +667,22 @@ Simbox::getIndexes(double x, double y, double z, int & xInd, int & yInd, int & z
       zBot = GetBotSurface().GetZ(x,y);
       if(GetBotSurface().IsMissing(zBot) == false &&  z > zTop && z < zBot)
       {
-        xInd = int(floor(rx/dx_));
-        if(xInd > nx_-1)
-          xInd = nx_-1;
-        yInd = int(floor(ry/dy_));
-        if(yInd > ny_-1)
-          yInd = ny_-1;
-        zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
+        bool visibility_ok = true;
+        if(visible_only == true) {
+          double ztv = top_eroded_surface_->GetZ(x,y);
+          double zbv = base_eroded_surface_->GetZ(x,y);
+          if(z < ztv || z > zbv)
+            visibility_ok = false;
+        }
+        if(visibility_ok == true) {
+          xInd = int(floor(rx/dx_));
+          if(xInd > nx_-1)
+            xInd = nx_-1;
+          yInd = int(floor(ry/dy_));
+          if(yInd > ny_-1)
+            yInd = ny_-1;
+          zInd = int(floor(static_cast<double>(nz_)*(z-zTop)/(zBot-zTop)));
+        }
         //LogKit::LogFormatted(LogKit::Low,"rx,dx,xInd = %.4f %.4f %d   ry,dy,yInd = %.4f %.4f %d    %d\n",rx,dx_,xInd,ry,dy_,yInd,zInd);
       }
     }

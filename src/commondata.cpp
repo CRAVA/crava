@@ -77,8 +77,10 @@ CommonData::CommonData(ModelSettings * model_settings,
     //Set up simbox for writing
     if (setup_multigrid_) {
       setup_output_simbox_ = SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, segy_geometry, multiple_interval_grid_, err_text);
-      delete segy_geometry; //Not needed anymore.
     }
+
+    delete segy_geometry; //Not needed anymore.
+    segy_geometry = NULL;
 
     // 3. read seismic data and create estimation simbox.
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
@@ -4535,7 +4537,7 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     for (unsigned int i = 0; i < wells.size(); i++) {
       bool is_inside = true;
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
-                                                              &estimation_simbox, model_settings->getRunFromPanel(), is_inside, err_text);
+                                                              &estimation_simbox, model_settings->getRunFromPanel(), false, is_inside, err_text);
 
       if (is_inside == false)
         err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
@@ -4640,7 +4642,8 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       for (size_t j = 0; j < wells.size(); j++) {
 
         bool is_inside = true;
-        BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i), model_settings->getRunFromPanel(), is_inside, err_text);
+        BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i),
+                                                           model_settings->getRunFromPanel(), false, is_inside, err_text);
 
 
         if (is_inside == true) {
@@ -4770,7 +4773,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     delete bl;
     mapped_blocked_logs.erase(it);
     mapped_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(well_name, new BlockedLogsCommon(wells[w], continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                                                                            estimation_simbox, model_settings->getRunFromPanel(), is_inside, err_text) ) );
+                                                                                                            estimation_simbox, model_settings->getRunFromPanel(), false, is_inside, err_text) ) );
     if (is_inside == false) {
       err_text += "The well " + well_name + " does not pass through the inversion area after optimization of the well location.\n";
       TaskList::addTask("Well "+ well_name +" does not pass through the inversion area after optimization of the well location. Either remove the well or expand the area.\n");
@@ -7166,6 +7169,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                                      disc_logs_to_be_blocked,
                                                      bg_simbox,
                                                      false,
+                                                     true,
                                                      is_inside,
                                                      err_text);
 
