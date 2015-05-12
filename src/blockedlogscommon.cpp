@@ -1021,7 +1021,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  
   int last_J(IMISSING);
   int last_K(IMISSING);
   for (int m = nd - 1 ; m > 0 ; m--) {
-    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
+    estimation_simbox->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K, visible_only);
     if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
       last_M = m;
       break;
