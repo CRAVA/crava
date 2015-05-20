@@ -452,9 +452,6 @@ void Volume::ReadVolumeFromFile(std::ifstream& file, int line, const std::string
   }
   */
 
-
-
-
 }
 
 
@@ -483,7 +480,7 @@ void Volume::LocalToGlobalCoord(double local_x,
 
 double Volume::RecalculateLZ()
 {
-  double lz = 0;
+  double lz = 0.0;
   if (lx_ > 0.0 || ly_ > 0.0) { //Only do if area is initialized.
     // Just using a arbitary grid resolution.
     int nx = 100;
@@ -492,12 +489,19 @@ double Volume::RecalculateLZ()
     double dx = lx_ / nx;
     double dy = ly_ / ny;
 
+    double z_value_bot = 0.0;
+    double z_value_top = 0.0;
 
     for (int i = 0; i < nx; ++i) {
       for (int j = 0; j < ny; ++j) {
         double x, y;
         LocalToGlobalCoord(dx * i, dy * j, x, y);
-        lz = std::max(lz, z_bot_->GetZ(x, y) - z_top_->GetZ(x, y));
+
+        z_value_bot = z_bot_->GetZ(x, y);
+        z_value_top = z_top_->GetZ(x, y);
+
+        if (z_bot_->IsMissing(z_value_bot) == false && z_top_->IsMissing(z_value_top) == false)
+          lz = std::max(lz, z_bot_->GetZ(x, y) - z_top_->GetZ(x, y));
       }
     }
   }
