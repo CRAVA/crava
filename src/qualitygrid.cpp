@@ -154,7 +154,7 @@ void QualityGrid::makeKrigedProbField(std::vector<KrigingData2D> & krigingData,
   //
   // Template surface to be kriged
   //
-  Surface surface(x0, y0, lx, ly, nx, ny, RMISSING);
+  NRLib::RegularSurface<double> surface(x0, y0, lx, ly, nx, ny, RMISSING);
 
   const float monitorSize = std::max(1.0f, static_cast<float>(nz)*0.02f);
   float nextMonitor = monitorSize;

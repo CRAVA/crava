@@ -250,14 +250,14 @@ Utils::ShiftTrace(fftw_real * trace,
   for(;i<n_small;i++)
     s_trace[i] = s_trace[0]*static_cast<fftw_real>((1+cos(NRLib::Pi*static_cast<double>(n_small-1-i)/static_cast<double>(n_small-1-change)))); //H
 
-  Utils::fft(&(s_trace[0]), s_trace_c, n_small);
+  Utils::fft(&(s_trace[0]), s_trace_c, static_cast<int>(n_small));
 
   std::vector<fftw_real> l_trace(fft_large,0);
   fftw_complex * l_trace_c = reinterpret_cast<fftw_complex*>(&(l_trace[0]));
   for(size_t i=0;i<fft_small;i++)
     l_trace[i] = s_trace[i];
 
-  Utils::fftInv(l_trace_c,&(l_trace[0]), n_large);
+  Utils::fftInv(l_trace_c,&(l_trace[0]), static_cast<int>(n_large));
 
   if(shift_up == true){
     for(size_t i=0;i<n_data;i++)

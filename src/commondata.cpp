@@ -447,7 +447,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
       LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
       area_type = "Surface";
-      RotatedSurface surf(input_files->getAreaSurfaceFile());
+      Surface surf(input_files->getAreaSurfaceFile());
       SegyGeometry geometry(surf);
       model_settings->setAreaParameters(&geometry);
     }
@@ -484,7 +484,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
               template_geometry = model_settings->getAreaParameters();
             }
             else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-              RotatedSurface surf(input_files->getAreaSurfaceFile());
+              Surface surf(input_files->getAreaSurfaceFile());
               template_geometry = new SegyGeometry(surf);
             }
             else {
@@ -3057,6 +3057,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   int n_timelapses     = model_settings->getNumberOfTimeLapses();
   int error            = 0;
   std::string err_text = "";
+  LogKit::WriteHeader("Wavelet");
 
   std::string err_text_tmp("");
   std::vector<Surface *> wavelet_estim_interval;
@@ -4363,9 +4364,12 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
   const std::vector<std::string> interval_names = model_settings->getIntervalNames();
   const std::string top_surface_file_name       = input_files->getTimeSurfTopFile();
+  double angle                                  = full_inversion_simbox.GetAngle();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
+
+
 
   try{
     if (NRLib::IsNumber(top_surface_file_name)) {
@@ -4379,7 +4383,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
-      top_surface = new Surface(top_surface_file_name);
+      top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, angle);
       MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
     }
 
@@ -4415,7 +4419,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           }
           else {
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-            base_surface = new Surface(base_surface_file_name);
+            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
             MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
           }
         }
@@ -4434,7 +4438,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         }
         else {
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-          base_surface = new Surface(base_surface_file_name);
+          base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
           MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
         }
       }
@@ -6144,7 +6148,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
           LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
                              +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
         else
-          err_text += "Grid in file "+file_name+" has dead tradces in inversion area.\n";
+          err_text += "Grid in file "+file_name+" has dead traces in inversion area. This may be due to missing values in the top or bottom surface.\n";
       }
     } //i_interval
   }
@@ -6316,7 +6320,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
         if (grid_type != DATA) {
           //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
-          if (data_trace[0] == 0) {
+          if (!missing && data_trace[0] == 0) {
             std::vector<float> data_trace_new;
             for (size_t k_trace = 0; k_trace < n_trace; k_trace++) {
               if (data_trace[k_trace] != 0)
@@ -6327,7 +6331,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           }
 
           n_samples = data_trace.size();
-          if(n_samples == 0)
+          if (n_samples == 0)
             missing = true;
           else {
             //Remove trend from trace
@@ -10426,3 +10430,4 @@ CommonData::DumpVector(const fftw_real   * data,
   dump << data[i] << "\n";
   dump.close();
 }
+
