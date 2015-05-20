@@ -238,7 +238,7 @@ void SurfaceFromPoints::CreateGriddedSurface(Surface                   *& surfac
   //
   // Fill IL-XL surface
   //
-  RotatedSurface ilxl_surf(x0, y0, xlen, ylen, n_il, n_xl, rot, RMISSING);
+  Surface ilxl_surf(x0, y0, xlen, ylen, n_il, n_xl, RMISSING, rot);
 
   for (size_t k = 0; k < twt.size(); ++k) {
     int i = (il[k] - il_min) / il_inc;

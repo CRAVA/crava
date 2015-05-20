@@ -432,6 +432,7 @@ private:
                                  Simbox              & full_inversion_simbox,
                                  bool                  multi_surface,
                                  const InputFiles    * input_files,
+                                 const double        & angle,
                                  std::string         & err_text) const;
 
   bool               ReadSeismicData(ModelSettings                               * modelSettings,
