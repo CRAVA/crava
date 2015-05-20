@@ -64,12 +64,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   if (outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
     // 2. Setup of multiple interval grid
-    double angle = 0.0;
-    if (segy_geometry != NULL)
-      angle = segy_geometry->GetAngle();
-
     bool multi_failed = false;
-    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, angle, err_text, multi_failed);
+    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
     setup_multigrid_ = !multi_failed;
 
     // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
@@ -623,18 +619,14 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       // Rotate variograms relative to simbox
       model_settings->rotateVariograms(static_cast<float> (full_inversion_simbox.getAngle()));
 
-      double angle = 0.0;
-      if (segy_geometry != NULL)
-        angle = segy_geometry->GetAngle();
-
       // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
       // if multiple intervals
       if (model_settings->GetMultipleIntervalSetting()) {
-        SetSurfaces(model_settings, full_inversion_simbox, true, input_files, angle, err_text);
+        SetSurfaces(model_settings, full_inversion_simbox, true, input_files, err_text);
       }
       // single interval described by either one or two surfaces
       else {
-        SetSurfaces(model_settings, full_inversion_simbox, false, input_files, angle, err_text);
+        SetSurfaces(model_settings, full_inversion_simbox, false, input_files, err_text);
       }
     }
   }
@@ -4363,7 +4355,6 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                              Simbox              & full_inversion_simbox,
                              bool                  multi_surface,
                              const InputFiles    * input_files,
-                             const double        & angle,
                              std::string         & err_text) const
 {
   // Get interval surface data ------------------------------------------------------------------------------
@@ -4373,9 +4364,12 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
   const std::vector<std::string> interval_names = model_settings->getIntervalNames();
   const std::string top_surface_file_name       = input_files->getTimeSurfTopFile();
+  double angle                                  = full_inversion_simbox.GetAngle();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
+
+
 
   try{
     if (NRLib::IsNumber(top_surface_file_name)) {

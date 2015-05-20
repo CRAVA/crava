@@ -439,9 +439,8 @@ void RegularSurfaceRotated<A>::GetXY(size_t i, size_t j, double & x, double & y)
 
   double x_loc = x_tmp - x_ref_;
   double y_loc = y_tmp - y_ref_;
-  
-  LocalToGlobalCoord(x_loc,y_loc,x,y);
 
+  LocalToGlobalCoord(x_loc,y_loc,x,y);
 }
 
 template <class A>
@@ -454,7 +453,6 @@ void RegularSurfaceRotated<A>::GetXY(size_t index, double & x, double & y) const
   double y_loc = y_tmp - y_ref_;
 
   LocalToGlobalCoord(x_loc,y_loc,x,y);
-
 }
 
 template <class A>

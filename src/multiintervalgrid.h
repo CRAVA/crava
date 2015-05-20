@@ -21,7 +21,6 @@ public:
   MultiIntervalGrid(ModelSettings  * model_settings,
                     InputFiles     * input_files,
                     const Simbox   * estimation_simbox,
-                    const double   & angle,
                     std::string    & err_text,
                     bool           & failed);
 
@@ -78,7 +77,6 @@ private:
                               std::vector<double>                       & relative_grid_resolution,
                               double                                    & dz_min,
                               std::vector<double>                       & dz_rel,
-                              const double                              & angle,
                               std::string                               & err_text,
                               bool                                      & failed) const;
 

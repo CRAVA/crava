@@ -13,7 +13,6 @@
 MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                                      InputFiles     * input_files,
                                      const Simbox   * estimation_simbox,
-                                     const double   & segy_angle,
                                      std::string    & err_text,
                                      bool           & failed)
 {
@@ -31,6 +30,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   const std::map<std::string, double> uncertainty_base_surfaces   = model_settings->getUncertaintyBaseSurfaces();
   dz_min_                                                         = 10000;
+  double angle                                                    = estimation_simbox->GetAngle();
 
   if (model_settings->GetMultipleIntervalSetting() == false) {
     LogKit::WriteHeader("Setting up inversion grid");
@@ -61,7 +61,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       erosion_priorities_[0] = erosion_priority_top_surface;
       uncertainties_[0] = 0;
 
-      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, segy_angle);
+      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, angle);
       surfaces[0] = *top_surface;
       for (int i = 0; i < n_intervals_; i++) {
 
@@ -77,7 +77,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         if(i == n_intervals_-1 && uncertainties_[i+1] > 0.001)
           LogKit::LogMessage(LogKit::Warning,"Warning: Uncertainty on last base surface is ignored.\n\n");
 
-        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, segy_angle);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, angle);
         surfaces[i+1] =  *base_surface;
       }
 
@@ -194,7 +194,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               relative_grid_resolution_,
                               dz_min_,
                               dz_rel_,
-                              angle,
                               err_text,
                               failed);
     }
@@ -341,7 +340,6 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 std::vector<double>                       & relative_grid_resolution,
                                                 double                                    & dz_min,
                                                 std::vector<double>                       & dz_rel,
-                                                const double                              & angle,
                                                 std::string                               & err_text,
                                                 bool                                      & failed) const
 {
@@ -362,6 +360,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     int                    other_output_flag                      = model_settings->getOtherOutputFlag();
     int                    other_output_domain                    = model_settings->getOutputGridDomain();
     int                    other_output_format                    = model_settings->getOutputGridFormat();
+    double                 angle                                  = estimation_simbox->GetAngle();
 
     if (model_settings->getWriteAsciiSurfaces() && !(other_output_format & IO::ASCII))
       other_output_format+= IO::ASCII;
