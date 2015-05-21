@@ -43,12 +43,12 @@ public:
                         double ly,
                         size_t nx,
                         size_t ny,
-                        const A& value = A(),
-                        double angle=0.0);
+                        double angle,
+                        const A& value = A());
 
-  RegularSurfaceRotated(const RegularSurface<A>& surface, double angle=0.0);
+  RegularSurfaceRotated(const RegularSurface<A>& surface, double angle);
 
-  RegularSurfaceRotated(double x0, double y0, double lx, double ly, Grid2D<A> grid, double angle=0.0);
+  RegularSurfaceRotated(double x0, double y0, double lx, double ly, Grid2D<A> grid, double angle);
 
   /// \brief Read surface file on given format.
   /// \param filename  File name.
@@ -58,8 +58,8 @@ public:
   ///                         of the file does not match the file format.
 
   RegularSurfaceRotated(const std::string & filename,
-                        SurfaceFileFormat   format     = SURF_UNKNOWN,
-                        const double      & segy_angle = 0.0);
+                        SurfaceFileFormat   format = SURF_UNKNOWN,
+                        const double      & angle  = 0.0);
 
   Surface<A>* Clone() const
   { return new RegularSurfaceRotated<A>(*this); }
@@ -170,8 +170,8 @@ public:
   /// \throws FileFormatError If we can not determine the file format, or the contents
   ///                         of the file does not match the file format.
   void ReadFromFile(const std::string & filename,
-                    SurfaceFileFormat   format     = SURF_UNKNOWN,
-                    const double      & segy_angle = 0.0);
+                    SurfaceFileFormat   format = SURF_UNKNOWN,
+                    const double      & angle  = 0.0);
 
   /// \brief Write surface to file on given format.
   /// If the file format does not support rotation, the resampled surface is written to file.
@@ -216,9 +216,9 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated()
 
 template <class A>
 RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double y_min,
-                                                double lx, double ly,
-                                                size_t nx, size_t ny, const A& value,
-                                                double angle)
+                                  double lx, double ly,
+                                  size_t nx, size_t ny, double angle,
+                                  const A& value)
   : angle_(angle),
     x_ref_(x_min),
     y_ref_(y_min)
@@ -253,9 +253,9 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double  y_min,
 template <class A>
 RegularSurfaceRotated<A>::RegularSurfaceRotated(const std::string & filename,
                                                 SurfaceFileFormat   format,
-                                                const double      & segy_angle)
+                                                const double      & angle)
 {
-  ReadFromFile(filename, format, segy_angle);
+  ReadFromFile(filename, format, angle);
 }
 
 
