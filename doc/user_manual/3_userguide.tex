@@ -187,7 +187,8 @@ file name for the top surface is given under command
 \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base
 surface is given similarly under \kw{base-surface}
 \kwindex{base-surface}, \kw{time-file}. The file format is binary
-storm or ASCII Irap. Top and base time values for the inversion
+storm, ASCII Irap or a Multicolumn ASCII format (file with five columns,
+x, y, z, IL and XL). Top and base time values for the inversion
 interval can be given as constants instead of files, by using the
 command \kw{time-value}\kwindex{time-value}.   
 
@@ -502,9 +503,10 @@ the \kw{simulation} command is used.
 
 \item {\bf Surfaces:} The standard format for reading and writing
   surfaces is binary storm, but \crava can also read Roxar ASCII
-  surfaces (formerly known as ASCII Irap classic). In addition some
-  surfaces related to 3D-inversion are read as sgri (NORSAR). On
-  input, the surface format will be automatically detected.
+  surfaces (formerly known as ASCII Irap classic) and Multicolumn ASCII
+  surfaces (file with five columns, x, y, z,  IL and XL). In addition
+  some surfaces related to 3D-inversion are read as sgri (NORSAR). On input,
+  the surface format will be automatically detected.
 
 \item {\bf Wavelets:} Wavelets are either on JASON or NORSAR format,
   both for reading and writing. Auto-detect is used on reading, use \kw{format}

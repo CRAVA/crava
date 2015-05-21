@@ -12,8 +12,8 @@
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/segy/segy.hpp"
 
-typedef  NRLib::RegularSurfaceRotated<double>  RotatedSurface;
-typedef  NRLib::RegularSurface<double>         Surface;
+typedef  NRLib::RegularSurface<double>         RegularSurface;
+typedef  NRLib::RegularSurfaceRotated<double>  Surface;
 typedef  NRLib::Grid2D<double>                 Grid2D;
 typedef  NRLib::LogKit                         LogKit;
 typedef  NRLib::StormContGrid                  StormContGrid;

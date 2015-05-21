@@ -80,22 +80,6 @@ private:
                               std::string                               & err_text,
                               bool                                      & failed) const;
 
-  /*
-  void  SetupIntervalSimbox(ModelSettings                               * model_settings,
-                            const Simbox                                * estimation_simbox,
-                            Simbox                                      & interval_simboxes,
-                            const std::vector<Surface>                  & eroded_surfaces,
-                            const std::string                           & corr_dir_single_surf,
-                            const std::string                           & corr_dir_top_surf,
-                            const std::string                           & corr_dir_base_surf,
-                            bool                                          corr_dir_top_conform,
-                            bool                                          corr_dir_base_conform,
-                            double                                      & desired_grid_resolution,
-                            double                                      & relative_grid_resolution,
-                            std::string                                 & err_text,
-                            bool                                        & failed) const;
- */
-
   Surface * MakeSurfaceFromFileName(const std::string        & file_name,
                                     const Simbox             & estimation_simbox) const;
 

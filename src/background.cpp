@@ -703,8 +703,8 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
   //
   // Store a surface for each layer (needed for parallelization)
   //
-  Surface tmp(x0, y0, lx, ly, nx, ny, RMISSING);
-  std::vector<Surface> surfaces(0);
+  NRLib::RegularSurface<double> tmp(x0, y0, lx, ly, nx, ny, RMISSING);
+  std::vector<NRLib::RegularSurface<double> > surfaces(0);
   surfaces.reserve(nz);
   for (int k=0 ; k<nz ; k++)
     surfaces.push_back(tmp);
@@ -728,7 +728,6 @@ Background::MakeKrigedBackground(const std::vector<KrigingData2D> & kriging_data
 
     // Kriging of layer
     Kriging2D::krigSurface(surfaces[k], kriging_data[k], cov_grid_2D);
-
 
     // Log progress
     if (k+1 >= static_cast<int>(next_monitor)) {

@@ -436,7 +436,7 @@ void FaciesProb::makeFaciesDens(int                                nfac,
   double dVs  = (vsMax-vsMin)/nbinsb;
   double dRho = (rhoMax-rhoMin)/nbinsr;
 
-  Surface rhoMinSurf(vpMin, vsMin, vpMax-vpMin, vsMax-vsMin, 2, 2, rhoMin);
+  Surface rhoMinSurf(vpMin, vsMin, vpMax-vpMin, vsMax-vsMin, 2, 2, 0.0, rhoMin);
   //Associate vp with x, vs with y and rho with z.
   *volume  = new Simbox(vpMin, vsMin, rhoMinSurf, vpMax-vpMin, vsMax-vsMin, rhoMax-rhoMin, 0, dVp, dVs, dRho);
 
@@ -850,7 +850,7 @@ int FaciesProb::MakePosteriorElasticPDFRockPhysics(std::vector<std::vector<Poste
   }
 
   // Only needed if no trends or no dimension reduction
-  Surface rhoMinSurf(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, zMin);
+  Surface rhoMinSurf(xMin, yMin, xMax-xMin, yMax-yMin, 2, 2, 0.0, zMin);
   volume[0]  = new Simbox(xMin, yMin, rhoMinSurf, xMax-xMin, yMax-yMin, zMax-zMin, 0, dX, dY, dZ);
 
 
@@ -1087,7 +1087,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
     double dVs  = (vsMax-vsMin)/nbinsb;
     double dRho = (rhoMax-rhoMin)/nbinsr;
 
-    Surface rhoMinSurf(vpMin, vsMin, vpMax-vpMin, vsMax-vsMin, 2, 2, rhoMin);
+    Surface rhoMinSurf(vpMin, vsMin, vpMax-vpMin, vsMax-vsMin, 2, 2, 0.0, rhoMin);
     //Associate vp with x, vs with y and rho with z.
     volume[i]  = new Simbox(vpMin, vsMin, rhoMinSurf, vpMax-vpMin, vsMax-vsMin, rhoMax-rhoMin, 0, dVp, dVs, dRho);
 
@@ -1496,7 +1496,7 @@ FaciesProb::createExpVol(const Simbox * volume)
   double dB = (maxB-minB)/volume->getny();
   double dR = (maxR-minR)/volume->getnz();
 
-  Surface rhoMinSurf(minA, minB, maxA-minA, maxB-minB, 2, 2, minR);
+  Surface rhoMinSurf(minA, minB, maxA-minA, maxB-minB, 2, 2, 0.0, minR);
   Simbox  * expVol = new Simbox(minA, minB, rhoMinSurf, maxA-minA, maxB-minB, maxR-minR, 0, dA, dB, dR);
   return(expVol);
 }

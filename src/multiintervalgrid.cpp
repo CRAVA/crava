@@ -516,15 +516,15 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
 }
 
-
 // --------------------------------------------------------------------------------
 Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file_name,
-                                                     const Simbox         & estimation_simbox) const{
-
+                                                     const Simbox         & estimation_simbox) const
+{
   Surface * new_surface = NULL;
+  double angle = estimation_simbox.GetAngle();
 
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
-    new_surface = new Surface(file_name);
+    new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, angle);
     RemoveNaNFromSurface(new_surface);
   }
   else { //If the file name is a value
@@ -535,12 +535,11 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file
                                 estimation_simbox.getlx(), estimation_simbox.getly(),
                                 estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
 
-    new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(file_name.c_str()));
+    new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(file_name.c_str()));
   }
 
   return new_surface;
 }
-
 
 // --------------------------------------------------------------------------------
 void MultiIntervalGrid::FindSmallestSurfaceGeometry(const double   x0,
@@ -645,8 +644,8 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   double missing = surface.GetMissingValue();
   for (int i=0; i<nx; i++) {
     for (int j=0; j<ny; j++) {
-      x = resolution_surface.GetX(i);
-      y = resolution_surface.GetY(j);
+      resolution_surface.GetXY(i, j, x, y);
+
       //simbox.getXYCoord(i,j,x,y);
 
       z_priority = priority_surface.GetZ(x,y);
@@ -669,7 +668,9 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   }
 
   std::string name = surface.GetName();
-  surface = Surface(x0, y0, lx, ly, eroded_surface);
+  double angle     = surface.GetAngle();
+
+  surface = Surface(x0, y0, lx, ly, eroded_surface, angle);
   surface.SetName(name);
 
 }
@@ -934,30 +935,20 @@ void MultiIntervalGrid::RemoveNaNFromSurface(Surface *& surface)
 {
   int nx    = static_cast<int>(surface->GetNI());
   int ny    = static_cast<int>(surface->GetNJ());
-  double x0 = surface->GetXMin();
-  double y0 = surface->GetYMin();
-  double lx = surface->GetLengthX();
-  double ly = surface->GetLengthY();
-
-  NRLib::Grid2D<double> new_surface(nx,ny,0);
-  double x = 0.0;
-  double y = 0.0;
-  double z = 0.0;
-
+  double z  = 0.0;
   int n_nan = 0;
+
   double missing = surface->GetMissingValue();
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
-      x = surface->GetX(i);
-      y = surface->GetY(j);
-      z = surface->GetZ(x,y);
+
+      z = (*surface)(i,j);
 
       if (z != z) {
-        new_surface(i,j) = missing;
+        (*surface)(i,j) = missing;
         n_nan++;
       }
-      else
-        new_surface(i,j) = z;
+
     }
   }
 
@@ -966,8 +957,4 @@ void MultiIntervalGrid::RemoveNaNFromSurface(Surface *& surface)
     LogKit::LogFormatted(LogKit::Low,"Found " + NRLib::ToString(n_nan) + " undefined values in" + name + ". These are set as missing.\n");
   }
 
-  delete surface;
-  surface = new Surface(x0, y0, lx, ly, new_surface);
-  surface->SetName(name);
-  surface->SetMissingValue(missing);
 }

@@ -349,7 +349,7 @@ ModelTravelTimeDynamic::setErrorCorrXYGrid(const Simbox        * timeSimbox,
   int ny=-1;
 
 
-  Surface * grid = new Surface(0, 0, dx * nx, dy * ny, nx, ny, RMISSING);
+  Surface * grid = new Surface(0, 0, dx * nx, dy * ny, nx, ny, 0.0, RMISSING);
 
   Vario * vario = modelSettings->getLateralTravelTimeErrorCorr(this_time_lapse_);
 

@@ -413,10 +413,14 @@ Simbox::Simbox(const Simbox         * simbox,
   //
   // Check that the two surfaces do not intersect
   //
+  double x,y;
   for (size_t i = 0; i < base_surface.GetNI(); i++){
     for (size_t j = 0; j < base_surface.GetNJ(); j++){
-      double z_top_corr   = top_corr_surface->GetZ(base_surface.GetX(i), base_surface.GetY(j));
-      double z_base_corr  = base_corr_surface->GetZ(base_surface.GetX(i), base_surface.GetY(j));
+
+      base_surface.GetXY(i,j,x,y);
+      double z_top_corr   = top_corr_surface->GetZ(x,y);
+      double z_base_corr  = base_corr_surface->GetZ(x,y);
+
       if (z_top_corr > z_base_corr){
         err_text += "Error: The top correlation surface crosses the base correlation surface for interval "+ interval_name +".\n";
         failed = true;

@@ -176,7 +176,7 @@ ModelTravelTimeStatic::setupSimboxAbove(const Simbox  * timeSimbox,
 
   NRLib::Grid2D<double> z_grid_top(nx, ny, 0);
 
-  Surface top_surface = Surface(xmin, ymin, lx, ly, z_grid_top);
+  Surface top_surface = Surface(xmin, ymin, lx, ly, z_grid_top, 0.0);
 
   //
   // Make new simbox

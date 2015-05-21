@@ -109,6 +109,13 @@ SurfaceFileFormat FindSurfaceFileType(const std::string& filename)
     return SURF_UNKNOWN;
   }
 
+  //Try multicolum ascii
+  int dummy;
+  bool is_multicolumn_ascii = FindMulticolumnAsciiLine(filename, dummy);
+
+  if (is_multicolumn_ascii == true)
+    return SURF_MULT_ASCII;
+
   return SURF_UNKNOWN;
 }
 
@@ -126,6 +133,8 @@ std::string GetSurfFormatString(NRLib::SurfaceFileFormat format)
       return "NORSAR SGRI";
     case SURF_RMS_POINTS_ASCII:
       return "RMS XYZ point set surface";
+    case SURF_MULT_ASCII:
+      return "Multicolumn ASCII";
     default:
       throw Exception("Missing format description for format: " + ToString(format));
   }
@@ -258,7 +267,7 @@ ReadMultipleSgriSurf(const std::string& filename, const std::vector<std::string>
     std::ifstream bin_file;
     OpenRead(bin_file, bin_file_name.c_str(), std::ios::in | std::ios::binary);
     for (i=0; i<n_grid; i++) {
-      surfaces[i] = RegularSurfaceRotated<float>(x_min,y_min,lx,ly,nx,ny,angle,0.0f);
+      surfaces[i] = RegularSurfaceRotated<float>(x_min,y_min,lx,ly,nx,ny,0.0f,angle);
       surfaces[i].SetMissingValue(missing_code);
       ReadBinaryFloatArray(bin_file, surfaces[i].begin(), surfaces[i].GetN());
     }
@@ -269,6 +278,44 @@ ReadMultipleSgriSurf(const std::string& filename, const std::vector<std::string>
     throw FileFormatError("Error parsing \"" + filename + "\" as a "
       "Sgri surface file " + e.what() + "\n");
   }
+}
+
+bool FindMulticolumnAsciiLine(const std::string& filename, int & header_start_line)
+{
+  //Contains five columns: X, Y, IL, CL, Attribute
+  //File starts with several information lines
+  std::ifstream file;
+  NRLib::OpenRead(file, filename);
+  int line = 0;
+
+  //Find first line with five numbers
+  bool found_mult_ascii_line = false;
+  while (found_mult_ascii_line == false) {
+
+    //Read line
+    std::string line_string;
+    std::getline(file, line_string);
+    std::vector<std::string> tokens = NRLib::GetTokens(line_string);
+
+    //Check if the line has five number elements
+    if (tokens.size() == 5) {
+      for (int i = 0; i < 5; i++) {
+        if (!NRLib::IsNumber(tokens[i])) {
+          found_mult_ascii_line = false;
+          break;
+        }
+        else
+          found_mult_ascii_line = true;
+      }
+    }
+
+    line++;
+  }
+  file.close();
+
+  header_start_line = line -2;
+
+  return found_mult_ascii_line;
 }
 
 
