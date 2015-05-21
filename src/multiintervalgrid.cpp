@@ -535,7 +535,7 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file
                                 estimation_simbox.getlx(), estimation_simbox.getly(),
                                 estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
 
-    new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(file_name.c_str()));
+    new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(file_name.c_str()));
   }
 
   return new_surface;

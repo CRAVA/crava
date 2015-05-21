@@ -3326,7 +3326,7 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
     wavelet_estim_interval.resize(2);
     try {
       if (NRLib::IsNumber(wavelet_est_int_top))
-        wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(wavelet_est_int_top.c_str()));
+        wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(wavelet_est_int_top.c_str()));
       else {
         Surface tmpSurf(wavelet_est_int_top);
         wavelet_estim_interval[0] = new Surface(tmpSurf);
@@ -3338,7 +3338,7 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
 
     try {
       if (NRLib::IsNumber(wavelet_est_int_bot))
-        wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(wavelet_est_int_bot.c_str()));
+        wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(wavelet_est_int_bot.c_str()));
       else {
         Surface tmpSurf(wavelet_est_int_bot);
         wavelet_estim_interval[1] = new Surface(tmpSurf);
@@ -4052,7 +4052,7 @@ CommonData::ResampleGrid2DToSurface(const Simbox   * simbox,
     nx = static_cast<int>(floor(simbox->getnx()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
     ny = static_cast<int>(floor(simbox->getny()*1.0/std::sin(simbox->getAngle())+0.5)) * 2;
   }
-  surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0);
+  surface = new Surface(xmin,ymin,xmax-xmin,ymax-ymin,nx,ny,0.0,0.0);
   double x,y;
   int i1,j1;
   for (int i=0;i<nx;i++) {
@@ -4379,7 +4379,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
       FindSmallestSurfaceGeometry(full_inversion_simbox.getx0(), full_inversion_simbox.gety0(),
                                   full_inversion_simbox.getlx(), full_inversion_simbox.getly(),
                                   full_inversion_simbox.getAngle(), x_min,y_min,x_max,y_max);
-      top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(top_surface_file_name.c_str()));
+      top_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(top_surface_file_name.c_str()));
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
@@ -4415,7 +4415,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                                         full_inversion_simbox.getlx(), full_inversion_simbox.getly(),
                                         full_inversion_simbox.getAngle(),
                                         x_min, y_min, x_max, y_max);
-            base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
+            base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(base_surface_file_name.c_str()));
           }
           else {
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
@@ -4434,7 +4434,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           FindSmallestSurfaceGeometry(full_inversion_simbox.getx0(), full_inversion_simbox.gety0(),
                                       full_inversion_simbox.getlx(), full_inversion_simbox.getly(),
                                       full_inversion_simbox.getAngle(), x_min,y_min,x_max,y_max);
-          base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, atof(base_surface_file_name.c_str()));
+          base_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(base_surface_file_name.c_str()));
         }
         else {
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
@@ -4954,7 +4954,7 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
     well_move_interval.resize(2);
     try {
       if (NRLib::IsNumber(topWMI))
-        well_move_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topWMI.c_str()));
+        well_move_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(topWMI.c_str()));
       else {
         Surface tmpSurf(topWMI);
         well_move_interval[0] = new Surface(tmpSurf);
@@ -4966,7 +4966,7 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
 
     try {
       if (NRLib::IsNumber(baseWMI))
-        well_move_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseWMI.c_str()));
+        well_move_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(baseWMI.c_str()));
       else {
         Surface tmpSurf(baseWMI);
         well_move_interval[1] = new Surface(tmpSurf);
@@ -5730,7 +5730,7 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
     facies_estim_interval.resize(2, NULL);
     try {
       if (NRLib::IsNumber(topFEI))
-        facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,atof(topFEI.c_str()));
+        facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(topFEI.c_str()));
       else {
         Surface tmpSurf(topFEI);
         facies_estim_interval[0] = new Surface(tmpSurf);
@@ -5742,7 +5742,7 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
 
     try {
       if (NRLib::IsNumber(baseFEI))
-        facies_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,atof(baseFEI.c_str()));
+        facies_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(baseFEI.c_str()));
       else {
         Surface tmpSurf(baseFEI);
         facies_estim_interval[1] = new Surface(tmpSurf);
@@ -8672,7 +8672,7 @@ Surface * CommonData::FindCorrXYGrid(const Simbox        * simbox,
   int   nx  = simbox->GetNXpad();
   int   ny  = simbox->GetNYpad();
 
-  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, RMISSING);
+  Surface * grid = new Surface(0, 0, dx*nx, dy*ny, nx, ny, 0.0, RMISSING);
 
   if (model_settings->getLateralCorr()!=NULL) // NBNB-PAL: Denne her blir aldri null etter at jeg la inn en default lateral correlation i modelsettings.
   {

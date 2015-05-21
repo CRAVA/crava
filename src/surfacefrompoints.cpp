@@ -268,7 +268,7 @@ void SurfaceFromPoints::CreateGriddedSurface(Surface                   *& surfac
   int    nx   = static_cast<int>(xLen/dxu) + 1;
   int    ny   = static_cast<int>(yLen/dyu) + 1;
 
-  surface = new Surface(xMin, yMin, xLen, yLen, nx, ny, RMISSING);
+  surface = new Surface(xMin, yMin, xLen, yLen, nx, ny, 0.0, RMISSING);
 
   for (size_t i = 0 ; i < surface->GetNI() ; ++i) {
     for (size_t j = 0 ; j < surface->GetNJ() ; ++j) {
