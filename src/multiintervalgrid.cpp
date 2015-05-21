@@ -30,7 +30,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
   const std::map<std::string,int> erosion_priority_base_surfaces  = model_settings->getErosionPriorityBaseSurfaces();
   const std::map<std::string, double> uncertainty_base_surfaces   = model_settings->getUncertaintyBaseSurfaces();
   dz_min_                                                         = 10000;
-  double angle                                                    = estimation_simbox->GetAngle();
 
   if (model_settings->GetMultipleIntervalSetting() == false) {
     LogKit::WriteHeader("Setting up inversion grid");
@@ -61,7 +60,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       erosion_priorities_[0] = erosion_priority_top_surface;
       uncertainties_[0] = 0;
 
-      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, angle);
+      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
       surfaces[0] = *top_surface;
       for (int i = 0; i < n_intervals_; i++) {
 
@@ -77,7 +76,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         if(i == n_intervals_-1 && uncertainties_[i+1] > 0.001)
           LogKit::LogMessage(LogKit::Warning,"Warning: Uncertainty on last base surface is ignored.\n\n");
 
-        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, angle);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         surfaces[i+1] =  *base_surface;
       }
 
@@ -124,12 +123,12 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
-        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, angle);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[0] = *top_surface;
         surfaces[0]         = *top_surface;
 
         base_surface_file_name_temp = input_files->getBaseTimeSurface("");
-        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, angle);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[1] = *base_surface;
         surfaces[1]         = *base_surface;
 
@@ -140,7 +139,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
-        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, angle);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
         eroded_surfaces_[0] = *top_surface;
         surfaces[0]         = *top_surface;
 
@@ -360,7 +359,6 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     int                    other_output_flag                      = model_settings->getOtherOutputFlag();
     int                    other_output_domain                    = model_settings->getOutputGridDomain();
     int                    other_output_format                    = model_settings->getOutputGridFormat();
-    double                 angle                                  = estimation_simbox->GetAngle();
 
     if (model_settings->getWriteAsciiSurfaces() && !(other_output_format & IO::ASCII))
       other_output_format+= IO::ASCII;
@@ -376,7 +374,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 1: Single correlation surface
     if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox, angle);
+      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf;
@@ -384,8 +382,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 2: Top and base correlation surfaces
     else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox, angle);
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, angle);
+      Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -394,7 +392,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 3: Top conform and base correlation surface
     else if (it_top_conform->second == true && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, angle);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_base;
@@ -402,7 +400,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 4: Top correlation surface and base conform
     else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true) {
       corr_dir = true;
-      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox, angle);
+      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox);
       interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
                                            other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -520,10 +518,10 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 
 // --------------------------------------------------------------------------------
 Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file_name,
-                                                     const Simbox         & estimation_simbox,
-                                                     const double         & angle) const
+                                                     const Simbox         & estimation_simbox) const
 {
   Surface * new_surface = NULL;
+  double angle = estimation_simbox.GetAngle();
 
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
     new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, angle);

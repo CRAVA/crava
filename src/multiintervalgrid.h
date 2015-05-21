@@ -81,8 +81,7 @@ private:
                               bool                                      & failed) const;
 
   Surface * MakeSurfaceFromFileName(const std::string        & file_name,
-                                    const Simbox             & estimation_simbox,
-                                    const double             & angle) const;
+                                    const Simbox             & estimation_simbox) const;
 
   void ErodeSurface(Surface       &  surface,
                     const Surface &  priority_surface,
