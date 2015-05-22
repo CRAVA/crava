@@ -661,10 +661,11 @@ private:
                                 const std::vector<int>    & i_pos,
                                 const std::vector<int>    & j_pos,
                                 const std::vector<int>    & k_pos,
-                                const int                 & n_blocks,
-                                const int                 & first_B,
-                                const int                 & last_B,
-                                std::vector<double>       & x_pos_blocked,
+                                int                         n_blocks,
+                                int                         first_B,
+                                int                         last_B,
+                                int                         first_S,
+                                int                         last_S,std::vector<double>       & x_pos_blocked,
                                 std::vector<double>       & y_pos_blocked,
                                 std::vector<double>       & z_pos_blocked) const;
 
