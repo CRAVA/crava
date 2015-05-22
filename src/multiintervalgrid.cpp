@@ -315,7 +315,7 @@ int   MultiIntervalGrid::WhichSimbox(double x, double y, double z) const
 {
   int simbox_num = -1;
   for (size_t i = 0; i < interval_simboxes_.size(); i++) {
-    if (interval_simboxes_[i]->IsPointBetweenOriginalSurfaces(x,y,z)) {
+    if (interval_simboxes_[i]->IsPointBetweenVisibleSurfaces(x,y,z)) {
       simbox_num = static_cast<int>(i);
       break;
     }

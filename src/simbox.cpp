@@ -776,12 +776,14 @@ Simbox::getZInterpolation(double x, double y, double z,
   }
 }
 
-bool Simbox::IsPointBetweenOriginalSurfaces(double x, double y, double z) const{
+bool Simbox::IsPointBetweenVisibleSurfaces(double x, double y, double z) const{
   const NRLib::Surface<double> * top_surf  = &GetTopErodedSurface();
   const NRLib::Surface<double> * base_surf = &GetBaseErodedSurface();
   bool b = false;
   if(isInside(x, y)){
-    if (top_surf->GetZ(x,y) <= z && base_surf->GetZ(x,y) > z)
+    double z_top  = top_surf->GetZ(x,y);
+    double z_base = base_surf->GetZ(x,y);
+    if (z_top <= z && z_base > z)
       b = true;
   }
   return b;

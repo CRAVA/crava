@@ -583,9 +583,9 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       BlockCoordinateLog(b_ind, y_pos_raw_logs_, y_pos_blocked);
       BlockCoordinateLog(b_ind, z_pos_raw_logs_, z_pos_blocked);
 
-      //Extrapolates if missing values in the beginning or end.
-      FindXYZForVirtualPart(multiple_interval_grid, i_pos, j_pos, k_pos, n_blocks, first_B, last_B,
-                            x_pos_blocked, y_pos_blocked, z_pos_blocked);
+      //Extrapolates if missing values in the beginning or end.Not needed for estimation of correlations.
+      //FindXYZForVirtualPart(multiple_interval_grid, i_pos, j_pos, k_pos, n_blocks, first_B, last_B,
+      //                      first_S, last_S, x_pos_blocked, y_pos_blocked, z_pos_blocked);
 
       //HighCutSeismic blocked logs
       const std::map<std::string, std::vector<double> > & seismic_resolution_logs = well->GetContLogSeismicResolution();
@@ -824,10 +824,13 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   }
   const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the smallest dz
 
+  std::vector<int> k_offset(n_intervals, 0);
   for (int s = 0; s < n_intervals; s++) {
     std::string interval_name = multiple_interval_grid->GetIntervalName(s);
-    int n_lay = static_cast<int>(nz[s]*dz_rel[s]);
+    int n_lay = static_cast<int>(nz[s]);
     n_layers_adjusted_per_interval.insert(std::pair<std::string, int>(interval_name, n_lay)) ; // number of blocks per interval. Casting double to int cuts the decimals
+    if(s < n_intervals-1)
+      k_offset[s+1] = k_offset[s]+n_lay;
   }
   //
   // Find the adjusted number of blocks per interval
@@ -839,10 +842,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   int first_I(IMISSING);
   int first_J(IMISSING);
   int first_K(IMISSING);
-  for (int n = 0 ; n < n_intervals; n++) {
-    for (int m = 0 ; m < n_data ; m++) {
+  for (int m = 0 ; m < n_data ; m++) {
+    for (int n = 0 ; n < n_intervals; n++) {
       // The intervals are sometimes overlapping
-      if (interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
+      if (interval_simboxes[n]->IsPointBetweenVisibleSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
         if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
           first_K = static_cast<int>(first_K*dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
@@ -865,10 +868,10 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   int last_I(IMISSING);
   int last_J(IMISSING);
   int last_K(IMISSING);
-  for (int n = n_intervals-1 ; n >= 0; n--) {
-    for (int m = n_data - 1 ; m > 0 ; m--) {
+  for (int m = n_data - 1 ; m > 0 ; m--) {
+    for (int n = n_intervals-1 ; n >= 0; n--) {
       // The intervals are sometimes overlapping
-      if (interval_simboxes[n]->IsPointBetweenOriginalSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
+      if (interval_simboxes[n]->IsPointBetweenVisibleSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
         if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
           last_K = static_cast<int>(last_K*dz_rel[n]);
@@ -894,8 +897,8 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
   //int old_simbox = 0;
 
   int n_defined_blocks = 0;
-  b_ind[first_M_] = first_K; // The first defined well log entry (first_M) contributes to
-                             // the first defined block (first_K)
+  b_ind[first_M] = first_K + k_offset[first_S]; // The first defined well log entry (first_M) contributes to
+                                                // the first defined block (first_K)
 
   //
   // The well positions used to be given in float rather than double. Unfortunately, this
@@ -918,12 +921,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
 
     interval_simboxes[simbox_number]->getIndexes(x_pos[m], y_pos[m], z_pos[m] , new_I , new_J , new_K);
 
-    // Add the previous zones multiplied by relative vertical grid size
-    double temp_K = new_K*dz_rel[simbox_number];      // temp_K is the adjusted vertical block number
-    for (int n = 0; n<simbox_number; n++) {
-      temp_K += static_cast<int>(nz[n]*dz_rel[n]);    // add number of blocks in simboxes above
-    }
-    int tot_K = static_cast<int>(temp_K);
+    int tot_K = new_K+k_offset[simbox_number];
 
     if (new_I != old_I || new_J != old_J || tot_K != old_K) {
 
@@ -941,8 +939,6 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
         old_J = new_J;
         old_K = tot_K;
         n_defined_blocks++;
-      }
-      else {
       }
     }
     b_ind[m] = first_K + n_defined_blocks;
@@ -1072,8 +1068,6 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const Simbox                  
         old_J = new_J;
         old_K = new_K;
         n_defined_blocks++;
-      }
-      else {
       }
     }
     b_ind[m] = first_K + n_defined_blocks;
@@ -1312,6 +1306,13 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       n_well_log_obs_in_interval[simbox_number]++;
   }
 
+  std::vector<int> k_offset(interval_simboxes.size(), 0);
+  for (size_t s = 0; s < interval_simboxes.size(); s++) {
+    int n_lay = static_cast<int>(interval_simboxes[s]->getnz());
+    if(s < interval_simboxes.size()-1)
+      k_offset[s+1] = k_offset[s]+n_lay;
+  }
+
   //
   // 1. Set IJK for virtual part of well in upper part of the first simbox where it is found
   //
@@ -1320,20 +1321,12 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   int first_I, first_J, first_K;
   interval_simboxes[first_S]->getIndexes(x_pos_raw_logs[first_M], y_pos_raw_logs[first_M], z_pos_raw_logs[first_M], first_I, first_J, first_K);
   for (int s = 0;  s < first_S_; s++) {
-    //double dz     = interval_simboxes[s].getdz();
-    //double dz_0   = 0;
-    //interval_simboxes[s].getZCoord(0,x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], dz_0);
-    //b = -1;
     for (int k = 0; k < interval_simboxes[s]->getnz(); k++) {
       b++;
       s_pos[b] = s;
       i_pos[b] = first_I;
       j_pos[b] = first_J;
-      // There is overlap between inversion intervals for the multiple interval setting
-      //if (interval_simboxes[s].IsPointBetweenOriginalSurfaces(x_pos_raw_logs[first_M_], y_pos_raw_logs[first_M_], dz_0+k*dz))
-      k_pos[b] = static_cast<int>(k*dz_rel[s]);
-      //else
-      //k_pos_[b] = IMISSING;
+      k_pos[b] = k + k_offset[s];
     }
   }
   //
@@ -1345,7 +1338,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     s_pos[b] = first_S_;
     i_pos[b] = first_I;
     j_pos[b] = first_J;
-    k_pos[b] = static_cast<int>(k*dz_rel[first_S_]);
+    k_pos[b] = k + k_offset[first_S];
   }
 
   //
@@ -1378,7 +1371,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       s_pos[b] = first_S;
       i_pos[b] = i;
       j_pos[b] = j;
-      k_pos[b] = static_cast<int>(k*dz_rel[first_S]);
+      k_pos[b] = k + k_offset[first_S];
     }
   }
   //first_B_ = static_cast<int>(first_K*dz_rel[first_S_]);
@@ -1408,7 +1401,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
         s_pos[b] = s;
         i_pos[b] = i;
         j_pos[b] = j;
-        k_pos[b] = static_cast<int>(k*dz_rel[s]);
+        k_pos[b] = k + k_offset[s];;
       }
     }
   }
@@ -1428,7 +1421,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     s_pos[b] = last_S;
     i_pos[b] = last_I;
     j_pos[b] = last_J;
-    k_pos[b] = static_cast<int>(k*dz_rel[last_S]);
+    k_pos[b] = k + k_offset[last_S];;
   }
 
   for (int s = last_S+1; s < static_cast<int>(interval_simboxes.size()); s++) {
@@ -1439,7 +1432,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
       s_pos[b] = s;
       i_pos[b] = last_I;
       j_pos[b] = last_J;
-      k_pos[b] = static_cast<int>(k*dz_rel[s]);
+      k_pos[b] = k + k_offset[s];
     }
   }
 
@@ -4181,9 +4174,11 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
                                               const std::vector<int>    & i_pos,
                                               const std::vector<int>    & j_pos,
                                               const std::vector<int>    & k_pos,
-                                              const int                 & n_blocks,
-                                              const int                 & first_B,
-                                              const int                 & last_B,
+                                              int                         n_blocks,
+                                              int                         first_B,
+                                              int                         last_B,
+                                              int                         first_S,
+                                              int                         last_S,
                                               std::vector<double>       & x_pos_blocked,
                                               std::vector<double>       & y_pos_blocked,
                                               std::vector<double>       & z_pos_blocked) const
@@ -4199,7 +4194,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
   for (int b = 0 ; b < first_B ; b++) {
     double x,y,z;
     interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
-    while (interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
+    while (interval_simboxes[i_interval]->IsPointBetweenVisibleSurfaces(x, y, z) == false) {
       i_interval++;
       interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
     }
@@ -4211,7 +4206,7 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
   for (int b = last_B + 1; b < n_blocks; b++) {
     double x,y,z;
     interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
-    while (i_interval < (n_intervals -1) && interval_simboxes[i_interval]->IsPointBetweenOriginalSurfaces(x, y, z) == false) {
+    while (i_interval < (n_intervals -1) && interval_simboxes[i_interval]->IsPointBetweenVisibleSurfaces(x, y, z) == false) {
       i_interval++;
       interval_simboxes[i_interval]->getCoord(i_pos[b], j_pos[b], k_pos[b], x, y, z);
     }
