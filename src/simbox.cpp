@@ -126,6 +126,7 @@ base_eroded_surface_(NULL)
 Simbox::Simbox(const Simbox             * estimation_simbox,
                const std::string        & interval_name,
                int                        n_layers,
+               double                     ext_dz,
                double                     lz_limit,
                const Surface            & top_surface,
                const Surface            & base_surface,
@@ -185,6 +186,10 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
     SetErodedSurfaces(top_surface, base_surface);
     // Set surfaces in the volume
     // This should set the status to BOXOK
+    if(n_layers < 0) {
+      SetSurfaces(top_surface, base_surface);
+      n_layers = static_cast<int>(std::floor(GetLZ()/ext_dz));
+    }
     setDepth(top_surface, base_surface, n_layers);
     this->calculateDz(lz_limit, err_text);
   }
@@ -201,6 +206,7 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
 Simbox::Simbox(const Simbox         * simbox,
                const std::string    & interval_name,
                int                    n_layers,
+               double                 ext_dz,
                double                 lz_limit,
                const Surface        & top_surface,
                const Surface        & bot_surface,
@@ -247,7 +253,7 @@ base_eroded_surface_(NULL)
   xlStepY_        = simbox->getXLStepY();
   constThick_     = simbox->getIsConstantThick();
 
-  setDepth(top_surface, bot_surface, n_layers); //Needed for GetLZ()
+  SetSurfaces(top_surface, bot_surface); //Needed for GetLZ()
   //this->calculateDz(lz_limit, err_text);
   //calculcateDz also checks for interval-thickness. Since surfaces are eroded they may be zero which gives and error.
   double old_dz = GetLZ() / nz_;
@@ -325,13 +331,15 @@ base_eroded_surface_(NULL)
   shift_bot *= -1.0;
   double thick    = shift_bot-shift_top;
   double dz       = old_dz;
+  if(n_layers < 0)
+    dz = ext_dz;
   int    nz       = int(thick/dz);
   double residual = thick - nz*dz;
   if (residual > 0.0) {
     shift_bot += dz-residual;
     nz++;
   }
-  if (nz != n_layers) {
+  if (nz != n_layers && n_layers > 0) {
     LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
     LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
   }
@@ -363,6 +371,7 @@ base_eroded_surface_(NULL)
 Simbox::Simbox(const Simbox         * simbox,
                const std::string    & interval_name,
                int                    n_layers,
+               double                 ext_dz,
                double                 lz_limit,
                const Surface        & top_surface,
                const Surface        & base_surface,
@@ -521,6 +530,8 @@ Simbox::Simbox(const Simbox         * simbox,
 
     double thick    = shift_bot-shift_top;
     double dz       = old_dz;
+    if(n_layers < 0)
+      dz = ext_dz;
     int    nz       = int(thick/dz);
     double residual = thick - nz*dz;
     if (residual > 0.0) {
@@ -528,7 +539,7 @@ Simbox::Simbox(const Simbox         * simbox,
       nz++;
     }
 
-    if (nz != n_layers) {
+    if (nz != n_layers && n_layers > 0) {
       LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
       LogKit::LogFormatted(LogKit::High," to %d in grid created using the correlation direction.\n",nz);
     }

@@ -59,10 +59,14 @@ CommonData::CommonData(ModelSettings * model_settings,
 
   forward_modeling_ = model_settings->getForwardModeling();
   SegyGeometry * segy_geometry = NULL;
-  // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes. Correct z-resolution if single zone.
+  // 1. set up outer simbox. Contains extreme surfaces, and xy-resolution for inversion volumes.
   outer_temp_simbox_ = CreateOuterTemporarySimbox(model_settings, input_files, full_inversion_simbox_, segy_geometry, err_text);
+  bool resolution_ok = true;
+  model_settings->MakeSureDzIsSetIfNeeded(*input_files, err_text); //ensure that we have a vertical resolution everywhere.
+  if(err_text.size() > 0)
+    resolution_ok = false;
 
-  if (outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
+  if (resolution_ok == true && outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
     // 2. Setup of multiple interval grid
     bool multi_failed = false;
     multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
