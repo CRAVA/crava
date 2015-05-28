@@ -115,10 +115,7 @@ private:
   void         WriteTrendsToFile(std::vector<double> & trend,
                                  const Simbox        * simbox,
                                  bool                  write1D,
-                                 bool                  write3D,
-                                 bool                  hasVelocityTrend,
                                  const std::string   & name,
-                                 bool                  isFile,
                                  const std::string   & interval_name);
 
 
