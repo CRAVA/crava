@@ -134,14 +134,10 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<double> trend_rho(nz);
     std::vector<double> trend_vel(nz);
 
-    //float * trend_vel  = new float[nz]; // Allocate (for simplicity) although not always needed
-
     std::vector<double> avg_dev_vp(n_wells);
     std::vector<double> avg_dev_vs(n_wells);
     std::vector<double> avg_dev_rho(n_wells);
     std::vector<double> avg_dev_vel(n_wells);
-
-    //float * avg_dev_vel = new float[n_wells]; // Allocate (for simplicity) although not always needed
 
     CalculateBackgroundTrend(trend_vp,
                              avg_dev_vp,
@@ -257,7 +253,6 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     MakeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs",  model_settings->getNumberOfThreads());
     MakeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho", model_settings->getNumberOfThreads());
 
-    vertical_trends.resize(3);
     vertical_trends[0] = trend_vp;
     vertical_trends[1] = trend_vs;
     vertical_trends[2] = trend_rho;
@@ -449,7 +444,6 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
                           const std::string                                & name,
                           std::string                                      & err_text)
 {
-  //int n_wells = static_cast<int>(well_trend.size());
   int i_wells = 0;
 
   int w = 0;
@@ -1240,6 +1234,21 @@ Background::FillInVerticalTrend(FFTGrid                   * grid,
   grid->endAccess();
 }
 
+void
+Background::FillInVerticalTrend(NRLib::Grid<float>        * grid,
+                                const std::vector<double> & trend)
+{
+  const int nk = grid->GetNK();
+  const int nj = grid->GetNJ();
+  const int ni = grid->GetNI();
+  grid->Resize(ni, nj, nk);
+
+  for (int k = 0; k < nk; k++)
+    for (int j = 0; j < nj; j++)
+      for (int i = 0; i < ni; i++)
+        grid->SetValue(i,j,k, static_cast<float>(trend[k]));
+}
+
 //-------------------------------------------------------------------------------
 void
 Background::ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
@@ -1300,7 +1309,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       double dz_old = simbox_old->getdz(i,j);
       double z0_new = simbox_new->getTop(i,j);
       double z0_old = simbox_old->getTop(i,j);
-        a[ij] = dz_new/dz_old;
+      a[ij] = dz_new/dz_old;
       b[ij] = (z0_new - z0_old)/dz_old;
       ij++;
     }

@@ -41,11 +41,18 @@ public:
                        std::string                                      & err_text);
 
   static
-  void SetupBackground(FFTGrid ** grids);
-
-  static
   void         FillInVerticalTrend(FFTGrid                   * bgTrend,
                                    const std::vector<double> & trend);
+
+  static
+  void         FillInVerticalTrend(NRLib::Grid<float>        * grid,
+                                   const std::vector<double> & trend);
+
+  static
+  void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
+                                 NRLib::Grid<float> *  p_old, // Resample from
+                                 const Simbox       *  simbox_new,
+                                 const Simbox       *  simbox_old);
 
 
 private:
@@ -68,7 +75,6 @@ private:
                                        NRLib::Grid<float>  * & bg_rho,
                                        const Simbox        *   bg_simbox,
                                        const Simbox        *   simbox);
-
   static
   void         CalculateBackgroundTrend(std::vector<double>               & trend,
                                         std::vector<double>               & avgDev,
@@ -166,14 +172,6 @@ private:
                                            std::vector<double>                              & avg_dev_vp,
                                            //int                                                outputFlag,
                                            int                                                n_wells);
-
-
-  static
-  void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
-                                 NRLib::Grid<float> *  p_old, // Resample from
-                                 const Simbox       *  simbox_new,
-                                 const Simbox       *  simbox_old);
-
 
   static
   void         CalculateVerticalTrend(std::vector<std::vector<double> > & wellTrend,
