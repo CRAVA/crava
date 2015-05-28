@@ -205,6 +205,7 @@ public:
 
 private:
   void CombineVerticalTrends(MultiIntervalGrid                         * multiple_interval_grid,
+                             CommonData                                * common_data,
                              const NRLib::Grid2D<std::vector<double> > & vertical_trend,
                              const std::vector<StormContGrid>          & zone_probability,
                              StormContGrid                            *& background_trend_vp,

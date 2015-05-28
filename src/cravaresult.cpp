@@ -347,6 +347,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       background_trend_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
       CombineVerticalTrends(multi_interval_grid,
+                            common_data,
                             vertical_trends,
                             zone_prob_grid,
                             background_trend_vp_,
@@ -771,6 +772,7 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
 
 void
 CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * multiple_interval_grid,
+                                   CommonData                                * common_data,
                                    const NRLib::Grid2D<std::vector<double> > & vertical_trend,
                                    const std::vector<StormContGrid>          & zone_probability,
                                    StormContGrid                            *& background_trend_vp,
@@ -780,38 +782,93 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * mu
   int nx = multiple_interval_grid->GetIntervalSimbox(0)->getnx();
   int ny = multiple_interval_grid->GetIntervalSimbox(0)->getny();
   int n_intervals = multiple_interval_grid->GetNIntervals();
-  std::vector<NRLib::Grid<float> *> dummy_grids;
+  std::vector<FFTGrid *> dummy_grids;
   LogKit::LogFormatted(LogKit::Low,"\nCombine Background Trend Grids");
 
   LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-  std::vector<FFTGrid *> bg_trend_vp_intervals(n_intervals);
-  for(int i=0;i<n_intervals;i++) {
-    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
-    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
-    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,0));
+  std::vector<NRLib::Grid<float> *> bg_trend_vp_intervals(n_intervals);
+  for (int i = 0; i < n_intervals; i++) {
+
+    Simbox * interval_simbox = multiple_interval_grid->GetIntervalSimbox(i);
+    const Simbox * bg_simbox = common_data->GetBgSimbox(i);
+
+    int nz = interval_simbox->getnz();
+    int nz_extended = 0;
+    if (bg_simbox != NULL)
+      nz_extended = bg_simbox->getnz();
+
+    NRLib::Grid<float> * trend_grid = new NRLib::Grid<float>(nx, ny, nz);
+    if (nz_extended > nz) { //Vertical trend is estimated in an extended simbox, we resample it to interval simbox similar to the resampling of background grid.
+
+      NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
+      Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,0));
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+      delete trend_grid_extended;
+
+    }
+    else {
+      Background::FillInVerticalTrend(trend_grid, vertical_trend(i,0));
+    }
     bg_trend_vp_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_vp, bg_trend_vp_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+  CombineResult(background_trend_vp, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vp_intervals);
 
   LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-  std::vector<FFTGrid *> bg_trend_vs_intervals(n_intervals);
-  for(int i=0;i<n_intervals;i++) {
-    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
-    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
-    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,1));
+  std::vector<NRLib::Grid<float> *> bg_trend_vs_intervals(n_intervals);
+  for (int i = 0; i < n_intervals; i++) {
+
+    Simbox * interval_simbox = multiple_interval_grid->GetIntervalSimbox(i);
+    const Simbox * bg_simbox = common_data->GetBgSimbox(i);
+
+    int nz = interval_simbox->getnz();
+    int nz_extended = 0;
+    if (bg_simbox != NULL)
+      nz_extended = bg_simbox->getnz();
+
+    NRLib::Grid<float> * trend_grid = new NRLib::Grid<float>(nx, ny, nz);
+    if (nz_extended > nz) { //Vertical trend is estimated in an extended simbox, we resample it to interval simbox similar to the resampling of background grid.
+
+      NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
+      Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,1));
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+      delete trend_grid_extended;
+
+    }
+    else {
+      Background::FillInVerticalTrend(trend_grid, vertical_trend(i,1));
+    }
     bg_trend_vs_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_vs, bg_trend_vs_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+  CombineResult(background_trend_vs, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vs_intervals);
 
   LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-  std::vector<FFTGrid *> bg_trend_rho_intervals(n_intervals);
-  for(int i=0;i<n_intervals;i++) {
-    int nz = multiple_interval_grid->GetIntervalSimbox(i)->getnz();
-    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, false);
-    Background::FillInVerticalTrend(trend_grid, vertical_trend(i,2));
+  std::vector<NRLib::Grid<float> *> bg_trend_rho_intervals(n_intervals);
+  for (int i = 0; i < n_intervals; i++) {
+
+    Simbox * interval_simbox = multiple_interval_grid->GetIntervalSimbox(i);
+    const Simbox * bg_simbox = common_data->GetBgSimbox(i);
+
+    int nz = interval_simbox->getnz();
+    int nz_extended = 0;
+    if (bg_simbox != NULL)
+      nz_extended = bg_simbox->getnz();
+
+    NRLib::Grid<float> * trend_grid = new NRLib::Grid<float>(nx, ny, nz);
+    if (nz_extended > nz) { //Vertical trend is estimated in an extended simbox, we resample it to interval simbox similar to the resampling of background grid.
+
+      NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
+      Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,2));
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+      delete trend_grid_extended;
+
+    }
+    else {
+      Background::FillInVerticalTrend(trend_grid, vertical_trend(i,2));
+    }
     bg_trend_rho_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_rho, bg_trend_rho_intervals, multiple_interval_grid, zone_probability, dummy_grids);
+  CombineResult(background_trend_rho, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_rho_intervals);
+
 }
 
 
@@ -1705,6 +1762,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
           background_trend_rho_ = new StormContGrid(simbox, nx, ny, nz);
 
           CombineVerticalTrends(multi_interval_grid,
+                                common_data,
                                 vertical_trends,
                                 zone_prob_grid,
                                 background_trend_vp_,
