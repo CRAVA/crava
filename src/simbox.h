@@ -79,7 +79,7 @@ public:
 
   // GET functions ------------------------------------------------------
 
-  bool           IsPointBetweenOriginalSurfaces(double x, double y, double z) const;
+  bool           IsPointBetweenVisibleSurfaces(double x, double y, double z) const;
   int            getIndex(double x, double y, double z)   const;
   int            getClosestZIndex(double x, double y, double z);
   void           getIndexes(double x, double y, int & xInd, int & yInd) const;

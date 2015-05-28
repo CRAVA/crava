@@ -498,7 +498,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
         double z = z_pos_blocked[n];
         int simbox_num = -1;
         for (size_t i = 0; i < interval_simboxes.size(); i++) {
-          if (interval_simboxes[i]->IsPointBetweenOriginalSurfaces(x,y,z)) {
+          if (interval_simboxes[i]->IsPointBetweenVisibleSurfaces(x,y,z)) {
             simbox_num = static_cast<int>(i);
             break;
           }
