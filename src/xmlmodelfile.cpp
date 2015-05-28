@@ -2352,8 +2352,7 @@ bool XmlModelFile::parseInterval(TiXmlNode * node, std::string & err_txt){
 
   int number_of_layers = 0;
   if(parseValue(root, "number-of-layers", number_of_layers, err_txt) == false)
-    err_txt += "Number of layers not specified for interval "+ interval_name + " in command <"+root->ValueStr()+">"
-      +lineColumnText(root)+".\n";
+    modelSettings_->setTimeNz(interval_name, -1);   //Negative values indicate use of time resolution.
   else
   {
     if (number_of_layers>0)
@@ -2445,8 +2444,6 @@ TiXmlNode * root = node->FirstChildElement("volume-fractions");
 
   float sum       = 0.0;
   bool volume_fraction = false;
-
-
 
   bool faciesVolumeFractions = false;
   while(parseFaciesVolumeFractions(root,errTxt)==true){
@@ -4579,8 +4576,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
 
   int value = 0;
   if(parseValue(root, "number-of-layers", value, errTxt) == false)
-    errTxt += "Number of layers not specified in command <"+root->ValueStr()+">"
-      +lineColumnText(root)+".\n";
+    modelSettings_->setTimeNz("", -1); // Negative values indicate layers given by time interval.
   else
   {
     if (value>0)
