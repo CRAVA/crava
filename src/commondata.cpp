@@ -186,7 +186,7 @@ CommonData::CommonData(ModelSettings * model_settings,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
 
     // 13. Setup of prior correlation
-    if (read_seismic_ && setup_estimation_rock_physics_) {
+    if (setup_multigrid_ && read_seismic_ && setup_estimation_rock_physics_) {
       if (model_settings->getEstimateCorrelations() == true) {
         //Block wells for inversion purposes
         if (read_wells_ == true) {
