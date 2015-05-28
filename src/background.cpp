@@ -134,14 +134,10 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<double> trend_rho(nz);
     std::vector<double> trend_vel(nz);
 
-    //float * trend_vel  = new float[nz]; // Allocate (for simplicity) although not always needed
-
     std::vector<double> avg_dev_vp(n_wells);
     std::vector<double> avg_dev_vs(n_wells);
     std::vector<double> avg_dev_rho(n_wells);
     std::vector<double> avg_dev_vel(n_wells);
-
-    //float * avg_dev_vel = new float[n_wells]; // Allocate (for simplicity) although not always needed
 
     CalculateBackgroundTrend(trend_vp,
                              avg_dev_vp,
@@ -174,13 +170,11 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                              high_cut_well_trend_rho,
                              name_rho);
 
-    bool has_velocity_trend = velocity->GetN() != 0;
+    //3D writing is done in CravaResult
     bool write1D            = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-    bool write3D            = ((model_settings->getOutputGridsElastic() & IO::BACKGROUND_TREND) > 0);
-
-    WriteTrendsToFile(trend_vp,  simbox, write1D, write3D, has_velocity_trend, name_vp,  model_settings->getFileGrid(), interval_name);
-    WriteTrendsToFile(trend_vs,  simbox, write1D, write3D, has_velocity_trend, name_vs,  model_settings->getFileGrid(), interval_name);
-    WriteTrendsToFile(trend_rho, simbox, write1D, write3D, has_velocity_trend, name_rho, model_settings->getFileGrid(), interval_name);
+    WriteTrendsToFile(trend_vp,  simbox, write1D, name_vp,  interval_name);
+    WriteTrendsToFile(trend_vs,  simbox, write1D, name_vs,  interval_name);
+    WriteTrendsToFile(trend_rho, simbox, write1D, name_rho, interval_name);
 
     if (velocity->GetN() != 0) {
       //
@@ -257,7 +251,6 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     MakeKrigedBackground(kriging_data_vs,  bg_vs,  trend_vs,  simbox, covGrid2D, "Vs",  model_settings->getNumberOfThreads());
     MakeKrigedBackground(kriging_data_rho, bg_rho, trend_rho, simbox, covGrid2D, "Rho", model_settings->getNumberOfThreads());
 
-    vertical_trends.resize(3);
     vertical_trends[0] = trend_vp;
     vertical_trends[1] = trend_vs;
     vertical_trends[2] = trend_rho;
@@ -449,7 +442,6 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
                           const std::string                                & name,
                           std::string                                      & err_text)
 {
-  //int n_wells = static_cast<int>(well_trend.size());
   int i_wells = 0;
 
   int w = 0;
@@ -517,10 +509,7 @@ void
 Background::WriteTrendsToFile(std::vector<double> & trend,
                               const Simbox        * simbox,
                               bool                  write1D,
-                              bool                  write3D,
-                              bool                  has_velocity_trend,
                               const std::string   & name,
-                              bool                  is_file,
                               const std::string   & interval_name)
 {
   const float dz = static_cast<float>(simbox->getdz()*simbox->getAvgRelThick());
@@ -529,25 +518,6 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
   if (write1D == true) {
     WriteVerticalTrend(trend, dz, nz, name, interval_name);
   }
-
-  /*
-  if (write3D == true && !(name=="Vp" && has_velocity_trend)) {
-    const int nx = simbox->getnx();
-    const int ny = simbox->getny();
-    FFTGrid * trend_grid = ModelGeneral::CreateFFTGrid(nx, ny, nz, nx, ny, nz, is_file);
-    FillInVerticalTrend(trend_grid, trend);
-    FFTGrid * exp_trend = CopyFFTGrid(trend_grid, true, is_file);
-    delete trend_grid;
-
-    std::string interval_text = "";
-    if (interval_name != "")
-      interval_text = "_" + interval_name;
-
-    std::string file_name = IO::PrefixBackground() + IO::PrefixTrend() + name + interval_text;
-    exp_trend->writeFile(file_name, IO::PathToBackground(), simbox);
-    delete exp_trend;
-  }
-  */
 }
 
 //-------------------------------------------------------------------------------
@@ -1240,6 +1210,21 @@ Background::FillInVerticalTrend(FFTGrid                   * grid,
   grid->endAccess();
 }
 
+void
+Background::FillInVerticalTrend(NRLib::Grid<float>        * grid,
+                                const std::vector<double> & trend)
+{
+  int nk = static_cast<int>(grid->GetNK());
+  int nj = static_cast<int>(grid->GetNJ());
+  int ni = static_cast<int>(grid->GetNI());
+  grid->Resize(ni, nj, nk);
+
+  for (int k = 0; k < nk; k++)
+    for (int j = 0; j < nj; j++)
+      for (int i = 0; i < ni; i++)
+        grid->SetValue(i,j,k, static_cast<float>(trend[k]));
+}
+
 //-------------------------------------------------------------------------------
 void
 Background::ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
@@ -1300,7 +1285,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       double dz_old = simbox_old->getdz(i,j);
       double z0_new = simbox_new->getTop(i,j);
       double z0_old = simbox_old->getTop(i,j);
-        a[ij] = dz_new/dz_old;
+      a[ij] = dz_new/dz_old;
       b[ij] = (z0_new - z0_old)/dz_old;
       ij++;
     }

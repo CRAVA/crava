@@ -42,6 +42,7 @@ public:
   const Simbox                                                       & GetFullInversionSimbox()                         const { return full_inversion_simbox_                         ;}
   const Simbox                                                       & GetOutputSimbox()                                const { return output_simbox_                                 ;}
         Simbox                                                       & GetOutputSimbox()                                      { return output_simbox_                                 ;}
+  const Simbox                                                       * GetBgSimbox(int i)                               const { return bg_simboxes_[i]                                ;}
   const std::vector<NRLib::Well *>                                   & GetWells()                                       const { return wells_                                         ;}
         std::vector<NRLib::Well *>                                   & GetWells()                                             { return wells_                                         ;}
   const MultiIntervalGrid                                            * GetMultipleIntervalGrid()                        const { return multiple_interval_grid_                        ;}
@@ -879,6 +880,7 @@ private:
                                           const std::vector<NRLib::Well *>                           & wells,
                                           std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                           std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
+                                          std::vector<Simbox *>                                      & bg_simboxes,
                                           const std::vector<std::string>                             & cont_logs_to_be_blocked,
                                           const std::vector<std::string>                             & disc_logs_to_be_blocked,
                                           MultiIntervalGrid                                          * multi_interval_grid,
@@ -1113,7 +1115,6 @@ private:
   std::map<std::string, BlockedLogsCommon *>                   mapped_bg_blocked_logs_;              ///< Blocked logs for extended background simbox
   std::vector<std::string>                                     continuous_logs_to_be_blocked_;       ///< Continuous logs that should be blocked
   std::vector<std::string>                                     discrete_logs_to_be_blocked_;         ///< Discrete logs that should be blocked
-
   // Trend cubes and rock physics
   std::vector<CravaTrend>                                      trend_cubes_;            //Trend cubes per interval.
   std::map<std::string, std::vector<DistributionsRock *> >     rock_distributions_;     ///< Rocks used in rock physics model. Outer map: Inner vector:
@@ -1128,6 +1129,7 @@ private:
   std::vector<std::vector<NRLib::Grid<float> *> >              background_parameters_;      // outer vector: intervals, inner vector: parameters
   NRLib::Grid2D<std::vector<double> >                          background_vertical_trends_; // First index is interval, other is vp, vs, rho.
   std::vector<double>                                          background_vs_vp_ratios_;    // vs_vp_ratios from generation of backgroundmodel
+  std::vector<Simbox *>                                        bg_simboxes_;                // Extended background simboxes
 
   // Timeline
   TimeLine                                                   * time_line_;

@@ -163,14 +163,14 @@ CommonData::CommonData(ModelSettings * model_settings,
     if (setup_multigrid_ && setup_estimation_rock_physics_ && (model_settings->getEstimationMode() == false || model_settings->getEstimateBackground())) {
       if ((model_settings->getEstimationMode() == false && model_settings->getGenerateBackground()) || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_ && inversion_wells_)
-          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
+          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                          multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
         else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
-          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
+          setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                          multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
       }
       else //Not estimation
-        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
+        setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
                                                       multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
     }
 
@@ -7016,6 +7016,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       const std::vector<NRLib::Well *>                           & wells,
                                       std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                       std::map<std::string, BlockedLogsCommon *>                 & bg_blocked_logs,
+                                      std::vector<Simbox *>                                      & bg_simboxes,
                                       const std::vector<std::string>                             & cont_logs_to_be_blocked,
                                       const std::vector<std::string>                             & disc_logs_to_be_blocked,
                                       MultiIntervalGrid                                          * multi_interval_grid,
@@ -7205,15 +7206,16 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           background_parameters[i][j] = new NRLib::Grid<float>();
 
         //Create background
-        std::vector<std::vector<double> > interval_vertical_trends;
+        std::vector<std::vector<double> > interval_vertical_trends(3);
         Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
         for (int j = 0; j < 3; j++)
           vertical_trends(i,j) = interval_vertical_trends[j];
 
-
         //These logs are written out in CravaResult if multiple interval isn't used
         if (n_intervals == 1)
           bg_blocked_logs = bg_blocked_logs_tmp;
+
+          bg_simboxes.push_back(bg_simbox);
 
         if (velocity != NULL)
           delete velocity;
