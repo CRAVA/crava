@@ -1543,6 +1543,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("velocity-field");
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("high-cut-background-modelling");
+  legalCommands.push_back("filter-multizone-background");
   legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
@@ -1668,6 +1669,10 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   if(parseValue(root, "high-cut-background-modelling", value, errTxt) == true)
     modelSettings_->setMaxHzBackground(value);
+
+  bool filter_multizone_background = true;
+  if(parseBool(root, "filter-multizone-background", filter_multizone_background, errTxt) == true)
+    modelSettings_->setFilterMultizoneBackground(filter_multizone_background);
 
   bool multizone = false;
   if(parseMultizoneModel(root,errTxt) == true)

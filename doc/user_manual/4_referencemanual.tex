@@ -1199,7 +1199,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument Value
    \item \Default 55.0
  \elist
-
+ 
 \subsubsection{\hbracket{energy-threshold}}\newkw{energy-threshold}
  \slist
    \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbours.
@@ -2200,12 +2200,20 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument Value
    \item \Default 6.0 Hz
  \elist
+ 
+\subsubsection{\hbracket{filter-multizone-background}}\newkw{filter-multizone-background}
+ \slist
+   \item \Description Filter multizone background model. The filtering is done after the interval grids are resampled to one grid and uses the filter value from \kw{high-cut-background-modelling}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'yes'
+ \elist
 
 \subsubsection{\hbracket{multizone-model} (REMOVED)}\newkw{multizone-model}
  \slist
-   \item \Description  Information about the multizone background model
-   \item \Argument Elements containing information about the multizone background model
-   \item \Default
+   \item \Description For more multiple intervals in the background model use \kw{multiple-intervals}
+    under \kw{output-volume}. Multizone background model combined with only one inversion interval is no
+    longer supported. An alternative is to first run Crava in estimation mode and estimate a background
+     with multiple intervals, and then use the written background as input in a single interval Crava run.
  \elist
 
 \paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
