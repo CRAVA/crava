@@ -2210,9 +2210,10 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsubsection{\hbracket{multizone-model} (REMOVED)}\newkw{multizone-model}
  \slist
-   \item \Description  Information about the multizone background model
-   \item \Argument Elements containing information about the multizone background model
-   \item \Default
+   \item \Description For more multiple intervals in the background model use \kw{multiple-intervals}
+    under \kw{output-volume}. Multizone background model combined with only one inversion interval is no
+    longer supported. An alternative is to first run Crava in estimation mode and estimate a background
+     with multiple intervals, and then use the written background as input in a single interval Crava run.
  \elist
 
 \paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
