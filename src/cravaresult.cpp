@@ -1253,7 +1253,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
     //Do not write if multiple intervals is used
-    if (n_intervals_ == 1)
+    if (n_intervals_ == 1 && bg_blocked_logs_.size() > 0)
       WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     LogKit::LogFormatted(LogKit::Low,"ok\n");
