@@ -1199,7 +1199,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument Value
    \item \Default 55.0
  \elist
-
+ 
 \subsubsection{\hbracket{energy-threshold}}\newkw{energy-threshold}
  \slist
    \item \Description If the energy in a trace falls below this threshold relative to the average, the trace is interpolated from neighbours.
@@ -2199,6 +2199,13 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Description Value giving the maximum frequency in the estimated background model. Can not be used if the background parameters are given.
    \item \Argument Value
    \item \Default 6.0 Hz
+ \elist
+ 
+\subsubsection{\hbracket{filter-multizone-background}}\newkw{filter-multizone-background}
+ \slist
+   \item \Description Filter multizone background model. The filtering is done after the interval grids are resampled to one grid and uses the filter value from \kw{high-cut-background-modelling}.
+   \item \Argument 'yes' or 'no'
+   \item \Default 'yes'
  \elist
 
 \subsubsection{\hbracket{multizone-model} (REMOVED)}\newkw{multizone-model}

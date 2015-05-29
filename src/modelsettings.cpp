@@ -80,6 +80,8 @@ ModelSettings::ModelSettings(void)
   maxHz_background_        =     6.0f;
   maxHz_seismic_           =    40.0f;
 
+  filter_multizone_background_ = true;
+
   maxRankCorr_             =    0.99f;
   maxMergeDist_            =    0.01f;   // 0.01ms (approx. 2-3cm)
   maxDevAngle_             =    15.0f;
