@@ -21,6 +21,8 @@
 #include "rplib/distributionwithtrendstorage.h"
 #include "src/vario.h"
 
+class InputFiles;
+
 class Simbox;
 
 class ModelSettings
@@ -535,6 +537,9 @@ public:
   void setEstimateWellGradientFromSeismic(bool estimate)  { wellGradientFromSeismic_  = estimate                 ;}
   void setWriteAsciiSurfaces(bool write_ascii)            { writeAsciiSurfaces_       = write_ascii              ;}
 
+  void MakeSureDzIsSetIfNeeded(InputFiles & input_files,
+                               std::string & err_txt);
+
   enum          priorFacies{FACIES_FROM_WELLS,
                             FACIES_FROM_MODEL_FILE,
                             FACIES_FROM_CUBES};
@@ -759,7 +764,7 @@ private:
   double                            lzLimit_;                    ///< Minimum allowed value for (min interval thickness)/(max interval thickness)
   double                            time_dTop_;                  ///< Used when top and base surfaces are parallel
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
-  double                            time_dz_;                    ///< Used when top and base surfaces are parallel
+  double                            time_dz_;                    ///< Used when top and base surfaces are parallel or for giving a sampling density instead of layers
   std::map<std::string, int>        time_nz_;                    ///< Number of layers for each interval
   //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
