@@ -61,6 +61,8 @@ public:
 
   static void RemoveNaNFromSurface(Surface *& surface);
 
+  static void InterpolateMissing(Surface *& surface);
+
 private:
 
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
