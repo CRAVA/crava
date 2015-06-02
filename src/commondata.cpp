@@ -4385,6 +4385,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
       top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, angle);
       MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
+      MultiIntervalGrid::InterpolateMissing(top_surface);
     }
 
   }
@@ -4421,6 +4422,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
             base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
             MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
+            MultiIntervalGrid::InterpolateMissing(base_surface);
           }
         }
       }
@@ -4440,6 +4442,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
           base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
           MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
+          MultiIntervalGrid::InterpolateMissing(base_surface);
         }
       }
     }
@@ -6098,6 +6101,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
       interval_grids[i_interval]->Resize(nx, ny, nz);
 
+      Surface * dead_traces_surface = new Surface();
       StormContGrid * stormgrid_tmp = NULL;
       FFTGrid * fft_grid_tmp        = NULL;
       FillInData(interval_grids[i_interval],
@@ -6109,6 +6113,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
+                 dead_traces_surface,
                  grid_type);
       if (stormgrid_tmp != NULL)
        delete stormgrid_tmp;
@@ -6147,8 +6152,56 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
         if (grid_type == DATA)
           LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
                              +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
-        else
-          err_text += "Grid in file "+file_name+" has dead traces in inversion area. This may be due to missing values in the top or bottom surface.\n";
+        else {
+          //Do not allow single dead traces (all four courners not dead)
+          //Allow dead traces at the edges
+          bool dead_ok = true;
+
+          int ni = static_cast<int>(dead_traces_surface->GetNI());
+          int nj = static_cast<int>(dead_traces_surface->GetNJ());
+
+          for (int i = 1; i < ni-1; i++) {
+            for (int j = 1; j < nj-1; j++) {
+
+              if ((*dead_traces_surface)(i,j) == 1.0) {
+
+                //Check all neighbour cells
+                int n = 0;
+                if (i > 0 && (*dead_traces_surface)(i-1, j) == 1.0)
+                  n++;
+                if (j < ni-1 && (*dead_traces_surface)(i, j+1) == 1.0)
+                  n++;
+                if (j > 0 && (*dead_traces_surface)(i, j-1)  == 1.0)
+                  n++;
+                if (i < ni-1 && (*dead_traces_surface)(i+1, j) == 1.0)
+                  n++;
+
+                if (n == 0) {
+                  double x = 0.0;
+                  double y = 0.0;
+                  interval_simboxes[i_interval]->getXYCoord(i,j,x,y);
+                  bool is_inside = false;
+                  is_inside = segy->GetGeometry()->IsInside(x,y);
+
+                  if (is_inside) {
+                    dead_ok = false;
+                    i = ni-1; //Breaking double loop
+                    j = nj-1;
+                  }
+                }
+              }
+
+            }
+          }
+
+          if (dead_ok == true) {
+            LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                               +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+          }
+          else
+            err_text += "Grid in file "+file_name+" has dead traces in inversion area. ";
+        }
+        delete dead_traces_surface;
       }
     } //i_interval
   }
@@ -6165,6 +6218,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                             int                 & missing_traces_simbox,
                             int                 & missing_traces_padding,
                             int                 & dead_traces_simbox,
+                            Surface             * dead_traces_surface,
                             int                   grid_type,
                             bool                  scale,
                             bool                  is_segy,
@@ -6213,6 +6267,8 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
     nzp  = static_cast<int>(grid_new->GetNK());
     rnxp = static_cast<int>(grid_new->GetNI()); //2*(nxp/2+1);
   }
+
+  dead_traces_surface->Resize(rnxp, nyp, 0.0);
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling data into %dx%dx%d grid:", nxp, nyp, nzp);
 
@@ -6433,6 +6489,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
             SetTrace(0.0f, fft_grid_new, i, j);
 
           dead_traces_simbox++;
+          (*dead_traces_surface)(i,j) = 1.0;
         }
       }
       else {
@@ -6452,7 +6509,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         printf("^");
         fflush(stdout);
       }
-      if(grid_type != DATA && (missing_traces_simbox > 0 || dead_traces_simbox > 0)) {
+      if (grid_type != DATA && missing_traces_simbox > 0) {
         i = rnxp-1; //Breaking double loop.
         j = nyp-1;
       }
@@ -6799,7 +6856,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                           const std::vector<Simbox *>         & interval_simboxes,
                           const ModelSettings               * model_settings,
                           std::string                       & err_text,
-                            bool                                scale,
+                          bool                                scale,
                           bool                                nopadding) const
 {
  (void) nopadding;
@@ -6845,7 +6902,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       interval_grids[i_interval]->Resize(nx, ny, nz, 0.0);
 
       try {
-
+        Surface * dead_traces_surface = new Surface();
         SegY * segy_tmp          = NULL;
         FFTGrid * fft_grid_tmp   = NULL;
         FillInData(interval_grids[i_interval],
@@ -6857,6 +6914,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                    missing_traces_simbox,
                    missing_traces_padding,
                    dead_traces_simbox,
+                   dead_traces_surface,
                    grid_type,
                    scale,
                    false, //is_segy
@@ -6866,6 +6924,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
          delete segy_tmp;
         if (fft_grid_tmp != NULL)
           delete fft_grid_tmp;
+        delete dead_traces_surface;
       }
       catch (NRLib::Exception & e) {
         err_text += std::string(e.what());
@@ -7096,6 +7155,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
 
           MultiIntervalGrid::RemoveNaNFromSurface(correlation_direction);
+          MultiIntervalGrid::InterpolateMissing(correlation_direction);
 
           //Create a sepeate background simbox based on correlation_direction
           int output_format = model_settings->getOutputGridFormat();

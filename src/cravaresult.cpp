@@ -1345,6 +1345,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
           bool is_segy                    = false;
           bool is_storm                   = false;
+          Surface * dead_traces_surface   = new Surface();
           if (seismic_type == 0) {//SEGY
             segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
             is_segy = true;
@@ -1368,6 +1369,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                                   missing_traces_simbox,
                                   missing_traces_padding,
                                   dead_traces_simbox,
+                                  dead_traces_surface,
                                   FFTGrid::DATA,
                                   false,
                                   is_segy,
