@@ -344,6 +344,9 @@ public:
 
   void               ReleaseBackgroundGrids(int i_interval, int elastic_param);
 
+  static void        SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
+                                                          const float          avg);
+
   static   void      FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
                                                    const std::string      & wavelet_est_int_bot,
                                                    std::vector<Surface *> & wavelet_estim_interval,
@@ -351,6 +354,7 @@ public:
                                                    std::string            & err_text);
 
   static int         FindClosestFactorableNumber(int leastint);
+
 
 private:
 
@@ -894,9 +898,6 @@ private:
 
   double             FindMeanVsVp(const NRLib::Grid<float> * vp,
                                   const NRLib::Grid<float> * vs) const;
-
-  void               SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
-                                                          const float          avg) const;
 
   void               SubtractGrid(NRLib::Grid<float>       * to_grid,
                                   const NRLib::Grid<float> * from_grid) const;

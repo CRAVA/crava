@@ -7556,7 +7556,7 @@ double CommonData::FindMeanVsVp(const NRLib::Grid<float> * vp,
 }
 
 void CommonData::SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
-                                                      const float          avg) const
+                                                      const float          avg)
 {
 
   long long count = 0;
