@@ -319,7 +319,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("maximum-shift");
   legalCommands.push_back("well-move-data-interval");
 
-  parseLogNames(root, errTxt);
+  parseLogNames(root, true, errTxt);
 
   int nWells = 0;
   while(parseWell(root, errTxt) == true)
@@ -356,7 +356,7 @@ XmlModelFile::parseWellData(TiXmlNode * node, std::string & errTxt)
 
 
 bool
-XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
+XmlModelFile::parseLogNames(TiXmlNode * node, bool global, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("log-names");
   if(root == 0)
@@ -371,62 +371,133 @@ XmlModelFile::parseLogNames(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("density");
   legalCommands.push_back("porosity");
   legalCommands.push_back("facies");
+  legalCommands.push_back("x-coordinate");
+  legalCommands.push_back("y-coordinate");
+  legalCommands.push_back("relative-x-coordinate");
+  legalCommands.push_back("relative-y-coordinate");
+
+  std::vector<std::string> log_names(6,"");
+  std::vector<bool>        inverse_velocity(2, true);
+  std::vector<std::string> position_names(2,"");
+  bool facies_given      = false;
+  bool poro_given        = false;
+  bool x_relative        = false;
+  bool y_relative        = false;
 
   // 0: Time
   std::string value;
   if(parseValue(root, "time", value, errTxt) == true)
-    modelSettings_->setLogName(0, value);
+    log_names[0] = NRLib::Uppercase(value);
 
   // 1: Vp
   bool vp = parseValue(root, "vp", value, errTxt);
-  if(vp == true) {
-    modelSettings_->setLogName(1, value);
-    modelSettings_->setInverseVelocity(0, false);
+  if(vp == true)  {
+    log_names[1] = NRLib::Uppercase(value);
+    inverse_velocity[0] = false;
   }
   if(parseValue(root, "dt", value, errTxt) == true) {
     if(vp == true)
       errTxt += "Both vp and dt given as logs in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
-    else {
-      modelSettings_->setLogName(1, value);
-      modelSettings_->setInverseVelocity(0, true);
-    }
+    else
+      log_names[1] = NRLib::Uppercase(value);
   }
 
   // 2: Vs
   bool vs = parseValue(root, "vs", value, errTxt);
   if(vp == true) {
-    modelSettings_->setLogName(3, value);
-    modelSettings_->setInverseVelocity(1, false);
+    log_names[3] = NRLib::Uppercase(value);
+    inverse_velocity[1] = false;
   }
   if(parseValue(root, "dts", value, errTxt) == true) {
     if(vs == true)
       errTxt += "Both vs and dts given as logs in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
-    else {
-      modelSettings_->setLogName(3, value);
-      modelSettings_->setInverseVelocity(1, true);
-    }
+    else
+      log_names[3] = NRLib::Uppercase(value);
   }
 
   // 3: Density
   if(parseValue(root, "density", value, errTxt) == true)
-    modelSettings_->setLogName(2, value);
+    log_names[2] = NRLib::Uppercase(value);
 
   // 4: Facies
   if(parseValue(root, "facies", value, errTxt) == true) {
-    modelSettings_->setLogName(4, value);
-    modelSettings_->setFaciesLogGiven(true);
+    log_names[4] = NRLib::Uppercase(value);
+    facies_given = true;
   }
 
   // 5: Porosity
   if(parseValue(root, "porosity", value, errTxt) == true) {
-    modelSettings_->setLogName(5, value);
-    modelSettings_->setPorosityLogGiven(true);
+    log_names[5] = NRLib::Uppercase(value);
+    poro_given = true;
   }
 
-  if (modelSettings_->getFaciesLogGiven() == false && modelSettings_->getPorosityLogGiven() == true)
-    errTxt += "Porosity logs can not be given if facies logs are not given in <well-data><log-names>.\n";
+  // 6: x-coordinate
+  if(parseValue(root, "x-coordinate", value, errTxt) == true)
+    position_names[0] = NRLib::Uppercase(value);
+  if(parseValue(root, "relative-x-coordinate", value, errTxt) == true) {
+    if(position_names[0] != "")
+      errTxt += "Both absolute and relative x given as logs in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    else {
+      position_names[0] = NRLib::Uppercase(value);
+      x_relative = true;
+    }
+  }
+
+
+  // 7: y-coordinate
+  if(parseValue(root, "y-coordinate", value, errTxt) == true)
+    position_names[1] = NRLib::Uppercase(value);
+  if(parseValue(root, "relative-y-coordinate", value, errTxt) == true) {
+    if(position_names[1] != "")
+      errTxt += "Both absolute and relative y given as logs in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+    else {
+      position_names[1] = NRLib::Uppercase(value);
+      y_relative = true;
+    }
+  }
+
+  if(x_relative != y_relative) {
+    errTxt += "Only one axis given as relative in command <"
+      +root->ValueStr()+"> "+lineColumnText(root)+".\nEither both axes must be absolute, or both relative.\n";
+  }
+
+  if(global == true) {
+    if(log_names[0] == "")
+      log_names[0] = "TWT";
+    if(log_names[1] == "")
+      log_names[1] = "DT";
+    if(log_names[2] == "")
+      log_names[2] = "RHOB";
+    if(log_names[3] == "")
+      log_names[3] = "DTS";
+
+    if(poro_given == true && facies_given == false)
+      errTxt += "Porosity logs can not be given if facies logs are not given in <well-data><log-names>.\n";
+
+    modelSettings_->setFaciesLogGiven(facies_given);
+    modelSettings_->setPorosityLogGiven(poro_given);
+
+    for(int i=0;i<6;i++) {
+      if(log_names[i] != "")
+        modelSettings_->setLogName(i, log_names[i]);
+    }
+    for(int i=0;i<2;i++)
+      modelSettings_->setInverseVelocity(i, inverse_velocity[i]);
+
+    modelSettings_->setPositionLogNames(position_names);
+    modelSettings_->setRelativeCoord(x_relative);
+  }
+  else {
+    modelSettings_->addWellLogNames(log_names);
+    modelSettings_->addWellPositionLogNames(position_names);
+    modelSettings_->addWellInverseVelocity(inverse_velocity);
+    modelSettings_->addWellRelativeCoord(x_relative);
+  }
+
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -449,6 +520,7 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("synthetic-vs-log");
   legalCommands.push_back("optimize-position");
   legalCommands.push_back("filter-elastic-logs");
+  legalCommands.push_back("log-names");
 
   std::string tmpErr = "";
   std::string value;
@@ -509,6 +581,19 @@ XmlModelFile::parseWell(TiXmlNode * node, std::string & errTxt)
       filterElasticLogs = ModelSettings::YES;
     else
       filterElasticLogs = ModelSettings::NO;
+  }
+
+  if(parseLogNames(root, false, errTxt) == false) { //To balance arrays
+    std::vector<std::string> wellLogNames(6,"");
+    modelSettings_->addWellLogNames(wellLogNames);
+
+    std::vector<std::string> wellPositionLogNames(2,"");
+    modelSettings_->addWellPositionLogNames(wellPositionLogNames);
+
+    std::vector<bool> inverseVelocity(2,false);
+    modelSettings_->addWellInverseVelocity(inverseVelocity);
+
+    modelSettings_->addWellRelativeCoord(false);
   }
 
   modelSettings_->addIndicatorBGTrend(useForBackgroundTrend);

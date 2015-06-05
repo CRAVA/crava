@@ -44,6 +44,7 @@ ModelSettings::ModelSettings(void)
     indRockPhysics_(0),
     indFilter_(0),
     logNames_(6),
+    positionLogNames_(2),
     inverseVelocity_(2),
     min_blocks_with_data_for_corr_estim_(100)
 {

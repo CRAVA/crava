@@ -40,7 +40,7 @@ private:
   bool   parseEstimationSettings(TiXmlNode * node, std::string & errTxt);
 
   bool parseWellData(TiXmlNode * node, std::string & errTxt);
-  bool   parseLogNames(TiXmlNode * node, std::string & errTxt);
+  bool   parseLogNames(TiXmlNode * node, bool global, std::string & errTxt);
   bool   parseWell(TiXmlNode * node, std::string & errTxt);
   bool   parseOptimizeLocation(TiXmlNode * node, std::string & errTxt);
   bool   parseAllowedParameterValues(TiXmlNode * node, std::string & errTxt);
