@@ -526,6 +526,7 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
     new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, angle);
     RemoveNaNFromSurface(new_surface);
+    InterpolateMissing(new_surface);
   }
   else { //If the file name is a value
 
@@ -956,5 +957,74 @@ void MultiIntervalGrid::RemoveNaNFromSurface(Surface *& surface)
   if (n_nan > 0) {
     LogKit::LogFormatted(LogKit::Low,"Found " + NRLib::ToString(n_nan) + " undefined values in" + name + ". These are set as missing.\n");
   }
+
+}
+
+void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
+{
+  //Interpolate single missing cells
+  int ni = static_cast<int>(surface->GetNI());
+  int nj = static_cast<int>(surface->GetNJ());
+  double missing = surface->GetMissingValue();
+
+  Surface * new_surface = new Surface(*surface);
+  double old_value = 0.0;
+  int n_interpolate = 0;
+
+  for (int i = 0; i < ni; i++) {
+    for (int j = 0; j < nj; j++) {
+
+      old_value = (*surface)(i,j);
+      double new_value = missing;
+
+      if (old_value == missing) {
+
+        //Require all four neighbour non-missing, unless we are at the edge of the surface
+        //H-TODO should interpolate from less than 4 corner, but still allow missing values outside the surface,
+        // setting n_req to 1 will interpolate one cell along the edge of the surface
+        int n_req = 4;
+        if (i == 0 || i == ni-1)
+          n_req--;
+        if (j == 0 || j == nj-1)
+          n_req--;
+
+        int n = 0;
+        if (i > 0 && (*surface)(i-1, j) != missing) {
+          new_value += (*surface)(i-1, j);
+          n++;
+        }
+        if (j < ni-1 && (*surface)(i, j+1) != missing) {
+          new_value += (*surface)(i, j+1);
+          n++;
+        }
+        if (j > 0 && (*surface)(i, j-1)  != missing) {
+          new_value += (*surface)(i, j-1);
+          n++;
+        }
+        if (i < ni-1 && (*surface)(i+1, j) != missing) {
+          new_value += (*surface)(i+1, j);
+          n++;
+        }
+
+        if (n == n_req) {
+          new_value /= n;
+          n_interpolate++;
+        }
+        else
+          new_value = missing;
+
+        (*new_surface)(i,j) = new_value;
+
+      }
+    }
+  }
+
+  std::string name = surface->GetName();
+  if (n_interpolate > 0) {
+    LogKit::LogFormatted(LogKit::Low,"Interpolated " + NRLib::ToString(n_interpolate) + " cells in " + name + ".\n");
+  }
+
+  delete surface;
+  surface = new_surface;
 
 }

@@ -674,6 +674,7 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
 
     surface = RegularSurface<A>(x_ref, y_ref, lx, ly, tmp_grid);
     surface.SetMissingValue(static_cast<A>(MULT_IRAP_MISSING));
+    surface.SetName(GetStem(filename));
   }
   catch (Exception& e) {
     throw FileFormatError("Error parsing \"" + filename + "\" as a "

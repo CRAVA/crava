@@ -368,26 +368,37 @@ SegY::SegY(const StormContGrid     * storm_grid,
       x  = float(geometry_->GetX0()+xt*geometry_->GetCosRot()-yt*geometry_->GetSinRot());
       y  = float(geometry_->GetY0()+yt*geometry_->GetCosRot()+xt*geometry_->GetSinRot());
 
-      double z_bot      = storm_grid->GetBotSurface().GetZ(x,y)-z0;
-      double z_top      = storm_grid->GetTopSurface().GetZ(x,y)-z0;
-      int    first_data = static_cast<int>(floor((z_top+z_shift)/dz));
-      int    end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
+      double z_bot = storm_grid->GetBotSurface().GetZ(x,y);
+      double z_top = storm_grid->GetTopSurface().GetZ(x,y);
 
-      if (end_data > nz) {
-        printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, end_data);
-        end_data = nz;
+      if (!storm_grid->GetTopSurface().IsMissing(z_top) && !storm_grid->GetBotSurface().IsMissing(z_bot)) {
+        z_bot         -= z0;
+        z_top         -= z0;
+        int first_data = static_cast<int>(floor((z_top+z_shift)/dz));
+        int end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
+
+        if (end_data > nz) {
+          printf("Internal warning: SEGY-grid too small (%d, %d needed). Truncating data.\n", nz, end_data);
+          end_data = nz;
+        }
+        for (k = 0; k < first_data; k++) {
+          data_vec[k] = 0.0;
+        }
+
+        for (k = first_data; k < end_data; k++) {
+          z           = z0 + k*dz + static_cast<float>(z_shift);
+          data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
+        }
+        for (k = end_data; k < nz; k++) {
+          data_vec[k] = 0.0;
+        }
       }
-      for (k = 0; k < first_data; k++) {
-        data_vec[k] = 0.0;
+      else {
+        for (k = 0; k < nz; k++) {
+          data_vec[k] = 0.0;
+        }
       }
 
-      for (k = first_data; k < end_data; k++) {
-        z           = z0 + k*dz + static_cast<float>(z_shift);
-        data_vec[k] = float(storm_grid->GetValueZInterpolated(x,y,z));
-      }
-      for (k = end_data; k < nz; k++) {
-        data_vec[k] = 0.0;
-      }
       StoreTrace(x, y, data_vec, NULL);
     }
 

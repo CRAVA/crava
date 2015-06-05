@@ -88,6 +88,14 @@ Background::SetupBackground(std::vector<NRLib::Grid<float> *>                & p
                             bg_simbox,
                             simbox);
 
+    float avg = 0.0f;
+    float min = 0.0f;
+    float max = 0.0f;
+    for (int i = 0; i < 3; i++) {
+      parameters[i]->GetAvgMinMaxWithMissing(avg, min, max, RMISSING);
+      CommonData::SetUndefinedCellsToGlobalAverageGrid(parameters[i], avg);
+    }
+
   }
 }
 
@@ -1275,8 +1283,9 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   //
   // k2 = dz1/dz2 * k1 + (z02 - z01)/dz2    (from dz2*k2 + z02 = dz1*k1 + z01)
   //
-  double * a = new double[nx*ny];
-  double * b = new double[nx*ny];
+  double * a       = new double[nx*ny];
+  double * b       = new double[nx*ny];
+  bool   * missing = new bool[nx*ny];
 
   int ij = 0;
   for (int j = 0; j < ny; j++) {
@@ -1285,8 +1294,15 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       double dz_old = simbox_old->getdz(i,j);
       double z0_new = simbox_new->getTop(i,j);
       double z0_old = simbox_old->getTop(i,j);
-      a[ij] = dz_new/dz_old;
-      b[ij] = (z0_new - z0_old)/dz_old;
+
+      if (dz_new == RMISSING || dz_old == RMISSING || z0_new == RMISSING || z0_old == RMISSING) {
+        missing[ij] = true;
+      }
+      else {
+        missing[ij] = false;
+        a[ij] = dz_new/dz_old;
+        b[ij] = (z0_new - z0_old)/dz_old;
+      }
       ij++;
     }
   }
@@ -1305,8 +1321,12 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
     int ij=0;
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
-        int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
-        layer[ij] = p_old->GetValue(i, j, k_old);
+        if (missing[ij] == false) {
+          int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
+          layer[ij] = p_old->GetValue(i, j, k_old);
+        }
+        else
+          layer[ij] = RMISSING;
         ij++;
       }
     }
@@ -1316,33 +1336,49 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
     double value = 0.0;
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
-        int n = 1;
-        double sum = layer[j*nx + i];
-        if (i > 1) {
-          sum += layer[j*nx + i - 1];
-          n++;
+        if (layer[j*nx + i] != RMISSING) {
+          int n = 1;
+          double sum = layer[j*nx + i];
+          if (i > 1) {
+            if (layer[j*nx + i - 1] != RMISSING) {
+              sum += layer[j*nx + i - 1];
+              n++;
+            }
+          }
+          if (j > 1) {
+            if (layer[(j - 1)*nx + i] != RMISSING) {
+              sum += layer[(j - 1)*nx + i];
+              n++;
+            }
+          }
+          if (i > 1 && j > 1) {
+            if (layer[(j - 1)*nx + i - 1] != RMISSING) {
+              sum += layer[(j - 1)*nx + i - 1];
+              n++;
+            }
+          }
+          if (i < nx-1) {
+            if (layer[j*nx + i + 1] != RMISSING) {
+              sum += layer[j*nx + i + 1];
+              n++;
+            }
+          }
+          if (j < ny-1) {
+            if (layer[(j + 1)*nx + i] != RMISSING) {
+              sum += layer[(j + 1)*nx + i];
+              n++;
+            }
+          }
+          if (i < nx-1 && j < ny-1) {
+            if (layer[(j + 1)*nx + i + 1] != RMISSING) {
+              sum += layer[(j + 1)*nx + i + 1];
+              n++;
+            }
+          }
+          value = sum/static_cast<double>(n);
         }
-        if (j > 1) {
-          sum += layer[(j - 1)*nx + i];
-          n++;
-        }
-        if (i > 1 && j > 1) {
-          sum += layer[(j - 1)*nx + i - 1];
-          n++;
-        }
-        if (i < nx-1) {
-          sum += layer[j*nx + i + 1];
-          n++;
-        }
-        if (j < ny-1) {
-          sum += layer[(j + 1)*nx + i];
-          n++;
-        }
-        if (i < nx-1 && j < ny-1) {
-          sum += layer[(j + 1)*nx + i + 1];
-          n++;
-        }
-        value = sum/static_cast<double>(n);
+        else
+          value = RMISSING;
 
         p_new->SetValue(i, j, k, static_cast<float>(value));
       }
@@ -1352,6 +1388,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   delete [] layer;
   delete [] a;
   delete [] b;
+  delete [] missing;
 }
 
 FFTGrid *

@@ -978,7 +978,7 @@ double CalculateBandwidth(const std::vector<double> & x,
   double one_over_root_2 = 0.7071068;
   double sd_x            = std::pow(CalculateVariance(x), 0.5);
 
-  return(scale*one_over_root_2*sd_x*std::pow(n, -power));
+  return(scale*one_over_root_2*sd_x*std::pow(static_cast<double>(n), -power));
 }
 //-------------------------------------------------------------------------------
 double CalculateEffectiveSampleSize1D(const std::vector<double> & x,

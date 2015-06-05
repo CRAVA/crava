@@ -3737,7 +3737,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   bool got_real_seismic        = (real_seismic_data_.size() > 0);
   bool got_actual_synt_seismic = (actual_synt_seismic_data_.size() > 0);
   bool got_well_synt_seismic   = (well_synt_seismic_data_.size() > 0);
-  bool got_filtered_log        = (GetVpSeismicResolution().size() > 0);
+  bool got_filtered_log        = (cont_logs_seismic_resolution_.size() > 0);
   bool got_vp_rho_fac_log      = (vp_facies_filtered_.size() > 0);
 
   int n_logs = 3*3;   // {Vp, Vs, Rho} x {raw, BgHz, seisHz, seisRes}
