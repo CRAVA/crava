@@ -8,6 +8,8 @@
 #include <string.h>
 #include <map>
 #include "nrlib/iotools/logkit.hpp"
+#include "nrlib/segy/segy.hpp"
+#include "nrlib/segy/traceheader.hpp"
 
 #include "rplib/distributionwithtrendstorage.h"
 #include "rplib/distributionsrockstorage.h"
@@ -19,6 +21,8 @@
 #include "src/modelsettings.h"
 #include "src/vario.h"
 #include "src/simbox.h"
+#include "src/inputfiles.h"
+
 
 ModelSettings::ModelSettings(void)
   : localSegyOffset_(0),
@@ -40,6 +44,7 @@ ModelSettings::ModelSettings(void)
     indRockPhysics_(0),
     indFilter_(0),
     logNames_(6),
+    positionLogNames_(2),
     inverseVelocity_(2),
     min_blocks_with_data_for_corr_estim_(100)
 {
@@ -517,5 +522,38 @@ ModelSettings::findSortedVintages(void) const
   }
   return(index);
 }
+
+
+void
+ModelSettings::MakeSureDzIsSetIfNeeded(InputFiles & input_files,
+                                       std::string & err_txt)
+{
+  if(time_dz_ < 0) {
+    bool need_dz = false;
+    std::map<std::string, int>::iterator it = time_nz_.begin();
+    while(need_dz == false && it != time_nz_.end()) {
+      if(it->second < 0)
+        need_dz = true;
+      else
+        ++it;
+    }
+    if(need_dz == true) {
+      bool dz_ok = false;
+      const std::vector<std::vector<std::string> > seis_names = input_files.getTimeLapseSeismicFiles();
+      if(seis_names.size() > 0 && seis_names[0].size() > 0) {
+        const std::string f_name = seis_names[0][0];
+        if(f_name != "") {
+          TraceHeaderFormat thf(0); //Just pick one, not important here.
+          SegY master_file(f_name, 0, thf);
+          time_dz_ = master_file.GetDz()*1.0000001; //Guard against truncation errors.
+          dz_ok = true;
+        }
+      }
+      if(dz_ok == false)
+        err_txt += "No resolution given, at least one interval lacks number of layers, and no seismic file to find resolution from.\n";
+    }
+  }
+}
+
 
 int  ModelSettings::debugFlag_  = 0;

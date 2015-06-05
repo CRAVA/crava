@@ -324,7 +324,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, 
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids,
                   missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
     CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids,
@@ -683,7 +683,6 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-
       //Combine vectors for each interval to one trace in stormgrid
       std::vector<float> combined_trace(nz);
 
@@ -760,10 +759,7 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
             combined_trace[k] = filtered_trace[k];
           }
         }
-
       }
-    
-
 
       for (int k = 0; k < nz; k++) {
         (*final_grid)(i,j,k) = combined_trace[k];

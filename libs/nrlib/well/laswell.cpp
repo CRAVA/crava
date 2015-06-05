@@ -276,8 +276,9 @@ LasWell::ParseWellToken(const std::string & token,
     if(value.empty() == false)
       SetWellName(value);
   }
+
   else if(token == "STRT" || token == "STOP" || token == "STEP" ||
-          token == "NULL")
+          token == "NULL" || token == "XWELL" || token == "YWELL")
   {
     if(value.empty() == false) { //Do not set value if there is nothing to set. Do not trust missingcode, may change later.
       try {
