@@ -6101,7 +6101,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
 
       interval_grids[i_interval]->Resize(nx, ny, nz);
 
-      Surface * dead_traces_surface = new Surface();
+      NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
       StormContGrid * stormgrid_tmp = NULL;
       FFTGrid * fft_grid_tmp        = NULL;
       FillInData(interval_grids[i_interval],
@@ -6113,7 +6113,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                  missing_traces_simbox,
                  missing_traces_padding,
                  dead_traces_simbox,
-                 dead_traces_surface,
+                 dead_traces_map,
                  grid_type);
       if (stormgrid_tmp != NULL)
        delete stormgrid_tmp;
@@ -6157,23 +6157,23 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
           //Allow dead traces at the edges
           bool dead_ok = true;
 
-          int ni = static_cast<int>(dead_traces_surface->GetNI());
-          int nj = static_cast<int>(dead_traces_surface->GetNJ());
+          int ni = static_cast<int>(dead_traces_map->GetNI());
+          int nj = static_cast<int>(dead_traces_map->GetNJ());
 
           for (int i = 1; i < ni-1; i++) {
             for (int j = 1; j < nj-1; j++) {
 
-              if ((*dead_traces_surface)(i,j) == 1.0) {
+              if ((*dead_traces_map)(i,j) == true) {
 
                 //Check all neighbour cells
                 int n = 0;
-                if (i > 0 && (*dead_traces_surface)(i-1, j) == 1.0)
+                if (i > 0 && (*dead_traces_map)(i-1, j) == true)
                   n++;
-                if (j < ni-1 && (*dead_traces_surface)(i, j+1) == 1.0)
+                if (j < ni-1 && (*dead_traces_map)(i, j+1) == true)
                   n++;
-                if (j > 0 && (*dead_traces_surface)(i, j-1)  == 1.0)
+                if (j > 0 && (*dead_traces_map)(i, j-1)  == true)
                   n++;
-                if (i < ni-1 && (*dead_traces_surface)(i+1, j) == 1.0)
+                if (i < ni-1 && (*dead_traces_map)(i+1, j) == true)
                   n++;
 
                 if (n == 0) {
@@ -6201,7 +6201,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
           else
             err_text += "Grid in file "+file_name+" has dead traces in inversion area. ";
         }
-        delete dead_traces_surface;
+        delete dead_traces_map;
       }
     } //i_interval
   }
@@ -6218,7 +6218,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                             int                 & missing_traces_simbox,
                             int                 & missing_traces_padding,
                             int                 & dead_traces_simbox,
-                            Surface             * dead_traces_surface,
+                            NRLib::Grid2D<bool> * dead_traces_map,
                             int                   grid_type,
                             bool                  scale,
                             bool                  is_segy,
@@ -6268,7 +6268,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
     rnxp = static_cast<int>(grid_new->GetNI()); //2*(nxp/2+1);
   }
 
-  dead_traces_surface->Resize(rnxp, nyp, 0.0);
+  dead_traces_map->Resize(rnxp, nyp, 0.0);
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling data into %dx%dx%d grid:", nxp, nyp, nzp);
 
@@ -6350,7 +6350,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
         else if (is_storm) {
           size_t i_in, j_in, k_in;
 
-          storm_grid->FindIndex(x, y, z0, i_in, j_in, k_in);
+          storm_grid->FindXYIndex(x, y, i_in, j_in);
 
           double grid_x = 0.0;
           double grid_y = 0.0;
@@ -6400,7 +6400,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           }
         }
 
-        if (is_segy == false || (is_segy == true && !missing)) {
+        if ((is_segy == false || (is_segy == true && !missing)) && z0 != RMISSING) { //Set trace as dead if there is missing values in simbox
           int         cnt      = nt/2 + 1;
           int         rnt      = 2*cnt;
           int         cmt      = mt/2 + 1;
@@ -6483,13 +6483,21 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
             SetTrace(grid_trace, fft_grid_new, i, j);
         }
         else {
-          if (is_nrlib_grid)
-            SetTrace(0.0f, grid_new, i, j); // Dead traces (in case we allow them)
-          else
-            SetTrace(0.0f, fft_grid_new, i, j);
+          if (grid_type == PARAMETER) {
+            if (is_nrlib_grid)
+              SetTrace(RMISSING, grid_new, i, j); // Dead traces (in case we allow them)
+            else
+              SetTrace(RMISSING, fft_grid_new, i, j);
+          }
+          else {
+            if (is_nrlib_grid)
+              SetTrace(0.0f, grid_new, i, j); // Dead traces (in case we allow them)
+            else
+              SetTrace(0.0f, fft_grid_new, i, j);
+          }
 
           dead_traces_simbox++;
-          (*dead_traces_surface)(i,j) = 1.0;
+          (*dead_traces_map)(i,j) = true;
         }
       }
       else {
@@ -6900,9 +6908,9 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       nz = interval_simboxes[i_interval]->getnz();
 
       interval_grids[i_interval]->Resize(nx, ny, nz, 0.0);
+      NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
 
       try {
-        Surface * dead_traces_surface = new Surface();
         SegY * segy_tmp          = NULL;
         FFTGrid * fft_grid_tmp   = NULL;
         FillInData(interval_grids[i_interval],
@@ -6914,7 +6922,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
                    missing_traces_simbox,
                    missing_traces_padding,
                    dead_traces_simbox,
-                   dead_traces_surface,
+                   dead_traces_map,
                    grid_type,
                    scale,
                    false, //is_segy
@@ -6924,7 +6932,6 @@ CommonData::ReadStormFile(const std::string                 & file_name,
          delete segy_tmp;
         if (fft_grid_tmp != NULL)
           delete fft_grid_tmp;
-        delete dead_traces_surface;
       }
       catch (NRLib::Exception & e) {
         err_text += std::string(e.what());
@@ -6956,8 +6963,60 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       //                     +NRLib::ToString(missing_traces_padding)+" of "+NRLib::ToString(nxypad)+"\n");
       //}
       if (dead_traces_simbox > 0) {
-        LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
-                           +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+        if (grid_type == DATA)
+          LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                             +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+        else {
+          //Do not allow single dead traces (all four courners not dead)
+          //Allow dead traces at the edges
+          bool dead_ok = true;
+
+          int ni = static_cast<int>(dead_traces_map->GetNI());
+          int nj = static_cast<int>(dead_traces_map->GetNJ());
+
+          for (int i = 1; i < ni-1; i++) {
+            for (int j = 1; j < nj-1; j++) {
+
+              if ((*dead_traces_map)(i,j) == true) {
+
+                //Check all neighbour cells
+                int n = 0;
+                if (i > 0 && (*dead_traces_map)(i-1, j) == true)
+                  n++;
+                if (j < ni-1 && (*dead_traces_map)(i, j+1) == true)
+                  n++;
+                if (j > 0 && (*dead_traces_map)(i, j-1)  == true)
+                  n++;
+                if (i < ni-1 && (*dead_traces_map)(i+1, j) == true)
+                  n++;
+
+                if (n == 0) {
+                  double x = 0.0;
+                  double y = 0.0;
+                  interval_simboxes[i_interval]->getXYCoord(i,j,x,y);
+                  bool is_inside = false;
+                  if (stormgrid->IsInside(x, y) == 1)
+                    is_inside = true;
+
+                  if (is_inside) {
+                    dead_ok = false;
+                    i = ni-1; //Breaking double loop
+                    j = nj-1;
+                  }
+                }
+              }
+
+            }
+          }
+
+          if (dead_ok == true) {
+            LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
+                               +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny())+"\n");
+          }
+          else
+            err_text += "Grid in file "+file_name+" has dead traces in inversion area. ";
+        }
+        delete dead_traces_map;
       }
 
       //if (outsideTraces > 0) {
@@ -7473,6 +7532,7 @@ double CommonData::FindMeanVsVp(const NRLib::Grid<float> * vp,
                                 const NRLib::Grid<float> * vs) const
 {
   double mean = 0;
+  int count = 0;
   int ni  = static_cast<int>(vp->GetNI());
   int nj  = static_cast<int>(vp->GetNJ());
   int nk  = static_cast<int>(vp->GetNK());
@@ -7481,11 +7541,16 @@ double CommonData::FindMeanVsVp(const NRLib::Grid<float> * vp,
       for (int i=0; i < ni; i++) {
         double v1 = static_cast<double>(vp->GetValue(i,j,k));
         double v2 = static_cast<double>(vs->GetValue(i,j,k));
-        mean += exp(v2-v1);
+
+        if (v1 != RMISSING && v2 != RMISSING) {
+          mean += exp(v2-v1);
+          count++;
+        }
+
       }
     }
   }
-  mean = mean/double(ni*nj*nk);
+  mean = mean/double(count);
 
   return(mean);
 }
@@ -7530,7 +7595,6 @@ void CommonData::SubtractGrid(NRLib::Grid<float>       * to_grid,
       for (int k = 0; k < nk; k++) {
         float value_tmp = to_grid->GetValue(i, j, k) - from_grid->GetValue(i, j, k);
         to_grid->SetValue(i, j, k, value_tmp);
-        //to_grid(i,j,k) -= from_grid(i,j,k);
       }
     }
   }
@@ -7549,7 +7613,6 @@ void CommonData::ChangeSignGrid(NRLib::Grid<float> * grid) const
         float value_tmp = grid->GetValue(i, j, k);
         value_tmp *= -1;
         grid->SetValue(i, j, k, value_tmp);
-        //grid(i,j,k) *= -1;
       }
     }
   }

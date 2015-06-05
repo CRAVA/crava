@@ -64,7 +64,6 @@ ModelGeneral::ModelGeneral(ModelSettings           *& model_settings,
   time_line_               = NULL;
   time_depth_mapping_      = NULL;
   velocity_from_inversion_ = false;
-//  timeSimboxInitial_       =NULL;
   {
     simbox_ = common_data->GetMultipleIntervalGrid()->GetIntervalSimbox(i_interval);
 

@@ -136,7 +136,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       int dead_traces_simbox     = 0;
 
       NRLib::Grid<float> * grid_tmp = new NRLib::Grid<float>();
-      Surface * dead_traces_surface = new Surface();
+      NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
 
       seis_cubes_[i]->setAccessMode(FFTGrid::RANDOMACCESS);
       common_data->FillInData(grid_tmp,
@@ -148,7 +148,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                               missing_traces_simbox,
                               missing_traces_padding,
                               dead_traces_simbox,
-                              dead_traces_surface,
+                              dead_traces_map,
                               FFTGrid::DATA,
                               scale,
                               is_segy,
@@ -176,7 +176,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
         LogKit::LogMessage(LogKit::High, "Number of grid columns with no seismic data (nearest trace is dead) : "
                            +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
       }
-      delete dead_traces_surface;
+      delete dead_traces_map;
     }
 
   }

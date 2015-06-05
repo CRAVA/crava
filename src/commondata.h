@@ -331,7 +331,7 @@ public:
                                 int                 & missing_traces_simbox,
                                 int                 & missing_traces_padding,
                                 int                 & dead_traces_simbox,
-                                Surface             * dead_traces_surface,
+                                NRLib::Grid2D<bool> * dead_traces_map,
                                 int                   grid_type,
                                 bool                  scale    = false,
                                 bool                  is_segy  = true,
