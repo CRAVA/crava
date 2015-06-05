@@ -126,6 +126,7 @@ public:
   float                            getAverageVelocity(void)             const { return average_velocity_                          ;}
   float                            getMaxHzBackground(void)             const { return maxHz_background_                          ;}
   float                            getMaxHzSeismic(void)                const { return maxHz_seismic_                             ;}
+  bool                             getFilterMultizoneModel(void)        const { return filter_multizone_background_               ;}
   float                            getMaxRankCorr(void)                 const { return maxRankCorr_                               ;}
   float                            getMaxMergeDist(void)                const { return maxMergeDist_                              ;}
   float                            getMaxDevAngle(void)                 const { return maxDevAngle_                               ;}
@@ -378,6 +379,7 @@ public:
   void setAverageVelocity(float average_velocity)         { average_velocity_         = average_velocity         ;}
   void setMaxHzBackground(float maxHz_background)         { maxHz_background_         = maxHz_background         ;}
   void setMaxHzSeismic(float maxHz_seismic)               { maxHz_seismic_            = maxHz_seismic            ;}
+  void setFilterMultizoneBackground(bool filter)          { filter_multizone_background_ = filter                ;}
   void setMaxRankCorr(float maxRankCorr)                  { maxRankCorr_              = maxRankCorr              ;}
   void setMaxMergeDist(float maxMergeDist)                { maxMergeDist_             = maxMergeDist             ;}
   void setMaxDevAngle(float maxDevAngle)                  { maxDevAngle_              = maxDevAngle              ;}
@@ -737,6 +739,7 @@ private:
 
   float                             maxHz_background_;           ///< Background resolution (high cut frequency)
   float                             maxHz_seismic_;              ///< Seismic resolution (high cut frequency)
+  bool                              filter_multizone_background_;///< Filter multizone background model (to maxHz_background_)
 
   float                             maxRankCorr_;                ///< Vp-Vs correlation threshold for regarding Vs log synthetic
   float                             maxMergeDist_;               ///< log entries closer than this will be merged

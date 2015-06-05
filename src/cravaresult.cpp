@@ -320,11 +320,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
+    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids, true, model_settings->getMaxHzBackground());
+    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
   }
   else { //These background grids are not used later if we are not going to write them to file
     for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
@@ -605,6 +605,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(i) + ": ");
       CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
     }
+    LogKit::LogFormatted(LogKit::Low,"ok");
   }
 
   //Delete grids from seismicparamtersholder
@@ -1252,7 +1253,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
 
     //Write blocked background logs (CRA-544). Logs that are blocked to extended background model (extended simbox with correlation direction).
     //Do not write if multiple intervals is used
-    if (n_intervals_ == 1)
+    if (n_intervals_ == 1 && bg_blocked_logs_.size() > 0)
       WriteBlockedWells(bg_blocked_logs_, model_settings, common_data->GetFaciesNames(), common_data->GetFaciesNr());
 
     LogKit::LogFormatted(LogKit::Low,"ok\n");
@@ -1740,11 +1741,11 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
 
       LogKit::LogFormatted(LogKit::Low,"\n Vp");
-      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals, true, model_settings->getMaxHzBackground());
+      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Vs");
-      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, true, model_settings->getMaxHzBackground());
+      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, model_settings->getFilterMultizoneModel(),model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Rho");
-      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, true, model_settings->getMaxHzBackground());
+      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
 
       for (int i = 0; i < n_intervals_; i++) {
         common_data->ReleaseBackgroundGrids(i, 0);
