@@ -236,6 +236,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   if (n_intervals_ == 1 && ((model_settings->getOutputGridFormat() & IO::CRAVA) > 0))
     write_crava_ = true;
 
+  //Create missing map
+  NRLib::Grid2D<bool> * missing_map = CreateMissingGrid(output_simbox);
+
   LogKit::LogFormatted(LogKit::Low,"\nSetting up zone probabilities");
   std::vector<StormContGrid> zone_prob_grid(multi_interval_grid->GetNIntervals());
   for(size_t i=0; i<zone_prob_grid.size();i++)
@@ -270,12 +273,13 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_rho_intervals[i] = seismic_parameters_intervals[i].GetPostRho();
       }
     }
+
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(post_vp_,  post_vp_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-    CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(post_vs_,  post_vs_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-    CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(post_rho_, post_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
 
     //Add predicted logs from resampled grid
     if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
@@ -304,11 +308,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         post_rho_kriged_intervals[i] = seismic_parameters_intervals[i].GetPostRhoKriged();
       }
       LogKit::LogFormatted(LogKit::Low,"\n Vp kriged ");
-      CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(post_vp_kriged_,  post_vp_kriged_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
       LogKit::LogFormatted(LogKit::Low,"\n Vs kriged ");
-      CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(post_vs_kriged_,  post_vs_kriged_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
       LogKit::LogFormatted(LogKit::Low,"\n Rho kriged ");
-      CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(post_rho_kriged_, post_rho_kriged_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
   }
 
@@ -320,11 +324,14 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     background_rho_ = new StormContGrid(output_simbox, nx, ny, nz_output);
 
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
+    CombineResult(background_vp_,  background_vp_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, 
+                  missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
+    CombineResult(background_vs_,  background_vs_intervals_,  multi_interval_grid, zone_prob_grid, dummy_grids,
+                  missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
+    CombineResult(background_rho_, background_rho_intervals_, multi_interval_grid, zone_prob_grid, dummy_grids,
+                  missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
   }
   else { //These background grids are not used later if we are not going to write them to file
     for (size_t i = 0; i < background_vp_intervals_.size(); i++) {
@@ -352,7 +359,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
                             zone_prob_grid,
                             background_trend_vp_,
                             background_trend_vs_,
-                            background_trend_rho_);
+                            background_trend_rho_,
+                            missing_map);
     }
   }
   //Covariance grids
@@ -383,17 +391,17 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       //  seismic_parameters_intervals[i].FFTCovGrids();
     }
     LogKit::LogFormatted(LogKit::Low,"\n Vp ");
-    CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cov_vp_,        cov_vp_intervals,        multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n Vs ");
-    CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cov_vs_,        cov_vs_intervals,        multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n Rho ");
-    CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cov_rho_,       cov_rho_intervals,       multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n VpVs ");
-    CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cr_cov_vp_vs_,  cr_cov_vp_vs_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n VpRho ");
-    CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cr_cov_vp_rho_, cr_cov_vp_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     LogKit::LogFormatted(LogKit::Low,"\n VsRho ");
-    CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(cr_cov_vs_rho_, cr_cov_vs_rho_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
   }
 
   //Facies prob
@@ -410,7 +418,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProb()[j];
       }
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
-      CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(facies_prob_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
 
     //Set facies prob in blocked logs
@@ -432,7 +440,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       facies_prob_intervals_undef[i] = seismic_parameters_intervals[i].GetFaciesProbUndefined();
     }
     LogKit::LogFormatted(LogKit::Low,"\n Undef ");
-    CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(facies_prob_undef_,  facies_prob_intervals_undef,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
 
   }
   if (model_settings->getOutputGridsOther() & IO::FACIESPROB) {
@@ -448,7 +456,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         facies_prob_intervals[i] = seismic_parameters_intervals[i].GetFaciesProbGeomodel()[j];
       }
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
-      CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
   }
 
@@ -466,7 +474,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         lh_cubes_intervals[i] = seismic_parameters_intervals[i].GetLHCube()[j];
       }
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
-      CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(lh_cubes_[j], lh_cubes_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
   }
 
@@ -479,7 +487,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       quality_grid_intervals[i] = seismic_parameters_intervals[i].GetQualityGrid();
     }
-    CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(quality_grid_, quality_grid_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
   }
 
   //Simulation grids
@@ -504,11 +512,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
         simulations_seed2_intervals[i] = seismic_parameters_intervals[i].GetSimulationSeed2(j);
       }
       LogKit::LogFormatted(LogKit::Low,"\n seed0 " + NRLib::ToString(j) + " ");
-      CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(simulations_seed0_[j], simulations_seed0_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
       LogKit::LogFormatted(LogKit::Low,"\n seed1 " + NRLib::ToString(j) + " ");
-      CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(simulations_seed1_[j], simulations_seed1_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
       LogKit::LogFormatted(LogKit::Low,"\n seed2 " + NRLib::ToString(j) + " ");
-      CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(simulations_seed2_[j], simulations_seed2_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
 
     }
   }
@@ -522,7 +530,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++) {
       block_grid_intervals[i] = seismic_parameters_intervals[i].GetBlockGrid();
     }
-    CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, zone_prob_grid, dummy_grids);
+    CombineResult(block_grid_, block_grid_intervals, multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
   }
 
   //Correlations and post variances
@@ -603,7 +611,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
           delete trend_cube;
       }
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(i) + ": ");
-      CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids);
+      CombineResult(trend_cubes_[i],  trend_cubes_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
     LogKit::LogFormatted(LogKit::Low,"ok");
   }
@@ -620,6 +628,7 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
                                 MultiIntervalGrid                 * multi_interval_grid,
                                 const std::vector<StormContGrid>  & zone_probability,
                                 std::vector<NRLib::Grid<float> *> & interval_grids_nrlib, //Optional, send in an empty vector if FFTGrids are used
+                                NRLib::Grid2D<bool>               * missing_map, //NULL if no missing.
                                 bool                                apply_filter, //filter combined grid to a maxHz
                                 float                               max_hz)
 {
@@ -636,6 +645,10 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
     }
     else
       CreateStormGrid(*final_grid, interval_grids[0]);
+
+    if (missing_map != NULL)
+      SetMissingInGrid(*final_grid, missing_map);
+
     LogKit::LogFormatted(LogKit::Low,"ok");
     return;
   }
@@ -670,81 +683,90 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
-      std::vector<std::vector<float> > new_traces(n_intervals_); //Finely interpolated values
-
-      //Resample each trace to new nz
-      for (int zone = 0; zone < n_intervals_; zone++) {
-        std::vector<float> old_trace;
-        if (use_nrlib_grids == false) {
-          FFTGrid * interval_grid  = interval_grids[zone];
-          old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
-        }
-        else {
-          old_trace = GetNRLibGridTrace(interval_grids_nrlib[zone], i, j);
-        }
-        int prepad_size = static_cast<int>(old_trace.size());
-        AddPadding(old_trace, nz_old[zone]);
-
-        new_traces[zone].resize(nz_old[zone]*scale);
-
-        DownscaleTrace(old_trace,
-                       new_traces[zone],
-                       scale,
-                       prepad_size,
-                       small_plans[zone],
-                       big_plans[zone]);
-
-      } //n_intervals
-
 
       //Combine vectors for each interval to one trace in stormgrid
-      std::vector<float> combined_trace_tmp(nz);
+      std::vector<float> combined_trace(nz);
 
-      for (int k = 0; k < nz; k++) {
-        double global_x = 0.0;
-        double global_y = 0.0;
-        double global_z = 0.0;
-
-        double value = 0;
-        final_grid->FindCenterOfCell(i, j, k, global_x, global_y, global_z);
-        for (int zone = 0; zone < n_intervals_; zone++) {
-          if(zone_probability[zone](i,j,k) > 0) {
-            Simbox * z_simbox = multi_interval_grid->GetIntervalSimbox(zone);
-            double dummy1, dummy2, rel_index;
-            z_simbox->getInterpolationIndexes(global_x, global_y, global_z, dummy1, dummy2, rel_index);
-            rel_index -= 0.5; //First half grid cell is outside interpolation vector.
-            rel_index /= static_cast<double>(z_simbox->getnz()-1);
-            if(rel_index < 0)
-              rel_index = 0;
-            else if(rel_index > 1)
-              rel_index = 1;
-
-            int index = static_cast<int>(floor(0.5+rel_index*(new_traces[zone].size()-1))); //0 to first item, 1 to last item.
-            value += zone_probability[zone](i,j,k)*new_traces[zone][index];
-          }
-        }
-        combined_trace_tmp[k] = static_cast<float>(value);
+      if (missing_map != NULL && (*missing_map)(i,j) == true) {
+        for (int k = 0; k < nz; k++)
+          combined_trace[k] = RMISSING;
       }
+      else {
+        std::vector<std::vector<float> > new_traces(n_intervals_); //Finely interpolated values
 
-      //Filter background grids
-      if (apply_filter == true) {
+        //Resample each trace to new nz
+        for (int zone = 0; zone < n_intervals_; zone++) {
+          std::vector<float> old_trace;
+          if (use_nrlib_grids == false) {
+            FFTGrid * interval_grid  = interval_grids[zone];
+            old_trace = interval_grid->getRealTrace(i, j); //old_trace is changed below.
+          }
+          else {
+            old_trace = GetNRLibGridTrace(interval_grids_nrlib[zone], i, j);
+          }
+          int prepad_size = static_cast<int>(old_trace.size());
+          AddPadding(old_trace, nz_old[zone]);
 
-        std::vector<float> filtered_trace(nz);
-        double lz = final_grid->GetLZ();
-        double dz = lz/nz;
-        CommonData::ApplyFilter(filtered_trace,
-                                combined_trace_tmp,
-                                nz,
-                                dz,
-                                max_hz);
+          new_traces[zone].resize(nz_old[zone]*scale);
+
+          DownscaleTrace(old_trace,
+                         new_traces[zone],
+                         scale,
+                         prepad_size,
+                         small_plans[zone],
+                         big_plans[zone]);
+
+        } //n_intervals
 
         for (int k = 0; k < nz; k++) {
-          combined_trace_tmp[k] = filtered_trace[k];
+          double global_x = 0.0;
+          double global_y = 0.0;
+          double global_z = 0.0;
+
+          double value = 0;
+          final_grid->FindCenterOfCell(i, j, k, global_x, global_y, global_z);
+          for (int zone = 0; zone < n_intervals_; zone++) {
+            if(zone_probability[zone](i,j,k) > 0) {
+              Simbox * z_simbox = multi_interval_grid->GetIntervalSimbox(zone);
+              double dummy1, dummy2, rel_index;
+              z_simbox->getInterpolationIndexes(global_x, global_y, global_z, dummy1, dummy2, rel_index);
+              rel_index -= 0.5; //First half grid cell is outside interpolation vector.
+              rel_index /= static_cast<double>(z_simbox->getnz()-1);
+              if(rel_index < 0)
+                rel_index = 0;
+              else if(rel_index > 1)
+                rel_index = 1;
+
+              int index = static_cast<int>(floor(0.5+rel_index*(new_traces[zone].size()-1))); //0 to first item, 1 to last item.
+              value += zone_probability[zone](i,j,k)*new_traces[zone][index];
+            }
+          }
+          combined_trace[k] = static_cast<float>(value);
         }
+
+        //Filter background grids
+        if (apply_filter == true) {
+
+          std::vector<float> filtered_trace(nz);
+          double lz = final_grid->GetLZ();
+          double dz = lz/nz;
+          CommonData::ApplyFilter(filtered_trace,
+                                  combined_trace,
+                                  nz,
+                                  dz,
+                                  max_hz);
+
+          for (int k = 0; k < nz; k++) {
+            combined_trace[k] = filtered_trace[k];
+          }
+        }
+
       }
+    
+
 
       for (int k = 0; k < nz; k++) {
-        (*final_grid)(i,j,k) = combined_trace_tmp[k];
+        (*final_grid)(i,j,k) = combined_trace[k];
       }
 
       // Log progress
@@ -772,13 +794,14 @@ void CravaResult::CombineResult(StormContGrid                    *& final_grid,
 
 
 void
-CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * multiple_interval_grid,
+CravaResult::CombineVerticalTrends(MultiIntervalGrid                         * multiple_interval_grid,
                                    CommonData                                * common_data,
                                    const NRLib::Grid2D<std::vector<double> > & vertical_trend,
                                    const std::vector<StormContGrid>          & zone_probability,
                                    StormContGrid                            *& background_trend_vp,
                                    StormContGrid                            *& background_trend_vs,
-                                   StormContGrid                            *& background_trend_rho)
+                                   StormContGrid                            *& background_trend_rho,
+                                   NRLib::Grid2D<bool>                       * missing_map)
 {
   int nx = multiple_interval_grid->GetIntervalSimbox(0)->getnx();
   int ny = multiple_interval_grid->GetIntervalSimbox(0)->getny();
@@ -812,7 +835,7 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * mu
     }
     bg_trend_vp_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_vp, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vp_intervals);
+  CombineResult(background_trend_vp, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vp_intervals, missing_map);
 
   LogKit::LogFormatted(LogKit::Low,"\n Vs ");
   std::vector<NRLib::Grid<float> *> bg_trend_vs_intervals(n_intervals);
@@ -840,7 +863,7 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * mu
     }
     bg_trend_vs_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_vs, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vs_intervals);
+  CombineResult(background_trend_vs, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_vs_intervals, missing_map);
 
   LogKit::LogFormatted(LogKit::Low,"\n Rho ");
   std::vector<NRLib::Grid<float> *> bg_trend_rho_intervals(n_intervals);
@@ -868,7 +891,7 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                        * mu
     }
     bg_trend_rho_intervals[i] = trend_grid;
   }
-  CombineResult(background_trend_rho, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_rho_intervals);
+  CombineResult(background_trend_rho, dummy_grids, multiple_interval_grid, zone_probability, bg_trend_rho_intervals, missing_map);
 
 }
 
@@ -1340,12 +1363,12 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           delete_fft_grid = false;
         }
         else {
-          SegY * segy                     = NULL;
-          StormContGrid * storm           = NULL;
-          NRLib::Grid<float> * nrlib_grid = new NRLib::Grid<float>();
-          bool is_segy                    = false;
-          bool is_storm                   = false;
-          Surface * dead_traces_surface   = new Surface();
+          SegY * segy                           = NULL;
+          StormContGrid * storm                 = NULL;
+          NRLib::Grid<float> * nrlib_grid       = new NRLib::Grid<float>();
+          bool is_segy                          = false;
+          bool is_storm                         = false;
+          NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
           if (seismic_type == 0) {//SEGY
             segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
             is_segy = true;
@@ -1369,7 +1392,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                                   missing_traces_simbox,
                                   missing_traces_padding,
                                   dead_traces_simbox,
-                                  dead_traces_surface,
+                                  dead_traces_map,
                                   FFTGrid::DATA,
                                   false,
                                   is_segy,
@@ -1661,6 +1684,9 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
   if (n_intervals_ == 1 && ((model_settings->getOutputGridFormat() & IO::CRAVA) > 0))
     write_crava_ = true;
 
+  //Create missing map
+  NRLib::Grid2D<bool> * missing_map = CreateMissingGrid(simbox);
+
   //Estimation model: All estimated parameters are written to file, regardless of output settings
   if (((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
      (model_settings->getEstimateBackground() || model_settings->getEstimateWaveletNoise())) {
@@ -1743,11 +1769,11 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       multi_interval_grid->FindZoneProbGrid(zone_prob_grid);
 
       LogKit::LogFormatted(LogKit::Low,"\n Vp");
-      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
+      CombineResult(background_vp_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vp_intervals, missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Vs");
-      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, model_settings->getFilterMultizoneModel(),model_settings->getMaxHzBackground());
+      CombineResult(background_vs_,  dummy_fft_grids,  multi_interval_grid, zone_prob_grid, background_vs_intervals, missing_map, model_settings->getFilterMultizoneModel(),model_settings->getMaxHzBackground());
       LogKit::LogFormatted(LogKit::Low,"\n Rho");
-      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
+      CombineResult(background_rho_, dummy_fft_grids, multi_interval_grid, zone_prob_grid, background_rho_intervals, missing_map, model_settings->getFilterMultizoneModel(), model_settings->getMaxHzBackground());
 
       for (int i = 0; i < n_intervals_; i++) {
         common_data->ReleaseBackgroundGrids(i, 0);
@@ -1770,7 +1796,8 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                                 zone_prob_grid,
                                 background_trend_vp_,
                                 background_trend_vs_,
-                                background_trend_rho_);
+                                background_trend_rho_,
+                                missing_map);
         }
       }
     }
@@ -2419,4 +2446,56 @@ CravaResult::DownscaleTrace(const std::vector<float> & trace_in,
 
   fftw_free(rAmpData);
   fftw_free(rAmpFine);
+}
+
+NRLib::Grid2D<bool> *
+CravaResult::CreateMissingGrid(const Simbox & simbox)
+{
+
+  int nx = simbox.getnx();
+  int ny = simbox.getny();
+  NRLib::Grid2D<bool> * missing_map = new NRLib::Grid2D<bool>(nx, ny, false);
+
+  bool has_missing = false;
+  for (int i = 0; i < nx; i++) {
+    for (int j = 0; j < ny; j++) {
+
+      if (simbox.getTop(i,j) == RMISSING || simbox.getBot(i,j) == RMISSING) {
+        (*missing_map)(i,j) = true;
+        has_missing = true;
+      }
+    }
+  }
+  if (has_missing == false)
+    missing_map = NULL;
+
+  return missing_map;
+}
+
+void CravaResult::SetMissingInGrid(StormContGrid       & grid,
+                                   NRLib::Grid2D<bool> * missing_map)
+{
+  //bool has_missing = false; //H-REMOVE No missing, should not enter this function
+  //for (size_t i = 0; i < missing_map->GetNI(); i++) {
+  //  for (size_t j = 0; j < missing_map->GetNJ(); j++) {
+  //    if ((*missing_map)(i,j) == true) {
+  //      has_missing = true;
+  //      i = missing_map->GetNI() - 1;
+  //      j = missing_map->GetNJ() - 1;
+  //    }
+  //  }
+  //}
+
+  //if (has_missing == false)
+  //  return;
+
+  for (size_t i = 0; i < grid.GetNI(); i++) {
+    for (size_t j = 0; j < grid.GetNJ(); j++) {
+
+      if ((*missing_map)(i,j) == true) {
+        for (size_t k = 0; k < grid.GetNK(); k++)
+          grid.SetValue(i,j,k,RMISSING);
+      }
+    }
+  }
 }

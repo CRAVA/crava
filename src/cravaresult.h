@@ -38,6 +38,7 @@ public:
                      MultiIntervalGrid                 * multi_interval_grid,
                      const std::vector<StormContGrid>  & zone_probability,
                      std::vector<NRLib::Grid<float> *> & interval_grids_nrlib,
+                     NRLib::Grid2D<bool>               * missing_surface,
                      bool                                apply_filter = false,//Filter grid to a maxHz
                      float                               max_hz = 9999.0);
 
@@ -192,6 +193,11 @@ public:
                               int                            scale,
                               std::vector<rfftwnd_plan>    & small_plans,
                               std::vector<rfftwnd_plan>    & big_plans);
+
+  NRLib::Grid2D<bool> * CreateMissingGrid(const Simbox & simbox);
+
+  void SetMissingInGrid(StormContGrid       & grid,
+                        NRLib::Grid2D<bool> * missing_surface);
   //GET FUNCTIONS
 
   //SET FUNCTIONS
@@ -210,7 +216,8 @@ private:
                              const std::vector<StormContGrid>          & zone_probability,
                              StormContGrid                            *& background_trend_vp,
                              StormContGrid                            *& background_trend_vs,
-                             StormContGrid                            *& background_trend_rho);
+                             StormContGrid                            *& background_trend_rho,
+                             NRLib::Grid2D<bool>                       * missing_surface);
 
 
   //Resuls per interval
