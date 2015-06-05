@@ -267,7 +267,7 @@ ReadMultipleSgriSurf(const std::string& filename, const std::vector<std::string>
     std::ifstream bin_file;
     OpenRead(bin_file, bin_file_name.c_str(), std::ios::in | std::ios::binary);
     for (i=0; i<n_grid; i++) {
-      surfaces[i] = RegularSurfaceRotated<float>(x_min,y_min,lx,ly,nx,ny,0.0f,angle);
+      surfaces[i] = RegularSurfaceRotated<float>(x_min,y_min,lx,ly,nx,ny,angle,0.0f);
       surfaces[i].SetMissingValue(missing_code);
       ReadBinaryFloatArray(bin_file, surfaces[i].begin(), surfaces[i].GetN());
     }

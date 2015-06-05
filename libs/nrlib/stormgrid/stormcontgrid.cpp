@@ -640,8 +640,8 @@ void StormContGrid::ReadSgriHeader(std::ifstream &headerFile, std::string &binFi
   else
   {
 
-    RegularSurfaceRotated<double> z_top(x_min,y_min,lx,ly,nX,nY,minValues[2]-0.5*dZ,dipangle);
-    RegularSurfaceRotated<double> z_bot(x_min,y_min,lx,ly,nX,nY,minValues[2]+nZ*dZ-0.5*dZ,dipangle);
+    RegularSurfaceRotated<double> z_top(x_min,y_min,lx,ly,nX,nY,dipangle,minValues[2]-0.5*dZ);
+    RegularSurfaceRotated<double> z_bot(x_min,y_min,lx,ly,nX,nY,dipangle,minValues[2]+nZ*dZ-0.5*dZ);
   /*  int i,j;
     for(i=0;i<nX;i++)
       for(j=0;j<nY;j++)
