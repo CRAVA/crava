@@ -452,7 +452,6 @@ private:
                                   InputFiles                              * input_files,
                                   std::vector<NRLib::Well *>              & wells,
                                   std::vector<bool>                       & facies_log_wells,
-                                  std::vector<std::string>                & log_names,
                                   std::vector<int>                        & facies_nr,
                                   std::vector<std::string>                & facies_names,
                                   std::string                             & err_text) const;
@@ -541,15 +540,11 @@ private:
                              NRLib::Well         & well,
                              const NRLib::Volume & full_inversion_volume) const;
 
-  void               ProcessLogsNorsarWell(NRLib::Well              & new_well,
-                                           std::vector<std::string> & log_names_from_user,
-                                           const std::vector<bool>  & inverse_velocity,
-                                           bool                       facies_log_given,
-                                           std::string              & error_text) const;
-
   void               ProcessLogsGeneralWell(NRLib::Well                     & new_well,
-                                            std::vector<std::string>        & log_names_from_user,
+                                            const std::vector<std::string>  & log_names,
+                                            const std::vector<std::string>  & position_log_names,
                                             const std::vector<bool>         & inverse_velocity,
+                                            bool                              relative_coord,
                                             bool                              facies_log_given,
                                             bool                              porosity_log_given,
                                             int                               format,
@@ -1106,7 +1101,6 @@ private:
   std::vector<std::vector<SeismicStorage *> >                  seismic_data_; //Vector timelapse, vector angles
 
   // Well logs
-  std::vector<std::string>                                     log_names_;
   std::vector<NRLib::Well* >                                   wells_;
 
   // Blocked well logs

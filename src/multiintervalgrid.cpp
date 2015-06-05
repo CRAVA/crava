@@ -351,6 +351,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     Surface                base_surface                           = eroded_surfaces[i][1];
     std::string            interval_name                          = interval_names[i];
     int                    n_layers                               = model_settings->getTimeNz(interval_name);
+    double                 dz                                     = model_settings->getTimeDz();
     std::map<std::string, std::string>::const_iterator it_single  = corr_dir_single_surfaces.find(interval_name);
     std::map<std::string, std::string>::const_iterator it_top     = corr_dir_top_surfaces.find(interval_name);
     std::map<std::string, std::string>::const_iterator it_base    = corr_dir_base_surfaces.find(interval_name);
@@ -363,7 +364,6 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     if (model_settings->getWriteAsciiSurfaces() && !(other_output_format & IO::ASCII))
       other_output_format+= IO::ASCII;
 
-
     // Make a simbox for the original interval --------------------------------------------
     //SegyGeometry * geometry = model_settings->getAreaParameters();
 
@@ -375,7 +375,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
       corr_dir = true;
       Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
-      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
+      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf;
     }
@@ -384,7 +384,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       corr_dir = true;
       Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
+      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
       delete corr_surf_base;
@@ -393,7 +393,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     else if (it_top_conform->second == true && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
+      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_base;
     }
@@ -401,27 +401,27 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true) {
       corr_dir = true;
       Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox);
-      interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
+      interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
                                            other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
     }
     // Case 5: Top and base conform
     else if (it_top_conform->second == true && it_base_conform->second == true) {
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
+      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
     }
     //Case 6: Only top conform: Use top surface as single correlation surface
     else if (it_top_conform->second == true) {
-      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &top_surface,
+      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, &top_surface,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
     }
     //Case 7: Only base conform: Use base surface as single correlation surface
     else if (it_base_conform->second == true) {
-      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, &base_surface,
+      interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, &base_surface,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
     }
     // Case 8: No correlation directions in the xml file - top and base conform
     else if (corr_dir_top_conform.size() == 0 && corr_dir_base_conform.size() == 0) {
-      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
+      interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, err_text_tmp, failed_tmp);
     }
     // else something is wrong
     else {
