@@ -90,7 +90,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
     // 4. read well data
-    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, log_names_, facies_nr_, facies_names_, err_text);
+    read_wells_ = ReadWellData(model_settings, &full_inversion_simbox_, input_files, wells_, facies_log_wells_, facies_nr_, facies_names_, err_text);
 
     // 5. block wells for estimation
     // if well position is to be optimized or
@@ -1107,7 +1107,6 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
                               InputFiles                              * input_files,
                               std::vector<NRLib::Well *>              & wells,
                               std::vector<bool>                       & facies_log_wells,
-                              std::vector<std::string>                & log_names,
                               std::vector<int>                        & facies_nr,
                               std::vector<std::string>                & facies_names,
                               std::string                             & err_text_common) const
@@ -1117,14 +1116,12 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
   int                      n_wells             = model_settings->getNumberOfWells();
   bool                     facies_log_given    = model_settings->getFaciesLogGiven();
   bool                     porosity_log_given  = model_settings->getPorosityLogGiven();
-  std::vector<std::string> log_names_from_user = model_settings->getLogNames();
   std::vector<bool>        inverse_velocity    = model_settings->getInverseVelocity();
+  bool                     relative_coord      = model_settings->getRelativeCoord();
 
-  // Get all log names given by user
-  for (size_t i = 0; i < log_names_from_user.size(); i++) {
-    if (log_names_from_user[i] != "")
-      log_names.push_back(log_names_from_user[i]);
-  }
+  // Get all global log names
+  const std::vector<std::string> & log_names          = model_settings->getLogNames();
+  const std::vector<std::string> & position_log_names = model_settings->getPositionLogNames();
 
   if (n_wells == 0)
     return true;
@@ -1160,14 +1157,9 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     std::vector<std::vector<int> >          facies_nr_wells;
     std::vector<std::vector<std::string> >  facies_names_wells;
 
-    for (int i = 0; i < n_wells; i++) {
-      valid_index[i] = false;
-      std::string well_file_name = input_files->getWellFile(i);
-
-      // If the facies log is given, it is always entry 4 in the log name list
-      std::string facies_log = "FACIES";
-      if (log_names_from_user.size() > 4 && log_names_from_user[4] != "")
-        facies_log = log_names_from_user[4];
+    for (int well = 0; well < n_wells; well++) {
+      valid_index[well] = false;
+      std::string well_file_name = input_files->getWellFile(well);
 
       int format = -1;
       try {
@@ -1178,9 +1170,50 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         std::vector<int>         cur_facies_nr;
         std::vector<std::string> cur_facies_names;
 
-        //Process logs
+        //Process logs. Start by finding current log names and settings.
+        std::vector<std::string> well_log_names = model_settings->getWellLogNames(well);
+        std::vector<bool> well_inverse_velocity = model_settings->getWellInverseVelocity(well);
+        if(well_log_names[0] == "") //TWT
+          well_log_names[0] = log_names[0];
+        if(well_log_names[1] == "") {//Vp
+          well_log_names[1] = log_names[1];
+          well_inverse_velocity[0] = inverse_velocity[0];
+        }
+        if(well_log_names[2] == "") //Density
+          well_log_names[2] = log_names[2];
+        if(well_log_names[3] == "") {//Vs
+          well_log_names[3] = log_names[3];
+          well_inverse_velocity[1] = inverse_velocity[1];
+        }
+        for(int j=4;j<=5;j++) { //Facies and porosity
+          if(well_log_names[j] == "")
+           well_log_names[j] = log_names[j];
+        }
+
         std::string tmp_err_text;
-        ProcessLogsGeneralWell(new_well, log_names, inverse_velocity, facies_log_given, porosity_log_given, format, tmp_err_text);
+        std::vector<std::string> well_position_log_names = model_settings->getWellPositionLogNames(well);
+        bool well_relative_coord = model_settings->getWellRelativeCoord(well);
+        if(well_position_log_names[0]+well_position_log_names[1] != "") { //At least one given
+          if(well_position_log_names[0] == "") {
+            if(well_relative_coord != relative_coord)
+              tmp_err_text = "Error: Mix of global absolute coordinate specifiaction and local relative coordinate specification for well file "+well_file_name+".\n";
+            else
+              well_position_log_names[0] = position_log_names[0];
+          }
+          else if(well_position_log_names[1] == "") {
+            if(well_relative_coord != relative_coord)
+              tmp_err_text = "Error: Mix of global absolute coordinate specifiaction and local relative coordinate specification for well file "+well_file_name+".\n";
+            else
+              well_position_log_names[1] = position_log_names[1];
+          }
+        }
+        else {
+          for(int j=0;j<2;j++)
+            well_position_log_names[j] = position_log_names[j];
+          well_relative_coord = relative_coord;
+        }
+
+        ProcessLogsGeneralWell(new_well, well_log_names, well_position_log_names, well_inverse_velocity, well_relative_coord, facies_log_given, porosity_log_given, format, tmp_err_text);
         err_text += tmp_err_text;
         if (tmp_err_text == "") {
           //Store facies names.
@@ -1191,12 +1224,12 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           facies_nr_wells.push_back(cur_facies_nr);
           facies_names_wells.push_back(cur_facies_names);
 
-          new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(i));
-          new_well.SetUseForFiltering(model_settings->getIndicatorFilter(i));
-          new_well.SetRealVsLog(model_settings->getIndicatorRealVs(i));
-          new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(i));
-          new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(i));
-          new_well.SetUseForRockPhysics(model_settings->getIndicatorRockPhysics(i));
+          new_well.SetUseForFaciesProbabilities(model_settings->getIndicatorFacies(well));
+          new_well.SetUseForFiltering(model_settings->getIndicatorFilter(well));
+          new_well.SetRealVsLog(model_settings->getIndicatorRealVs(well));
+          new_well.SetUseForBackgroundTrend(model_settings->getIndicatorBGTrend(well));
+          new_well.SetUseForWaveletEstimation(model_settings->getIndicatorWavelet(well));
+          new_well.SetUseForRockPhysics(model_settings->getIndicatorRockPhysics(well));
 
           //Check if well is valid
           bool well_valid = true;
@@ -1214,7 +1247,9 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
           }
           //Check well for valid facies
+          bool facies_log_in_well;
           if (new_well.HasDiscLog("Facies") == true) {
+            facies_log_in_well = true;
             const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
             int n_facies                        = new_well.GetNFacies();
             bool facies_ok_tmp                  = false;
@@ -1233,13 +1268,16 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
               }
             }
           }
+          else
+            facies_log_in_well = false;
+
           if (facies_ok == false) {
             LogKit::LogFormatted(LogKit::Low,"   IGNORED (facies log has wrong entries)\n");
             well_valid = false;
             facies_log_not_ok++;
             TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
           }
-          bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[i]);
+          bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[well]);
           if (monotonous == false) {
             LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is too far from monotonous in time)\n");
             well_valid = false;
@@ -1247,30 +1285,28 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
           }
 
-          well_names[i]            = new_well.GetWellName();
-          well_synthetic_vs_log[i] = new_well.HasSyntheticVsLog();
+          well_names[well]            = new_well.GetWellName();
+          well_synthetic_vs_log[well] = new_well.HasSyntheticVsLog();
 
           if (well_valid == true) {
 
-            valid_index[i] = true;
-            SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[i], n_invalid_vs[i], n_invalid_rho[i]);
+            valid_index[well] = true;
+            SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[well], n_invalid_vs[well], n_invalid_rho[well]);
             FilterLogs(new_well, model_settings);
-            LookForSyntheticVsLog(new_well, model_settings, rank_corr[i]);
-            CalculateDeviation(new_well, model_settings, dev_angle[i], full_inversion_simbox);
+            LookForSyntheticVsLog(new_well, model_settings, rank_corr[well]);
+            CalculateDeviation(new_well, model_settings, dev_angle[well], full_inversion_simbox);
 
             if (n_facies > 0)
-              CountFaciesInWell(new_well, full_inversion_simbox, n_facies, cur_facies_nr, facies_count[i]);
+              CountFaciesInWell(new_well, full_inversion_simbox, n_facies, cur_facies_nr, facies_count[well]);
 
             wells.push_back(base_well);
-
-            if (model_settings->getFaciesLogGiven())
-              facies_log_wells[i] = true;
+            facies_log_wells[well] = facies_log_in_well;
           }
         }
       }
       catch (NRLib::Exception & e) {
         err_text += e.what();
-        valid_index[i] = false;
+        valid_index[well] = false;
       }
 
     } //n_wells
@@ -2039,7 +2075,7 @@ void CommonData::CutWell(std::string           well_file_name,
                          NRLib::Well         & well,
                          const NRLib::Volume & full_inversion_volume) const
 {
-  //This is run after ProcessLogsNorsarWell and ProcessLogsRMSWell so log names should be equal
+  //This is run after ProcessLogsGeneralWell so log names should be equal
   //Possible Logs: X_pos, Y_pos, Z_pos, Dt, Vp, Dts, Vs, Rho, Facies
 
   const std::vector<double> & x_old = well.GetContLog("X_pos");
@@ -2149,155 +2185,12 @@ void CommonData::CutWell(std::string           well_file_name,
 }
 
 
-void CommonData::ProcessLogsNorsarWell(NRLib::Well              & new_well,
-                                       std::vector<std::string> & log_names_from_user,
-                                       const std::vector<bool>  & inverse_velocity,
-                                       bool                       facies_log_given,
-                                       std::string              & err_text) const
-{
-
-  const int factor_kilometer = 1000;
-
-  if (log_names_from_user.size() == 0) {
-    log_names_from_user.push_back("TWT");
-    log_names_from_user.push_back("DT");
-    log_names_from_user.push_back("RHOB");
-    log_names_from_user.push_back("DTS");
-    log_names_from_user.push_back("FACIES");
-  }
-
-  for (size_t i = 0; i < log_names_from_user.size(); i++) {
-    // If the well does not contain the log specified by the user, return an error message
-    if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
-      err_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
-    }
-  }
-
-  // Norsar wells must have a UTMX log
-  if (new_well.HasContLog("UTMX")) {
-    std::vector<double> x_pos_temp = new_well.GetContLog("UTMX");
-    for (unsigned int i=0; i < x_pos_temp.size(); i++) {
-      x_pos_temp[i] = x_pos_temp[i]*factor_kilometer;
-    }
-    new_well.AddContLog("X_pos", x_pos_temp);
-    new_well.RemoveContLog("UTMX");
-  }
-  else {
-    err_text += "Could not find log 'UTMX' in well file "+new_well.GetWellName()+".\n";
-  }
-
-  // Norsar wells must have a UTMY log
-  if (new_well.HasContLog("UTMY")) {
-    std::vector<double> y_pos_temp = new_well.GetContLog("UTMY");
-    for (unsigned int i = 0; i < y_pos_temp.size(); i++) {
-      y_pos_temp[i] = y_pos_temp[i]*factor_kilometer;
-    }
-    new_well.AddContLog("Y_pos", y_pos_temp);
-    new_well.RemoveContLog("UTMY");
-  }
-  else {
-    err_text += "Could not find log 'UTMY' in well file "+new_well.GetWellName()+".\n";
-  }
-
-  int nonmissing_data = 0; //Count number of data not Missing (nd_ in welldata.h)
-
-  //Store TWT as Z_pos
-  if (new_well.HasContLog("TWT")) {
-    std::vector<double> twt_temp = new_well.GetContLog("TWT");
-    for (unsigned int i = 0; i < twt_temp.size(); i++) {
-      twt_temp[i] = twt_temp[i]*factor_kilometer;
-
-      if (twt_temp[i] != WELLMISSING)
-        nonmissing_data++;
-
-    }
-    new_well.AddContLog("Z_pos", twt_temp);
-
-    new_well.SetNumberOfNonMissingData(nonmissing_data);
-  }
-  else { // Process MD log if TVD is not available?
-    err_text += "Could not find log 'TWT' in well file "+new_well.GetWellName()+".\n";
-  }
-
-  // Time is always entry 0 in the log name list and is always called TWT
-  //if (new_well.HasContLog(log_names_from_user[0])) {
-
-  double well_missing = new_well.GetContMissing();
-
-  // Vp/Dt is always entry 1 in the log name list
-  if (new_well.HasContLog(log_names_from_user[1])) {
-
-    //Change missing values. Norsar wells has its own missing value from the well-log
-    std::vector<double> vp_dt_tmp = new_well.GetContLog(log_names_from_user[1]);
-    for (size_t i = 0; i < vp_dt_tmp.size(); i++) {
-      if (vp_dt_tmp[i] == well_missing)
-        vp_dt_tmp[i] = RMISSING;
-    }
-
-    if (inverse_velocity[0] == true) {
-      new_well.RemoveContLog(log_names_from_user[1]);
-      new_well.AddContLog("Dt", vp_dt_tmp); //new_well.GetContLog(log_names_from_user[1])
-    }
-    else {
-      new_well.RemoveContLog(log_names_from_user[1]);
-      new_well.AddContLog("Vp", vp_dt_tmp);
-    }
-  }
-
-  // Rho is always entry 2 in the log name list
-  if (new_well.HasContLog(log_names_from_user[2])) {
-
-    std::vector<double> rho_tmp = new_well.GetContLog(log_names_from_user[2]);
-    for (size_t i = 0; i < rho_tmp.size(); i++) {
-      if (rho_tmp[i] == well_missing)
-        rho_tmp[i] = RMISSING;
-    }
-
-    new_well.RemoveContLog(log_names_from_user[2]);
-    new_well.AddContLog("Rho", rho_tmp);
-  }
-
-  // Vs/Dts is always entry 3 in the log name list
-  if (new_well.HasContLog(log_names_from_user[3])) {
-
-    std::vector<double> vs_dts_tmp = new_well.GetContLog(log_names_from_user[3]);
-    for (size_t i = 0; i < vs_dts_tmp.size(); i++) {
-      if (vs_dts_tmp[i] == well_missing)
-        vs_dts_tmp[i] = RMISSING;
-    }
-
-    if (inverse_velocity[1] == true) {
-      new_well.RemoveContLog(log_names_from_user[3]);
-      new_well.AddContLog("Dts", vs_dts_tmp);
-    }
-    else {
-      new_well.RemoveContLog(log_names_from_user[3]);
-      new_well.AddContLog("Vs", vs_dts_tmp);
-    }
-  }
-
-  // If the facies log is given, it is always entry 4 in the log name list
-  if (facies_log_given) {
-    int well_missing_int = new_well.GetIntMissing();
-
-    if (new_well.HasDiscLog(log_names_from_user[4])) {
-
-      std::vector<int> & facies_tmp = new_well.GetDiscLog(log_names_from_user[4]);
-      for (size_t i = 0; i < facies_tmp.size(); i++) {
-        if (facies_tmp[i] == well_missing_int)
-          facies_tmp[i] = IMISSING;
-      }
-
-      new_well.RemoveDiscLog(log_names_from_user[4]);
-      new_well.AddDiscLog("Facies", facies_tmp);
-    }
-  }
-
-}
 
 void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_well,
-                                        std::vector<std::string>        & log_names_from_user,
+                                        const std::vector<std::string>  & log_names,
+                                        const std::vector<std::string>  & position_log_names,
                                         const std::vector<bool>         & inverse_velocity,
+                                        bool                              relative_coord,
                                         bool                              facies_log_given,
                                         bool                              porosity_log_given,
                                         int                               format,
@@ -2312,74 +2205,79 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
   }
   const double factor_usfeet_to_meters = 304800.0;
 
-  if (log_names_from_user.size() == 0) {
-    log_names_from_user.push_back("TWT");
-    log_names_from_user.push_back("DT");
-    log_names_from_user.push_back("RHOB");
-    log_names_from_user.push_back("DTS");
-    if (facies_log_given)
-      log_names_from_user.push_back("FACIES");
-    if (porosity_log_given)
-      log_names_from_user.push_back("POROSITY");
-  }
-
-  for (size_t i = 0; i < log_names_from_user.size(); i++) {
-    if (i < 5) { // No error message if porosity log is not given
+  new_well.MakeLogsUppercase();
+  for (size_t i = 0; i < log_names.size(); i++) {
+    if (i < 5 && log_names[i] != "") { // No error message if porosity log is not given
       // If the well does not contain the log specified by the user, return an error message
-      if (!new_well.HasContLog(log_names_from_user[i]) && !new_well.HasDiscLog(log_names_from_user[i])) {
-        tmp_error_text+="Could not find log \'" + log_names_from_user[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
+      if (!new_well.HasContLog(log_names[i]) && !new_well.HasDiscLog(log_names[i])) {
+        tmp_error_text+="Could not find log \'" + log_names[i] + "\' in well file \'"+new_well.GetWellName()+"\'.\n";
       }
     }
   }
 
   //Process X and Y directions
-  std::string x_log_name;
-  if (new_well.HasContLog("X"))
-    x_log_name = "X";
-  else if (new_well.HasContLog("UTMX"))
-    x_log_name = "UTMX";
-  else if (new_well.HasContLog("EASTING"))
-    x_log_name = "EASTING";
-  else {
-    tmp_error_text += "Could not find valid log for x-coordinate in well file "+new_well.GetWellName()+". (Tried X, UTMX and EASTINGS.)\n";
+  std::string x_log_name = position_log_names[0];
+  if(x_log_name == "") {
+    if (new_well.HasContLog("X"))
+      x_log_name = "X";
+    else if (new_well.HasContLog("UTMX"))
+      x_log_name = "UTMX";
+    else if (new_well.HasContLog("EASTING"))
+      x_log_name = "EASTING";
+    else {
+      tmp_error_text += "Could not find valid log for x-coordinate in well file "+new_well.GetWellName()+". (Tried X, UTMX and EASTINGS.)\n";
+    }
   }
+  else if(new_well.HasContLog(position_log_names[0]) == false)
+    tmp_error_text += "Could not find x-coordinate log '"+position_log_names[0]+ "' in well file "+new_well.GetWellName()+".\n";
 
-  std::string y_log_name="";
-  if (new_well.HasContLog("Y"))
-    y_log_name = "Y";
-  else if (new_well.HasContLog("UTMY"))
-    y_log_name = "UTMY";
-  else if (new_well.HasContLog("NORTHING"))
-    y_log_name = "NORTHING";
-  else {
-    tmp_error_text += "Could not find valid log for y-coordinate in well file "+new_well.GetWellName()+". (Tried Y, UTMY and NORTHING.)\n";
+  std::string y_log_name = position_log_names[1];
+  if(y_log_name == "") {
+    if (new_well.HasContLog("Y"))
+      y_log_name = "Y";
+    else if (new_well.HasContLog("UTMY"))
+      y_log_name = "UTMY";
+    else if (new_well.HasContLog("NORTHING"))
+      y_log_name = "NORTHING";
+    else {
+      tmp_error_text += "Could not find valid log for y-coordinate in well file "+new_well.GetWellName()+". (Tried Y, UTMY and NORTHING.)\n";
+    }
   }
+  else if(new_well.HasContLog(position_log_names[1]) == false)
+    tmp_error_text += "Could not find y-coordinate log '"+position_log_names[1]+ "' in well file "+new_well.GetWellName()+".\n";
 
     //Store TWT as Z_pos
   if (new_well.HasContLog("Z"))
     new_well.RemoveContLog("Z");
 
+  double x_shift = 0;
+  double y_shift = 0;
+  if(relative_coord == true) {
+    x_shift = new_well.GetXPos0();
+    y_shift = new_well.GetYPos0();
+  }
+
   if (tmp_error_text == "") {
     const std::vector<double> & x_log = new_well.GetContLog(x_log_name);
     const std::vector<double> & y_log = new_well.GetContLog(y_log_name);
-    const std::vector<double> & z_log = new_well.GetContLog(log_names_from_user[0]);
-    const std::vector<double> & vp    = new_well.GetContLog(log_names_from_user[1]);
-    const std::vector<double> & rho   = new_well.GetContLog(log_names_from_user[2]);
-    const std::vector<double> & vs    = new_well.GetContLog(log_names_from_user[3]);
+    const std::vector<double> & z_log = new_well.GetContLog(log_names[0]);
+    const std::vector<double> & vp    = new_well.GetContLog(log_names[1]);
+    const std::vector<double> & rho   = new_well.GetContLog(log_names[2]);
+    const std::vector<double> & vs    = new_well.GetContLog(log_names[3]);
 
     std::vector<int>    df_log;
     std::vector<double> cf_log;
     if (facies_log_given == true) {
-      if (new_well.HasDiscLog(log_names_from_user[4]))
-        df_log = new_well.GetDiscLog(log_names_from_user[4]);
+      if (new_well.HasDiscLog(log_names[4]))
+        df_log = new_well.GetDiscLog(log_names[4]);
       else
-        cf_log = new_well.GetContLog(log_names_from_user[4]);
+        cf_log = new_well.GetContLog(log_names[4]);
     }
 
     std::vector<double> poro;
     if (porosity_log_given == true) {
-      if (new_well.HasContLog(log_names_from_user[5]))
-        poro = new_well.GetContLog(log_names_from_user[5]);
+      if (new_well.HasContLog(log_names[5]))
+        poro = new_well.GetContLog(log_names[5]);
       else
         poro.resize(z_log.size(), RMISSING);
     }
@@ -2395,9 +2293,11 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
 
 
     for (size_t i=0;i<z_log.size();i++) {
-      if (new_well.IsMissing(z_log[i]) == false) {
-        new_x.push_back(x_log[i]*xy_scale);
-        new_y.push_back(y_log[i]*xy_scale);
+      if (new_well.IsMissing(z_log[i]) == false &&
+          new_well.IsMissing(x_log[i]) == false &&
+          new_well.IsMissing(y_log[i]) == false) {
+        new_x.push_back((x_log[i]+x_shift)*xy_scale);
+        new_y.push_back((y_log[i]+y_shift)*xy_scale);
         new_z.push_back(z_log[i]*time_scale);
 
         if (new_well.IsMissing(vp[i]))
@@ -2448,27 +2348,27 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     new_well.SetNumberOfNonMissingData(static_cast<int>(new_z.size()));
     new_well.SetNumberOfData(static_cast<int>(new_z.size()));
 
-    new_well.RemoveContLog(log_names_from_user[1]);
+    new_well.RemoveContLog(log_names[1]);
     new_well.AddContLog("Vp", new_vp);
-    new_well.RemoveContLog(log_names_from_user[3]);
+    new_well.RemoveContLog(log_names[3]);
     new_well.AddContLog("Vs", new_vs);
-    new_well.RemoveContLog(log_names_from_user[2]);
+    new_well.RemoveContLog(log_names[2]);
     new_well.AddContLog("Rho", new_rho);
 
     new_well.SetMissing(RMISSING);
     if (df_log.size() > 0) {
-      new_well.SetFaciesMappingFromDiscLog(log_names_from_user[4]);
-      new_well.RemoveDiscLog(log_names_from_user[4]);
+      new_well.SetFaciesMappingFromDiscLog(log_names[4]);
+      new_well.RemoveDiscLog(log_names[4]);
       new_well.AddDiscLog("Facies", new_facies);
     }
     else if (cf_log.size() > 0) {
-      new_well.RemoveContLog(log_names_from_user[4]);
+      new_well.RemoveContLog(log_names[4]);
       new_well.AddDiscLog("Facies", new_facies);
       new_well.SetFaciesMappingFromDiscLog("Facies");
     }
 
     if (porosity_log_given == true) {
-      new_well.RemoveContLog(log_names_from_user[5]);
+      new_well.RemoveContLog(log_names[5]);
       new_well.AddContLog("Porosity", new_porosity);
     }
   }

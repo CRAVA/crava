@@ -1787,7 +1787,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsection{\hbracket{log-names}} \newkw{log-names}
  \slist
-   \item \Description CRAVA needs to find the time, vp, vs, density and possibly facies logs. The name of these logs in the well files are given here.
+   \item \Description CRAVA needs to find the time, vp, vs, density and possibly facies logs. The name of these logs in the well files are given here. Note that log names are not case sensitive.
    \item \Argument Name of logs
    \item \Default
  \elist
@@ -1841,11 +1841,32 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubsection{\hbracket{facies}}\newkw{facies}
+\subsubsection{\hbracket{x-coordinate}}\newkw{x-coordinate}
  \slist
-   \item \Description Name of the facies log.
+   \item \Description Name of the x-coordinate log.
    \item \Argument String
-   \item \Default %'FACIES'
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{y-coordinate}}\newkw{y-coordinate}
+ \slist
+   \item \Description Name of the y-coordinate log.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{relative-x-coordinate}}\newkw{x-coordinate}
+ \slist
+   \item \Description Name of the relative x-coordinate log. Can not be given togehter with \kw{x-coordinate} or \kw{y-coordinate}.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\subsubsection{\hbracket{relative-y-coordinate}}\newkw{y-coordinate}
+ \slist
+   \item \Description Name of the relative y-coordinate log.  Can not be given togehter with \kw{x-coordinate} or \kw{y-coordinate}.
+   \item \Argument String
+   \item \Default
  \elist
 
 \subsection{\hbracket{well}}\newkw{well}
@@ -1854,6 +1875,15 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument Elements containing information about the wells
    \item \Default
  \elist
+
+\subsubsection{\hbracket{log-names}} \rnewkw{log-names}{log-names2}
+ \slist
+   \item \Description of log headings for this well. Same arguments as for the common \rkw{log-names} above. The name of these logs for this well file are given here.
+   \item \Argument Name of logs
+   \item \Default Log names that are not given here are taken from the common \kw{log-names} above.
+ \elist
+
+
 
 \subsubsection{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
  \slist

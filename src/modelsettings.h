@@ -88,7 +88,13 @@ public:
   float                            getRickerPeakFrequency(int i, int j) const { return timeLapseRickerPeakFrequency_[i][j]        ;}
   const std::string              & getBackgroundType(void)              const { return backgroundType_                            ;}
   const std::vector<std::string> & getLogNames(void)                    const { return logNames_                                  ;}
+  const std::vector<std::string> & getPositionLogNames(void)            const { return positionLogNames_                          ;}
   const std::vector<bool>        & getInverseVelocity(void)             const { return inverseVelocity_                           ;}
+  bool                             getRelativeCoord(void)               const { return relativeCoord_                             ;}
+  const std::vector<std::string> & getWellLogNames(int i)               const { return wellLogNames_[i]                           ;}
+  const std::vector<std::string> & getWellPositionLogNames(int i)       const { return wellPositionLogNames_[i]                   ;}
+  const std::vector<bool>        & getWellInverseVelocity(int i)        const { return wellInverseVelocity_[i]                    ;}
+  bool                             getWellRelativeCoord(int i)          const { return wellRelativeCoord_[i]                      ;}
   int                              getIndicatorBGTrend(int i)           const { return indBGTrend_[i]                             ;}
   int                              getIndicatorWavelet(int i)           const { return indWavelet_[i]                             ;}
   int                              getIndicatorFacies(int i)            const { return indFacies_[i]                              ;}
@@ -337,8 +343,15 @@ public:
   void addIndicatorFilter(int indicator)                  { indFilter_.push_back(indicator)                      ;}
   void setIndicatorFilter(int i ,int indicator)           { indFilter_[i]             = indicator                ;}
   void setLogName(int i, const std::string & logName)     { logNames_[i]              = NRLib::Uppercase(logName);}
+  void setPositionLogNames(const std::vector<std::string> & logNames){ positionLogNames_ = logNames              ;}
   void addLogName(const std::string & log_name)           { logNames_.push_back(NRLib::Uppercase(log_name))      ;}
   void setInverseVelocity(int i, bool inverse)            { inverseVelocity_[i]       = inverse                  ;}
+  void setRelativeCoord(bool is_relative)                 { relativeCoord_            = is_relative              ;}
+  void addWellLogNames(std::vector<std::string> & names)  { wellLogNames_.push_back(names)                       ;}
+  void addWellPositionLogNames(std::vector<std::string> & names) { wellPositionLogNames_.push_back(names)        ;}
+  void addWellInverseVelocity(std::vector<bool> & inv)    { wellInverseVelocity_.push_back(inv)                  ;}
+  void addWellRelativeCoord(bool relative)                { wellRelativeCoord_.push_back(relative)               ;}
+
   void setNumberOfThreads(int n_threads)                  { number_of_threads_        = n_threads                ;}
   void setNumberOfWells(int nWells)                       { nWells_                   = nWells                   ;}
   void setNumberOfSimulations(int nSimulations)           { nSimulations_             = nSimulations             ;}
@@ -680,8 +693,15 @@ private:
   std::vector<int>                  indRealVs_;                  ///< Treat Vs log as real?
   std::vector<int>                  indFilter_;                  ///< Filter elastic logs using spatial multi-parameter filter?
 
-  std::vector<std::string>          logNames_;                   ///< The keywords to look for for time, sonic, shear sonic and density
+  std::vector<std::string>          logNames_;                   ///< The keywords to look for for time, sonic, shear sonic, density, facies and porosity
+  std::vector<std::string>          positionLogNames_;           ///< Keywords for x- and y-position.
   std::vector<bool>                 inverseVelocity_;            ///< If element 0 is true, vp comes from dt, if 1 is true, vs comes from dts in well.
+  bool                              relativeCoord_;              ///< Well coordinates are relative to well position.
+
+  std::vector<std::vector<std::string> > wellLogNames_;          ///< As above, but with one set of values per well.
+  std::vector<std::vector<std::string> > wellPositionLogNames_;  ///< As above, but with one set of values per well.
+  std::vector<std::vector<bool> >        wellInverseVelocity_;   ///< As above, but with one set of values per well.
+  std::vector<bool>                      wellRelativeCoord_;     ///< As above, but with one set of values per well.
 
   int                                                  priorFaciesProbGiven_;
   //std::map<std::string, float>      priorFaciesProb_;
