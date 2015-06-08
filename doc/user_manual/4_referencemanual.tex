@@ -1864,14 +1864,14 @@ the vertical sampling interval we find the the number of parameters that is esti
 
 \subsubsection{\hbracket{relative-x-coordinate}}\newkw{relative-x-coordinate}
  \slist
-   \item \Description Name of the relative x-coordinate log. Can not be given togehter with \kw{x-coordinate} or \kw{y-coordinate}.
+   \item \Description Name of the relative x-coordinate log. Can not be given together with \kw{x-coordinate} or \kw{y-coordinate}.
    \item \Argument String
    \item \Default
  \elist
 
 \subsubsection{\hbracket{relative-y-coordinate}}\newkw{relative-y-coordinate}
  \slist
-   \item \Description Name of the relative y-coordinate log.  Can not be given togehter with \kw{x-coordinate} or \kw{y-coordinate}.
+   \item \Description Name of the relative y-coordinate log.  Can not be given together with \kw{x-coordinate} or \kw{y-coordinate}.
    \item \Argument String
    \item \Default
  \elist
@@ -1883,14 +1883,96 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
-\subsubsection{\hbracket{log-names}} \rnewkw{log-names}{log-names2}
+\subsubsection{\hbracket{log-names}} \rnewkw{log-names}{log-names-well}
  \slist
-   \item \Description of log headings for this well. Same arguments as for the common \rkw{log-names} above. The name of these logs for this well file are given here.
+   \item \Description The name of log headings for this well file are given here. Same arguments as for the common \kw{log-names} above.
    \item \Argument Name of logs
    \item \Default Log names that are not given here are taken from the common \kw{log-names} above.
  \elist
 
+\paragraph{\hbracket{time}}\rnewkw{time}{time-well}
+ \slist
+   \item \Description Name of the TWT log
+   \item \Argument String
+   \item \Default %'TWT'
+ \elist
 
+\paragraph{\hbracket{vp}}\rnewkw{vp}{vp-well}
+ \slist
+   \item \Description Name of the vp log. May not be given if \rkw{dt}{dt-well} is given.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{dt}}\rnewkw{dt}{dt-well}
+ \slist
+   \item \Description Name of the inverse vp log. May not be given if \rkw{vp}{vp-well} is given.
+   \item \Argument String
+   \item \Default %'DT'
+ \elist
+
+\paragraph{\hbracket{vs}}\rnewkw{vs}{vs-well}
+ \slist
+   \item \Description Name of the vs log. May not be given if \rkw{dts}{dts-well} is given.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{dts}}\rnewkw{dts}{dts-well}
+ \slist
+   \item \Description Name of the inverse vs log. May not be given if \rkw{vs}{vs-well} is given.
+   \item \Argument String
+   \item \Default %'DTS'
+ \elist
+
+\paragraph{\hbracket{density}}\rnewkw{density}{density-well}
+ \slist
+   \item \Description Name of the density log.
+   \item \Argument String
+   \item \Default %'RHOB'
+ \elist
+
+\paragraph{\hbracket{porosity}}\rnewkw{porosity}{porosity-well}
+ \slist
+   \item \Description Name of the porosity log. Leave empty if porosity is not included.
+   \item \Argument String
+   \item \Default
+ \elist
+ 
+\paragraph{\hbracket{facies}}\rnewkw{facies}{facies-well}
+ \slist
+   \item \Description Name of the facies log.
+   \item \Argument String
+   \item \Default %'FACIES'
+ \elist 
+
+\paragraph{\hbracket{x-coordinate}}\rnewkw{x-coordinate}{x-coordinate-well}
+ \slist
+   \item \Description Name of the x-coordinate log.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{y-coordinate}}\rnewkw{y-coordinate}{y-coordinate-well}
+ \slist
+   \item \Description Name of the y-coordinate log.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{relative-x-coordinate}}\rnewkw{relative-x-coordinate}{relative-x-coordinate-well}
+ \slist
+   \item \Description Name of the relative x-coordinate log. Can not be given together with \rkw{x-coordinate}{x-coordinate-well} or \rkw{y-coordinate}{y-coordinate-well}.
+   \item \Argument String
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{relative-y-coordinate}}\rnewkw{relative-y-coordinate}{relative-y-coordinate-well}
+ \slist
+   \item \Description Name of the relative y-coordinate log.  Can not be given together with \rkw{x-coordinate}{x-coordinate-well} or \rkw{y-coordinate}{y-coordinate-well}.
+   \item \Argument String
+   \item \Default
+ \elist
 
 \subsubsection{\hbracket{file-name}}\rnewkw{file-name}{file-name3}
  \slist
