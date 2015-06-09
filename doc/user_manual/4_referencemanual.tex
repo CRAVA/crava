@@ -2335,53 +2335,13 @@ the vertical sampling interval we find the the number of parameters that is esti
      with multiple intervals, and then use the written background as input in a single interval Crava run.
  \elist
 
-\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
- \slist
-   \item \Description Name of the top surface file used in multizone background estimation
-   \item \Argument File name
-   \item \Default
- \elist
-
-\paragraph{\hbracket{top-surface-erosion-priority}}\newkw{top-surface-erosion-priority}
- \slist
-   \item \Description Priority of the top surface file. The top surface file and all base surface files in the zones need to given different priority. By default, the erosion priority for the top surface is 1.
-   \item \Argument Int
-   \item \Default 1
- \elist
-
-\paragraph{\hbracket{zone}}\newkw{zone}
- \slist
-   \item \Description Information about the different zones in the multizone background model
-   \item \Argument Elements controlling the zones of the multizone background model
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file4}
- \slist
-   \item \Description Name of a base surface file. The base surface files need to be given in descending order such that surfaces that are higher in the reservoir comes in before surfaces that are further down.
-   \item \Argument File name
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{surface-uncertainty}}\newkw{surface-uncertainty}
- \slist
-   \item \Description Uncertainty of this base surface, given as the maximum deviation from the values in the file. Note: Must be 0 i last zone.
-   \item \Argument Value
- \elist
-
-\subparagraph{\hbracket{erosion-priority}}\newkw{erosion-priority}
- \slist
-   \item \Description Priority of the base surface file. The top surface file and all base surface files in the zones need to given different priority
-   \item \Argument Int
-   \item \Default
- \elist
-
-\subparagraph{\hbracket{correlation-structure}}\newkw{correlation-structure}
- \slist
-   \item \Description Correlation structure of the zone
-   \item \Argument 'top', 'base' or 'compaction'
-   \item \Default
- \elist
+%\paragraph{\hbracket{top-surface-file}}\rnewkw{top-surface-file}{top-surface-file4}
+% \slist
+%   \item \Description Name of the top surface file used in multizone background estimation
+%   \item \Argument File name
+%   \item \Default
+% \elist
+%
 
 \subsection{\hbracket{earth-model}}\newkw{earth-model}
  \slist
