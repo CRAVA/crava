@@ -7362,7 +7362,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         for (int i = 0; i < n_intervals; i++) {
 
-          const Simbox * simbox = multi_interval_grid->GetIntervalSimbox(j);
+          const Simbox * simbox = multi_interval_grid->GetIntervalSimbox(i);
           int nx = simbox->getnx();
           int ny = simbox->getny();
           int nz = simbox->getnz();
