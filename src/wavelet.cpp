@@ -679,10 +679,10 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << dznew   << "\n"
          << wLength << "\n";
 
-    for(int i=halfLength ; i > 0 ; i--)
-      file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-    for(int i=0;i<=halfLength;i++)
+    for(int i = halfLength; i > 0; i--)
       file << std::setprecision(6) << waveletNew_r[i] << "\n";
+    for(int i=0;i<=halfLength;i++)
+      file << std::setprecision(6) << waveletNew_r[nzpNew-i-1] << "\n";
     file.close();
   }
 
@@ -716,16 +716,12 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << t0
          << "\n";
 
-    for (int i = halfLength ; i > 0 ; i--)
-      file << std::setprecision(6) << waveletNew_r[nzpNew-i] << "\n";
-    for (int i = 0; i <= halfLength; i++)
+    for(int i = halfLength; i > 0; i--)
       file << std::setprecision(6) << waveletNew_r[i] << "\n";
+    for(int i=0;i<=halfLength;i++)
+      file << std::setprecision(6) << waveletNew_r[nzpNew-i-1] << "\n";
     file.close();
   }
-
-
-
-
 
   delete [] waveletNew_r;
 }
@@ -1287,14 +1283,16 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     NRLib::DiscardRestOfLine(file,line,false);
   thisLine = line;
 
-  nz  = NRLib::ParseType<int>(dummyStr);
-  cz    =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
-  nzp   = nz_;
-  cnzp  = nzp_/2+1;
-  rnzp  = 2*cnzp_;
-  rAmp  = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
-  cAmp  = reinterpret_cast<fftw_complex*>(rAmp);
-  norm  = RMISSING;
+  nz   = NRLib::ParseType<int>(dummyStr);
+  nzp  = nz_;
+  cnzp = nzp_/2+1;
+  rnzp = 2*cnzp_;
+  rAmp = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
+  cAmp = reinterpret_cast<fftw_complex*>(rAmp);
+  norm = RMISSING;
+
+  int cz_file = static_cast<int>(floor((fabs(shift/dz_))+0.5));
+  cz          = nz_ - cz_file; //Wavelets are flipped
 
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
@@ -1304,8 +1302,10 @@ Wavelet::WaveletReadJason(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp[i] = NRLib::ParseType<float>(dummyStr);
+    rAmp[nz_-i-1] = NRLib::ParseType<float>(dummyStr); //Flip wavelet
   }
+
+
   file.close();
 }
 
@@ -1392,13 +1392,15 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   firstSample = NRLib::ReadNext<float>(file,line);
 
   dz_   = samplingInt * milliSec;
-  cz_   = static_cast<int>((-firstSample / dz_) + 0.5);
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
   rnzp_ = 2*cnzp_;
-  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_)); //new fftw_real[rnzp_];
+  rAmp_ = static_cast<fftw_real*>(fftw_malloc(sizeof(float)*rnzp_));
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
   norm_ = RMISSING;
+
+  int cz_file = static_cast<int>((-firstSample / dz_) + 0.5);
+  cz_         = nz_ - cz_file; //Wavelets are flipped
 
   // Pulse samples
   for(int i=0; i<nz_;i++) {
@@ -1409,7 +1411,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr));
+    rAmp_[nz_-i-1] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr)); //Flip wavelet
   }
   file.close();
 }
