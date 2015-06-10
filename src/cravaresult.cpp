@@ -2471,20 +2471,6 @@ CravaResult::CreateMissingGrid(const Simbox & simbox)
 void CravaResult::SetMissingInGrid(StormContGrid       & grid,
                                    NRLib::Grid2D<bool> * missing_map)
 {
-  //bool has_missing = false; //H-REMOVE No missing, should not enter this function
-  //for (size_t i = 0; i < missing_map->GetNI(); i++) {
-  //  for (size_t j = 0; j < missing_map->GetNJ(); j++) {
-  //    if ((*missing_map)(i,j) == true) {
-  //      has_missing = true;
-  //      i = missing_map->GetNI() - 1;
-  //      j = missing_map->GetNJ() - 1;
-  //    }
-  //  }
-  //}
-
-  //if (has_missing == false)
-  //  return;
-
   for (size_t i = 0; i < grid.GetNI(); i++) {
     for (size_t j = 0; j < grid.GetNJ(); j++) {
 
