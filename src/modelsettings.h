@@ -40,6 +40,7 @@ public:
   SegyGeometry                   * getSeismicDataAreaParameters(void)   const { return geometry_full_                             ;}
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
+  TraceHeaderFormat              * getTraceHeaderFormatBackground(int i)const { return traceHeaderFormatBackground_[i]            ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
   int                              getNumberOfThreads(void)             const { return number_of_threads_                         ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
@@ -272,6 +273,7 @@ public:
   void setSeismicDataAreaParameters(const SegyGeometry * geometry);
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
   void setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat);
+  void setTraceHeaderFormatBackground(int parameter, TraceHeaderFormat * traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void setKrigingParameter(int krigingParameter)          { krigingParameter_         = krigingParameter         ;}
@@ -580,6 +582,7 @@ private:
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
   TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
+  std::vector<TraceHeaderFormat*>   traceHeaderFormatBackground_;// traceheader per background
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
 

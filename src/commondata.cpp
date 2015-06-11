@@ -7308,7 +7308,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
       if (const_back_value < 0) {
         if (back_file.size() > 0) {
           const SegyGeometry      * dummy1 = NULL;
-          const TraceHeaderFormat * dummy2 = NULL;
+          const TraceHeaderFormat * thf    = model_settings->getTraceHeaderFormatBackground(j);
           const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used.
           std::string err_text_tmp = "";
 
@@ -7322,7 +7322,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                            offset,
                            parameter_tmp, //This is split in intervals inside.
                            dummy1,
-                           dummy2,
+                           thf,
                            PARAMETER,
                            multi_interval_grid->GetIntervalSimboxes(),
                            inversion_simbox,

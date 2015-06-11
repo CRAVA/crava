@@ -2326,6 +2326,75 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument 'yes' or 'no'
    \item \Default 'yes'
  \elist
+ 
+\subsubsection{\hbracket{segy-header}}\newkw{segy-header}
+ \slist
+   \item \Description Repeatable, optional command: Separate segy-header for each background file if they are given in segy-format.
+   \item \Default Standard-format
+ \elist
+ 
+\paragraph{\hbracket{parameter}}\newkw{parameter}
+ \slist
+   \item \Description Reapeatable command: Specifies which background parameters uses the following \rkw{segy-format}{segy-format3}.
+   \item \Argument ai, si, vp, vs or rho/density
+   \item \Default
+ \elist 
+ 
+\paragraph{\hbracket{segy-format}}\rnewkw{segy-format}{segy-format3}
+ \slist
+   \item \Description Information about the segy format. By default, CRAVA recognises SeisWorks, IESX, SIP and Charisma. See Table \ref{tab:segyformats}.
+   \item \Argument Elements containing information about the segy format
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{standard-format}}\rnewkw{standard-format}{standard-format3}
+ \slist
+   \item \Description Giving the starting format for modifications.
+   \item \Argument 'seisworks', 'iesx', 'charisma' or 'SIP'
+   \item \Default 'seisworks'
+ \elist
+
+\subparagraph{\hbracket{location-x}}\rnewkw{location-x}{location-x3}
+ \slist
+   \item \Description The byte location for the x-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-y}}\rnewkw{location-y}{location-y3}
+ \slist
+   \item \Description The byte location for the y-coordinate in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-il}}\rnewkw{location-il}{location-il3}
+ \slist
+   \item \Description The byte location for the inline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-xl}}\rnewkw{location-xl}{location-xl3}
+ \slist
+   \item \Description The byte location for the crossline in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{bypass-coordinate-scaling3}
+ \slist
+   \item \Description Indicates whether coordinate scaling information should be used.
+   \item \Argument 'yes' or 'no'
+   \item \Default
+ \elist
+
+\subparagraph{\hbracket{location-scaling-coefficient}}\rnewkw{location-scaling-coefficient}{location-scaling-coefficient3}
+ \slist
+   \item \Description
+   \item \Argument Integer
+   \item \Default
+ \elist
 
 \subsubsection{\hbracket{multizone-model} (REMOVED)}\newkw{multizone-model}
  \slist

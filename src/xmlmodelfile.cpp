@@ -1629,6 +1629,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("high-cut-background-modelling");
   legalCommands.push_back("filter-multizone-background");
+  legalCommands.push_back("segy-header");
   legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
@@ -1759,6 +1760,8 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "filter-multizone-background", filter_multizone_background, errTxt) == true)
     modelSettings_->setFilterMultizoneBackground(filter_multizone_background);
 
+  while(parseSegyHeader(root,errTxt) == true);
+
   bool multizone = false;
   if(parseMultizoneModel(root,errTxt) == true)
     multizone = true;
@@ -1768,12 +1771,58 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
               "are given for the seismic parameters in <background>\n";
 
   if((velocity_field & multizone) == true)
-    errTxt += "<velocity-field> can not be given when multizone bacground model is to be estimated in <background>\n";
+    errTxt += "<velocity-field> can not be given when multizone background model is to be estimated in <background>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseSegyHeader(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("segy-header");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("parameter");
+  legalCommands.push_back("segy-format");
+
+  std::vector<std::string> parameter_names;
+  std::string parameter_name;
+  while(parseValue(root, "parameter", parameter_name, errTxt, true) == true) {
+    parameter_names.push_back(NRLib::Uppercase(parameter_name));
+  }
+
+  if (parameter_names.size() == 0)
+    errTxt += "Keyword <parameter> is missing under " + node->ValueStr() + ".\n";
+
+  //Read trace-header
+  TraceHeaderFormat *thf = NULL;
+  bool segyFormat = parseTraceHeaderFormat(root, "segy-format", thf, errTxt);
+
+  for (size_t i = 0; i < parameter_names.size(); i++) {
+    int parameter = -1;
+
+    if (parameter_names[i] == "VP" || parameter_names[i] == "AI")
+      parameter = 0;
+    else if (parameter_names[i] == "VS" || parameter_names[i] == "SI")
+      parameter = 1;
+    else if (parameter_names[i] == "DENSITY" || parameter_names[i] == "RHO")
+      parameter = 2;
+
+    if (parameter < 0)
+      errTxt += "Did not find correct <parameter> under " + node->ValueStr() + ". Found " + parameter_names[i] + ", should be either vp, ai, vs, si, density or rho. \n";
+    else {
+      if (segyFormat == true)
+        modelSettings_->setTraceHeaderFormatBackground(parameter, thf);
+    }
+  }
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+
+}
 
 bool
 XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
@@ -6108,12 +6157,10 @@ XmlModelFile::checkConsistency(std::string & errTxt)
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
-  //checkMultizoneBackgroundConsistency(errTxt);
   if(modelSettings_->getDo4DInversion() && surveyFailed_ == false)
     checkTimeLapseConsistency(errTxt);
 
   if (inputFiles_->getReflMatrFile() != "") {
-    //if (modelSettings_->getVpVsRatio() != RMISSING) {
     if (modelSettings_->getVpVsRatios().find("") != modelSettings_->getVpVsRatios().end()) {
       errTxt += "You cannot specify a Vp/Vs ratio when a reflection matrix is read from file";
     }
@@ -6121,7 +6168,6 @@ XmlModelFile::checkConsistency(std::string & errTxt)
       errTxt += "You cannot ask the Vp/Vs ratio to be calculated from well data when a reflection matrix is read from file";
     }
   }
-  //if (modelSettings_->getVpVsRatio() != RMISSING) {
   if (modelSettings_->getVpVsRatios().find("") != modelSettings_->getVpVsRatios().end()) {
     double vpvs    = modelSettings_->getVpVsRatio("");
     double vpvsMin = modelSettings_->getVpVsRatioMin();
@@ -6161,6 +6207,23 @@ XmlModelFile::checkConsistency(std::string & errTxt)
     }
   }
   checkRockPhysicsConsistency(errTxt);
+
+  //Check consistency between background files and segy-header
+  for (int i = 0; i < 3; i++) {
+    std::string back_file = inputFiles_->getBackFile(i);
+
+    if (back_file != "") {
+
+      std::vector<std::string> parameter;
+      parameter.push_back("vp/ai");
+      parameter.push_back("vs/si");
+      parameter.push_back("density/rho");
+
+     if (!IO::findGridType(back_file) == IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
+       errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+      
+    }
+  }
 
 #ifdef PARALLEL
 #pragma omp parallel
@@ -6741,24 +6804,3 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
   }
 }
-
-//void
-//XmlModelFile::checkMultizoneBackgroundConsistency(std::string & errTxt)
-//{
-//  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getMultizoneBackground() == true){
-//    errTxt+= "<multiple-intervals> can not be used at the same time as <multizone-model>";
-//  } else if(modelSettings_->getMultizoneBackground() == true) {
-//    std::vector<std::string> multizoneSurface = inputFiles_->getMultizoneSurfaceFiles();
-//    int nSurfaces = static_cast<int>(multizoneSurface.size());
-//    const std::string & top = inputFiles_->getTimeSurfFile(0);
-//    const std::string & base = inputFiles_->getTimeSurfFile(1);
-//    if(top != multizoneSurface[0]) {
-//      errTxt += "The top surface time file in <interval-two-surfaces> nees to be the same as the \n"
-//                "top surface file in the multizone background model\n";
-//    }
-//    if(base != multizoneSurface[nSurfaces-1]) {
-//      errTxt += "The base surface time file in <interval-two-surfaces> nees to be the same as the \n"
-//                "lowest base surface file in the multizone background model\n";
-//    }
-//  }
-//}

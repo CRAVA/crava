@@ -55,6 +55,7 @@ ModelSettings::ModelSettings(void)
   geometry_                   =     NULL;
   traceHeaderFormat_          =     NULL;
   traceHeaderFormatOutput_    = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
+  traceHeaderFormatBackground_.resize(3, NULL);
   krigingParameter_           =        0; // Indicate kriging not set.
   nWells_                     =        0;
   nSimulations_               =        0;
@@ -265,6 +266,13 @@ ModelSettings::~ModelSettings(void)
     }
   }
 
+  for (size_t i = 0; i < traceHeaderFormatBackground_.size(); i++) {
+    if (traceHeaderFormatBackground_[i] != NULL) {
+      delete traceHeaderFormatBackground_[i];
+      traceHeaderFormatBackground_[i] = NULL;
+    }
+  }
+
   for(std::map<std::string, DistributionsRockStorage *>::iterator it = rockStorage_.begin(); it != rockStorage_.end(); it++) {
     DistributionsRockStorage * storage = it->second;
     delete storage;
@@ -441,6 +449,13 @@ ModelSettings::setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat)
   traceHeaderFormatOutput_ = new TraceHeaderFormat(*traceHeaderFormat);
 }
 
+void
+ModelSettings::setTraceHeaderFormatBackground(int parameter, TraceHeaderFormat * traceHeaderFormat)
+{
+  if (traceHeaderFormatBackground_[parameter] != NULL)
+    delete traceHeaderFormatBackground_[parameter];
+  traceHeaderFormatBackground_[parameter] = new TraceHeaderFormat(*traceHeaderFormat);
+}
 
 void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)
