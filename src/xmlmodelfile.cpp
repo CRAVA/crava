@@ -1525,6 +1525,7 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("ai-file");
   legalCommands.push_back("si-file");
   legalCommands.push_back("vp-vs-ratio-file");
+  legalCommands.push_back("segy-header");
 
   if (modelSettings_->getBackgroundType() != "")
     errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
@@ -1602,6 +1603,8 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
       errTxt += "Earth model has not been completely specified in command <"+root->ValueStr()+"> "+
         lineColumnText(root)+". Please specify {Vp,Vs,Rho}, {AI,SI,Rho}, or {AI,Vp/Vs,Rho}.\n";
   }
+
+  while(parseSegyHeader(root,errTxt) == true);
 
   modelSettings_->setGenerateBackground(false);
   checkForJunk(root, errTxt, legalCommands);
@@ -1806,13 +1809,13 @@ XmlModelFile::parseSegyHeader(TiXmlNode * node, std::string & errTxt)
 
     if (parameter_names[i] == "VP" || parameter_names[i] == "AI")
       parameter = 0;
-    else if (parameter_names[i] == "VS" || parameter_names[i] == "SI")
+    else if (parameter_names[i] == "VS" || parameter_names[i] == "SI" || parameter_names[i] == "VP-VS-RATIO")
       parameter = 1;
     else if (parameter_names[i] == "DENSITY" || parameter_names[i] == "RHO")
       parameter = 2;
 
     if (parameter < 0)
-      errTxt += "Did not find correct <parameter> under " + node->ValueStr() + ". Found " + parameter_names[i] + ", should be either vp, ai, vs, si, density or rho. \n";
+      errTxt += "Did not find correct <parameter> under " + node->ValueStr() + ". Found " + parameter_names[i] + ", should be either vp, ai, vs, si, vp-vs-ratio, density or rho. \n";
     else {
       if (segyFormat == true)
         modelSettings_->setTraceHeaderFormatBackground(parameter, thf);
@@ -6210,18 +6213,21 @@ XmlModelFile::checkConsistency(std::string & errTxt)
 
   //Check consistency between background files and segy-header
   for (int i = 0; i < 3; i++) {
+    std::string input_dir = inputFiles_->getInputDirectory();
     std::string back_file = inputFiles_->getBackFile(i);
 
     if (back_file != "") {
 
       std::vector<std::string> parameter;
       parameter.push_back("vp/ai");
-      parameter.push_back("vs/si");
+      parameter.push_back("vs/si/vp-vs-ratio");
       parameter.push_back("density/rho");
 
-     if (!IO::findGridType(back_file) == IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
-       errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
-      
+      std::string file_name = input_dir + back_file;
+
+      if (!IO::findGridType(file_name) == IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
+        errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+
     }
   }
 
