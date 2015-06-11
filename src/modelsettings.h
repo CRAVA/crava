@@ -147,9 +147,6 @@ public:
   double                           getXPadFac(void)                     const { return xPadFac_                                   ;}
   double                           getYPadFac(void)                     const { return yPadFac_                                   ;}
   double                           getZPadFac(void)                     const { return zPadFac_                                   ;}
-  //int                              getNXpad(void)                       const { return nxPad_                                     ;}
-  //int                              getNYpad(void)                       const { return nyPad_                                     ;}
-  //int                              getNZpad(void)                       const { return nzPad_                                     ;}
   int                              getMinBlocksForCorrEstimation(void)  const { return min_blocks_with_data_for_corr_estim_       ;}
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
@@ -231,9 +228,6 @@ public:
   const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_    ;}
   const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_      ;}
   const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_      ;}
-  //std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
-  //std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
-  //std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   bool                             GetMultipleIntervalSetting()         const { return multiple_intervals_                        ;}
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
@@ -307,10 +301,6 @@ public:
   void addStretchFactor(float stretchFactor)              { stretchFactor_.push_back(stretchFactor)              ;}
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
-
-  //void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
-  //void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
-  //void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addTrendCubes(int trendCubeType)                                  { trendCubeType_.push_back(trendCubeType)                        ;}
@@ -399,9 +389,6 @@ public:
   void setXPadFac(double xPadFac)                         { xPadFac_                  = xPadFac                  ;}
   void setYPadFac(double yPadFac)                         { yPadFac_                  = yPadFac                  ;}
   void setZPadFac(double zPadFac)                         { zPadFac_                  = zPadFac                  ;}
-  //void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
-  //void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
-  //void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
   void SetMinBlocksForCorrEstimation(int n)               { min_blocks_with_data_for_corr_estim_ = n             ;}
   void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
@@ -704,7 +691,6 @@ private:
   std::vector<bool>                      wellRelativeCoord_;     ///< As above, but with one set of values per well.
 
   int                                                  priorFaciesProbGiven_;
-  //std::map<std::string, float>      priorFaciesProb_;
   std::map<std::string, float>                         volumeFractionProb_;
   std::map<std::string, std::map<std::string, float> > priorFaciesProb_; ///< map interval map facies name
   std::map<std::string, std::map<std::string, float> > volumeFraction_;  ///< map interval map facies name
@@ -729,7 +715,6 @@ private:
 
   float                             vp_vs_ratio_min_;            ///< Smallest Vp/Vs-ratio regarded as likely
   float                             vp_vs_ratio_max_;            ///< Largest Vp/Vs-ratio regarded as likely
-  //float                             vp_vs_ratio_;                ///< Vp/Vs-ratio from input
   bool                              vp_vs_ratio_from_wells_;     ///< Estimate Vp/Vs-ratio from well data
 
   float                             ref_depth_;                  ///< z0 - reference depth for target area
@@ -770,11 +755,6 @@ private:
   double                            xPadFac_;                    ///< Padding factor/fraction in x direction
   double                            yPadFac_;                    ///< Padding factor/fraction in y direction
   double                            zPadFac_;                    ///< Padding factor/fraction in z direction
-
-  // EN: padding data is moved to the simboxes
-  //int                               nxPad_;                      ///< Number of cells to pad in x direction
-  //int                               nyPad_;
-  //int                               nzPad_;
 
   bool                              estimateXYPadding_;          ///< Estimate the z-padding from ranges
   bool                              estimateZPadding_;           ///< Estimate the z-padding from wavelet length
@@ -853,13 +833,6 @@ private:
 
   std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<int>                  trendCubeType_;               // Type of the trend cube
-
-  //bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
-  //bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
-
-  //std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
-  //std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
-  //std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
   std::map<std::string, DistributionsRockStorage *>                   rockStorage_;        // Rock physics rocks defined in predefinitions
