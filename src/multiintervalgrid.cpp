@@ -425,8 +425,11 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
     // else something is wrong
     else {
-      err_text_tmp += "\nCorrelation directions are not set correctly for interval " + interval_name[i];
-      err_text_tmp += ".\n";
+      std::string interval_text = "";
+      if (interval_name != "")
+        interval_text = " for interval " + interval_name[i];
+
+      err_text_tmp += "\nCorrelation directions are not set correctly" + interval_text + ".\n";
     }
 
     // Calculate Z padding ----------------------------------------------------------------
@@ -491,7 +494,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
 
     // Check consistency ------------------------------------------------------------------
-    if (interval_simboxes[i]->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
+    if (err_text_tmp == "" && interval_simboxes[i]->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
       err_text_tmp += "dz for interval \'" + interval_names[i] + "\' is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
     }
 
@@ -504,14 +507,16 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
   } // end for loop over intervals
 
   // Pick the simbox with the finest vertical resolution and set dz_rel relative to this dz
-  dz_rel.resize(interval_names.size());
-  dz_min = 10000;
-  for (size_t m = 0; m < interval_simboxes.size(); m++) {
-    if (interval_simboxes[m]->getdz() < dz_min)
-      dz_min = interval_simboxes[m]->getdz();
-  }
-  for (size_t m = 0; m < interval_simboxes.size(); m++) {
-    dz_rel[m] = interval_simboxes[m]->getdz()/dz_min;
+  if (failed == false) {
+    dz_rel.resize(interval_names.size());
+    dz_min = 10000;
+    for (size_t m = 0; m < interval_simboxes.size(); m++) {
+      if (interval_simboxes[m]->getdz() < dz_min)
+        dz_min = interval_simboxes[m]->getdz();
+    }
+    for (size_t m = 0; m < interval_simboxes.size(); m++) {
+      dz_rel[m] = interval_simboxes[m]->getdz()/dz_min;
+    }
   }
 
 }

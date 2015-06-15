@@ -73,7 +73,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_multigrid_ = !multi_failed;
 
     // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
-    if (multiple_interval_grid_->GetNIntervals() == 1) {
+    if (multiple_interval_grid_->GetNIntervals() == 1 && setup_multigrid_) {
       const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
       full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
     }
@@ -233,7 +233,8 @@ CommonData::CommonData(ModelSettings * model_settings,
 
       //Punkt o: diverse:
       ReadAngularCorrelations(model_settings, angular_correlations_);
-      CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
+      if (setup_multigrid_)
+        CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
     }
   }
 

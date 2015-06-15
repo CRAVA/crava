@@ -375,7 +375,9 @@ Simbox::Simbox(const Simbox         * simbox,
                int                    output_format,
                std::string          & err_text,
                bool                 & failed)
-: Volume(*simbox)
+: Volume(*simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
 {
   std::string output_name = "";
   if (interval_name != "")
