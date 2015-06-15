@@ -160,6 +160,8 @@ public:
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   int                              getTimeNz(std::string interval_name) const { return time_nz_.find(interval_name)->second       ;}
   const std::map<std::string, int> & getTimeNzs()                       const { return time_nz_                                   ;}
+  int                              getSegyNz(void)                      const { return segy_nz_                                   ;}
+  float                            getSegyDz(void)                      const { return segy_dz_                                   ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
@@ -402,6 +404,8 @@ public:
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
   void setTimeNz(std::string interval_name, int time_nz)  { time_nz_[interval_name]   = time_nz                  ;}
+  void setSegyNz(int segy_nz)                             { segy_nz_                  = segy_nz                  ;}
+  void setSegyDz(float segy_dz)                           { segy_dz_                  = segy_dz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
@@ -771,6 +775,9 @@ private:
   std::map<std::string, int>        time_nz_;                    ///< Number of layers for each interval
   //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
+
+  int                               segy_nz_;                    ///< nz of input segy seismic cube, first offset
+  float                             segy_dz_;                    ///< dz of input segy seismic cube, first offset
 
   int                               areaSpecification_;          ///< Specifying whether are is taken from UTM-coord, seismic or surface
   std::vector<int>                  areaILXL_;                   ///< Vector with 6 elements (if used), in this order:

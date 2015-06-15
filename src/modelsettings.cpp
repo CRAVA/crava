@@ -138,6 +138,8 @@ ModelSettings::ModelSettings(void)
   time_dz_                 = RMISSING;
   //time_nz_                 = IMISSING;
   //time_nz_[""]             = IMISSING;
+  segy_nz_                 = IMISSING;
+  segy_dz_                 = RMISSING;
 
   velocityFromInv_         =    false;
 

@@ -780,8 +780,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
       std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
       int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
 
-      //std::vector<SeismicStorage> seismic_data_angles;
-
       for (int i = 0; i < n_angles; i++) {
 
         seismic_data[this_timelapse].resize(n_angles);
@@ -834,6 +832,13 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           segy->GetGeometry()->WriteGeometry();
 
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
+
+          //Set segy nz and dz for first availible segy-cube. This is used to match written segy cube with input segy in ParameterOutput
+          if (model_settings->getSegyNz() == IMISSING) {
+            model_settings->setSegyNz(static_cast<int>(segy->GetNz()));
+            model_settings->setSegyDz(segy->GetDz());
+          }
+
         } //SEGY
         else if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
