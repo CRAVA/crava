@@ -1065,8 +1065,8 @@ void  Simbox::SetTopBaseErodedNames(const std::string       & top_name,
   else
     suffix = IO::SuffixStormBinary();
 
-  topName_ = IO::getFilePrefix()+top_name+suffix;
-  botName_ = IO::getFilePrefix()+bot_name+suffix;
+  top_eroded_name_  = IO::getFilePrefix()+top_name+suffix;
+  base_eroded_name_ = IO::getFilePrefix()+bot_name+suffix;
 }
 
 void
