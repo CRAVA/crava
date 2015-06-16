@@ -425,8 +425,11 @@ base_eroded_surface_(NULL)
       double z_top_corr   = top_corr_surface->GetZ(x,y);
       double z_base_corr  = base_corr_surface->GetZ(x,y);
 
-      if (z_top_corr > z_base_corr){
-        err_text += "Error: The top correlation surface crosses the base correlation surface for interval "+ interval_name +".\n";
+      if (!top_corr_surface->IsMissing(z_top_corr) && !base_corr_surface->IsMissing(z_base_corr) && z_top_corr > z_base_corr) {
+        std::string interval_text = "";
+        if (interval_name != "")
+          interval_text = " for interval " + interval_name;
+        err_text += "Error: The top correlation surface crosses the base correlation surface" + interval_text + ".\n";
         failed = true;
       }
     }
