@@ -178,12 +178,6 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                              high_cut_well_trend_rho,
                              name_rho);
 
-    //3D writing is done in CravaResult
-    bool write1D            = ((model_settings->getOtherOutputFlag()& IO::BACKGROUND_TREND_1D) > 0);
-    WriteTrendsToFile(trend_vp,  simbox, write1D, name_vp,  interval_name);
-    WriteTrendsToFile(trend_vs,  simbox, write1D, name_vs,  interval_name);
-    WriteTrendsToFile(trend_rho, simbox, write1D, name_rho, interval_name);
-
     if (velocity->GetN() != 0) {
       //
       // We still want CalculateBackgroundTrend() for alpha above. By calculating

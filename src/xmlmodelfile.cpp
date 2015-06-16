@@ -5542,7 +5542,6 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("extra-surfaces");
   legalCommands.push_back("prior-correlations");
-  legalCommands.push_back("background-trend-1d");
   legalCommands.push_back("local-noise");
   legalCommands.push_back("rock-physics-distributions");
   legalCommands.push_back("error-file");
@@ -5555,8 +5554,6 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += IO::EXTRA_SURFACES;
   if(parseBool(root, "prior-correlations", value, errTxt) == true && value == true)
     otherFlag += IO::PRIORCORRELATIONS;
-  if(parseBool(root, "background-trend-1d", value, errTxt) == true && value == true)
-    otherFlag += IO::BACKGROUND_TREND_1D;
   if(parseBool(root, "local-noise", value, errTxt) == true && value == true)
     otherFlag += IO::LOCAL_NOISE;
   if(parseBool(root, "rock-physics-distributions", value, errTxt) == true && value == true)
