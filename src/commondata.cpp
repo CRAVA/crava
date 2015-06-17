@@ -229,7 +229,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
       // 17. Depth Conversion
       if (model_settings->getDoDepthConversion())
-        setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
+        setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, output_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
 
       //Punkt o: diverse:
       ReadAngularCorrelations(model_settings, angular_correlations_);
@@ -6955,7 +6955,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
 bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       InputFiles    * input_files,
-                                      Simbox        & full_inversion_simbox,
+                                      Simbox        & simbox,
                                       GridMapping  *& time_depth_mapping,
                                       bool          & velocity_from_inversion,
                                       std::string   & err_text_common) const
@@ -6967,7 +6967,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
   std::string velocity_field    = input_files->getVelocityField();
 
   LoadVelocity(velocity,
-               &full_inversion_simbox,
+               &simbox,
                model_settings,
                velocity_field,
                velocity_from_inversion,
@@ -6990,11 +6990,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
         output_format += IO::ASCII;
 
-      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
-      time_depth_mapping_->setDepthSimbox(&full_inversion_simbox, full_inversion_simbox.getnz(),
+      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &simbox);
+      time_depth_mapping_->setDepthSimbox(&simbox, simbox.getnz(),
                                           model_settings->getOutputGridFormat(),
                                           failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
-      time_depth_mapping->makeTimeDepthMapping(velocity, &full_inversion_simbox);
+      time_depth_mapping->makeTimeDepthMapping(velocity, &simbox);
 
       if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp.
         std::string base_name  = IO::FileTimeToDepthVelocity();
@@ -7008,7 +7008,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
         FFTGrid * velocity_fft = new FFTGrid(velocity, nx, ny, nz);
         velocity_fft->writeFile(base_name,
                                 IO::PathToVelocity(),
-                                &full_inversion_simbox,
+                                &simbox,
                                 sgri_label,
                                 offset,
                                 time_depth_mapping_);
@@ -7022,11 +7022,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
         output_format += IO::ASCII;
 
-      time_depth_mapping->setDepthSimbox(&full_inversion_simbox,
-                                          full_inversion_simbox.getnz(),
-                                          output_format, //model_settings->getOutputGridFormat(),
-                                          failed_dummy,
-                                          err_text);
+      time_depth_mapping->setDepthSimbox(&simbox,
+                                         simbox.getnz(),
+                                         output_format, //model_settings->getOutputGridFormat(),
+                                         failed_dummy,
+                                         err_text);
     }
   }
 

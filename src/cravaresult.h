@@ -146,6 +146,8 @@ public:
 
   void ExpTransf(StormContGrid * grid);
 
+  void LogTransf(StormContGrid * grid);
+
   void ExpTransf(FFTGrid * grid);
 
   void LogTransf(FFTGrid * grid);

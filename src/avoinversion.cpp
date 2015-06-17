@@ -1148,6 +1148,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   //  delete seisData_[l];
   //LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
 
+  //H This is redone in cravaresult where the combined post_vp is used to create the mapping. This is kept since modelgeneral uses timedepthmapping in 4DRockPhysicsInversion.
   if (modelGeneral_->GetVelocityFromInversion()) { //Conversion undefined until prediction ready. Complete it.
     LogKit::WriteHeader("Setup time-to-depth relationship");
     LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from inversion to map between time and depth grids.\n");

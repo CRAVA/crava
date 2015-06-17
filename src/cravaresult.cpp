@@ -1279,6 +1279,19 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
+  //Update depth_mapping with resampled post_vp
+  if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
+    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from the combined vp grid to map between time and depth grids.\n");
+
+    ExpTransf(post_vp_);
+    int format = model_settings->getOutputGridFormat();
+    if (model_settings->getWriteAsciiSurfaces() && !(format & IO::ASCII))
+      format += IO::ASCII;
+
+    time_depth_mapping->setMappingFromVelocity(post_vp_, &simbox, format);
+    LogTransf(post_vp_);
+  }
+
   //Write blocked wells
   if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Blocked Logs...");
@@ -2161,6 +2174,30 @@ void CravaResult::ExpTransf(StormContGrid * grid)
         if (value != RMISSING) {
           value = exp(value);
           grid->SetValue(i, j, k, value);
+        }
+
+      }
+    }
+  }
+}
+
+void CravaResult::LogTransf(StormContGrid * grid)
+{
+  float value = 0.0f;
+  for (size_t i = 0; i < grid->GetNI(); i++) {
+    for (size_t j = 0; j < grid->GetNJ(); j++) {
+      for (size_t k = 0; k < grid->GetNK(); k++) {
+
+        value = grid->GetValue(i, j, k);
+
+        if (value != RMISSING) {
+          if (value < 0.0) {
+            grid->SetValue(i, j, k, 0.0);
+          }
+          else {
+            value = log(value);
+            grid->SetValue(i, j, k, value);
+          }
         }
 
       }
