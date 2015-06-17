@@ -423,10 +423,10 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     //Set facies prob in blocked logs
     if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
-      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
-
+        
         for (int j = 0; j < n_facies; j++) {
           blocked_log->SetLogFromGrid(facies_prob_[j], j , n_facies, "FACIES_PROB");
         }
@@ -447,7 +447,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     LogKit::LogFormatted(LogKit::Low,"\nCombine Facies prob:");
     int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProbGeomodel().size());
     facies_prob_geo_.resize(n_facies);
-
     for (int j = 0; j < n_facies; j++) {
       facies_prob_geo_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
 
@@ -458,6 +457,19 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
+
+    //Set facies prob in blocked logs
+    if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+        
+        for (int j = 0; j < n_facies; j++) {
+          blocked_log->SetLogFromGrid(facies_prob_geo_[j], j , n_facies, "FACIES_PROB");
+        }
+      }
+    }
+
   }
 
   //LH Cube
@@ -1008,7 +1020,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       blocked_log_final->SetVpFaciesFiltered(vp_for_facies_final);
       blocked_log_final->SetRhoFaciesFiltered(rho_for_facies_final);
-      blocked_log_final->SetIntervalLog(interval_log);
+      if (n_intervals_ > 1)
+        blocked_log_final->SetIntervalLog(interval_log);
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
@@ -1048,7 +1061,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpSeismicResolution(vp_filtered_final);
       blocked_log_final->SetVsSeismicResolution(vs_filtered_final);
       blocked_log_final->SetRhoSeismicResolution(rho_filtered_final);
-      blocked_log_final->SetIntervalLog(interval_log);
+      if (n_intervals_ > 1)
+        blocked_log_final->SetIntervalLog(interval_log);
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
