@@ -73,7 +73,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     setup_multigrid_ = !multi_failed;
 
     // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
-    if (multiple_interval_grid_->GetNIntervals() == 1) {
+    if (multiple_interval_grid_->GetNIntervals() == 1 && setup_multigrid_) {
       const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(0);
       full_inversion_simbox_.CopyAllPadding(*simbox, model_settings->getLzLimit(), err_text);
     }
@@ -229,11 +229,12 @@ CommonData::CommonData(ModelSettings * model_settings,
 
       // 17. Depth Conversion
       if (model_settings->getDoDepthConversion())
-        setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, full_inversion_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
+        setup_depth_conversion_ = SetupDepthConversion(model_settings, input_files, output_simbox_, time_depth_mapping_, velocity_from_inversion_, err_text);
 
       //Punkt o: diverse:
       ReadAngularCorrelations(model_settings, angular_correlations_);
-      CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
+      if (setup_multigrid_)
+        CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
     }
   }
 
@@ -780,8 +781,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
       std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
       int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
 
-      //std::vector<SeismicStorage> seismic_data_angles;
-
       for (int i = 0; i < n_angles; i++) {
 
         seismic_data[this_timelapse].resize(n_angles);
@@ -834,6 +833,13 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           segy->GetGeometry()->WriteGeometry();
 
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
+
+          //Set segy nz and dz for first availible segy-cube. This is used to match written segy cube with input segy in ParameterOutput
+          if (model_settings->getSegyNz() == IMISSING) {
+            model_settings->setSegyNz(static_cast<int>(segy->GetNz()));
+            model_settings->setSegyDz(segy->GetDz());
+          }
+
         } //SEGY
         else if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
@@ -6949,7 +6955,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
 
 bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                       InputFiles    * input_files,
-                                      Simbox        & full_inversion_simbox,
+                                      Simbox        & simbox,
                                       GridMapping  *& time_depth_mapping,
                                       bool          & velocity_from_inversion,
                                       std::string   & err_text_common) const
@@ -6961,7 +6967,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
   std::string velocity_field    = input_files->getVelocityField();
 
   LoadVelocity(velocity,
-               &full_inversion_simbox,
+               &simbox,
                model_settings,
                velocity_field,
                velocity_from_inversion,
@@ -6984,11 +6990,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
         output_format += IO::ASCII;
 
-      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &full_inversion_simbox);
-      time_depth_mapping_->setDepthSimbox(&full_inversion_simbox, full_inversion_simbox.getnz(),
+      time_depth_mapping_->calculateSurfaceFromVelocity(velocity, &simbox);
+      time_depth_mapping_->setDepthSimbox(&simbox, simbox.getnz(),
                                           model_settings->getOutputGridFormat(),
                                           failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
-      time_depth_mapping->makeTimeDepthMapping(velocity, &full_inversion_simbox);
+      time_depth_mapping->makeTimeDepthMapping(velocity, &simbox);
 
       if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp.
         std::string base_name  = IO::FileTimeToDepthVelocity();
@@ -7002,7 +7008,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
         FFTGrid * velocity_fft = new FFTGrid(velocity, nx, ny, nz);
         velocity_fft->writeFile(base_name,
                                 IO::PathToVelocity(),
-                                &full_inversion_simbox,
+                                &simbox,
                                 sgri_label,
                                 offset,
                                 time_depth_mapping_);
@@ -7016,11 +7022,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
       if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
         output_format += IO::ASCII;
 
-      time_depth_mapping->setDepthSimbox(&full_inversion_simbox,
-                                          full_inversion_simbox.getnz(),
-                                          output_format, //model_settings->getOutputGridFormat(),
-                                          failed_dummy,
-                                          err_text);
+      time_depth_mapping->setDepthSimbox(&simbox,
+                                         simbox.getnz(),
+                                         output_format, //model_settings->getOutputGridFormat(),
+                                         failed_dummy,
+                                         err_text);
     }
   }
 
@@ -7308,7 +7314,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
       if (const_back_value < 0) {
         if (back_file.size() > 0) {
           const SegyGeometry      * dummy1 = NULL;
-          const TraceHeaderFormat * dummy2 = NULL;
+          const TraceHeaderFormat * thf    = model_settings->getTraceHeaderFormatBackground(j);
           const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used.
           std::string err_text_tmp = "";
 
@@ -7322,7 +7328,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                            offset,
                            parameter_tmp, //This is split in intervals inside.
                            dummy1,
-                           dummy2,
+                           thf,
                            PARAMETER,
                            multi_interval_grid->GetIntervalSimboxes(),
                            inversion_simbox,
@@ -10316,22 +10322,22 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
     std::string base_surf         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
     simbox.setTopBotName(top_surf, base_surf, output_format);
 
-    std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
-    std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
-    simbox.SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
+    //std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
+    //std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
+    //simbox.SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
 
     if (generate_seismic) {
       simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                       IO::PathToSeismicData(), output_format);
-      simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                            IO::PathToSeismicData(), output_format);
+      //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+      //                                      IO::PathToSeismicData(), output_format);
     }
     else if (!estimation_mode) {
       if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                         IO::PathToInversionResults(), output_format);
-        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                              IO::PathToInversionResults(), output_format);
+        //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+        //                                      IO::PathToInversionResults(), output_format);
     }
     if ((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
       if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
@@ -10339,26 +10345,26 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
           (estimation_mode && generate_background)) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                         IO::PathToBackground(), output_format);
-        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                              IO::PathToBackground(), output_format);
+        //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+        //                                      IO::PathToBackground(), output_format);
       }
       if ((output_grids_other & IO::CORRELATION) > 0) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                         IO::PathToCorrelations(), output_format);
-        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                              IO::PathToCorrelations(), output_format);
+        //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+        //                                      IO::PathToCorrelations(), output_format);
       }
       if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                         IO::PathToSeismicData(), output_format);
-        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                              IO::PathToSeismicData(), output_format);
+        //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+        //                                      IO::PathToSeismicData(), output_format);
       }
       if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                         IO::PathToVelocity(), output_format);
-        simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                              IO::PathToVelocity(), output_format);
+        //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+        //                                      IO::PathToVelocity(), output_format);
       }
     }
   }

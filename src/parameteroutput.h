@@ -127,6 +127,7 @@ private:
 
   static void      WriteResampledStormCube(const StormContGrid * storm_grid,
                                            const GridMapping   * gridmapping,
+                                           const ModelSettings * model_settings,
                                            const std::string   & file_name,
                                            const Simbox        * simbox,
                                            const int             format,
@@ -134,5 +135,9 @@ private:
                                            bool                  is_depth);
 
   static void     SeismicShift(NRLib::Grid<float> * grid);
+
+  static int FindOutputSegyNz(const StormContGrid * outgrid,
+                       const ModelSettings * model_settings,
+                       const double          z0);
 };
 #endif

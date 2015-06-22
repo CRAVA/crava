@@ -513,6 +513,9 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
 
+        //Take nz from segy if output_dz = segy_dz, otherwise a nz is calculated
+        int nz_output = FindOutputSegyNz(output, model_settings, z0);
+
         SegyGeometry geometry(simbox->getx0(), simbox->gety0(), simbox->getdx(), simbox->getdy(),
                               simbox->getnx(), simbox->getny(),simbox->getIL0(), simbox->getXL0(),
                               simbox->getILStepX(), simbox->getILStepY(),
@@ -521,6 +524,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         SegY * segy = new SegY(output,
                                &geometry,
                                z0,
+                               nz_output,
                                file_name_segy,
                                true, //Write to file
                                *thf,
@@ -609,7 +613,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
         }
         // Writes also segy in depth if required
         float z0 = model_settings->getSegyOffset(0);
-        WriteResampledStormCube(output, depth_map, depth_name, simbox, format_flag, z0, true);
+        WriteResampledStormCube(output, depth_map, model_settings, depth_name, simbox, format_flag, z0, true);
       }
     }
 
@@ -625,6 +629,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
 void
 ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
                                          const GridMapping   * gridmapping,
+                                         const ModelSettings * model_settings,
                                          const std::string   & file_name,
                                          const Simbox        * simbox,
                                          const int             format,
@@ -685,11 +690,14 @@ ParameterOutput::WriteResampledStormCube(const StormContGrid * storm_grid,
                           simbox->getXLStepX(), simbox->getXLStepY(),
                           simbox->getAngle());
     LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+gf_name+"...");
-    SegY * segy = new SegY(outgrid, &geometry, z0, gf_name, true);
+
+    //Take nz from segy if output_dz = segy_dz, otherwise a nz is calculated
+    int nz_output = FindOutputSegyNz(outgrid, model_settings, z0);
+
+    SegY * segy = new SegY(outgrid, &geometry, z0, nz_output, gf_name, true);
     delete segy;
     LogKit::LogFormatted(LogKit::Low,"done\n");
 
-    //writeSegyFromStorm(outgrid, gf_name);
   }
   delete outgrid;
 }
@@ -710,3 +718,25 @@ ParameterOutput::SeismicShift(NRLib::Grid<float> * grid)
   }
 }
 
+int
+ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
+                                  const ModelSettings * model_settings,
+                                  const double          z0)
+{
+  //If output grid and input segy have the same resolution (dz) we use nz from segy
+  float dz_output = float(floor((outgrid->GetLZ()/outgrid->GetNK())));
+  float dz_input  = model_settings->getSegyDz();
+  int nz_output;
+  if (dz_output == dz_input) {
+    nz_output = model_settings->getSegyNz();
+  }
+  else {
+    nz_output = int(ceil((outgrid->GetZMax() - z0)/dz_output));
+    if (dz_input != RMISSING) {
+      LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(dz_input) + ") does not match the output dz ("
+                            + NRLib::ToString(dz_output) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+    }
+  }
+
+  return nz_output;
+}

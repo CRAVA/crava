@@ -40,6 +40,7 @@ public:
   SegyGeometry                   * getSeismicDataAreaParameters(void)   const { return geometry_full_                             ;}
   TraceHeaderFormat              * getTraceHeaderFormat(void)           const { return traceHeaderFormat_                         ;}
   TraceHeaderFormat              * getTraceHeaderFormatOutput(void)     const { return traceHeaderFormatOutput_                   ;}
+  TraceHeaderFormat              * getTraceHeaderFormatBackground(int i)const { return traceHeaderFormatBackground_[i]            ;}
   TraceHeaderFormat              * getTraceHeaderFormat(int i, int j)   const { return timeLapseLocalTHF_[i][j]                   ;}
   int                              getNumberOfThreads(void)             const { return number_of_threads_                         ;}
   int                              getNumberOfTraceHeaderFormats(int i) const { return static_cast<int>(timeLapseLocalTHF_[i].size());}
@@ -147,9 +148,6 @@ public:
   double                           getXPadFac(void)                     const { return xPadFac_                                   ;}
   double                           getYPadFac(void)                     const { return yPadFac_                                   ;}
   double                           getZPadFac(void)                     const { return zPadFac_                                   ;}
-  //int                              getNXpad(void)                       const { return nxPad_                                     ;}
-  //int                              getNYpad(void)                       const { return nyPad_                                     ;}
-  //int                              getNZpad(void)                       const { return nzPad_                                     ;}
   int                              getMinBlocksForCorrEstimation(void)  const { return min_blocks_with_data_for_corr_estim_       ;}
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
@@ -162,6 +160,8 @@ public:
   double                           getTimeDz(void)                      const { return time_dz_                                   ;}
   int                              getTimeNz(std::string interval_name) const { return time_nz_.find(interval_name)->second       ;}
   const std::map<std::string, int> & getTimeNzs()                       const { return time_nz_                                   ;}
+  int                              getSegyNz(void)                      const { return segy_nz_                                   ;}
+  float                            getSegyDz(void)                      const { return segy_dz_                                   ;}
   const std::vector<int>         & getAreaILXL(void)                    const { return areaILXL_                                  ;}
   int                              getAreaSpecification(void)           const { return areaSpecification_                         ;}
   bool                             getVelocityFromInversion(void)       const { return velocityFromInv_                           ;}
@@ -231,9 +231,6 @@ public:
   const std::map<std::string, DistributionsDryRockStorage *>                & getDryRockStorage()    const { return dryRockStorage_    ;}
   const std::map<std::string, DistributionsSolidStorage *>                  & getSolidStorage()      const { return solidStorage_      ;}
   const std::map<std::string, DistributionsFluidStorage *>                  & getFluidStorage()      const { return fluidStorage_      ;}
-  //std::vector<int>                 getErosionPriority()                 const { return erosionPriority_                           ;}
-  //std::vector<int>                 getCorrelationStructure()            const { return correlationStructure_                      ;}
-  //std::vector<double>              getSurfaceUncertainty()              const { return surfaceUncertainty_                        ;}
   bool                             GetMultipleIntervalSetting()         const { return multiple_intervals_                        ;}
   std::string                      getIntervalName(int i)               const { return interval_names_[i]                         ;}
   std::vector<std::string>         getIntervalNames()                   const { return interval_names_                            ;}
@@ -278,6 +275,7 @@ public:
   void setSeismicDataAreaParameters(const SegyGeometry * geometry);
   void setTraceHeaderFormat(const TraceHeaderFormat & traceHeaderFormat);
   void setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat);
+  void setTraceHeaderFormatBackground(int parameter, TraceHeaderFormat * traceHeaderFormat);
   void addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void addTravelTimeTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat);
   void setKrigingParameter(int krigingParameter)          { krigingParameter_         = krigingParameter         ;}
@@ -307,10 +305,6 @@ public:
   void addStretchFactor(float stretchFactor)              { stretchFactor_.push_back(stretchFactor)              ;}
   void addEstRangeX(float estRangeX)                      { estRangeX_.push_back(estRangeX)                      ;}
   void addEstRangeY(float estRangeY)                      { estRangeY_.push_back(estRangeY)                      ;}
-
-  //void addErosionPriority(int priority)                   { erosionPriority_.push_back(priority)                 ;}
-  //void addCorrelationStructure(int structure)             { correlationStructure_.push_back(structure)           ;}
-  //void addSurfaceUncertainty(double uncertainty)          { surfaceUncertainty_.push_back(uncertainty)           ;}
 
   void addTrendCubeParameter(std::string parameterName)                  { trendCubeParameter_.push_back(parameterName)                   ;}
   void addTrendCubes(int trendCubeType)                                  { trendCubeType_.push_back(trendCubeType)                        ;}
@@ -399,9 +393,6 @@ public:
   void setXPadFac(double xPadFac)                         { xPadFac_                  = xPadFac                  ;}
   void setYPadFac(double yPadFac)                         { yPadFac_                  = yPadFac                  ;}
   void setZPadFac(double zPadFac)                         { zPadFac_                  = zPadFac                  ;}
-  //void setNXpad(int nxPad)                                { nxPad_                    = nxPad                    ;}
-  //void setNYpad(int nyPad)                                { nyPad_                    = nyPad                    ;}
-  //void setNZpad(int nzPad)                                { nzPad_                    = nzPad                    ;}
   void SetMinBlocksForCorrEstimation(int n)               { min_blocks_with_data_for_corr_estim_ = n             ;}
   void setEstimateXYPadding(bool estimateXYPadding)       { estimateXYPadding_        = estimateXYPadding        ;}
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
@@ -413,6 +404,8 @@ public:
   void setTimeLz(double time_lz)                          { time_lz_                  = time_lz                  ;}
   void setTimeDz(double time_dz)                          { time_dz_                  = time_dz                  ;}
   void setTimeNz(std::string interval_name, int time_nz)  { time_nz_[interval_name]   = time_nz                  ;}
+  void setSegyNz(int segy_nz)                             { segy_nz_                  = segy_nz                  ;}
+  void setSegyDz(float segy_dz)                           { segy_dz_                  = segy_dz                  ;}
   void setVelocityFromInversion(bool fromInversion)       { velocityFromInv_          = fromInversion            ;}
   void setAreaILXLParameters(std::vector<int> ilxl)       { areaILXL_                 = ilxl                     ;}
   void setAreaSpecification(int areaSpecification)        { areaSpecification_        = areaSpecification        ;}
@@ -593,6 +586,7 @@ private:
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
   TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
+  std::vector<TraceHeaderFormat*>   traceHeaderFormatBackground_;// traceheader per background
   TraceHeaderFormat               * traceHeaderFormatOutput_;    // traceheader for output files
   int                               krigingParameter_;
 
@@ -704,7 +698,6 @@ private:
   std::vector<bool>                      wellRelativeCoord_;     ///< As above, but with one set of values per well.
 
   int                                                  priorFaciesProbGiven_;
-  //std::map<std::string, float>      priorFaciesProb_;
   std::map<std::string, float>                         volumeFractionProb_;
   std::map<std::string, std::map<std::string, float> > priorFaciesProb_; ///< map interval map facies name
   std::map<std::string, std::map<std::string, float> > volumeFraction_;  ///< map interval map facies name
@@ -729,7 +722,6 @@ private:
 
   float                             vp_vs_ratio_min_;            ///< Smallest Vp/Vs-ratio regarded as likely
   float                             vp_vs_ratio_max_;            ///< Largest Vp/Vs-ratio regarded as likely
-  //float                             vp_vs_ratio_;                ///< Vp/Vs-ratio from input
   bool                              vp_vs_ratio_from_wells_;     ///< Estimate Vp/Vs-ratio from well data
 
   float                             ref_depth_;                  ///< z0 - reference depth for target area
@@ -771,11 +763,6 @@ private:
   double                            yPadFac_;                    ///< Padding factor/fraction in y direction
   double                            zPadFac_;                    ///< Padding factor/fraction in z direction
 
-  // EN: padding data is moved to the simboxes
-  //int                               nxPad_;                      ///< Number of cells to pad in x direction
-  //int                               nyPad_;
-  //int                               nzPad_;
-
   bool                              estimateXYPadding_;          ///< Estimate the z-padding from ranges
   bool                              estimateZPadding_;           ///< Estimate the z-padding from wavelet length
 
@@ -788,6 +775,9 @@ private:
   std::map<std::string, int>        time_nz_;                    ///< Number of layers for each interval
   //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
+
+  int                               segy_nz_;                    ///< nz of input segy seismic cube, first offset
+  float                             segy_dz_;                    ///< dz of input segy seismic cube, first offset
 
   int                               areaSpecification_;          ///< Specifying whether are is taken from UTM-coord, seismic or surface
   std::vector<int>                  areaILXL_;                   ///< Vector with 6 elements (if used), in this order:
@@ -853,13 +843,6 @@ private:
 
   std::vector<std::string>          trendCubeParameter_;          // Name of the trend parameters in the rock physics model
   std::vector<int>                  trendCubeType_;               // Type of the trend cube
-
-  //bool                              topConformCorrelation_;      ///< Should top correlation direction be equal to the top inversion surface
-  //bool                              baseConformCorrelation_;     ///< Should base correlation direction be equal to the base inversion surface
-
-  //std::vector<int>                  erosionPriority_;            // Erosion priority of the different layers in the multizone background model
-  //std::vector<int>                  correlationStructure_;       // Correlation structure for the different layers in the multizone background model
-  //std::vector<double>               surfaceUncertainty_;         // Uncertainty for the horizons in the multizone backround model
 
   std::map<std::string, std::vector<DistributionWithTrendStorage *> > reservoirVariable_;  // Rock physics variables defined in reservoir, the vector goes over the vintages of the variable
   std::map<std::string, DistributionsRockStorage *>                   rockStorage_;        // Rock physics rocks defined in predefinitions

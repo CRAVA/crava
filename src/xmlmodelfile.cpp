@@ -1525,6 +1525,7 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("ai-file");
   legalCommands.push_back("si-file");
   legalCommands.push_back("vp-vs-ratio-file");
+  legalCommands.push_back("segy-header");
 
   if (modelSettings_->getBackgroundType() != "")
     errTxt += "Both background and earth-model can not be given. Under forward mode, the earth-model must be used.\n";
@@ -1603,6 +1604,8 @@ XmlModelFile::parseEarthModel(TiXmlNode * node, std::string & errTxt)
         lineColumnText(root)+". Please specify {Vp,Vs,Rho}, {AI,SI,Rho}, or {AI,Vp/Vs,Rho}.\n";
   }
 
+  while(parseSegyHeader(root,errTxt) == true);
+
   modelSettings_->setGenerateBackground(false);
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -1629,6 +1632,7 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("lateral-correlation");
   legalCommands.push_back("high-cut-background-modelling");
   legalCommands.push_back("filter-multizone-background");
+  legalCommands.push_back("segy-header");
   legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
@@ -1759,6 +1763,8 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "filter-multizone-background", filter_multizone_background, errTxt) == true)
     modelSettings_->setFilterMultizoneBackground(filter_multizone_background);
 
+  while(parseSegyHeader(root,errTxt) == true);
+
   bool multizone = false;
   if(parseMultizoneModel(root,errTxt) == true)
     multizone = true;
@@ -1768,12 +1774,58 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
               "are given for the seismic parameters in <background>\n";
 
   if((velocity_field & multizone) == true)
-    errTxt += "<velocity-field> can not be given when multizone bacground model is to be estimated in <background>\n";
+    errTxt += "<velocity-field> can not be given when multizone background model is to be estimated in <background>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseSegyHeader(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("segy-header");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("parameter");
+  legalCommands.push_back("segy-format");
+
+  std::vector<std::string> parameter_names;
+  std::string parameter_name;
+  while(parseValue(root, "parameter", parameter_name, errTxt, true) == true) {
+    parameter_names.push_back(NRLib::Uppercase(parameter_name));
+  }
+
+  if (parameter_names.size() == 0)
+    errTxt += "Keyword <parameter> is missing under " + node->ValueStr() + ".\n";
+
+  //Read trace-header
+  TraceHeaderFormat *thf = NULL;
+  bool segyFormat = parseTraceHeaderFormat(root, "segy-format", thf, errTxt);
+
+  for (size_t i = 0; i < parameter_names.size(); i++) {
+    int parameter = -1;
+
+    if (parameter_names[i] == "VP" || parameter_names[i] == "AI")
+      parameter = 0;
+    else if (parameter_names[i] == "VS" || parameter_names[i] == "SI" || parameter_names[i] == "VP-VS-RATIO")
+      parameter = 1;
+    else if (parameter_names[i] == "DENSITY" || parameter_names[i] == "RHO")
+      parameter = 2;
+
+    if (parameter < 0)
+      errTxt += "Did not find correct <parameter> under " + node->ValueStr() + ". Found " + parameter_names[i] + ", should be either vp, ai, vs, si, vp-vs-ratio, density or rho. \n";
+    else {
+      if (segyFormat == true)
+        modelSettings_->setTraceHeaderFormatBackground(parameter, thf);
+    }
+  }
+
+  checkForJunk(root, errTxt, legalCommands, true);
+  return(true);
+
+}
 
 bool
 XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
@@ -1844,15 +1896,13 @@ XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
     base_corr_surface = true;
   }
 
-  if (parseBool(root, "top-conform", top_conform, errTxt) == true) {
+  parseBool(root, "top-conform", top_conform, errTxt);
+  if (top_conform)
     modelSettings_->setCorrDirTopConform("", true);
-    top_conform = true;
-  }
 
-  if (parseBool(root, "base-conform", base_conform, errTxt) == true) {
+  parseBool(root, "base-conform", base_conform, errTxt);
+  if (base_conform)
     modelSettings_->setCorrDirBaseConform("", true);
-    base_conform = true;
-  }
 
   if (top_corr_surface == true && top_conform == true)
     errTxt += "Both <top-surface> and <top-conform> are given under <correlation-direction> where only one is allowed.\n";
@@ -1930,15 +1980,13 @@ XmlModelFile::parseIntervalCorrelationDirection(TiXmlNode * node, std::string & 
     base_surface = true;
   }
 
-  if(parseBool(root, "top-conform", top_conform, errTxt) == true) {
-    if (top_conform == true)
-      modelSettings_->setCorrDirTopConform(interval_name, true);
-  }
+  parseBool(root, "top-conform", top_conform, errTxt);
+  if (top_conform == true)
+    modelSettings_->setCorrDirTopConform(interval_name, true);
 
-  if(parseBool(root, "base-conform", base_conform, errTxt) == true) {
-    if (base_conform == true)
-      modelSettings_->setCorrDirBaseConform(interval_name, true);
-  }
+  parseBool(root, "base-conform", base_conform, errTxt);
+  if (base_conform == true)
+    modelSettings_->setCorrDirBaseConform(interval_name, true);
 
   if(single_surface == true && (top_surface == true || base_surface == true || top_conform == true || base_conform == true))
     errTxt += "-For interval " + interval_name + " a single surface is defined together with either base-surface or top-surface, only one of the options are allowed.\n";
@@ -5494,7 +5542,6 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("extra-surfaces");
   legalCommands.push_back("prior-correlations");
-  legalCommands.push_back("background-trend-1d");
   legalCommands.push_back("local-noise");
   legalCommands.push_back("rock-physics-distributions");
   legalCommands.push_back("error-file");
@@ -5507,8 +5554,6 @@ XmlModelFile::parseOtherOutput(TiXmlNode * node, std::string & errTxt)
     otherFlag += IO::EXTRA_SURFACES;
   if(parseBool(root, "prior-correlations", value, errTxt) == true && value == true)
     otherFlag += IO::PRIORCORRELATIONS;
-  if(parseBool(root, "background-trend-1d", value, errTxt) == true && value == true)
-    otherFlag += IO::BACKGROUND_TREND_1D;
   if(parseBool(root, "local-noise", value, errTxt) == true && value == true)
     otherFlag += IO::LOCAL_NOISE;
   if(parseBool(root, "rock-physics-distributions", value, errTxt) == true && value == true)
@@ -6108,12 +6153,10 @@ XmlModelFile::checkConsistency(std::string & errTxt)
   if(modelSettings_->getOptimizeWellLocation()==true)
     checkAngleConsistency(errTxt);
   checkIOConsistency(errTxt);
-  //checkMultizoneBackgroundConsistency(errTxt);
   if(modelSettings_->getDo4DInversion() && surveyFailed_ == false)
     checkTimeLapseConsistency(errTxt);
 
   if (inputFiles_->getReflMatrFile() != "") {
-    //if (modelSettings_->getVpVsRatio() != RMISSING) {
     if (modelSettings_->getVpVsRatios().find("") != modelSettings_->getVpVsRatios().end()) {
       errTxt += "You cannot specify a Vp/Vs ratio when a reflection matrix is read from file";
     }
@@ -6121,7 +6164,6 @@ XmlModelFile::checkConsistency(std::string & errTxt)
       errTxt += "You cannot ask the Vp/Vs ratio to be calculated from well data when a reflection matrix is read from file";
     }
   }
-  //if (modelSettings_->getVpVsRatio() != RMISSING) {
   if (modelSettings_->getVpVsRatios().find("") != modelSettings_->getVpVsRatios().end()) {
     double vpvs    = modelSettings_->getVpVsRatio("");
     double vpvsMin = modelSettings_->getVpVsRatioMin();
@@ -6161,6 +6203,26 @@ XmlModelFile::checkConsistency(std::string & errTxt)
     }
   }
   checkRockPhysicsConsistency(errTxt);
+
+  //Check consistency between background files and background segy-headers
+  for (int i = 0; i < 3; i++) {
+    std::string input_dir = inputFiles_->getInputDirectory();
+    std::string back_file = inputFiles_->getBackFile(i);
+
+    if (back_file != "") {
+
+      std::vector<std::string> parameter;
+      parameter.push_back("vp/ai");
+      parameter.push_back("vs/si/vp-vs-ratio");
+      parameter.push_back("density/rho");
+
+      std::string file_name = input_dir + back_file;
+
+      if (!IO::findGridType(file_name) == IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
+        errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+
+    }
+  }
 
 #ifdef PARALLEL
 #pragma omp parallel
@@ -6741,24 +6803,3 @@ XmlModelFile::checkIOConsistency(std::string & errTxt)
     errTxt += " outputs <well-wavelets>, <global-wavelets> nor <local-wavelets>.\n";
   }
 }
-
-//void
-//XmlModelFile::checkMultizoneBackgroundConsistency(std::string & errTxt)
-//{
-//  if(modelSettings_->getIntervalNames().size() > 0 && modelSettings_->getMultizoneBackground() == true){
-//    errTxt+= "<multiple-intervals> can not be used at the same time as <multizone-model>";
-//  } else if(modelSettings_->getMultizoneBackground() == true) {
-//    std::vector<std::string> multizoneSurface = inputFiles_->getMultizoneSurfaceFiles();
-//    int nSurfaces = static_cast<int>(multizoneSurface.size());
-//    const std::string & top = inputFiles_->getTimeSurfFile(0);
-//    const std::string & base = inputFiles_->getTimeSurfFile(1);
-//    if(top != multizoneSurface[0]) {
-//      errTxt += "The top surface time file in <interval-two-surfaces> nees to be the same as the \n"
-//                "top surface file in the multizone background model\n";
-//    }
-//    if(base != multizoneSurface[nSurfaces-1]) {
-//      errTxt += "The base surface time file in <interval-two-surfaces> nees to be the same as the \n"
-//                "lowest base surface file in the multizone background model\n";
-//    }
-//  }
-//}

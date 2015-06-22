@@ -3422,6 +3422,9 @@ void  BlockedLogsCommon::SetLogFromGrid(StormContGrid * storm,
   if (type == "SEISMIC_DATA") {
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
+  else if (type == "FACIES_PROB") {
+    facies_prob_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
+  }
   else if (type == "VP_PREDICTED") {
     continuous_logs_predicted_.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
   }

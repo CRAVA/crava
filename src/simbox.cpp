@@ -333,7 +333,11 @@ base_eroded_surface_(NULL)
     nz++;
   }
   if (nz != n_layers && n_layers > 0) {
-    LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+    std::string interval_text = "";
+    if (interval_name != "")
+      interval_text += " in interval " + interval_name;
+
+    LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
     LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
   }
 
@@ -375,7 +379,9 @@ Simbox::Simbox(const Simbox         * simbox,
                int                    output_format,
                std::string          & err_text,
                bool                 & failed)
-: Volume(*simbox)
+: Volume(*simbox),
+top_eroded_surface_(NULL),
+base_eroded_surface_(NULL)
 {
   std::string output_name = "";
   if (interval_name != "")
@@ -423,8 +429,11 @@ Simbox::Simbox(const Simbox         * simbox,
       double z_top_corr   = top_corr_surface->GetZ(x,y);
       double z_base_corr  = base_corr_surface->GetZ(x,y);
 
-      if (z_top_corr > z_base_corr){
-        err_text += "Error: The top correlation surface crosses the base correlation surface for interval "+ interval_name +".\n";
+      if (!top_corr_surface->IsMissing(z_top_corr) && !base_corr_surface->IsMissing(z_base_corr) && z_top_corr > z_base_corr) {
+        std::string interval_text = "";
+        if (interval_name != "")
+          interval_text = " for interval " + interval_name;
+        err_text += "Error: The top correlation surface crosses the base correlation surface" + interval_text + ".\n";
         failed = true;
       }
     }
@@ -533,7 +542,11 @@ Simbox::Simbox(const Simbox         * simbox,
     }
 
     if (nz != n_layers && n_layers > 0) {
-      LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+      std::string interval_text = "";
+      if (interval_name != "")
+        interval_text += " in interval " + interval_name;
+
+      LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
       LogKit::LogFormatted(LogKit::High," to %d in grid created using the correlation direction.\n",nz);
     }
 
@@ -1060,8 +1073,8 @@ void  Simbox::SetTopBaseErodedNames(const std::string       & top_name,
   else
     suffix = IO::SuffixStormBinary();
 
-  topName_ = IO::getFilePrefix()+top_name+suffix;
-  botName_ = IO::getFilePrefix()+bot_name+suffix;
+  top_eroded_name_  = IO::getFilePrefix()+top_name+suffix;
+  base_eroded_name_ = IO::getFilePrefix()+bot_name+suffix;
 }
 
 void

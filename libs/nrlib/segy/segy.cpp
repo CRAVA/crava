@@ -318,6 +318,7 @@ SegY::SegY(const std::string       & fileName,
 SegY::SegY(const StormContGrid     * storm_grid,
            const SegyGeometry      * geometry,
            float                     z0,
+           int                       nz,
            const std::string       & file_name,
            bool                      write_to_file,
            const TraceHeaderFormat & trace_header_format,
@@ -333,7 +334,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   int ny = static_cast<int>(storm_grid->GetNJ());
   float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
   //float z0 = 0.0;
-  int nz   = int(ceil((storm_grid->GetZMax())/dz));
+  //int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
   //SegY segyout(file_name,0,nz,dz,header);
   trace_header_format_ = trace_header_format;

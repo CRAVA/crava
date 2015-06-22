@@ -173,12 +173,11 @@ public:
 
   enum           outputOther{EXTRA_SURFACES      =  1,
                              PRIORCORRELATIONS   =  2,
-                             BACKGROUND_TREND_1D =  4,
-                             LOCAL_NOISE         =  8,
-                             ROCK_PHYSICS        = 16,
-                             ERROR_FILE          = 32,
-                             TASK_FILE           = 64,
-                             ROCK_PHYSICS_TRENDS = 128};
+                             LOCAL_NOISE         =  4,
+                             ROCK_PHYSICS        =  8,
+                             ERROR_FILE          = 16,
+                             TASK_FILE           = 32,
+                             ROCK_PHYSICS_TRENDS = 64};
 
   enum           outputWavelets{WELL_WAVELETS    = 1,
                                 GLOBAL_WAVELETS  = 2,

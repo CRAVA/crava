@@ -226,25 +226,25 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
           base_surf         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixTime();
         }
         interval_simboxes_[i]->setTopBotName(top_surf,base_surf, output_format);
-        std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
-        std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
-        if (interval_simboxes_.size() == 1) {
-          top_surf_eroded          = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
-          base_surf_eroded         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
-        }
-        interval_simboxes_[i]->SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
+        //std::string top_surf_eroded   = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
+        //std::string base_surf_eroded  = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded() + interval_names_[i] + "_" + IO::PrefixTime();
+        //if (interval_simboxes_.size() == 1) {
+        //  top_surf_eroded          = IO::PrefixSurface() + IO::PrefixTop() +  IO::PrefixEroded()  + IO::PrefixTime();
+        //  base_surf_eroded         = IO::PrefixSurface() + IO::PrefixBase() + IO::PrefixEroded()  + IO::PrefixTime();
+        //}
+        //interval_simboxes_[i]->SetTopBaseErodedNames(top_surf_eroded, base_surf_eroded, output_format);
         if (generate_seismic) {
           interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                                   IO::PathToSeismicData(), output_format);
-          interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                                   IO::PathToSeismicData(), output_format);
+          //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+          //                                         IO::PathToSeismicData(), output_format);
         }
         else if (!estimation_mode) {
           if (output_grids_elastic > 0 || output_grids_other > 0 || output_grids_seismic > 0)
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                       IO::PathToInversionResults(), output_format);
-            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                      IO::PathToInversionResults(), output_format);
+            //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+            //                          IO::PathToInversionResults(), output_format);
         }
         if ((output_format & IO::STORM) > 0) { // These copies are only needed with the STORM format
           if ((output_grids_elastic & IO::BACKGROUND) > 0 ||
@@ -252,26 +252,26 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
               (estimation_mode && generate_background)) {
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                       IO::PathToBackground(), output_format);
-            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                      IO::PathToBackground(), output_format);
+            //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+            //                          IO::PathToBackground(), output_format);
           }
           if ((output_grids_other & IO::CORRELATION) > 0) {
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                                     IO::PathToCorrelations(), output_format);
-            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                                    IO::PathToCorrelations(), output_format);
+            //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+            //                                        IO::PathToCorrelations(), output_format);
           }
           if ((output_grids_seismic & (IO::ORIGINAL_SEISMIC_DATA | IO::SYNTHETIC_SEISMIC_DATA)) > 0) {
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                                     IO::PathToSeismicData(), output_format);
-            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                                    IO::PathToSeismicData(), output_format);
+            //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+            //                                        IO::PathToSeismicData(), output_format);
           }
           if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                                     IO::PathToVelocity(), output_format);
-            interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
-                                                    IO::PathToVelocity(), output_format);
+            //interval_simboxes_[i]->WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
+            //                                        IO::PathToVelocity(), output_format);
           }
         }
       }
@@ -425,8 +425,11 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
     // else something is wrong
     else {
-      err_text_tmp += "\nCorrelation directions are not set correctly for interval " + interval_name[i];
-      err_text_tmp += ".\n";
+      std::string interval_text = "";
+      if (interval_name != "")
+        interval_text = " for interval " + interval_name[i];
+
+      err_text_tmp += "\nCorrelation directions are not set correctly" + interval_text + ".\n";
     }
 
     // Calculate Z padding ----------------------------------------------------------------
@@ -491,7 +494,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     }
 
     // Check consistency ------------------------------------------------------------------
-    if (interval_simboxes[i]->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
+    if (err_text_tmp == "" && interval_simboxes[i]->getdz() >= 10.0 && model_settings->getFaciesProbFromRockPhysics() == true) {
       err_text_tmp += "dz for interval \'" + interval_names[i] + "\' is too large to generate synthetic well data when estimating facies probabilities using rock physics models. Need dz < 10.";
     }
 
@@ -504,14 +507,16 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
   } // end for loop over intervals
 
   // Pick the simbox with the finest vertical resolution and set dz_rel relative to this dz
-  dz_rel.resize(interval_names.size());
-  dz_min = 10000;
-  for (size_t m = 0; m < interval_simboxes.size(); m++) {
-    if (interval_simboxes[m]->getdz() < dz_min)
-      dz_min = interval_simboxes[m]->getdz();
-  }
-  for (size_t m = 0; m < interval_simboxes.size(); m++) {
-    dz_rel[m] = interval_simboxes[m]->getdz()/dz_min;
+  if (failed == false) {
+    dz_rel.resize(interval_names.size());
+    dz_min = 10000;
+    for (size_t m = 0; m < interval_simboxes.size(); m++) {
+      if (interval_simboxes[m]->getdz() < dz_min)
+        dz_min = interval_simboxes[m]->getdz();
+    }
+    for (size_t m = 0; m < interval_simboxes.size(); m++) {
+      dz_rel[m] = interval_simboxes[m]->getdz()/dz_min;
+    }
   }
 
 }
@@ -993,7 +998,7 @@ void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
           new_value += (*surface)(i-1, j);
           n++;
         }
-        if (j < ni-1 && (*surface)(i, j+1) != missing) {
+        if (j < nj-1 && (*surface)(i, j+1) != missing) {
           new_value += (*surface)(i, j+1);
           n++;
         }

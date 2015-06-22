@@ -423,7 +423,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
     //Set facies prob in blocked logs
     if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
-      for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
 
@@ -447,7 +447,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     LogKit::LogFormatted(LogKit::Low,"\nCombine Facies prob:");
     int n_facies = static_cast<int>(seismic_parameters_intervals[0].GetFaciesProbGeomodel().size());
     facies_prob_geo_.resize(n_facies);
-
     for (int j = 0; j < n_facies; j++) {
       facies_prob_geo_[j] = new StormContGrid(output_simbox, nx, ny, nz_output);
 
@@ -458,6 +457,19 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       LogKit::LogFormatted(LogKit::Low,"\n " + NRLib::ToString(j) + " ");
       CombineResult(facies_prob_geo_[j],  facies_prob_intervals,  multi_interval_grid, zone_prob_grid, dummy_grids, missing_map);
     }
+
+    //Set facies prob in blocked logs
+    if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+      for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
+        std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
+        BlockedLogsCommon * blocked_log = iter->second;
+
+        for (int j = 0; j < n_facies; j++) {
+          blocked_log->SetLogFromGrid(facies_prob_geo_[j], j , n_facies, "FACIES_PROB");
+        }
+      }
+    }
+
   }
 
   //LH Cube
@@ -1008,7 +1020,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 
       blocked_log_final->SetVpFaciesFiltered(vp_for_facies_final);
       blocked_log_final->SetRhoFaciesFiltered(rho_for_facies_final);
-      blocked_log_final->SetIntervalLog(interval_log);
+      if (n_intervals_ > 1)
+        blocked_log_final->SetIntervalLog(interval_log);
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
@@ -1048,7 +1061,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       blocked_log_final->SetVpSeismicResolution(vp_filtered_final);
       blocked_log_final->SetVsSeismicResolution(vs_filtered_final);
       blocked_log_final->SetRhoSeismicResolution(rho_filtered_final);
-      blocked_log_final->SetIntervalLog(interval_log);
+      if (n_intervals_ > 1)
+        blocked_log_final->SetIntervalLog(interval_log);
       LogKit::LogFormatted(LogKit::Low,"ok");
     }
 
@@ -1264,6 +1278,19 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   const Simbox & simbox            = common_data->GetOutputSimbox();
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
+
+  //Update depth_mapping with resampled post_vp
+  if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
+    LogKit::LogFormatted(LogKit::Low,"\nUsing Vp velocity field from the combined vp grid to map between time and depth grids.\n");
+
+    ExpTransf(post_vp_);
+    int format = model_settings->getOutputGridFormat();
+    if (model_settings->getWriteAsciiSurfaces() && !(format & IO::ASCII))
+      format += IO::ASCII;
+
+    time_depth_mapping->setMappingFromVelocity(post_vp_, &simbox, format);
+    LogTransf(post_vp_);
+  }
 
   //Write blocked wells
   if ((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) {
@@ -2147,6 +2174,30 @@ void CravaResult::ExpTransf(StormContGrid * grid)
         if (value != RMISSING) {
           value = exp(value);
           grid->SetValue(i, j, k, value);
+        }
+
+      }
+    }
+  }
+}
+
+void CravaResult::LogTransf(StormContGrid * grid)
+{
+  float value = 0.0f;
+  for (size_t i = 0; i < grid->GetNI(); i++) {
+    for (size_t j = 0; j < grid->GetNJ(); j++) {
+      for (size_t k = 0; k < grid->GetNK(); k++) {
+
+        value = grid->GetValue(i, j, k);
+
+        if (value != RMISSING) {
+          if (value < 0.0) {
+            grid->SetValue(i, j, k, 0.0);
+          }
+          else {
+            value = log(value);
+            grid->SetValue(i, j, k, value);
+          }
         }
 
       }

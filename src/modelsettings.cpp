@@ -55,6 +55,7 @@ ModelSettings::ModelSettings(void)
   geometry_                   =     NULL;
   traceHeaderFormat_          =     NULL;
   traceHeaderFormatOutput_    = new TraceHeaderFormat(TraceHeaderFormat::SEISWORKS);
+  traceHeaderFormatBackground_.resize(3, NULL);
   krigingParameter_           =        0; // Indicate kriging not set.
   nWells_                     =        0;
   nSimulations_               =        0;
@@ -137,6 +138,8 @@ ModelSettings::ModelSettings(void)
   time_dz_                 = RMISSING;
   //time_nz_                 = IMISSING;
   //time_nz_[""]             = IMISSING;
+  segy_nz_                 = IMISSING;
+  segy_dz_                 = RMISSING;
 
   velocityFromInv_         =    false;
 
@@ -262,6 +265,13 @@ ModelSettings::~ModelSettings(void)
     for(size_t j=0; j<timeLapseLocalTHF_[i].size(); j++){
       delete timeLapseLocalTHF_[i][j];
       timeLapseLocalTHF_[i][j] = NULL;
+    }
+  }
+
+  for (size_t i = 0; i < traceHeaderFormatBackground_.size(); i++) {
+    if (traceHeaderFormatBackground_[i] != NULL) {
+      delete traceHeaderFormatBackground_[i];
+      traceHeaderFormatBackground_[i] = NULL;
     }
   }
 
@@ -441,6 +451,13 @@ ModelSettings::setTraceHeaderFormatOutput(TraceHeaderFormat * traceHeaderFormat)
   traceHeaderFormatOutput_ = new TraceHeaderFormat(*traceHeaderFormat);
 }
 
+void
+ModelSettings::setTraceHeaderFormatBackground(int parameter, TraceHeaderFormat * traceHeaderFormat)
+{
+  if (traceHeaderFormatBackground_[parameter] != NULL)
+    delete traceHeaderFormatBackground_[parameter];
+  traceHeaderFormatBackground_[parameter] = new TraceHeaderFormat(*traceHeaderFormat);
+}
 
 void
 ModelSettings::addTraceHeaderFormat(TraceHeaderFormat * traceHeaderFormat)

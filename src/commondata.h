@@ -870,7 +870,7 @@ private:
 
   bool               SetupDepthConversion(ModelSettings * model_settings,
                                           InputFiles    * input_files,
-                                          Simbox        & full_inversion_simbox,
+                                          Simbox        & simbox,
                                           GridMapping  *& time_depth_mapping,
                                           bool          & velocity_from_inversion,
                                           std::string   & err_text_common) const;

@@ -86,8 +86,6 @@ InputFiles::addInputPathAndCheckFiles()
     errTxt += addPathAndCheck(wellMoveIntFile_[i], true);
   errTxt += addPathAndCheck(timeSurfTopFile_, true);
   errTxt += addPathAndCheck(depthSurfTopFile_);
-  //for(i=0;i<multizoneSurfaceFiles_.size();i++)
-  //  errTxt += addPathAndCheck(multizoneSurfaceFiles_[i]);
   errTxt += addPathAndCheck(velocityField_);
   for(i=0;i<backFile_.size();i++)
     errTxt += addPathAndCheck(backFile_[i]);
