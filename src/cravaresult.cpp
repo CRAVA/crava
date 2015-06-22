@@ -426,7 +426,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
-        
+
         for (int j = 0; j < n_facies; j++) {
           blocked_log->SetLogFromGrid(facies_prob_[j], j , n_facies, "FACIES_PROB");
         }
@@ -463,7 +463,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_.begin(); it != blocked_logs_.end(); it++) {
         std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_.find(it->first);
         BlockedLogsCommon * blocked_log = iter->second;
-        
+
         for (int j = 0; j < n_facies; j++) {
           blocked_log->SetLogFromGrid(facies_prob_geo_[j], j , n_facies, "FACIES_PROB");
         }
