@@ -333,7 +333,11 @@ base_eroded_surface_(NULL)
     nz++;
   }
   if (nz != n_layers && n_layers > 0) {
-    LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+    std::string interval_text = "";
+    if (interval_name != "")
+      interval_text += " in interval " + interval_name;
+
+    LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
     LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
   }
 
@@ -538,7 +542,11 @@ base_eroded_surface_(NULL)
     }
 
     if (nz != n_layers && n_layers > 0) {
-      LogKit::LogFormatted(LogKit::High,"\nNumber of layers in interval "+ interval_name +" increased from %d", n_layers);
+      std::string interval_text = "";
+      if (interval_name != "")
+        interval_text += " in interval " + interval_name;
+
+      LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
       LogKit::LogFormatted(LogKit::High," to %d in grid created using the correlation direction.\n",nz);
     }
 

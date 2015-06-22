@@ -998,7 +998,7 @@ void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
           new_value += (*surface)(i-1, j);
           n++;
         }
-        if (j < ni-1 && (*surface)(i, j+1) != missing) {
+        if (j < nj-1 && (*surface)(i, j+1) != missing) {
           new_value += (*surface)(i, j+1);
           n++;
         }
