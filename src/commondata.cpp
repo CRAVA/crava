@@ -8181,7 +8181,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                                   multi_zone_available,
                                                   tmp_err_txt);
             if (tmp_err_txt != "") {
-              err_text += tmp_err_txt;
+              err_text += "Error with covariance estimate in interval "+interval_names[i]+":\n"+tmp_err_txt;
               failed_param_cov = true;
             }
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
@@ -8274,7 +8274,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
 
       if (failed_temp_corr == true || failed_param_cov == true) {
-        err_text += "Could not construct prior correlation. Unknown why...\n";
+        err_text += "Could not construct prior correlation.\n\n";
         failed = true;
       }
     }
