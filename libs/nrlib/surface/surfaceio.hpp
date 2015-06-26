@@ -73,7 +73,19 @@ namespace NRLib {
   template <class A>
   void ReadMulticolumnAsciiSurf(const std::string & filename,
                                 RegularSurface<A> & surface,
-                                const double      & segy_angle);
+                                const double      & segy_angle,
+                                const double      & x_ref,
+                                const double      & y_ref,
+                                const double      & dx,
+                                const double      & dy,
+                                const size_t      & nx,
+                                const size_t      & ny,
+                                const double      & il0,
+                                const double      & xl0,
+                                const double      & il_step_x,
+                                const double      & il_step_y,
+                                const double      & xl_step_x,
+                                const double      & xl_step_y);
 
   template <class A>
   void WriteIrapClassicAsciiSurf(const RegularSurface<A> & surf,
@@ -399,8 +411,19 @@ void  NRLib::ReadSgriSurf(const std::string & filename,
 template <class A>
 void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
                                      RegularSurface<A> & surface,
-                                     const double      & segy_angle)
-
+                                     const double      & angle,
+                                     const double      & x_ref,
+                                     const double      & y_ref,
+                                     const double      & dx,
+                                     const double      & dy,
+                                     const size_t      & nx,
+                                     const size_t      & ny,
+                                     const double      & il0,
+                                     const double      & xl0,
+                                     const double      & il_step_x,
+                                     const double      & il_step_y,
+                                     const double      & xl_step_x,
+                                     const double      & xl_step_y)
 {
 
   try {
@@ -491,6 +514,87 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
     int xl_min = static_cast<int>(xl_vec_sorted[0]);
     int xl_max = static_cast<int>(xl_vec_sorted[nj-1]);
 
+    int n = static_cast<int>(data[0].size());
+
+    //H-REMOVE
+    //if (n < ni*nj) {
+    //  LogKit::LogFormatted(LogKit::High,"Found " + NRLib::ToString(ni) + " inline values, and " + NRLib::ToString(nj) + " crosslines values in the surface."
+    //                        + " This combines to " + NRLib::ToString(ni*nj) + " IL-XL-coordinates, but only " + NRLib::ToString(n) + " values was found in file. The rest are set as missing.\n");
+    //}
+
+    //Create a 2D IL, XL, Z
+    Grid2D<A> ILXL_grid(ni, nj, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+
+    //Use IL/XL
+    int d_il = static_cast<int>((il_max - il_min) / (ni - 1));
+    int d_xl = static_cast<int>((xl_max - xl_min) / (nj - 1));
+
+    for (int k = 0; k < n; k++) {
+      //Local IL/XL
+      int il_loc = (static_cast<int>(data[il_index][k]) - il_min)/d_il;
+      int xl_loc = (static_cast<int>(data[xl_index][k]) - xl_min)/d_xl;
+
+      ILXL_grid(il_loc, xl_loc) = static_cast<A>(data[z_index][k]);
+    }
+
+    //Fill in 2D grid
+    Grid2D<A> tmp_grid(nx, ny, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+
+    int il0_segy  = static_cast<int>(0.5+il0);
+    int xl0_segy  = static_cast<int>(0.5+xl0);
+    int d_il_segy = -1;
+    int d_xl_segy = -1;
+
+    int n_missing = 0;
+    for (int i = 0; i < static_cast<int>(nx); i++) {
+      for (int j = 0; j < static_cast<int>(ny); j++) {
+
+        double local_x = i*dx;
+        double local_y = j*dy;
+
+        //LocalToGlobal
+        double x = std::cos(angle)*local_x - std::sin(angle)*local_y + x_ref;
+        double y = std::sin(angle)*local_x + std::cos(angle)*local_y + y_ref;
+
+        //Use segy_geometry to find correct il/xl
+        int il_new = static_cast<int>(0.5+il0+(x-x_ref)*il_step_x+(y-y_ref)*il_step_y);
+        int xl_new = static_cast<int>(0.5+xl0+(x-x_ref)*xl_step_x+(y-y_ref)*xl_step_y);
+
+        if (d_il_segy < 0 && il_new != il0_segy)
+          d_il_segy = std::abs(il_new - il0_segy);
+        if (d_xl_segy < 0 && xl_new != xl0_segy)
+          d_xl_segy = std::abs(xl_new - xl0_segy);
+
+        //Local IL/XL
+        int il_loc = (il_new - il_min)/d_il;
+        int xl_loc = (xl_new - xl_min)/d_xl;
+
+        A z = ILXL_grid(il_loc, xl_loc);
+
+        if (z == NRLib::MULT_IRAP_MISSING) {
+          tmp_grid(i,j) = static_cast<A>(NRLib::MULT_IRAP_MISSING);
+          n_missing++;
+        }
+        else
+          tmp_grid(i,j) = z;
+
+      }
+    }
+
+    //H-REMOVE
+    //if (n_missing > 0)
+    //  LogKit::LogFormatted(LogKit::High, NRLib::ToString(n_missing) + " cells are missing.\n");
+
+    std::string err_text = "";
+    if (d_il != d_il_segy)
+      err_text += "Found different inline-sampling in segy-cube (" + NRLib::ToString(d_il_segy) + ") and in input surface (" + NRLib::ToString(d_il) + ").\n";
+    if (d_xl != d_xl_segy)
+      err_text += "Found different crossline-sampling in segy-cube (" + NRLib::ToString(d_xl_segy) + ") and in input surface (" + NRLib::ToString(d_xl) + ").\n";
+    if (err_text != "")
+      throw Exception("Error when reading inline/crossline in " + filename + " :" + err_txt + "\n");
+
+    //H-REMOVE
+    /*
     //Four corners defined by IL and CL
     std::vector<std::vector<double> > c_xy(4);
     std::vector<std::vector<int> > c_ilxl(4);
@@ -671,6 +775,10 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
 
       tmp_grid(grid_i, grid_j) = static_cast<A>(data[z_index][k]);
     }
+    */
+
+    double lx = dx*nx;
+    double ly = dy*ny;
 
     surface = RegularSurface<A>(x_ref, y_ref, lx, ly, tmp_grid);
     surface.SetMissingValue(static_cast<A>(MULT_IRAP_MISSING));

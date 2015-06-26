@@ -10,11 +10,12 @@
 #include "src/simbox.h"
 #include "src/tasklist.h"
 
-MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
-                                     InputFiles     * input_files,
-                                     const Simbox   * estimation_simbox,
-                                     std::string    & err_text,
-                                     bool           & failed)
+MultiIntervalGrid::MultiIntervalGrid(ModelSettings      * model_settings,
+                                     InputFiles         * input_files,
+                                     const Simbox       * estimation_simbox,
+                                     const SegyGeometry * segy_geometry,
+                                     std::string        & err_text,
+                                     bool               & failed)
 {
 
   interval_names_                                                 = model_settings->getIntervalNames();
@@ -60,7 +61,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       erosion_priorities_[0] = erosion_priority_top_surface;
       uncertainties_[0] = 0;
 
-      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
+      top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, segy_geometry, err_text);
       surfaces[0] = *top_surface;
       for (int i = 0; i < n_intervals_; i++) {
 
@@ -76,7 +77,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
         if(i == n_intervals_-1 && uncertainties_[i+1] > 0.001)
           LogKit::LogMessage(LogKit::Warning,"Warning: Uncertainty on last base surface is ignored.\n\n");
 
-        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, segy_geometry, err_text);
         surfaces[i+1] =  *base_surface;
       }
 
@@ -123,12 +124,12 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
 
       if (model_settings->getParallelTimeSurfaces() == false) {
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
-        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, segy_geometry, err_text);
         eroded_surfaces_[0] = *top_surface;
         surfaces[0]         = *top_surface;
 
         base_surface_file_name_temp = input_files->getBaseTimeSurface("");
-        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox);
+        base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, segy_geometry, err_text);
         eroded_surfaces_[1] = *base_surface;
         surfaces[1]         = *base_surface;
 
@@ -139,7 +140,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
-        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox);
+        top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, segy_geometry, err_text);
         eroded_surfaces_[0] = *top_surface;
         surfaces[0]         = *top_surface;
 
@@ -193,6 +194,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings  * model_settings,
                               relative_grid_resolution_,
                               dz_min_,
                               dz_rel_,
+                              segy_geometry,
                               err_text,
                               failed);
     }
@@ -339,6 +341,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
                                                 std::vector<double>                       & relative_grid_resolution,
                                                 double                                    & dz_min,
                                                 std::vector<double>                       & dz_rel,
+                                                const SegyGeometry                        * segy_geometry,
                                                 std::string                               & err_text,
                                                 bool                                      & failed) const
 {
@@ -374,7 +377,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 1: Single correlation surface
     if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox);
+      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox, segy_geometry, err_text_tmp);
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf;
@@ -382,8 +385,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 2: Top and base correlation surfaces
     else if (it_single == corr_dir_single_surfaces.end() && it_top != corr_dir_top_surfaces.end() && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox);
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
+      Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox, segy_geometry, err_text_tmp);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, segy_geometry, err_text_tmp);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -392,7 +395,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 3: Top conform and base correlation surface
     else if (it_top_conform->second == true && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox);
+      Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, segy_geometry, err_text_tmp);
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_base;
@@ -400,7 +403,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 4: Top correlation surface and base conform
     else if (it_top != corr_dir_top_surfaces.end() && it_base_conform->second == true) {
       corr_dir = true;
-      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox);
+      Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox, segy_geometry, err_text_tmp);
       interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
                                            other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -522,14 +525,23 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
 }
 
 // --------------------------------------------------------------------------------
-Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string    & file_name,
-                                                     const Simbox         & estimation_simbox) const
+Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string  & file_name,
+                                                     const Simbox       & estimation_simbox,
+                                                     const SegyGeometry * segy_geometry,
+                                                     std::string        & err_text) const
 {
   Surface * new_surface = NULL;
-  double angle = estimation_simbox.GetAngle();
 
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
-    new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, angle);
+    if (segy_geometry != NULL)
+      new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(),
+                                segy_geometry->GetDy(), segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+    else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
+      new_surface = new Surface(file_name);
+    else
+      err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.";
+
     RemoveNaNFromSurface(new_surface);
     InterpolateMissing(new_surface);
   }
@@ -973,8 +985,9 @@ void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
   double missing = surface->GetMissingValue();
 
   Surface * new_surface = new Surface(*surface);
-  double old_value = 0.0;
+  double old_value  = 0.0;
   int n_interpolate = 0;
+  int n_missing     = 0;
 
   for (int i = 0; i < ni; i++) {
     for (int j = 0; j < nj; j++) {
@@ -1015,8 +1028,10 @@ void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
           new_value /= n;
           n_interpolate++;
         }
-        else
+        else {
           new_value = missing;
+          n_missing++;
+        }
 
         (*new_surface)(i,j) = new_value;
 
@@ -1026,8 +1041,10 @@ void MultiIntervalGrid::InterpolateMissing(Surface *& surface)
 
   std::string name = surface->GetName();
   if (n_interpolate > 0) {
-    LogKit::LogFormatted(LogKit::Low,"Interpolated " + NRLib::ToString(n_interpolate) + " cells in " + name + ".\n");
+    LogKit::LogFormatted(LogKit::Low,"Interpolated " + NRLib::ToString(n_interpolate) + " cells in " + name + ". " + NRLib::ToString(n_missing) + " cells are still missing.\n");
   }
+  else if (n_missing > 0)
+    LogKit::LogFormatted(LogKit::Low, "There are " + NRLib::ToString(n_missing) + " missing cells in " + name + ".\n");
 
   delete surface;
   surface = new_surface;

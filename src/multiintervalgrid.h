@@ -18,11 +18,12 @@ class MultiIntervalGrid
 public:
   MultiIntervalGrid();
 
-  MultiIntervalGrid(ModelSettings  * model_settings,
-                    InputFiles     * input_files,
-                    const Simbox   * estimation_simbox,
-                    std::string    & err_text,
-                    bool           & failed);
+  MultiIntervalGrid(ModelSettings      * model_settings,
+                    InputFiles         * input_files,
+                    const Simbox       * estimation_simbox,
+                    const SegyGeometry * segy_geometry,
+                    std::string        & err_text,
+                    bool               & failed);
 
   MultiIntervalGrid(const MultiIntervalGrid * multi_interval_grid);
 
@@ -79,11 +80,14 @@ private:
                               std::vector<double>                       & relative_grid_resolution,
                               double                                    & dz_min,
                               std::vector<double>                       & dz_rel,
+                              const SegyGeometry                        * segy_geometry,
                               std::string                               & err_text,
                               bool                                      & failed) const;
 
-  Surface * MakeSurfaceFromFileName(const std::string        & file_name,
-                                    const Simbox             & estimation_simbox) const;
+  Surface * MakeSurfaceFromFileName(const std::string  & file_name,
+                                    const Simbox       & estimation_simbox,
+                                    const SegyGeometry * segy_geometry,
+                                    std::string        & err_text) const;
 
   void ErodeSurface(Surface       &  surface,
                     const Surface &  priority_surface,

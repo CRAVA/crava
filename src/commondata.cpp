@@ -69,7 +69,7 @@ CommonData::CommonData(ModelSettings * model_settings,
   if (resolution_ok == true && outer_temp_simbox_ == true) { //Otherwise, we do not know where we are, so the rest is meaningless.
     // 2. Setup of multiple interval grid
     bool multi_failed = false;
-    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, err_text, multi_failed);
+    multiple_interval_grid_ = new MultiIntervalGrid(model_settings, input_files, &full_inversion_simbox_, segy_geometry, err_text, multi_failed);
     setup_multigrid_ = !multi_failed;
 
     // 1. continued - update full_inversion_simbox_ if single zone, to get correct z-resolution, so that reading .crava-files is ok.
@@ -627,11 +627,11 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       // SET TOP AND BASE SURFACES FOR THE ESTIMATION SIMBOX -----------------------------------------------
       // if multiple intervals
       if (model_settings->GetMultipleIntervalSetting()) {
-        SetSurfaces(model_settings, full_inversion_simbox, true, input_files, err_text);
+        SetSurfaces(model_settings, full_inversion_simbox, true, input_files, segy_geometry, err_text);
       }
       // single interval described by either one or two surfaces
       else {
-        SetSurfaces(model_settings, full_inversion_simbox, false, input_files, err_text);
+        SetSurfaces(model_settings, full_inversion_simbox, false, input_files, segy_geometry, err_text);
       }
     }
   }
@@ -4265,6 +4265,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                              Simbox              & full_inversion_simbox,
                              bool                  multi_surface,
                              const InputFiles    * input_files,
+                             const SegyGeometry  * segy_geometry,
                              std::string         & err_text) const
 {
   // Get interval surface data ------------------------------------------------------------------------------
@@ -4274,12 +4275,9 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
   const std::vector<std::string> interval_names = model_settings->getIntervalNames();
   const std::string top_surface_file_name       = input_files->getTimeSurfTopFile();
-  double angle                                  = full_inversion_simbox.GetAngle();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
-
-
 
   try{
     if (NRLib::IsNumber(top_surface_file_name)) {
@@ -4293,7 +4291,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
-      top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, angle);
+      if (segy_geometry != NULL)
+        top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(), segy_geometry->GetDy(),
+                                  segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(), segy_geometry->GetILStepX(),
+                                  segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+      else if (NRLib::FindSurfaceFileType(top_surface_file_name) != NRLib::SURF_MULT_ASCII)
+        top_surface = new Surface(top_surface_file_name);
+      else
+        err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.";
+
       MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
       MultiIntervalGrid::InterpolateMissing(top_surface);
     }
@@ -4330,7 +4336,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           }
           else {
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
+            if (segy_geometry != NULL)
+              base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(),
+                                         segy_geometry->GetDy(), segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                         segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
+              base_surface = new Surface(base_surface_file_name);
+            else
+              err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+
             MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
             MultiIntervalGrid::InterpolateMissing(base_surface);
           }
@@ -4350,7 +4364,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         }
         else {
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-          base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, angle);
+          if (segy_geometry != NULL)
+            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(),
+                                       segy_geometry->GetDy(), segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+          else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
+            base_surface = new Surface(base_surface_file_name);
+          else
+            err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+
           MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
           MultiIntervalGrid::InterpolateMissing(base_surface);
         }

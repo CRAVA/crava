@@ -58,8 +58,20 @@ public:
   ///                         of the file does not match the file format.
 
   RegularSurfaceRotated(const std::string & filename,
-                        SurfaceFileFormat   format = SURF_UNKNOWN,
-                        const double      & angle  = 0.0);
+                        SurfaceFileFormat   format    = SURF_UNKNOWN,
+                        const double      & angle     = 0.0,
+                        const double      & x_ref     = 0.0,
+                        const double      & y_ref     = 0.0,
+                        const double      & dx        = 0.0,
+                        const double      & dy        = 0.0,
+                        const size_t      & nx        = 0.0,
+                        const size_t      & ny        = 0.0,
+                        const double      & il0       = 0.0,
+                        const double      & xl0       = 0.0,
+                        const double      & il_step_x = 0.0,
+                        const double      & il_step_y = 0.0,
+                        const double      & xl_step_x = 0.0,
+                        const double      & xl_step_y = 0.0);
 
   Surface<A>* Clone() const
   { return new RegularSurfaceRotated<A>(*this); }
@@ -170,8 +182,20 @@ public:
   /// \throws FileFormatError If we can not determine the file format, or the contents
   ///                         of the file does not match the file format.
   void ReadFromFile(const std::string & filename,
-                    SurfaceFileFormat   format = SURF_UNKNOWN,
-                    const double      & angle  = 0.0);
+                    SurfaceFileFormat   format    = SURF_UNKNOWN,
+                    const double      & angle     = 0.0,
+                    const double      & x_ref     = 0.0,
+                    const double      & y_ref     = 0.0,
+                    const double      & dx        = 0.0,
+                    const double      & dy        = 0.0,
+                    const size_t      & nx        = 0.0,
+                    const size_t      & ny        = 0.0,
+                    const double      & il0       = 0.0,
+                    const double      & xl0       = 0.0,
+                    const double      & il_step_x = 0.0,
+                    const double      & il_step_y = 0.0,
+                    const double      & xl_step_x = 0.0,
+                    const double      & xl_step_y = 0.0);
 
   /// \brief Write surface to file on given format.
   /// If the file format does not support rotation, the resampled surface is written to file.
@@ -253,9 +277,36 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double  y_min,
 template <class A>
 RegularSurfaceRotated<A>::RegularSurfaceRotated(const std::string & filename,
                                                 SurfaceFileFormat   format,
-                                                const double      & angle)
+                                                const double      & angle,
+                                                const double      & x_ref,
+                                                const double      & y_ref,
+                                                const double      & dx,
+                                                const double      & dy,
+                                                const size_t      & nx,
+                                                const size_t      & ny,
+                                                const double      & il0,
+                                                const double      & xl0,
+                                                const double      & il_step_x,
+                                                const double      & il_step_y,
+                                                const double      & xl_step_x,
+                                                const double      & xl_step_y)
+
 {
-  ReadFromFile(filename, format, angle);
+  ReadFromFile(filename,
+               format,
+               angle,
+               x_ref,
+               y_ref,
+               dx,
+               dy,
+               nx,
+               ny,
+               il0,
+               xl0,
+               il_step_x,
+               il_step_y,
+               xl_step_x,
+               xl_step_y);
 }
 
 
@@ -483,7 +534,19 @@ RegularSurface<A> RegularSurfaceRotated<A>::ResampleSurface() const
 template <class A>
 void RegularSurfaceRotated<A>::ReadFromFile(const std::string & filename,
                                             SurfaceFileFormat   format,
-                                            const double      & segy_angle)
+                                            const double      & segy_angle,
+                                            const double      & x_ref,
+                                            const double      & y_ref,
+                                            const double      & dx,
+                                            const double      & dy,
+                                            const size_t      & nx,
+                                            const size_t      & ny,
+                                            const double      & il0,
+                                            const double      & xl0,
+                                            const double      & il_step_x,
+                                            const double      & il_step_y,
+                                            const double      & xl_step_x,
+                                            const double      & xl_step_y)
 {
   if (format == SURF_UNKNOWN) {
     format = FindSurfaceFileType(filename);
@@ -504,7 +567,21 @@ void RegularSurfaceRotated<A>::ReadFromFile(const std::string & filename,
       ReadSgriSurf(filename, surface_, angle_);
       break;
     case SURF_MULT_ASCII:
-      ReadMulticolumnAsciiSurf(filename, surface_, segy_angle);
+      ReadMulticolumnAsciiSurf(filename,
+                               surface_,
+                               segy_angle,
+                               x_ref,
+                               y_ref,
+                               dx,
+                               dy,
+                               nx,
+                               ny,
+                               il0,
+                               xl0,
+                               il_step_x,
+                               il_step_y,
+                               xl_step_x,
+                               xl_step_y);
       angle_ = segy_angle;
       break;
     default:
