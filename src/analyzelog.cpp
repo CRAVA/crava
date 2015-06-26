@@ -935,7 +935,8 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             for (size_t k = 0; k < well_log_vp.size(); k++){
               for (size_t l = k; l < well_log_vp.size(); l++){
                 if (well_log_vp[k] != RMISSING && well_log_vp[l] != RMISSING
-                  && well_log_rho[k] != RMISSING && well_log_rho[l] != RMISSING){
+                  && well_log_rho[k] != RMISSING && well_log_rho[l] != RMISSING
+                  && well_log_vs[k] != RMISSING && well_log_vs[l] != RMISSING){
                   double z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(x_pos[k], y_pos[k]))/interval_simboxes[j]->getRelThick(x_pos[k], y_pos[k]);
                   double z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(x_pos[l], y_pos[l]))/interval_simboxes[j]->getRelThick(x_pos[l], y_pos[l]);
                   lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
