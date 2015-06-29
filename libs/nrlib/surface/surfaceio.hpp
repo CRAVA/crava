@@ -71,15 +71,15 @@ namespace NRLib {
                                                                   const std::vector<std::string> & labels);
 
   template <class A>
-  void ReadMulticolumnAsciiSurf(const std::string & filename,
+  void ReadMulticolumnAsciiSurf(std::string         filename,
                                 RegularSurface<A> & surface,
-                                const double      & x_ref,
-                                const double      & y_ref,
-                                const double      & lx,
-                                const double      & ly,
-                                const int         * ilxl_area,
-                                const double      & il0_ref,
-                                const double      & xl0_ref);
+                                double              x_ref,
+                                double              y_ref,
+                                double              lx,
+                                double              ly,
+                                int               * ilxl_area,
+                                double              il0_ref,
+                                double              xl0_ref);
 
   template <class A>
   void WriteIrapClassicAsciiSurf(const RegularSurface<A> & surf,
@@ -403,15 +403,15 @@ void  NRLib::ReadSgriSurf(const std::string & filename,
 }
 
 template <class A>
-void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
+void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
                                      RegularSurface<A> & surface,
-                                     const double      & x_ref,
-                                     const double      & y_ref,
-                                     const double      & lx,
-                                     const double      & ly,
-                                     const int         * ilxl_area,
-                                     const double      & il0_ref,
-                                     const double      & xl0_ref)
+                                     double              x_ref,
+                                     double              y_ref,
+                                     double              lx,
+                                     double              ly,
+                                     int               * ilxl_area,
+                                     double              il0_ref,
+                                     double              xl0_ref)
 {
 
   try {
@@ -604,7 +604,7 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
         //Get corresponding IL/XL from file_grid
         int il_loc_file = (il_glob - il_min_file)/d_il_file;
         int xl_loc_file = (xl_glob - xl_min_file)/d_xl_file;
-        
+
         //If surface is smaller than segy-grid, we set is as missing
         A z;
         if (il_loc_file < 0 || il_loc_file > ni_file-1 || xl_loc_file < 0 || xl_loc_file > nj_file-1)
