@@ -5908,6 +5908,13 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     if(bypass == true)
       thf->SetScaleCoLoc(-1);
 
+  try {
+    thf->CheckFormat();
+  }
+  catch (NRLib::Exception & e) {
+    errTxt += e.what();
+  }
+
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }

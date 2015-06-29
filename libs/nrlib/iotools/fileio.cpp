@@ -392,10 +392,13 @@ int NRLib::FindGridFileType(const std::string& filename )
       frequency[buf[i]]++;
 
     bool segy_ok = true;
-    for(i=0;(i<64) && (segy_ok == true);i++) {
-      if(frequency[i] > 0) //Should not encounter any of these in EBCDIC
-        segy_ok = false;
-    }
+    int  low_count = 0;
+    for(i=0;i<64;i++)
+      low_count += frequency[i];
+
+    if(low_count > 5)
+      segy_ok = false;
+
     i++;
     for(;(i<256) && (segy_ok == true);i++) {
       if(frequency[i] > frequency[64]) //Assumption is that EBCDIC 64 (space) is most common in header.

@@ -4041,7 +4041,7 @@ CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
       geometry = GetGeometryFromStormFile(grid_file, err_text, scale);
     }
     else {
-      err_text = "Trying to read grid dimensions from unknown file format.\n";
+      err_text = "Trying to read grid dimensions from file "+grid_file+": unknown file format.\n";
     }
   }
   else {
