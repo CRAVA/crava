@@ -4265,7 +4265,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                              Simbox              & full_inversion_simbox,
                              bool                  multi_surface,
                              const InputFiles    * input_files,
-                             const SegyGeometry  * segy_geometry,
+                             SegyGeometry        * segy_geometry,
                              std::string         & err_text) const
 {
   // Get interval surface data ------------------------------------------------------------------------------
@@ -4291,10 +4291,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     }
     else {
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
-      if (segy_geometry != NULL)
-        top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(), segy_geometry->GetDy(),
-                                  segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(), segy_geometry->GetILStepX(),
-                                  segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+      if (segy_geometry != NULL) {
+        std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+        double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+        double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+        top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+
+      }
       else if (NRLib::FindSurfaceFileType(top_surface_file_name) != NRLib::SURF_MULT_ASCII)
         top_surface = new Surface(top_surface_file_name);
       else
@@ -4336,10 +4341,14 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           }
           else {
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-            if (segy_geometry != NULL)
-              base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(),
-                                         segy_geometry->GetDy(), segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                         segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            if (segy_geometry != NULL) {
+              std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+              base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+            }
             else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
               base_surface = new Surface(base_surface_file_name);
             else
@@ -4364,10 +4373,14 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         }
         else {
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
-          if (segy_geometry != NULL)
-            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(), segy_geometry->GetY0(), segy_geometry->GetDx(),
-                                       segy_geometry->GetDy(), segy_geometry->GetNx(), segy_geometry->GetNy(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+          if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+          }
           else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
             base_surface = new Surface(base_surface_file_name);
           else
@@ -5882,7 +5895,8 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   interval_grids,
                   grid_type,
                   par_name,
-                  interval_simboxes,                  model_settings,
+                  interval_simboxes,
+                  model_settings,
                   err_text,
                   false,
                   nopadding);

@@ -18,12 +18,12 @@ class MultiIntervalGrid
 public:
   MultiIntervalGrid();
 
-  MultiIntervalGrid(ModelSettings      * model_settings,
-                    InputFiles         * input_files,
-                    const Simbox       * estimation_simbox,
-                    const SegyGeometry * segy_geometry,
-                    std::string        & err_text,
-                    bool               & failed);
+  MultiIntervalGrid(ModelSettings * model_settings,
+                    InputFiles    * input_files,
+                    const Simbox  * estimation_simbox,
+                    SegyGeometry  * segy_geometry,
+                    std::string   & err_text,
+                    bool          & failed);
 
   MultiIntervalGrid(const MultiIntervalGrid * multi_interval_grid);
 
@@ -64,9 +64,14 @@ public:
 
   static void InterpolateMissing(Surface *& surface);
 
+  static std::vector<int> FindILXLArea(const ModelSettings * model_settings,
+                                       const InputFiles    * input_files,
+                                       SegyGeometry        * segy_geometry);
+
 private:
 
   void  SetupIntervalSimboxes(ModelSettings                             * model_settings,
+                              const InputFiles                          * input_files,
                               const Simbox                              * estimation_simbox,
                               const std::vector<std::string>            & interval_names,
                               const std::vector<std::vector<Surface> >  & eroded_surfaces,
@@ -80,14 +85,16 @@ private:
                               std::vector<double>                       & relative_grid_resolution,
                               double                                    & dz_min,
                               std::vector<double>                       & dz_rel,
-                              const SegyGeometry                        * segy_geometry,
+                              SegyGeometry                              * segy_geometry,
                               std::string                               & err_text,
                               bool                                      & failed) const;
 
-  Surface * MakeSurfaceFromFileName(const std::string  & file_name,
-                                    const Simbox       & estimation_simbox,
-                                    const SegyGeometry * segy_geometry,
-                                    std::string        & err_text) const;
+  Surface * MakeSurfaceFromFileName(const std::string   & file_name,
+                                    const Simbox        & estimation_simbox,
+                                    const ModelSettings * model_settings,
+                                    const InputFiles    * input_files,
+                                    SegyGeometry        * segy_geometry,
+                                    std::string         & err_text) const;
 
   void ErodeSurface(Surface       &  surface,
                     const Surface &  priority_surface,

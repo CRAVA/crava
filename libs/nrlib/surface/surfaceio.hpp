@@ -73,19 +73,13 @@ namespace NRLib {
   template <class A>
   void ReadMulticolumnAsciiSurf(const std::string & filename,
                                 RegularSurface<A> & surface,
-                                const double      & segy_angle,
                                 const double      & x_ref,
                                 const double      & y_ref,
-                                const double      & dx,
-                                const double      & dy,
-                                const size_t      & nx,
-                                const size_t      & ny,
-                                const double      & il0,
-                                const double      & xl0,
-                                const double      & il_step_x,
-                                const double      & il_step_y,
-                                const double      & xl_step_x,
-                                const double      & xl_step_y);
+                                const double      & lx,
+                                const double      & ly,
+                                const int         * ilxl_area,
+                                const double      & il0_ref,
+                                const double      & xl0_ref);
 
   template <class A>
   void WriteIrapClassicAsciiSurf(const RegularSurface<A> & surf,
@@ -411,22 +405,19 @@ void  NRLib::ReadSgriSurf(const std::string & filename,
 template <class A>
 void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
                                      RegularSurface<A> & surface,
-                                     const double      & angle,
                                      const double      & x_ref,
                                      const double      & y_ref,
-                                     const double      & dx,
-                                     const double      & dy,
-                                     const size_t      & nx,
-                                     const size_t      & ny,
-                                     const double      & il0,
-                                     const double      & xl0,
-                                     const double      & il_step_x,
-                                     const double      & il_step_y,
-                                     const double      & xl_step_x,
-                                     const double      & xl_step_y)
+                                     const double      & lx,
+                                     const double      & ly,
+                                     const int         * ilxl_area,
+                                     const double      & il0_ref,
+                                     const double      & xl0_ref)
 {
 
   try {
+    //Create surface with area corresponding to segy-grid (ilxl_area), but use sampling from surface file
+    //il0_ref and xl0_ref are il/xl values at rotation corner, this is used to match IL/XL values from surface with segy
+
     int header_start_line;
     bool is_multicolumn_ascii = false;
     is_multicolumn_ascii = FindMulticolumnAsciiLine(filename, header_start_line);
@@ -475,6 +466,7 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
       if (variable_names[i] == "Attribute" || variable_names[i] == "Z" || variable_names[i] == "TWT")
         z_index = i;
     }
+
     std::string err_txt = "";
     if (il_index == -1)
       err_txt += "Could not find variable name for Inline in file " + filename +". (Tried Inline, IL).\n";
@@ -505,288 +497,150 @@ void NRLib::ReadMulticolumnAsciiSurf(const std::string & filename,
     std::sort(xl_vec_sorted.begin(), xl_vec_sorted.end());
     xl_vec_sorted.erase(std::unique(xl_vec_sorted.begin(), xl_vec_sorted.end()), xl_vec_sorted.end());
 
-    int ni = static_cast<int>(il_vec_sorted.size());
-    int nj = static_cast<int>(xl_vec_sorted.size());
+    int ni_file = static_cast<int>(il_vec_sorted.size());
+    int nj_file = static_cast<int>(xl_vec_sorted.size());
 
-    int il_min = static_cast<int>(il_vec_sorted[0]);
-    int il_max = static_cast<int>(il_vec_sorted[ni-1]);
+    int il_min_file = static_cast<int>(il_vec_sorted[0]);
+    int il_max_file = static_cast<int>(il_vec_sorted[ni_file-1]);
 
-    int xl_min = static_cast<int>(xl_vec_sorted[0]);
-    int xl_max = static_cast<int>(xl_vec_sorted[nj-1]);
+    int xl_min_file = static_cast<int>(xl_vec_sorted[0]);
+    int xl_max_file = static_cast<int>(xl_vec_sorted[nj_file-1]);
 
     int n = static_cast<int>(data[0].size());
+    A missing = static_cast<A>(NRLib::MULT_IRAP_MISSING);
 
-    //H-REMOVE
-    //if (n < ni*nj) {
-    //  LogKit::LogFormatted(LogKit::High,"Found " + NRLib::ToString(ni) + " inline values, and " + NRLib::ToString(nj) + " crosslines values in the surface."
-    //                        + " This combines to " + NRLib::ToString(ni*nj) + " IL-XL-coordinates, but only " + NRLib::ToString(n) + " values was found in file. The rest are set as missing.\n");
-    //}
+    NRLib::Grid2D<A> ilxl_grid_file(ni_file, nj_file, missing);
 
-    //Create a 2D IL, XL, Z
-    Grid2D<A> ILXL_grid(ni, nj, static_cast<A>(NRLib::MULT_IRAP_MISSING));
-
-    //Use IL/XL
-    int d_il = static_cast<int>((il_max - il_min) / (ni - 1));
-    int d_xl = static_cast<int>((xl_max - xl_min) / (nj - 1));
+    int d_il_file = static_cast<int>((il_max_file - il_min_file) / (ni_file - 1));
+    int d_xl_file = static_cast<int>((xl_max_file - xl_min_file) / (nj_file - 1));
 
     for (int k = 0; k < n; k++) {
       //Local IL/XL
-      int il_loc = (static_cast<int>(data[il_index][k]) - il_min)/d_il;
-      int xl_loc = (static_cast<int>(data[xl_index][k]) - xl_min)/d_xl;
+      int il_loc = (static_cast<int>(data[il_index][k]) - il_min_file)/d_il_file;
+      int xl_loc = (static_cast<int>(data[xl_index][k]) - xl_min_file)/d_xl_file;
 
-      ILXL_grid(il_loc, xl_loc) = static_cast<A>(data[z_index][k]);
+      ilxl_grid_file(il_loc, xl_loc) = static_cast<A>(data[z_index][k]);
     }
 
-    //Fill in 2D grid
-    Grid2D<A> tmp_grid(nx, ny, static_cast<A>(NRLib::MULT_IRAP_MISSING));
-
-    int il0_segy  = static_cast<int>(0.5+il0);
-    int xl0_segy  = static_cast<int>(0.5+xl0);
-    int d_il_segy = -1;
-    int d_xl_segy = -1;
-
-    int n_missing = 0;
-    for (int i = 0; i < static_cast<int>(nx); i++) {
-      for (int j = 0; j < static_cast<int>(ny); j++) {
-
-        double local_x = i*dx;
-        double local_y = j*dy;
-
-        //LocalToGlobal
-        double x = std::cos(angle)*local_x - std::sin(angle)*local_y + x_ref;
-        double y = std::sin(angle)*local_x + std::cos(angle)*local_y + y_ref;
-
-        //Use segy_geometry to find correct il/xl
-        int il_new = static_cast<int>(0.5+il0+(x-x_ref)*il_step_x+(y-y_ref)*il_step_y);
-        int xl_new = static_cast<int>(0.5+xl0+(x-x_ref)*xl_step_x+(y-y_ref)*xl_step_y);
-
-        if (d_il_segy < 0 && il_new != il0_segy)
-          d_il_segy = std::abs(il_new - il0_segy);
-        if (d_xl_segy < 0 && xl_new != xl0_segy)
-          d_xl_segy = std::abs(xl_new - xl0_segy);
-
-        //Local IL/XL
-        int il_loc = (il_new - il_min)/d_il;
-        int xl_loc = (xl_new - xl_min)/d_xl;
-
-        A z = ILXL_grid(il_loc, xl_loc);
-
-        if (z == NRLib::MULT_IRAP_MISSING) {
-          tmp_grid(i,j) = static_cast<A>(NRLib::MULT_IRAP_MISSING);
-          n_missing++;
+    //Check consistency between IL/XL sampling in surface and sampling of grid values
+    int t1 = 0;
+    int t2 = 0;
+    for (int i = 0; i < ni_file; i++) {
+      if (ilxl_grid_file(i,nj_file/2) != missing) {
+        t1 = i;
+        for (int k = t1+1; k < ni_file; k++) {
+          if (ilxl_grid_file(k,nj_file/2) != missing) {
+            t2 = k;
+            k = ni_file-1;
+            i = ni_file-1;
+          }
         }
+      }
+    }
+    int diff_il = (t2 - t1)*d_il_file;
+    t1 = 0;
+    t2 = 0;
+    for (int j = 0; j < nj_file; j++) {
+      if (ilxl_grid_file(ni_file/2,j) != missing) {
+        t1 = j;
+        for (int k = t1+1; k < nj_file; k++) {
+          if (ilxl_grid_file(ni_file/2,k) != missing) {
+            t2 = k;
+            k = nj_file-1;
+            j = nj_file-1;
+          }
+        }
+      }
+    }
+    int diff_xl = (t2 - t1)*d_xl_file;
+
+    if (diff_il != d_il_file) {
+      err_txt += "Found sampling of IL-values to be " + NRLib::ToString(d_il_file) +
+                 ", but grid values are given with a IL-sampling of " + NRLib::ToString(diff_il) + ".\n";
+    }
+    if (diff_xl != d_xl_file) {
+      err_txt += "Found sampling of XL-values to be " + NRLib::ToString(d_xl_file) +
+                 ", but grid values are given with a XL-sampling of " + NRLib::ToString(diff_xl) + ".\n";
+    }
+
+    if (err_txt != "")
+      throw Exception(err_txt);
+
+    int il_min_segy  = ilxl_area[0];
+    int il_max_segy  = ilxl_area[1];
+    int xl_min_segy  = ilxl_area[2];
+    int xl_max_segy  = ilxl_area[3];
+    int il_step_segy = ilxl_area[4];
+    int xl_step_segy = ilxl_area[5];
+
+    //Create IL/XL surface as large as segy geometry, but with sampling from file
+    int n_il = (il_max_segy - il_min_segy)/d_il_file + 1;
+    int n_xl = (xl_max_segy - xl_min_segy)/d_xl_file + 1;
+
+    //Find IL/XL of rotation corner
+    int il0_segy = static_cast<int>(il0_ref+0.5);
+    int xl0_segy = static_cast<int>(xl0_ref+0.5);
+
+    // To ensure that the IL XL we find are existing traces
+    if (il0_segy < il_min_segy)
+      il0_segy -= (il0_segy - il_min_segy) % il_step_segy;
+    else if (il0_segy > il_max_segy)
+      il0_segy += (il_max_segy - il0_segy) % il_step_segy;
+
+    if (xl0_segy < xl_min_segy)
+      xl0_segy -= (xl0_segy - xl_min_segy) % xl_step_segy;
+    else if (xl0_segy > xl_max_segy)
+      xl0_segy += (xl_max_segy - xl0_segy) % xl_step_segy;
+
+    NRLib::Grid2D<A> surface_grid(n_il, n_xl, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+    int grid_i, grid_j;
+    for (int i = 0; i < n_il; i++) {
+      for (int j = 0; j < n_xl; j++) {
+
+        //Global IL/XL of surface_grid
+        int il_glob = il_min_segy + i*d_il_file;
+        int xl_glob = xl_min_segy + j*d_xl_file;
+
+        //Get corresponding IL/XL from file_grid
+        int il_loc_file = (il_glob - il_min_file)/d_il_file;
+        int xl_loc_file = (xl_glob - xl_min_file)/d_xl_file;
+        
+        //If surface is smaller than segy-grid, we set is as missing
+        A z;
+        if (il_loc_file < 0 || il_loc_file > ni_file-1 || xl_loc_file < 0 || xl_loc_file > nj_file-1)
+          z = missing;
         else
-          tmp_grid(i,j) = z;
+          z = ilxl_grid_file(il_loc_file, xl_loc_file);
 
+        //Fill in correct corner
+        if (il0_segy == il_min_segy && xl0_segy == xl_min_segy) {
+          grid_i = i;
+          grid_j = j;
+        }
+        else if (il0_segy == il_max_segy && xl0_segy == xl_max_segy) {
+          grid_i = n_il - i - 1;
+          grid_j = n_xl - j - 1;
+        }
+        else if (il0_segy == il_min_segy && xl0_segy == xl_max_segy) {
+          grid_i = i;
+          grid_j = n_xl - j - 1;
+        }
+        else { //il0_segy == il_max_segy && xl0_segy == xl_min_segy
+          grid_i = n_il - i - 1;
+          grid_j = j;
+        }
+
+        surface_grid(grid_i, grid_j) = z;
       }
     }
 
-    //H-REMOVE
-    //if (n_missing > 0)
-    //  LogKit::LogFormatted(LogKit::High, NRLib::ToString(n_missing) + " cells are missing.\n");
-
-    std::string err_text = "";
-    if (d_il != d_il_segy)
-      err_text += "Found different inline-sampling in segy-cube (" + NRLib::ToString(d_il_segy) + ") and in input surface (" + NRLib::ToString(d_il) + ").\n";
-    if (d_xl != d_xl_segy)
-      err_text += "Found different crossline-sampling in segy-cube (" + NRLib::ToString(d_xl_segy) + ") and in input surface (" + NRLib::ToString(d_xl) + ").\n";
-    if (err_text != "")
-      throw Exception("Error when reading inline/crossline in " + filename + " :" + err_txt + "\n");
-
-    //H-REMOVE
-    /*
-    //Four corners defined by IL and CL
-    std::vector<std::vector<double> > c_xy(4);
-    std::vector<std::vector<int> > c_ilxl(4);
-    for (int i = 0; i < 4; i++) {
-      c_xy[i].resize(2);
-      c_ilxl[i].resize(2);
-    }
-
-    int n = static_cast<int>(data[0].size());
-    for (int i = 0; i < n; i++) {
-      if (data[il_index][i] == il_min && data[xl_index][i] == xl_min) {
-        c_xy[0][0] = data[x_index][i];
-        c_xy[0][1] = data[y_index][i];
-        c_ilxl[0][0] = il_min;
-        c_ilxl[0][1] = xl_min;
-      }
-      if (data[il_index][i] == il_min && data[xl_index][i] == xl_max) {
-        c_xy[1][0] = data[x_index][i];
-        c_xy[1][1] = data[y_index][i];
-        c_ilxl[1][0] = il_min;
-        c_ilxl[1][1] = xl_max;
-      }
-      if (data[il_index][i] == il_max && data[xl_index][i] == xl_min) {
-        c_xy[2][0] = data[x_index][i];
-        c_xy[2][1] = data[y_index][i];
-        c_ilxl[2][0] = il_max;
-        c_ilxl[2][1] = xl_min;
-      }
-      if (data[il_index][i] == il_max && data[xl_index][i] == xl_max) {
-        c_xy[3][0] = data[x_index][i];
-        c_xy[3][1] = data[y_index][i];
-        c_ilxl[3][0] = il_max;
-        c_ilxl[3][1] = xl_max;
-      }
-    }
-
-    //Find min and max
-    double x_min = c_xy[0][0];
-    double x_max = c_xy[0][0];
-    double y_min = c_xy[0][1];
-    double y_max = c_xy[0][1];
-    int c_x_min = 0;
-    int c_x_max = 0;
-    int c_y_min = 0;
-    int c_y_max = 0;
-    for (int i = 1; i < 4; i++) {
-      if (c_xy[i][0] < x_min) {
-        x_min = c_xy[i][0];
-        c_x_min = i;
-      }
-      if (c_xy[i][0] > x_max) {
-        x_max = c_xy[i][0];
-        c_x_max = i;
-      }
-      if (c_xy[i][1] < y_min) {
-        y_min = c_xy[i][1];
-        c_y_min = i;
-      }
-      if (c_xy[i][1] > y_max) {
-        y_max = c_xy[i][1];
-        c_y_max = i;
-      }
-    }
-
-    //Find the reference coordinates (rotation corner) and lx/ly based on rotation angle
-    double x_ref = MULT_IRAP_MISSING;
-    double y_ref = MULT_IRAP_MISSING;
-    double lx = 0.0;
-    double ly = 0.0;
-    if (segy_angle == 0.0) {
-      x_ref = x_min;
-      y_ref = y_min;
-      lx = x_max - x_min;
-      ly = y_max - y_min;
-    }
-    else if (segy_angle > 0.0 && segy_angle < NRLib::PiHalf) {
-      y_ref = y_min;
-      for (int i = 0; i < 4; i++) {
-        if (c_xy[i][1] == y_ref)
-          x_ref = c_xy[i][0];
-      }
-
-      lx = std::sqrt( (x_ref - c_xy[c_x_max][0])*(x_ref - c_xy[c_x_max][0]) + (y_ref - c_xy[c_x_max][1])*(y_ref - c_xy[c_x_max][1]) );
-      ly = std::sqrt( (x_ref - c_xy[c_x_min][0])*(x_ref - c_xy[c_x_min][0]) + (y_ref - c_xy[c_x_min][1])*(y_ref - c_xy[c_x_min][1]) );
-    }
-    else if (segy_angle == NRLib::PiHalf) {
-      x_ref = x_max;
-      y_ref = y_min;
-      lx = y_max - y_min;
-      ly = x_max - x_min;
-    }
-    else if (segy_angle > NRLib::PiHalf && segy_angle < NRLib::Pi) {
-      x_ref = x_max;
-      for (int i = 0; i < 4; i++) {
-        if (c_xy[i][0] == x_ref)
-          y_ref = c_xy[i][1];
-      }
-
-      lx = std::sqrt( (x_ref - c_xy[c_y_max][0])*(x_ref - c_xy[c_y_max][0]) + (y_ref - c_xy[c_y_max][1])*(y_ref - c_xy[c_y_max][1]) );
-      ly = std::sqrt( (x_ref - c_xy[c_y_min][0])*(x_ref - c_xy[c_y_min][0]) + (y_ref - c_xy[c_y_min][1])*(y_ref - c_xy[c_y_min][1]) );
-    }
-    else if (segy_angle == NRLib::Pi) {
-      x_ref = x_max;
-      y_ref = y_max;
-      lx = x_max - x_min;
-      ly = y_max - y_min;
-    }
-    else if (segy_angle > NRLib::Pi && segy_angle < 3*NRLib::PiHalf) {
-      y_ref = y_max;
-      for (int i = 0; i < 4; i++) {
-        if (c_xy[i][1] == y_ref)
-          x_ref = c_xy[i][0];
-      }
-
-      lx = std::sqrt( (x_ref - c_xy[c_x_min][0])*(x_ref - c_xy[c_x_min][0]) + (y_ref - c_xy[c_x_min][1])*(y_ref - c_xy[c_x_min][1]) );
-      ly = std::sqrt( (x_ref - c_xy[c_x_max][0])*(x_ref - c_xy[c_x_max][0]) + (y_ref - c_xy[c_x_max][1])*(y_ref - c_xy[c_x_max][1]) );
-    }
-    else if (segy_angle == 3*NRLib::PiHalf) {
-      x_ref = x_min;
-      y_ref = y_max;
-      lx = y_max - y_min;
-      ly = x_max - y_min;
-    }
-    else { //segy_angle > 3*NRLib::PiHalf && segy_angle < 2*NRLib::Pi
-      x_ref = x_min;
-      for (int i = 0; i < 4; i++) {
-        if (c_xy[i][0] == x_ref)
-          y_ref = c_xy[i][1];
-      }
-
-      lx = std::sqrt( (x_ref - c_xy[c_y_min][0])*(x_ref - c_xy[c_y_min][0]) + (y_ref - c_xy[c_y_min][1])*(y_ref - c_xy[c_y_min][1]) );
-      ly = std::sqrt( (x_ref - c_xy[c_y_max][0])*(x_ref - c_xy[c_y_max][0]) + (y_ref - c_xy[c_y_max][1])*(y_ref - c_xy[c_y_max][1]) );
-    }
-
-    //Use IL/XL
-    int d_IL = static_cast<int>((il_max - il_min) / (ni - 1));
-    int d_XL = static_cast<int>((xl_max - xl_min) / (nj - 1));
-
-    int il_start = 0;
-    int xl_start = 0;
-    for (int i = 0; i < 4; i++) {
-      if (c_xy[i][0] == x_ref && c_xy[i][1] == y_ref) {
-        il_start = c_ilxl[i][0];
-        xl_start = c_ilxl[i][1];
-      }
-    }
-
-    //Fill in 2D grid
-    Grid2D<A> tmp_grid(ni, nj, static_cast<A>(MULT_IRAP_MISSING));
-
-    int grid_i = 0;
-    int grid_j = 0;
-    int il_data_local = 0;
-    int xl_data_local = 0;
-    for (int k = 0; k < n; k++) {
-
-      //Local IL/XL
-      il_data_local = (static_cast<int>(data[il_index][k]) - il_min)/d_IL;
-      xl_data_local = (static_cast<int>(data[xl_index][k]) - xl_min)/d_XL;
-
-      //Fill in correct corner
-      if (il_start == il_min && xl_start == xl_min) {
-        grid_i = il_data_local;
-        grid_j = xl_data_local;
-      }
-      else if (il_start == il_max && xl_start == xl_max) {
-        grid_i = ni - il_data_local - 1;
-        grid_j = nj - xl_data_local - 1;
-      }
-      else if (il_start == il_min && xl_start == xl_max) {
-        grid_i = il_data_local;
-        grid_j = nj - xl_data_local - 1;
-      }
-      else { //il_start == il_max && xl_start == xl_min
-        grid_i = ni - il_data_local - 1;
-        grid_j = xl_data_local;
-      }
-
-      tmp_grid(grid_i, grid_j) = static_cast<A>(data[z_index][k]);
-    }
-    */
-
-    double lx = dx*nx;
-    double ly = dy*ny;
-
-    surface = RegularSurface<A>(x_ref, y_ref, lx, ly, tmp_grid);
+    surface = RegularSurface<A>(x_ref, y_ref, lx, ly, surface_grid);
     surface.SetMissingValue(static_cast<A>(MULT_IRAP_MISSING));
     surface.SetName(GetStem(filename));
   }
   catch (Exception& e) {
     throw FileFormatError("Error parsing \"" + filename + "\" as a "
-      "Multicolumn ASCII file " + e.what() + "\n");
+      "Multicolumn ASCII file: \n" + e.what() + "\n");
   }
 
 }
