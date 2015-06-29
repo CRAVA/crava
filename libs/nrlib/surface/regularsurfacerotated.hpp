@@ -57,9 +57,16 @@ public:
   /// \throws FileFormatError If we can not determine the file format, or the contents
   ///                         of the file does not match the file format.
 
-  RegularSurfaceRotated(const std::string & filename,
-                        SurfaceFileFormat   format = SURF_UNKNOWN,
-                        const double      & angle  = 0.0);
+  RegularSurfaceRotated(std::string       filename,
+                        SurfaceFileFormat format    = SURF_UNKNOWN,
+                        double            angle     = 0.0,
+                        double            x_ref     = 0.0,
+                        double            y_ref     = 0.0,
+                        double            lx        = 0.0,
+                        double            ly        = 0.0,
+                        int             * ilxl_area = NULL,
+                        double            il0_ref   = 0.0,
+                        double            xl0_ref   = 0.0);
 
   Surface<A>* Clone() const
   { return new RegularSurfaceRotated<A>(*this); }
@@ -169,9 +176,16 @@ public:
   /// \throws IOError         If we failed to open the file
   /// \throws FileFormatError If we can not determine the file format, or the contents
   ///                         of the file does not match the file format.
-  void ReadFromFile(const std::string & filename,
-                    SurfaceFileFormat   format = SURF_UNKNOWN,
-                    const double      & angle  = 0.0);
+  void ReadFromFile(std::string       filename,
+                    SurfaceFileFormat format    = SURF_UNKNOWN,
+                    double            angle     = 0.0,
+                    double            x_ref     = 0.0,
+                    double            y_ref     = 0.0,
+                    double            lx        = 0.0,
+                    double            ly        = 0.0,
+                    int             * ilxl_area = NULL,
+                    double            il0_ref   = 0.0,
+                    double            xl0_ref   = 0.0);
 
   /// \brief Write surface to file on given format.
   /// If the file format does not support rotation, the resampled surface is written to file.
@@ -251,11 +265,28 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double  y_min,
 
 
 template <class A>
-RegularSurfaceRotated<A>::RegularSurfaceRotated(const std::string & filename,
-                                                SurfaceFileFormat   format,
-                                                const double      & angle)
+RegularSurfaceRotated<A>::RegularSurfaceRotated(std::string       filename,
+                                                SurfaceFileFormat format,
+                                                double            angle,
+                                                double            x_ref,
+                                                double            y_ref,
+                                                double            lx,
+                                                double            ly,
+                                                int             * ilxl_area,
+                                                double            il0_ref,
+                                                double            xl0_ref)
+
 {
-  ReadFromFile(filename, format, angle);
+  ReadFromFile(filename,
+               format,
+               angle,
+               x_ref,
+               y_ref,
+               lx,
+               ly,
+               ilxl_area,
+               il0_ref,
+               xl0_ref);
 }
 
 
@@ -481,9 +512,16 @@ RegularSurface<A> RegularSurfaceRotated<A>::ResampleSurface() const
 
 
 template <class A>
-void RegularSurfaceRotated<A>::ReadFromFile(const std::string & filename,
-                                            SurfaceFileFormat   format,
-                                            const double      & segy_angle)
+void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
+                                            SurfaceFileFormat format,
+                                            double            segy_angle,
+                                            double            x_ref,
+                                            double            y_ref,
+                                            double            lx,
+                                            double            ly,
+                                            int             * ilxl_area,
+                                            double            il0_ref,
+                                            double            xl0_ref)
 {
   if (format == SURF_UNKNOWN) {
     format = FindSurfaceFileType(filename);
@@ -504,7 +542,15 @@ void RegularSurfaceRotated<A>::ReadFromFile(const std::string & filename,
       ReadSgriSurf(filename, surface_, angle_);
       break;
     case SURF_MULT_ASCII:
-      ReadMulticolumnAsciiSurf(filename, surface_, segy_angle);
+      ReadMulticolumnAsciiSurf(filename,
+                               surface_,
+                               x_ref,
+                               y_ref,
+                               lx,
+                               ly,
+                               ilxl_area,
+                               il0_ref,
+                               xl0_ref);
       angle_ = segy_angle;
       break;
     default:

@@ -438,6 +438,7 @@ private:
                                  Simbox              & full_inversion_simbox,
                                  bool                  multi_surface,
                                  const InputFiles    * input_files,
+                                 SegyGeometry        * segy_geometry,
                                  std::string         & err_text) const;
 
   bool               ReadSeismicData(ModelSettings                               * modelSettings,
