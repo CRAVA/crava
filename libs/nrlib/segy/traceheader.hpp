@@ -113,12 +113,15 @@ public:
   /// Get is this a standard type
   bool GetStandardType() const {return standard_type_;}
 
-  void SetScaleCoLoc(int loc)   {scal_co_loc_   = loc; standard_type_ = false; CheckFormat();}
-  void SetUtmxLoc(int loc)      {utmx_loc_      = loc; standard_type_ = false; CheckFormat();}
-  void SetUtmyLoc(int loc)      {utmy_loc_      = loc; standard_type_ = false; CheckFormat();}
-  void SetInlineLoc(int loc)    {inline_loc_    = loc; standard_type_ = false; CheckFormat();}
-  void SetCrosslineLoc(int loc) {crossline_loc_ = loc; standard_type_ = false; CheckFormat();}
+  void SetScaleCoLoc(int loc)   {scal_co_loc_   = loc; standard_type_ = false;}
+  void SetUtmxLoc(int loc)      {utmx_loc_      = loc; standard_type_ = false;}
+  void SetUtmyLoc(int loc)      {utmy_loc_      = loc; standard_type_ = false;}
+  void SetInlineLoc(int loc)    {inline_loc_    = loc; standard_type_ = false;}
+  void SetCrosslineLoc(int loc) {crossline_loc_ = loc; standard_type_ = false;}
   void SetCoordSys(coordSys_t type) {coord_sys_ = type;}
+
+  /// Check that no two values point to the same byte. Throws if error.
+  void CheckFormat();
 
   /// String representation.
   std::string toString() const;
@@ -134,8 +137,6 @@ public:
 private:
   /// Set default values for standard formats
   void Init(int headerformat);
-  /// Check that no two values point to the same byte. Throws if error.
-  void CheckFormat();
   /// Format name
   std::string format_name_;
   /// Location of scaling coefficient. (-1 if non-existant)
