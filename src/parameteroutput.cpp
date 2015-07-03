@@ -732,10 +732,6 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
   }
   else {
     nz_output = int(ceil((outgrid->GetZMax() - z0)/dz_output));
-    if (dz_input != RMISSING) {
-      LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(dz_input) + ") does not match the output dz ("
-                            + NRLib::ToString(dz_output) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
-    }
   }
 
   return nz_output;
