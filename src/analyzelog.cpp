@@ -159,7 +159,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   //
 
   int n_blocks_tot = 0;
-  for (size_t i = 0; i < wells.size(); i++){
+  for (int i = 0; i < n_wells_; i++){
     std::string well_name_tmp = wells[i]->GetWellName();
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name = interval_simboxes[j]->GetIntervalName();

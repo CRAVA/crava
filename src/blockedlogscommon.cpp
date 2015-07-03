@@ -822,7 +822,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
     nz[s] = interval_simboxes[s]->getnz();
     n_layers += nz[s];
   }
-  const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the smallest dz
+  //const std::vector<double> dz_rel = multiple_interval_grid->GetDzRel();  // dz_rel is the dz of simbox i relative to the smallest dz
 
   std::vector<int> k_offset(n_intervals, 0);
   for (int s = 0; s < n_intervals; s++) {
@@ -848,7 +848,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if (interval_simboxes[n]->IsPointBetweenVisibleSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], first_I, first_J, first_K);
         if (first_I != IMISSING && first_J != IMISSING && first_K != IMISSING) {
-          first_K = static_cast<int>(first_K*dz_rel[n]); // the vertical blocks must be equally spaced for corr estimation
+          first_K = static_cast<int>(first_K); // the vertical blocks must be equally spaced for corr estimation
           first_S = n;
           first_M = m;
           break;
@@ -874,7 +874,7 @@ void  BlockedLogsCommon::FindSizeAndBlockPointers(const MultiIntervalGrid       
       if (interval_simboxes[n]->IsPointBetweenVisibleSurfaces(x_pos[m], y_pos[m], z_pos[m])) {
         interval_simboxes[n]->getIndexes(x_pos[m], y_pos[m], z_pos[m], last_I, last_J, last_K);
         if (last_I != IMISSING && last_J != IMISSING && last_K != IMISSING) {
-          last_K = static_cast<int>(last_K*dz_rel[n]);
+          last_K = static_cast<int>(last_K);
           last_S = n;
           last_M = m;
           break;
@@ -1283,7 +1283,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
                                         double                           & dz) const
 {
   const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
-  const std::vector<double> dz_rel              = multiple_interval_grid->GetDzRel();
+  //const std::vector<double> dz_rel              = multiple_interval_grid->GetDzRel();
   i_pos.resize(n_blocks_);
   j_pos.resize(n_blocks_);
   k_pos.resize(n_blocks_);
@@ -1350,7 +1350,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   s_pos[b] = first_S_;
   i_pos[b] = first_I;
   j_pos[b] = first_J;
-  k_pos[b] = static_cast<int>(first_K*dz_rel[first_S]);
+  k_pos[b] = static_cast<int>(first_K);
   int i = 0;
   int j = 0;
   int k = 0;
