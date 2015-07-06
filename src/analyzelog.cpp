@@ -232,6 +232,8 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
     CalculateNumberOfLags(n_lags, dz_min, dz_rel, interval_simboxes);
 
+    n_lags = n_lags + 1; //H Lags in EstimateAutoCovarianceFunction may exceed n_lags
+
     //corr_T_.resize(n_lags, 0);
     auto_cov_.resize(n_lags);
 
