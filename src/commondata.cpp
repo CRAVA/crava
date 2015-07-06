@@ -675,7 +675,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   output_simbox.setDepth(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface(), nz_new, false); //Also set nz_pad = nz
 
   std::string err_text_tmp = "";
-  output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
+  output_simbox.calculateDz(0.0, err_text_tmp); //Do not check for lz_limit in output simbox
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
   if (segy_geometry != NULL)
     output_simbox.setILXL(segy_geometry);
@@ -4400,7 +4400,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     try{ // initialize full_inversion_volume and set the top and base surfaces of the simbox
       full_inversion_simbox.setDepth(*top_surface, *base_surface, 1, model_settings->getRunFromPanel());
       full_inversion_simbox.SetErodedSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
-      full_inversion_simbox.calculateDz(model_settings->getLzLimit(), err_text);
+      full_inversion_simbox.calculateDz(0.0, err_text); //Do not check for lz_limit
       full_inversion_simbox.SetNXpad(full_inversion_simbox.getnx());
       full_inversion_simbox.SetNYpad(full_inversion_simbox.getny());
       full_inversion_simbox.SetNZpad(full_inversion_simbox.getnz());
