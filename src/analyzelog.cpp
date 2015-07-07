@@ -159,7 +159,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   //
 
   int n_blocks_tot = 0;
-  for (size_t i = 0; i < wells.size(); i++){
+  for (int i = 0; i < n_wells_; i++){
     std::string well_name_tmp = wells[i]->GetWellName();
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name = interval_simboxes[j]->GetIntervalName();
@@ -231,6 +231,8 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
       return;
 
     CalculateNumberOfLags(n_lags, dz_min, dz_rel, interval_simboxes);
+
+    n_lags = n_lags + 1; //H Lags in EstimateAutoCovarianceFunction may exceed n_lags
 
     //corr_T_.resize(n_lags, 0);
     auto_cov_.resize(n_lags);

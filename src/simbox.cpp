@@ -1143,7 +1143,10 @@ Simbox::calculateDz(double lzLimit, std::string & errText)
       if(lzFac < lzLimit)
       {
         status_ = INTERNALERROR;
-        errText += "-Error with top/bottom grids in interval "+interval_name_+". Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
+        std::string interval_text = "";
+        if (interval_name_ != "")
+          interval_text = " in interval "+interval_name_;
+        errText += "-Error with top/bottom grids" + interval_text + ". Minimum thickness should be at least "+NRLib::ToString(lzLimit)+" times maximum, is "+NRLib::ToString(lzFac)+"\n";
       }
       else
       {
