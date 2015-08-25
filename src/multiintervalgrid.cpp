@@ -85,7 +85,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
 
         for (int i = 0; i<n_intervals_; i++) {
           desired_grid_resolution_[i] = FindResolution(&surfaces[i], &surfaces[i+1], estimation_simbox,
-                                                     model_settings->getTimeNz(interval_names_[i]));
+                                                       model_settings->getTimeNz(interval_names_[i]), model_settings->getTimeDz());
 
         }
 
@@ -102,11 +102,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
         //H-TODO Make removal of intervals automatic
         for (int i = 0; i<n_intervals_; i++) {
 
-          double tmp_resolution = FindResolution(&eroded_surfaces_[i], &eroded_surfaces_[i+1], estimation_simbox,
-                                                 model_settings->getTimeNz(interval_names_[i]));
+          double max_distance = eroded_surfaces_[i+1].Max() - eroded_surfaces_[i].Min();
 
-          //If max resolution of eroded surfaces is zero we can't set up interval simboxes
-          if (tmp_resolution == 0) {
+          //If max distance of eroded surfaces is zero we can't set up interval simboxes
+          if (max_distance == 0) {
             LogKit::LogMessage(LogKit::Error,"Error: Eroded surfaces for interval " + interval_names_[i] + " has maximum thickness equal to zero. This interval should be removed.\n");
             err_text += "Eroded surfaces for interval " + interval_names_[i] + " has maximum distance equal to zero. This interval should be removed.\n";
             TaskList::addTask("Removed interval " + interval_names_[i]);
@@ -163,7 +162,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
       }
 
       int nz = model_settings->getTimeNz("");
-      desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz);
+      desired_grid_resolution_[0] = FindResolution(top_surface, base_surface, estimation_simbox, nz, model_settings->getTimeDz());
     }
     surfaces_ = surfaces;
   }
@@ -853,23 +852,29 @@ void MultiIntervalGrid::LogIntervalInformation(const Simbox      * simbox,
 double  MultiIntervalGrid::FindResolution(const Surface * top_surface,
                                           const Surface * base_surface,
                                           const Simbox  * estimation_simbox,
-                                          int             n_layers) const{
+                                          int             n_layers,
+                                          double          ext_dz) const{
   int nx = static_cast<int>(top_surface->GetNI());
   int ny = static_cast<int>(base_surface->GetNJ());
 
   double maximum_dz = 0;
-  double resolution     = 0;
+  double resolution = 0;
 
-  for (int i = 0; i < nx; i++) {
-    for (int j = 0; j < ny; j++) {
-      double x,y;
-      estimation_simbox->getXYCoord(i,j,x,y);
-      double z_top  = top_surface->GetZ(x,y);
-      double z_base = base_surface->GetZ(x,y);
-      if (z_top != WELLMISSING && z_base != WELLMISSING) {
-        resolution    = (z_base - z_top) / static_cast<double>(n_layers);
-        if (resolution > maximum_dz) {
-          maximum_dz = resolution;
+  if (n_layers < 0) {
+    return(ext_dz);
+  }
+  else {
+    for (int i = 0; i < nx; i++) {
+      for (int j = 0; j < ny; j++) {
+        double x,y;
+        estimation_simbox->getXYCoord(i,j,x,y);
+        double z_top  = top_surface->GetZ(x,y);
+        double z_base = base_surface->GetZ(x,y);
+        if (z_top != WELLMISSING && z_base != WELLMISSING) {
+          resolution    = (z_base - z_top) / static_cast<double>(n_layers);
+          if (resolution > maximum_dz) {
+            maximum_dz = resolution;
+          }
         }
       }
     }

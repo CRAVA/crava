@@ -137,7 +137,8 @@ private:
   double  FindResolution(const Surface * top_surface,
                          const Surface * base_surface,
                          const Simbox  * estimation_simbox,
-                         int             n_layers) const;
+                         int             n_layers,
+                         double          ext_dz) const;
 
   void ComputeZoneProbability(const std::vector<double>      & z,
                               const std::vector<NRLib::Beta> & horizon_distributions,
