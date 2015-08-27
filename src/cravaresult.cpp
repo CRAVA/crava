@@ -1279,8 +1279,11 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
+  double simbox_dz = floor(simbox.getdz() * 100) / 100;
+  double segy_dz = floor(model_settings->getSegyDz() * 100) / 100;
+
   if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
-      if (simbox.getdz() != model_settings->getSegyDz() && model_settings->getSegyDz() != RMISSING)
+      if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING)
         LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
                               + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
   }
