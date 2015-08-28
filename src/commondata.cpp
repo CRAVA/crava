@@ -663,19 +663,14 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
 
-  int index_i = 0;
-  int index_j = 0;
-
-  double dz_min    = FindDzMin(multi_interval_grid, index_i, index_j);
-  double top_value = output_simbox.getTop(index_i, index_j);
-  double bot_value = output_simbox.getBot(index_i, index_j);
-
-  int nz_new = static_cast<int>((bot_value - top_value) / dz_min);
+  double dz_min = FindDzMin(multi_interval_grid);
+  int nz_new    = static_cast<int>(output_simbox.getlz() / dz_min);
 
   output_simbox.setDepth(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface(), nz_new, false); //Also set nz_pad = nz
 
   std::string err_text_tmp = "";
-  output_simbox.calculateDz(model_settings->getLzLimit(), err_text_tmp);
+  output_simbox.calculateDz(0.0, err_text_tmp); //Do not check for lz_limit in output simbox
+
   MultiIntervalGrid::EstimateZPaddingSize(&output_simbox, model_settings);
   if (segy_geometry != NULL)
     output_simbox.setILXL(segy_geometry);
@@ -694,7 +689,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
 
 }
 
-double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & index_i, int & index_j)
+double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid)
 {
   double min_dz   = std::numeric_limits<double>::infinity();
   int nx          = multi_interval_grid->GetIntervalSimbox(0)->getnx();
@@ -721,12 +716,9 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, int & inde
           min_dz_trace = min_dz_interval;
       }
 
-      if (min_dz_trace < min_dz) {
+      if (min_dz_trace < min_dz)
         min_dz  = min_dz_trace;
-        index_i = i;
-        index_j = j;
 
-      }
     }
   }
 
@@ -4400,7 +4392,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     try{ // initialize full_inversion_volume and set the top and base surfaces of the simbox
       full_inversion_simbox.setDepth(*top_surface, *base_surface, 1, model_settings->getRunFromPanel());
       full_inversion_simbox.SetErodedSurfaces(*top_surface, *base_surface, model_settings->getRunFromPanel());
-      full_inversion_simbox.calculateDz(model_settings->getLzLimit(), err_text);
+      full_inversion_simbox.calculateDz(0.0, err_text); //Do not check for lz_limit
       full_inversion_simbox.SetNXpad(full_inversion_simbox.getnx());
       full_inversion_simbox.SetNYpad(full_inversion_simbox.getny());
       full_inversion_simbox.SetNZpad(full_inversion_simbox.getnz());

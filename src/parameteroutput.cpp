@@ -724,18 +724,15 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
                                   const double          z0)
 {
   //If output grid and input segy have the same resolution (dz) we use nz from segy
-  float dz_output = float(floor((outgrid->GetLZ()/outgrid->GetNK())));
-  float dz_input  = model_settings->getSegyDz();
+  float dz_output_r = float(floor(((outgrid->GetLZ()/outgrid->GetNK())*100)/100));
+  float dz_input    = floor(model_settings->getSegyDz() * 100) / 100;
   int nz_output;
-  if (dz_output == dz_input) {
+  if (dz_output_r == dz_input) {
     nz_output = model_settings->getSegyNz();
   }
   else {
+    float dz_output   = float(floor((outgrid->GetLZ()/outgrid->GetNK())));
     nz_output = int(ceil((outgrid->GetZMax() - z0)/dz_output));
-    if (dz_input != RMISSING) {
-      LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(dz_input) + ") does not match the output dz ("
-                            + NRLib::ToString(dz_output) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
-    }
   }
 
   return nz_output;
