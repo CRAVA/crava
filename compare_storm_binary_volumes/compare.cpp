@@ -148,24 +148,25 @@ int main(int argc, char** argv)
   float mean_val_difference = 0.0f;
   float mean_val_both_cubes = 0.0f;
 
-  compareGrids(answer_grid,
-               output_grid,
-               largest_difference,
-               mean_abs_difference,
-               mean_val_difference,
-               mean_val_both_cubes);
+  if (equal == true) {
+    compareGrids(answer_grid,
+                 output_grid,
+                 largest_difference,
+                 mean_abs_difference,
+                 mean_val_difference,
+                 mean_val_both_cubes);
 
-  //
-  // Write info to file for Perl import
-  // ----------------------------------
-
-  std::string diff_file = "storm_volume_difference.txt";
-  writeDifferencesToFile(diff_file,
-                         equal,
-                         largest_difference,
-                         mean_abs_difference,
-                         mean_val_difference,
-                         mean_val_both_cubes);
+    //
+    // Write info to file for Perl import
+    // ----------------------------------
+  }
+    std::string diff_file = "storm_volume_difference.txt";
+    writeDifferencesToFile(diff_file,
+                           equal,
+                           largest_difference,
+                           mean_abs_difference,
+                           mean_val_difference,
+                           mean_val_both_cubes);
 
   if (answer_grid != NULL)
     delete answer_grid;
