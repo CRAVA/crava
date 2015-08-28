@@ -1153,7 +1153,10 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   if(all_Vs_logs_synthetic){
     LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance, corr(Vp, Vs) = 0.7 and corr(Vs, Rho) = 0.\n");
   }
-  for (int i = 0; i < max_lag_with_data; i++){
+  bool vp_fail  = false;
+  bool vs_fail  = false;
+  bool rho_fail = false;
+  for (int i = 0; i < max_lag_with_data && err_text==""; i++){
     // If there is not enough data to estimate autocovariance within the first ~50 lags, return an error
     //double n_vp = count[i](0,0);
     //double n_vs = count[i](1,1);
@@ -1166,7 +1169,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     if (i < static_cast<int>(min_blocks_with_data_for_corr_estim/2)){
       if(count[i](0,0)<2)
       {
-        err_text += "Not enough well data within simulation area to estimate autocovariance of Vp for time lag = "+ CommonData::ConvertIntToString(i) +", dz = " + CommonData::ConvertFloatToString(min_dz) +" +.\n";
+        err_text += "Not enough well data within simulation area to estimate autocovariance of Vp for time lag = "+ CommonData::ConvertIntToString(i) +", dz = " + CommonData::ConvertFloatToString(min_dz) +" .\n";
       }
       if(count[i](2,2)<2)
       {
@@ -1175,37 +1178,50 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
       if (err_text == ""){
         temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
         temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
-        if(all_Vs_logs_synthetic){
-          temp_auto_cov[i](1,1) = 2*temp_auto_cov[i](0,0);
-        } else if (count[i](1,1) > 1){
-          temp_auto_cov[i](1,1) = temp_auto_cov[i](1,1) / (count[i](1,1) - 1);
-        } else{
-          err_text += "There is not enough data in the Vs logs.\n";
-        }
-      }
-    }
-    // If there is not enough data to estimate autocovariance for lags > 50, set to 0 and return a warning
-    else{
-      if(count[i](0,0)<2){
-        temp_auto_cov[i](0,0) = 0.0;
-        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vp autocovariance for time lag %i, dz = %d could not be estimated and is set to 0.\n", i, min_dz);
-      }
-      else{
-        temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
-      }
-      if(count[i](2,2)<2){
-        temp_auto_cov[i](2,2) = 0.0;
-        LogKit::LogFormatted(LogKit::Low,"\nWARNING: Rho autocovariance for time lag %i, dz = %d could not be estimated and is set to 0.\n", i, min_dz);
-      }
-      else{
-        temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
       }
       if(all_Vs_logs_synthetic){
         temp_auto_cov[i](1,1) = 2*temp_auto_cov[i](0,0);
       } else if (count[i](1,1) > 1){
         temp_auto_cov[i](1,1) = temp_auto_cov[i](1,1) / (count[i](1,1) - 1);
       } else{
-        err_text += "There is not enough data in the Vs logs.\n";
+        err_text += "Not enough well data within simulation area to estimate autocovariance of Vs for time lag "+ CommonData::ConvertIntToString(i) +", dz = "+ CommonData::ConvertFloatToString(min_dz) + ".\n";
+      }
+    }
+    // If there is not enough data to estimate autocovariance for lags > 50, set to 0 and return a warning
+    else{
+      if(count[i](0,0)<2 || vp_fail == true){
+        temp_auto_cov[i](0,0) = 0.0;
+        if(vp_fail == false) {
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vp autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+          vp_fail = true;
+        }
+      }
+      else{
+        temp_auto_cov[i](0,0) = temp_auto_cov[i](0,0) / (count[i](0,0) - 1);
+      }
+      if(count[i](2,2)<2 || rho_fail == true){
+        temp_auto_cov[i](2,2) = 0.0;
+        if(rho_fail == false) {
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Rho autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+          rho_fail = true;
+        }
+      }
+      else{
+        temp_auto_cov[i](2,2) = temp_auto_cov[i](2,2) / (count[i](2,2) - 1);
+      }
+      if(all_Vs_logs_synthetic){
+        temp_auto_cov[i](1,1) = 2*temp_auto_cov[i](0,0);
+      } else if (count[i](1,1) > 1 && vs_fail == false){
+        temp_auto_cov[i](1,1) = temp_auto_cov[i](1,1) / (count[i](1,1) - 1);
+      } else{
+        temp_auto_cov[i](1,1) = 0.0;
+        if(vs_fail == false) {
+          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vs autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+          vs_fail = true;
+        }
       }
     }
   }
@@ -1330,11 +1346,15 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             while(count[i_next[j][k]](j,k) == 0 && i_next[j][k]<max_lag_with_data)   // Find next estimated autocov with data
               i_next[j][k]++;
           }
+          if(i_next[j][k] == max_lag_with_data)
+            i_next[j][k]--;
+
           c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
           c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
-          nipol             = std::min(count[i_prev[j][k]](j,k),count[i_next[j][k]](j,k));
+          nipol             = 0.5*(count[i_prev[j][k]](j,k)+count[i_next[j][k]](j,k));
           cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
-          auto_cov[i](j,k)  = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
+          if((count[i](j,k) + nipol) > 0)
+            auto_cov[i](j,k)  = (count[i](j,k)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](j,k)+nipol);
           //auto_cov[i](k,j)  = auto_cov[i](j,k);
 
           //LogKit::LogFormatted(LogKit::Low," i nTT,corTT  iprev,cprev  inext,cnext  nipol,cipol  %4d %4d%8.3f %4d%8.3f %4d%8.3f    %4d%8.3f\n",
@@ -1350,9 +1370,10 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
             i_next[j][k]      = i_next[0][0];
             c_prev[j][k]      = temp_auto_cov[i_prev[j][k]](j,k);
             c_next[j][k]      = temp_auto_cov[i_next[j][k]](j,k);
-            nipol             = std::min(count[i_prev[j][k]](0,0),count[i_next[j][k]](0,0));
+            nipol             = 0.5*(count[i_prev[j][k]](0,0)+count[i_next[j][k]](0,0));
             cipol             = ((i_next[j][k]-i)*c_prev[j][k] + (i-i_prev[j][k])*c_next[j][k])/(i_next[j][k]-i_prev[j][k]);
-            auto_cov[i](j,k)  = (count[i](0,0)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](0,0)+nipol);
+            if((count[i](j,k) + nipol) > 0)
+              auto_cov[i](j,k)  = (count[i](0,0)*temp_auto_cov[i](j,k) + nipol*cipol)/(count[i](0,0)+nipol);
             //auto_cov[i](k,j)  = auto_cov[i](j,k);
           }
           else if((j == 1 && k ==2) || (k == 1 && j == 1)){
