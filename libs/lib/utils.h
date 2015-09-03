@@ -38,6 +38,9 @@ public:
   static void    writeVectorToFile(const std::string        & filename,
                                    const std::vector<float> & vector);
 
+  static void    writeVectorToFile(const std::string         & filename,
+                                   const std::vector<double> & vector);
+
   static void    writeMatrix(float ** matrix,
                              int      ndim1,
                              int      ndim2);
