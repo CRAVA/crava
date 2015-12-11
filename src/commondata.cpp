@@ -7204,7 +7204,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               delete top_corr_surface;
             }
           }
-          else if (top_corr_surface != NULL) {//Base conform
+          else if (bot_corr_surface != NULL) {//Base conform
             SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
                                           model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
             delete bot_corr_surface;
@@ -7272,7 +7272,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         if (n_intervals == 1)
           bg_blocked_logs = bg_blocked_logs_tmp;
 
-          bg_simboxes.push_back(bg_simbox);
+        bg_simboxes.push_back(bg_simbox);
 
         if (velocity != NULL)
           delete velocity;
