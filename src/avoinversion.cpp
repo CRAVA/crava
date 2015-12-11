@@ -783,7 +783,7 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
       if (interval_name != "")
         fileName += "_" + interval_name;
 
-      seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+      seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
       seisData_[l]->endAccess();
   }
 
@@ -1137,7 +1137,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+        seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
         seisData_[l]->endAccess();
       }
     }
