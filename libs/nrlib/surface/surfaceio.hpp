@@ -31,7 +31,7 @@ namespace NRLib {
   template <class A> class RegularSurfaceRotated;
   template <class A> class Grid2D;
 
-  const double MULT_IRAP_MISSING =    -999.25;
+  const double MULT_IRAP_MISSING =   -999.25;
   const double IRAP_MISSING      = 9999900.0;
   const double STORM_MISSING     =    -999.0;
 

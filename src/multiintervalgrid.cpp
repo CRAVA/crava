@@ -691,6 +691,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 
   surface = Surface(x0, y0, lx, ly, eroded_surface, angle);
   surface.SetName(name);
+  surface.SetMissingValue(missing);
 
 }
 
