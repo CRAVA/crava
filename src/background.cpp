@@ -1275,7 +1275,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   //
   // Set up relation between old layer index and new layer index using
   //
-  // k2 = dz1/dz2 * k1 + (z02 - z01)/dz2    (from dz2*k2 + z02 = dz1*k1 + z01)
+  // k2 = dz1/dz2 * k1 + (z01 - z02)/dz2    (from dz2*k2 + z02 = dz1*k1 + z01)
   //
   double * a       = new double[nx*ny];
   double * b       = new double[nx*ny];
@@ -1288,8 +1288,10 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       double dz_old = simbox_old->getdz(i,j);
       double z0_new = simbox_new->getTop(i,j);
       double z0_old = simbox_old->getTop(i,j);
+      double zn_new = simbox_new->getBot(i,j);
+      double zn_old = simbox_old->getBot(i,j);
 
-      if (dz_new == RMISSING || dz_old == RMISSING || z0_new == RMISSING || z0_old == RMISSING) {
+      if (dz_new == RMISSING || dz_old == RMISSING || z0_new == RMISSING || z0_old == RMISSING || zn_new == RMISSING || zn_old == RMISSING) {
         missing[ij] = true;
       }
       else {
@@ -1324,6 +1326,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
         ij++;
       }
     }
+
     //
     // Smooth the layer (equal weighting of all neighbouring cells)
     //
