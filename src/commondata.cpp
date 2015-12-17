@@ -710,10 +710,12 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid)
         double bot_value = interval_simbox->getBot(i,j);
         int nz           = interval_simbox->getnz();
 
-        double min_dz_interval = (bot_value - top_value) / nz;
+        if (top_value != RMISSING && bot_value != RMISSING) {
+          double min_dz_interval = (bot_value - top_value) / nz;
 
-        if (min_dz_interval < min_dz_trace)
-          min_dz_trace = min_dz_interval;
+          if (min_dz_interval < min_dz_trace)
+            min_dz_trace = min_dz_interval;
+        }
       }
 
       if (min_dz_trace < min_dz)
