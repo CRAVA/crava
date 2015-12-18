@@ -5312,12 +5312,16 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("synthetic");
   legalCommands.push_back("residuals");
   legalCommands.push_back("synthetic-residuals");
+  legalCommands.push_back("fourier-residuals");
 
   bool value    = false;
   int paramFlag = 0;
 
   if(parseBool(root, "residuals", value, errTxt) == true && value == true)
+  {
     paramFlag += IO::RESIDUAL;
+    modelSettings_->setGenerateSeismicAfterInv(true);
+  }
 
   if(parseBool(root, "original", value, errTxt) == true && value == true)
     paramFlag += IO::ORIGINAL_SEISMIC_DATA;
@@ -5332,6 +5336,11 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
   {
     paramFlag += IO::SYNTHETIC_RESIDUAL;
     modelSettings_->setGenerateSeismicAfterInv(true);
+  }
+
+  if(parseBool(root, "fourier-residuals", value, errTxt) == true && value == true)
+  {
+    paramFlag += IO::FOURIER_RESIDUAL;
   }
 
   if (modelSettings_->getOutputGridsDefaultInd() && paramFlag > 0){

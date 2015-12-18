@@ -253,7 +253,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
             //interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
             //                                        IO::PathToSeismicData(), output_format);
           //}
-          if ((output_grids_seismic & IO::RESIDUAL) > 0) {
+          if ((output_grids_seismic & IO::FOURIER_RESIDUAL) > 0) {
             interval_simboxes_[i]->WriteTopBaseSurfaceGrids(top_surf, base_surf,
                                                     IO::PathToSeismicData(), output_format);
           }

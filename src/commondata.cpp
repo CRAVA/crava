@@ -9626,8 +9626,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
     if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
-    if ((output_grids_seismic & IO::RESIDUAL) > 0)
+    if ((output_grids_seismic & IO::RESIDUAL) > 0 || (output_grids_seismic & IO::SYNTHETIC_RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
+    if ((output_grids_seismic & IO::FOURIER_RESIDUAL) > 0)
+      LogKit::LogFormatted(LogKit::Medium,"  Fourier residuals from inversion         :        yes\n");
   }
 
   if (model_settings->getEstimateFaciesProb()) {
@@ -10448,6 +10450,10 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
                                         IO::PathToSeismicData(), output_format);
         //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
         //                                      IO::PathToSeismicData(), output_format);
+      }
+      if ((output_grids_seismic & IO::RESIDUAL) > 0) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToSeismicData(), output_format);
       }
       if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,

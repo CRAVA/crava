@@ -63,6 +63,7 @@ public:
   inline static  std::string    PrefixReflectionCoefficients(void) { return std::string("Reflection_Coefficients_") ;}
   inline static  std::string    PrefixResiduals(void)              { return std::string("Residuals_")               ;}
   inline static  std::string    PrefixSyntheticResiduals(void)     { return std::string("Synthetic_Residuals_")     ;}
+  inline static  std::string    PrefixFourierResiduals(void)       { return std::string("Fouerier_Residuals_")      ;}
   inline static  std::string    PrefixOriginalSeismicData(void)    { return std::string("Original_Seismic_Data_")   ;}
   inline static  std::string    PrefixSyntheticSeismicData(void)   { return std::string("Synthetic_Seismic_Data_")  ;}
   inline static  std::string    PrefixTravelTimeData()             { return std::string("Travel_time_data_")        ;}
@@ -165,7 +166,8 @@ public:
   enum           outputGridsSeismic{ORIGINAL_SEISMIC_DATA  = 1,
                                     SYNTHETIC_SEISMIC_DATA = 2,
                                     RESIDUAL               = 4,
-                                    SYNTHETIC_RESIDUAL     = 8};
+                                    SYNTHETIC_RESIDUAL     = 8,
+                                    FOURIER_RESIDUAL       = 16};
 
   enum           outputWells{WELLS              = 1,
                              BLOCKED_WELLS      = 2,
