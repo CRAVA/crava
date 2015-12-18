@@ -79,7 +79,6 @@ private:
   */
 
     void          EstimateCorrelation(const ModelSettings                                      * model_settings,
-                                      const std::vector<NRLib::Well *>                         & wells,
                                       const std::vector<std::string>                           & well_names,
                                       const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs,
                                       const std::vector<Simbox *>                              & interval_simboxes,
