@@ -248,6 +248,7 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(const RegularSurface<A>& surface
   surface_ = surface;
   x_ref_   = surface.GetXMin();
   y_ref_   = surface.GetYMin();
+  SetMissingValue(surface.GetMissingValue());
   CalculateMinMaxXY();
 }
 

@@ -347,10 +347,13 @@ public:
   static void        SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
                                                           const float          avg);
 
-  static   void      FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
+  static   void      FindWaveletEstimationInterval(const ModelSettings    * model_settings,
+                                                   const InputFiles       * input_files,
+                                                   const std::string      & wavelet_est_int_top,
                                                    const std::string      & wavelet_est_int_bot,
                                                    std::vector<Surface *> & wavelet_estim_interval,
-                                                   const Simbox           & estimation_simbox,
+                                                   const Simbox           & simbox,
+                                                   SegyGeometry           * segy_geometry,
                                                    std::string            & err_text);
 
   static int         FindClosestFactorableNumber(int leastint);
@@ -597,6 +600,7 @@ private:
                                      std::string                                 & wavelet_est_int_bot,
                                      std::vector<std::vector<Grid2D *> >         & shift_grids,
                                      std::vector<std::vector<Grid2D *> >         & gain_grids,
+                                     SegyGeometry                                * segy_geometry,
                                      std::string                                 & err_text_common) const;
 
   void               CheckThatDataCoverGrid(ModelSettings                               * model_settings,
@@ -890,6 +894,7 @@ private:
                                           NRLib::Grid2D<std::vector<double> >                        & vertical_trends,
                                           std::vector<double>                                        & background_vs_vp_ratios,
                                           const std::vector<CravaTrend>                              & trend_cubes,
+                                          SegyGeometry                                               * segy_geometry,
                                           std::string                                                & err_text_common) const;
 
   double             FindMeanVsVp(const NRLib::Grid<float> * vp,

@@ -83,9 +83,6 @@ CommonData::CommonData(ModelSettings * model_settings,
       setup_output_simbox_ = SetupOutputSimbox(output_simbox_, full_inversion_simbox_, model_settings, segy_geometry, multiple_interval_grid_, err_text);
     }
 
-    delete segy_geometry; //Not needed anymore.
-    segy_geometry = NULL;
-
     // 3. read seismic data and create estimation simbox.
     read_seismic_ = ReadSeismicData(model_settings, input_files, full_inversion_simbox_, estimation_simbox_, err_text, seismic_data_);
 
@@ -168,22 +165,24 @@ CommonData::CommonData(ModelSettings * model_settings,
       if ((model_settings->getEstimationMode() == false && model_settings->getGenerateBackground()) || model_settings->getEstimateBackground()) {
         if (model_settings->getGenerateBackgroundFromRockPhysics() == false && read_wells_ && inversion_wells_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, segy_geometry, err_text);
         else if (model_settings->getGenerateBackgroundFromRockPhysics() == true && setup_estimation_rock_physics_)
           setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                         multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, segy_geometry, err_text);
       }
       else //Not estimation
         setup_background_model_ = SetupBackgroundModel(model_settings, input_files, wells_, mapped_blocked_logs_intervals_, mapped_bg_blocked_logs_, bg_simboxes_, continuous_logs_to_be_blocked_, discrete_logs_to_be_blocked_,
-                                                      multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, err_text);
+                                                      multiple_interval_grid_, &full_inversion_simbox_, background_parameters_, background_vertical_trends_, background_vs_vp_ratios_, trend_cubes_, segy_geometry, err_text);
     }
-
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
     if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
-                                          reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, err_text);
+                                          reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, segy_geometry, err_text);
+
+    delete segy_geometry; //Not needed anymore.
+    segy_geometry = NULL;
 
     // 13. Setup of prior correlation
     if (setup_multigrid_ && read_seismic_ && setup_estimation_rock_physics_) {
@@ -710,10 +709,12 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid)
         double bot_value = interval_simbox->getBot(i,j);
         int nz           = interval_simbox->getnz();
 
-        double min_dz_interval = (bot_value - top_value) / nz;
+        if (top_value != RMISSING && bot_value != RMISSING) {
+          double min_dz_interval = (bot_value - top_value) / nz;
 
-        if (min_dz_interval < min_dz_trace)
-          min_dz_trace = min_dz_interval;
+          if (min_dz_interval < min_dz_trace)
+            min_dz_trace = min_dz_interval;
+        }
       }
 
       if (min_dz_trace < min_dz)
@@ -2953,6 +2954,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                  std::string                                 & wavelet_est_int_bot,
                                  std::vector<std::vector<Grid2D *> >         & shift_grids,
                                  std::vector<std::vector<Grid2D *> >         & gain_grids,
+                                 SegyGeometry                                * segy_geometry,
                                  std::string                                 & err_text_common) const
 {
 
@@ -2965,7 +2967,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   std::vector<Surface *> wavelet_estim_interval;
   wavelet_est_int_top = input_files->getWaveletEstIntFileTop(0); //Same for all time lapses
   wavelet_est_int_bot = input_files->getWaveletEstIntFileBase(0);//Same for all time lapses
-  FindWaveletEstimationInterval(wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, err_text_tmp);
+  FindWaveletEstimationInterval(model_settings, input_files, wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, segy_geometry, err_text_tmp);
   well_wavelets.resize(model_settings->getNumberOfAngles(0));
 
   if (err_text_tmp != "")
@@ -3207,10 +3209,13 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
 }
 
 void
-CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_int_top,
+CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_settings,
+                                          const InputFiles       * input_files,
+                                          const std::string      & wavelet_est_int_top,
                                           const std::string      & wavelet_est_int_bot,
                                           std::vector<Surface *> & wavelet_estim_interval,
                                           const Simbox           & simbox,
+                                          SegyGeometry           * segy_geometry,
                                           std::string            & err_text)
 
 {
@@ -3230,8 +3235,23 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
       if (NRLib::IsNumber(wavelet_est_int_top))
         wavelet_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(wavelet_est_int_top.c_str()));
       else {
-        Surface tmpSurf(wavelet_est_int_top);
-        wavelet_estim_interval[0] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            wavelet_estim_interval[0] = new Surface(wavelet_est_int_top, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(wavelet_est_int_top) != NRLib::SURF_MULT_ASCII)
+          wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.";
+
+
+        //Surface tmpSurf(wavelet_est_int_top);
+        //wavelet_estim_interval[0] = new Surface(tmpSurf);
       }
     }
     catch (NRLib::Exception & e) {
@@ -3242,8 +3262,22 @@ CommonData::FindWaveletEstimationInterval(const std::string      & wavelet_est_i
       if (NRLib::IsNumber(wavelet_est_int_bot))
         wavelet_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(wavelet_est_int_bot.c_str()));
       else {
-        Surface tmpSurf(wavelet_est_int_bot);
-        wavelet_estim_interval[1] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(wavelet_est_int_bot) != NRLib::SURF_MULT_ASCII)
+          wavelet_estim_interval[1] = new Surface(wavelet_est_int_top);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.";
+
+        //Surface tmpSurf(wavelet_est_int_bot);
+        //wavelet_estim_interval[1] = new Surface(tmpSurf);
       }
     }
     catch (NRLib::Exception & e) {
@@ -7081,6 +7115,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                       NRLib::Grid2D<std::vector<double> >                        & vertical_trends,
                                       std::vector<double>                                        & background_vs_vp_ratios,
                                       const std::vector<CravaTrend>                              & trend_cubes,
+                                      SegyGeometry                                               * segy_geometry,
                                       std::string                                                & err_text_common) const
 {
   std::string err_text = "";
@@ -7145,22 +7180,48 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         if (input_files->getCorrDirFiles().find(interval_name) != input_files->getCorrDirFiles().end()) {
 
-          Surface tmpSurf(input_files->getCorrDirFile(interval_name));
-          if (simbox->CheckSurface(tmpSurf) == true)
-            correlation_direction = new Surface(tmpSurf);
+          Surface * tmp_surf = NULL;
+          std::string file_name = input_files->getCorrDirFile(interval_name);
+          std::string err_text_tmp = "";
+
+          if (segy_geometry != NULL) {
+              std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+              tmp_surf = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+          }
+          else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
+            tmp_surf = new Surface(file_name);
           else
-            err_text += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+            err_text_tmp += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.";
 
-          MultiIntervalGrid::RemoveNaNFromSurface(correlation_direction);
-          MultiIntervalGrid::InterpolateMissing(correlation_direction);
+          if (err_text_tmp == "") {
+            if (simbox->CheckSurface(*tmp_surf) == true)
+              correlation_direction = new Surface(*tmp_surf);
+            else
+              err_text_tmp += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+          }
 
-          //Create a sepeate background simbox based on correlation_direction
-          int output_format = model_settings->getOutputGridFormat();
-          if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
-            output_format += IO::ASCII;
+          if (err_text_tmp == "") {
+            MultiIntervalGrid::RemoveNaNFromSurface(correlation_direction);
+            MultiIntervalGrid::InterpolateMissing(correlation_direction);
 
-          SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, output_format,
-                                        model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+            //Create a sepeate background simbox based on correlation_direction
+            int output_format = model_settings->getOutputGridFormat();
+            if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
+              output_format += IO::ASCII;
+
+            SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, output_format,
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+          }
+
+          if (tmp_surf != NULL)
+            delete tmp_surf;
+
+          if (err_text_tmp != "")
+            err_text += err_text_tmp;
         }
         else {
           Surface * top_corr_surface = NULL;
@@ -7254,8 +7315,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             }
 
             if (n_intervals_inside == 0) {
-                LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for interval " + interval_name + " failed: No wells inside the simbox.\n");
-                err_text += "No wells was inside interval simbox for interval " + interval_name + ".\n";
+              LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for interval " + interval_name + " failed: No wells inside the simbox.\n");
+              err_text += "No wells was inside interval simbox for interval " + interval_name + ".\n";
             }
           }
         }
@@ -9565,8 +9626,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
     if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
-    if ((output_grids_seismic & IO::RESIDUAL) > 0)
+    if ((output_grids_seismic & IO::RESIDUAL) > 0 || (output_grids_seismic & IO::SYNTHETIC_RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
+    if ((output_grids_seismic & IO::FOURIER_RESIDUAL) > 0)
+      LogKit::LogFormatted(LogKit::Medium,"  Fourier residuals from inversion         :        yes\n");
   }
 
   if (model_settings->getEstimateFaciesProb()) {
@@ -10387,6 +10450,10 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
                                         IO::PathToSeismicData(), output_format);
         //simbox.WriteTopBaseErodedSurfaceGrids(top_surf_eroded, base_surf_eroded,
         //                                      IO::PathToSeismicData(), output_format);
+      }
+      if ((output_grids_seismic & IO::RESIDUAL) > 0) {
+        simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,
+                                        IO::PathToSeismicData(), output_format);
       }
       if ((output_grids_other & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         simbox.WriteTopBaseSurfaceGrids(top_surf, base_surf,

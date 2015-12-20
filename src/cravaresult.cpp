@@ -1362,7 +1362,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
   if (model_settings->getForwardModeling() == false &&
       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
-      || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0 )) {
+      || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0
+      || (model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0 )) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data\n");
 
     int n_timelapses = model_settings->getNumberOfTimeLapses();
@@ -1453,7 +1454,8 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
           ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
 
-        if ((i==0) && (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0) { //residuals only for first vintage.
+        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0
+                       || (model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
           StormContGrid residual(*(synt_seismic_data_[j]));
           for (size_t k=0;k<seismic_storm->GetNK();k++) {
             for (size_t j=0;j<seismic_storm->GetNJ();j++) {
@@ -1464,7 +1466,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           }
 
           sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
-          std::string file_name  = IO::PrefixSyntheticResiduals() + angle;
+          std::string file_name  = IO::PrefixResiduals() + angle;
 
           ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
         }

@@ -71,10 +71,18 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   interval_name_                    = "";
   var_0_.resize(3,3);
 
-  n_wells_       = static_cast<int>(mapped_blocked_logs.size());
-  well_names_.resize(n_wells_);
-  for (int i = 0; i < n_wells_; i++){
-    well_names_[i] = wells[i]->GetWellName();
+  n_wells_    = static_cast<int>(mapped_blocked_logs.size());
+  well_names_ = std::vector<std::string>();
+
+  for (int i = 0; i < static_cast<int>(wells.size()); i++) {
+    std::string well_name_tmp = wells[i]->GetWellName();
+    for (int j = 0; j < n_wells_; j++) {
+
+      if (mapped_blocked_logs.find(well_name_tmp) != mapped_blocked_logs.end()) {
+        well_names_.push_back(well_name_tmp);
+        j = n_wells_ - 1;
+      }
+    }
   }
 
   // Relative dz
@@ -84,7 +92,6 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
   }
 
   EstimateCorrelation(model_settings,
-                      wells,
                       well_names_,
                       mapped_blocked_logs,
                       interval_simboxes,
@@ -133,7 +140,6 @@ Analyzelog::~Analyzelog(void)
 
 // CRA-257: New implementation of correlation estimation for intervals
 void  Analyzelog::EstimateCorrelation(const ModelSettings                                       * model_settings,
-                                      const std::vector<NRLib::Well *>                          & wells,
                                       const std::vector<std::string>                            & well_names,
                                       const std::map<std::string, BlockedLogsCommon *>          & mapped_blocked_logs,
                                       const std::vector<Simbox *>                               & interval_simboxes,
@@ -160,7 +166,7 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
 
   int n_blocks_tot = 0;
   for (int i = 0; i < n_wells_; i++){
-    std::string well_name_tmp = wells[i]->GetWellName();
+    std::string well_name_tmp = well_names[i];
     for (size_t j = 0; j < interval_simboxes.size(); j++){
       std::string interval_name = interval_simboxes[j]->GetIntervalName();
       n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithData(interval_name);
@@ -194,9 +200,8 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     bool all_Vs_logs_synthetic      = true;
     bool all_Vs_logs_non_synthetic  = true;
 
-    for(int i=0 ; i<n_wells_ ; i++)
-    {
-      std::string well_name_tmp = wells[i]->GetWellName();
+    for(int i = 0; i < n_wells_; i++) {
+      std::string well_name_tmp = well_names[i];
       bool synt_vs_log          = mapped_blocked_logs.find(well_name_tmp)->second->HasSyntheticVsLog();
       all_Vs_logs_synthetic     = all_Vs_logs_synthetic && synt_vs_log;
       all_Vs_logs_non_synthetic = all_Vs_logs_non_synthetic && !synt_vs_log;

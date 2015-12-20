@@ -778,12 +778,12 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
       }
       std::string angle     = NRLib::ToString(thetaDeg_[l],1);
       std::string sgriLabel = typeName + " for incidence angle "+angle;
-      std::string fileName  = typeName + "_" + angle;
+      std::string fileName  = typeName + angle;
 
       if (interval_name != "")
         fileName += "_" + interval_name;
 
-      seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+      seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
       seisData_[l]->endAccess();
   }
 
@@ -1120,24 +1120,24 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     seisData_[l]->endAccess();
 
   //Finish use of seisData_, since we need the memory.
-  if((outputGridsSeismic_ & IO::RESIDUAL) > 0)
+  if((outputGridsSeismic_ & IO::FOURIER_RESIDUAL) > 0)
   {
     if(simbox_->getIsConstantThick() != true)
-      multiplyDataByScaleWaveletAndWriteToFile("residuals", interval_name_);
+      multiplyDataByScaleWaveletAndWriteToFile(IO::PrefixFourierResiduals(), interval_name_);
     else
     {
       for (l=0;l<ntheta_;l++)
       {
         std::string angle     = NRLib::ToString(thetaDeg_[l],1);
         std::string sgriLabel = " Residuals for incidence angle "+angle;
-        std::string fileName  = IO::PrefixResiduals() + angle;
+        std::string fileName  = IO::PrefixFourierResiduals() + angle;
 
         if (interval_name_ != "")
           fileName += "_" + interval_name_;
 
         seisData_[l]->setAccessMode(FFTGrid::RANDOMACCESS);
         seisData_[l]->invFFTInPlace();
-        seisData_[l]->writeFile(fileName, IO::PathToInversionResults(), simbox_, sgriLabel);
+        seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
         seisData_[l]->endAccess();
       }
     }
