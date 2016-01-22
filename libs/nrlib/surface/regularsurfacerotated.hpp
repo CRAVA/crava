@@ -48,7 +48,7 @@ public:
 
   RegularSurfaceRotated(const RegularSurface<A>& surface, double angle);
 
-  RegularSurfaceRotated(double x0, double y0, double lx, double ly, Grid2D<A> grid, double angle);
+  RegularSurfaceRotated(double x_ref, double y_ref, double lx, double ly, Grid2D<A> grid, double angle);
 
   /// \brief Read surface file on given format.
   /// \param filename  File name.
@@ -229,15 +229,15 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated()
 
 
 template <class A>
-RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double y_min,
-                                  double lx, double ly,
-                                  size_t nx, size_t ny, double angle,
-                                  const A& value)
+RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_ref, double y_ref,
+                                                double lx, double ly,
+                                                size_t nx, size_t ny, double angle,
+                                                const A& value)
   : angle_(angle),
-    x_ref_(x_min),
-    y_ref_(y_min)
+    x_ref_(x_ref),
+    y_ref_(y_ref)
 {
-  surface_ = RegularSurface<A>(x_min, y_min, lx, ly, nx, ny, value);
+  surface_ = RegularSurface<A>(x_ref, y_ref, lx, ly, nx, ny, value);
   CalculateMinMaxXY();
 }
 
@@ -253,14 +253,14 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(const RegularSurface<A>& surface
 }
 
 template <class A>
-RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_min, double  y_min,
+RegularSurfaceRotated<A>::RegularSurfaceRotated(double x_ref, double y_ref,
                                                 double lx, double ly,
                                                 Grid2D<A> grid, double angle)
   : angle_(angle),
-    x_ref_(x_min),
-    y_ref_(y_min)
+    x_ref_(x_ref),
+    y_ref_(y_ref)
 {
-  surface_ = RegularSurface<A>(x_min, y_min, lx, ly, grid);
+  surface_ = RegularSurface<A>(x_ref, y_ref, lx, ly, grid);
   CalculateMinMaxXY();
 }
 
@@ -416,7 +416,7 @@ bool RegularSurfaceRotated<A>::DivideNonConform(const Surface<A> * s2)
 
 template <class A>
 bool RegularSurfaceRotated<A>::EnclosesRectangle(double x_min, double x_max,
-                         double y_min, double y_max) const
+                                                 double y_min, double y_max) const
 {
  if (x_min < GetXMin() || x_max > GetXMax() ||
       y_min < GetYMin() || y_max > GetYMax()) {

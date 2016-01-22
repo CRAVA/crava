@@ -647,12 +647,12 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
                                       const Surface &  resolution_surface,
                                       const bool    &  compare_upward) const{
 
-  int nx    = static_cast<int>(resolution_surface.GetNI());
-  int ny    = static_cast<int>(resolution_surface.GetNJ());
-  double x0 = resolution_surface.GetXMin();
-  double y0 = resolution_surface.GetYMin();
-  double lx = resolution_surface.GetLengthX();
-  double ly = resolution_surface.GetLengthY();
+  int nx       = static_cast<int>(resolution_surface.GetNI());
+  int ny       = static_cast<int>(resolution_surface.GetNJ());
+  double x_ref = resolution_surface.GetXRef();
+  double y_ref = resolution_surface.GetYRef();
+  double lx    = resolution_surface.GetLengthX();
+  double ly    = resolution_surface.GetLengthY();
 
   NRLib::Grid2D<double> eroded_surface(nx,ny,0);
   double x;
@@ -689,7 +689,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   std::string name = surface.GetName();
   double angle     = surface.GetAngle();
 
-  surface = Surface(x0, y0, lx, ly, eroded_surface, angle);
+  surface = Surface(x_ref, y_ref, lx, ly, eroded_surface, angle);
   surface.SetName(name);
   surface.SetMissingValue(missing);
 
