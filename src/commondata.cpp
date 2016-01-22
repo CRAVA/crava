@@ -7274,6 +7274,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         //Block logs to bg_simbox
         std::map<std::string, BlockedLogsCommon *> bg_blocked_logs_tmp;
+        bool blocking_failed = false;
         if (bg_simbox != NULL) {
           std::string err_text_tmp = "";
           int status = bg_simbox->calculateDz(model_settings->getLzLimit(), err_text_tmp);
@@ -7316,7 +7317,9 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
             if (n_intervals_inside == 0) {
               LogKit::LogFormatted(LogKit::Low,"\nBlocking wells for interval " + interval_name + " failed: No wells inside the simbox.\n");
-              err_text += "No wells was inside interval simbox for interval " + interval_name + ".\n";
+              err_text += "No wells was inside interval simbox for interval " + interval_name + " when estimating the background model. "
+                           + " To estimate the background model the interval must be visible in atleast one well.\n";
+              blocking_failed = true;
             }
           }
         }
@@ -7324,19 +7327,21 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           background_parameters[i][j] = new NRLib::Grid<float>();
 
         //Create background
-        std::vector<std::vector<double> > interval_vertical_trends(3);
-        Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
-        for (int j = 0; j < 3; j++)
-          vertical_trends(i,j) = interval_vertical_trends[j];
+        if (blocking_failed == false) {
+          std::vector<std::vector<double> > interval_vertical_trends(3);
+          Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
+          for (int j = 0; j < 3; j++)
+            vertical_trends(i,j) = interval_vertical_trends[j];
 
-        //These logs are written out in CravaResult if multiple interval isn't used
-        if (n_intervals == 1)
-          bg_blocked_logs = bg_blocked_logs_tmp;
+          //These logs are written out in CravaResult if multiple interval isn't used
+          if (n_intervals == 1)
+            bg_blocked_logs = bg_blocked_logs_tmp;
 
-        bg_simboxes.push_back(bg_simbox);
+          bg_simboxes.push_back(bg_simbox);
 
-        if (velocity != NULL)
-          delete velocity;
+          if (velocity != NULL)
+            delete velocity;
+        }
 
       }
     }

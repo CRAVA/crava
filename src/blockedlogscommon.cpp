@@ -101,7 +101,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     err_text += err_text_tmp;
   }
 
-  
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 
