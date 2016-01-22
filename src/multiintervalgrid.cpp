@@ -650,7 +650,7 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   int nx       = static_cast<int>(resolution_surface.GetNI());
   int ny       = static_cast<int>(resolution_surface.GetNJ());
   double x_ref = resolution_surface.GetXRef();
-  double y_ref = resolution_surface.GetXRef();
+  double y_ref = resolution_surface.GetYRef();
   double lx    = resolution_surface.GetLengthX();
   double ly    = resolution_surface.GetLengthY();
 
