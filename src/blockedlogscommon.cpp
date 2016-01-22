@@ -46,6 +46,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   sigma_m_                      = RMISSING;
   //n_blocks_with_data_.resize(1,0);
 
+  std::string err_text_tmp = "";
+
   // FACIES
   if (well_data->HasDiscLog("Facies")) {
     facies_log_defined_ = true;
@@ -58,10 +60,10 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
   // NRLib::Well objects, which are used here, keep the logs as they are in the input files.
   RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+                         disc_logs_to_be_blocked, n_data_, failed, err_text_tmp);
 
   if (failed)
-    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+    err_text_tmp += "Logs were not successfully read from well " + well_name_ +".\n";
 
   is_inside = true; //If well is insde simbox
 
@@ -71,9 +73,9 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               cont_logs_highcut_background_, discrete_logs_blocked_,
               x_pos_blocked_, y_pos_blocked_, z_pos_blocked_, facies_blocked_,
               n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_,
-              n_blocks_with_data_tot_, facies_log_defined_, interpolate, restrict_to_visible, dz_, failed, is_inside, err_text);
+              n_blocks_with_data_tot_, facies_log_defined_, interpolate, restrict_to_visible, dz_, failed, is_inside, err_text_tmp);
 
-  if (err_text == "" && is_inside == true) {
+  if (err_text_tmp == "" && is_inside == true) {
     LogKit::LogFormatted(LogKit::Low,"-The following continuous logs from well \'"+well_name_+"\' were blocked into the simbox: ");
     for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
       LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
@@ -92,10 +94,14 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
     LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
   }
 
-  if (err_text != "") {
-    LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in simbox failed.\n");
+  if (err_text_tmp != "") {
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in simbox failed:\n");
+    LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
+
+    err_text += err_text_tmp;
   }
 
+  
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
   n_discrete_logs_   = static_cast<int>(discrete_logs_blocked_.size());
 
@@ -128,6 +134,8 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   lateral_threshold_gradient_   = RMISSING;
   sigma_m_                      = RMISSING;
 
+  std::string err_text_tmp = "";
+
   //n_blocks_with_data_.resize(multiple_interval_grid->GetNIntervals(),0);
   const std::vector<Simbox *> interval_simboxes = multiple_interval_grid->GetIntervalSimboxes();
   facies_log_defined_ = false;
@@ -145,10 +153,10 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
 
   RemoveMissingLogValues(well_data, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+                         disc_logs_to_be_blocked, n_data_, failed, err_text_tmp);
 
   if (failed)
-    err_text += "Logs were not successfully read from well " + well_name_ +".\n";
+    err_text_tmp += "Logs were not successfully read from well " + well_name_ +".\n";
 
   if (!failed) {
     if (interval_simboxes.size() == 1) {
@@ -186,7 +194,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
                 dz_,
                 failed,
                 is_inside,
-                err_text);
+                err_text_tmp);
     }
     else {
       //
@@ -227,12 +235,12 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
                                         n_layers_,
                                         dz_,
                                         failed,
-                                        err_text);
+                                        err_text_tmp);
     }
   }
 
 
-  if (err_text == "") {
+  if (err_text_tmp == "") {
     if (interval_simboxes.size() == 1) {
       LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
     }
@@ -255,7 +263,10 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
     LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
   }
   else {
-    LogKit::LogFormatted(LogKit::Low,"\nBlocking of wells in the outer estimation simbox failed.\n");
+    LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in the outer estimation simbox failed:\n");
+    LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
+
+    err_text += err_text_tmp;
   }
 
   n_continuous_logs_ = static_cast<int>(continuous_logs_blocked_.size());
