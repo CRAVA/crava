@@ -147,7 +147,8 @@ private:
                                   const std::vector<const std::vector<int> *>  ipos,
                                   const std::vector<const std::vector<int> *>  jpos,
                                   const std::vector<const std::vector<int> *>  kpos,
-                                  const std::string                          & interval_name);
+                                  const std::string                          & interval_name,
+                                  const std::vector<std::string>             & well_names);
 
 
   static
@@ -224,6 +225,11 @@ private:
   FFTGrid    * CopyFFTGrid(FFTGrid   * origGrid,
                            const bool  expTrans,
                            const bool  fileGrid);
+
+  static
+  void         CheckLogForOnlyMissing(const std::vector<double> & log,
+                                      const std::string         & log_name,
+                                      const std::string         & well_name);
 
 };
 
