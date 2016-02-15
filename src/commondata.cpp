@@ -153,11 +153,11 @@ CommonData::CommonData(ModelSettings * model_settings,
       if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
         if (read_wells_ && inversion_wells_)
           setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                                   facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
+                                                                   facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, segy_geometry, err_text);
       }
       else
         setup_prior_facies_probabilities_ = SetupPriorFaciesProb(model_settings, input_files, multiple_interval_grid_, prior_facies_prob_cubes_, prior_facies_, facies_estim_interval_,
-                                                                 facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, err_text);
+                                                                 facies_names_, facies_nr_, mapped_blocked_logs_intervals_, full_inversion_simbox_, segy_geometry, err_text);
     }
 
     // 12. Setup of background model
@@ -3249,9 +3249,6 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
         else
           err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.";
 
-
-        //Surface tmpSurf(wavelet_est_int_top);
-        //wavelet_estim_interval[0] = new Surface(tmpSurf);
       }
     }
     catch (NRLib::Exception & e) {
@@ -3276,8 +3273,6 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
         else
           err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.";
 
-        //Surface tmpSurf(wavelet_est_int_bot);
-        //wavelet_estim_interval[1] = new Surface(tmpSurf);
       }
     }
     catch (NRLib::Exception & e) {
@@ -5338,6 +5333,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
                                       std::vector<int>                                                 & facies_nr,
                                       const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                       const Simbox                                                     & full_inversion_simbox,
+                                      SegyGeometry                                                     * segy_geometry,
                                       std::string                                                      & err_text_common) const
 {
   std::string err_text = "";
@@ -5369,7 +5365,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
   if (model_settings->getFaciesProbFromRockPhysics()== false) {
     tmp_err_text = "";
-    FindFaciesEstimationInterval(input_files, facies_estim_interval, full_inversion_simbox, tmp_err_text);
+    FindFaciesEstimationInterval(model_settings, input_files, facies_estim_interval, full_inversion_simbox, segy_geometry, tmp_err_text);
 
     if (tmp_err_text != "")
       err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
@@ -5683,10 +5679,12 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   return true;
 }
 
-void CommonData::FindFaciesEstimationInterval(const InputFiles             * input_files,
-                                              std::vector<Surface *>       & facies_estim_interval,
-                                              const Simbox                 & full_inversion_simbox,
-                                              std::string                  & err_text) const
+void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_settings,
+                                              const InputFiles       * input_files,
+                                              std::vector<Surface *> & facies_estim_interval,
+                                              const Simbox           & full_inversion_simbox,
+                                              SegyGeometry           * segy_geometry,
+                                              std::string            & err_text) const
 {
   //
   // Get facies estimation interval
@@ -5706,8 +5704,19 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
       if (NRLib::IsNumber(topFEI))
         facies_estim_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(topFEI.c_str()));
       else {
-        Surface tmpSurf(topFEI);
-        facies_estim_interval[0] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            facies_estim_interval[0] = new Surface(topFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(topFEI) != NRLib::SURF_MULT_ASCII)
+          facies_estim_interval[0] = new Surface(topFEI);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.";
       }
     }
     catch (NRLib::Exception & e) {
@@ -5718,8 +5727,20 @@ void CommonData::FindFaciesEstimationInterval(const InputFiles             * inp
       if (NRLib::IsNumber(baseFEI))
         facies_estim_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(baseFEI.c_str()));
       else {
-        Surface tmpSurf(baseFEI);
-        facies_estim_interval[1] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            facies_estim_interval[1] = new Surface(baseFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(baseFEI) != NRLib::SURF_MULT_ASCII)
+          facies_estim_interval[1] = new Surface(baseFEI);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.";
+
       }
     }
     catch (NRLib::Exception & e) {
