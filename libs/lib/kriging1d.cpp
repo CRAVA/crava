@@ -132,10 +132,10 @@ Kriging1D::locateValidData(float * data,
       count++;
     }
   }
-  if (count == 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
-  }
+  //if (count == 0) {
+  //  LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
+  //  LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
+  //}
   md = count;
 
   bool debug = false;
@@ -161,10 +161,10 @@ Kriging1D::locateValidData(double * data,
       count++;
     }
   }
-  if (count == 0) {
-    LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
-    LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
-  }
+  //if (count == 0) {
+  //  LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging1D::locateDataIndices() : ");
+  //  LogKit::LogFormatted(LogKit::Low,"Only missing values found in data vector.\n");
+  //}
   md = count;
 
   bool debug = false;

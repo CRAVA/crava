@@ -760,11 +760,14 @@ private:
                                           std::vector<int>                                                 & facies_nr,
                                           const std::map<int, std::map<std::string, BlockedLogsCommon *> > & mapped_blocked_logs_intervals,
                                           const Simbox                                                     & full_inversion_simbox,
+                                          SegyGeometry                                                     * segy_geometry,
                                           std::string                                                      & err_text_common) const;
 
-  void               FindFaciesEstimationInterval(const InputFiles             * input_files,
+  void               FindFaciesEstimationInterval(const ModelSettings    * model_settings,
+                                                  const InputFiles       * input_files,
                                                   std::vector<Surface *> & facies_estim_interval,
                                                   const Simbox           & estimation_simbox,
+                                                  SegyGeometry           * segy_geometry,
                                                   std::string            & err_text) const;
 
   void               CheckFaciesNamesConsistency(const ModelSettings     * model_settings,

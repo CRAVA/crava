@@ -129,6 +129,14 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
 
   std::string err_text_tmp = "";
 
+  std::vector<std::string> well_names(n_wells);
+  int w = 0;
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
+    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs.find(it->first);
+    well_names[w] = iter->second->GetWellName();
+    w++;
+  }
+
   GetWellTrends(well_trend_vp,  high_cut_well_trend_vp,  blocked_logs, nz, name_vp,  err_text_tmp);
   GetWellTrends(well_trend_vs,  high_cut_well_trend_vs,  blocked_logs, nz, name_vs,  err_text_tmp);
   GetWellTrends(well_trend_rho, high_cut_well_trend_rho, blocked_logs, nz, name_rho, err_text_tmp);
@@ -242,7 +250,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                        bl_vp,bl_vs,bl_rho,
                        vt_vp,vt_vs,vt_rho,
                        ipos,jpos,kpos,
-                       interval_name);
+                       interval_name, well_names);
 
     const CovGrid2D & covGrid2D = MakeCovGrid2D(simbox,
                                                 model_settings->getBackgroundVario(),
@@ -544,7 +552,8 @@ Background::SetupKrigingData2D(std::vector<KrigingData2D>                & krigi
                                const std::vector<const std::vector<int> *> ipos,
                                const std::vector<const std::vector<int> *> jpos,
                                const std::vector<const std::vector<int> *> kpos,
-                               const std::string                         & interval_name)
+                               const std::string                         & interval_name,
+                               const std::vector<std::string>            & well_names)
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -564,6 +573,11 @@ Background::SetupKrigingData2D(std::vector<KrigingData2D>                & krigi
       std::vector<double> bl_vp_well  = bl_vp[w];
       std::vector<double> bl_vs_well  = bl_vs[w];
       std::vector<double> bl_rho_well = bl_rho[w];
+
+      //Check if vertical trends only contains missing values
+      CheckLogForOnlyMissing(vt_vp_well,  "vp",  well_names[w]);
+      CheckLogForOnlyMissing(vt_vs_well,  "vs",  well_names[w]);
+      CheckLogForOnlyMissing(vt_rho_well, "rho", well_names[w]);
 
       //
       // Kriging vertical trend (vt....) against global vertical trend (trend...)
@@ -1402,3 +1416,21 @@ Background::CopyFFTGrid(FFTGrid   * orig_grid,
 
   return (new_grid);
 }
+
+void
+Background::CheckLogForOnlyMissing(const std::vector<double> & log,
+                                   const std::string         & log_name,
+                                   const std::string         & well_name)
+{
+  int count = 0;
+  for (int i = 0; i < static_cast<int>(log.size()); i++) {
+    if (log[i] != RMISSING)
+      count++;
+  }
+  if (count == 0) {
+    LogKit::LogFormatted(LogKit::Low,"\nWARNING in Kriging of background model: ");
+    LogKit::LogFormatted(LogKit::Low,"Only missing values found in " + log_name + " log in well " + well_name + ".\n");
+  }
+
+}
+
