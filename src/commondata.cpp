@@ -657,7 +657,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
 
-  LogKit::LogFormatted(LogKit::Low,"\nCreating output simbox");
+  LogKit::LogFormatted(LogKit::Low,"\n\nCreating the output simbox, used for the final written result (visualization) grid");
 
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
