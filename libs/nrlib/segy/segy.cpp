@@ -375,6 +375,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
       if (!storm_grid->GetTopSurface().IsMissing(z_top) && !storm_grid->GetBotSurface().IsMissing(z_bot)) {
         z_bot         -= z0;
         z_top         -= z0;
+
         int first_data = static_cast<int>(floor((z_top+z_shift)/dz));
         int end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
 
