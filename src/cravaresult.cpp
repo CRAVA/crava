@@ -213,7 +213,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   Simbox & output_simbox                      = common_data->GetOutputSimbox();
   n_intervals_                                = multi_interval_grid->GetNIntervals();
 
-  //Rapport 
+  //Rapport
   if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
     LogKit::LogFormatted(LogKit::Low,"\nThe results are combined and resampled to the final output (visualization) grid with " + NRLib::ToString(output_simbox.getnz())
                                       + " layers before they are written to file.\n");
@@ -221,7 +221,6 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   else {
     LogKit::LogFormatted(LogKit::Low,"\nThe results are written to file based on the output (visualization) grid with " + NRLib::ToString(output_simbox.getnz()) + " layers.\n");
   }
-  
 
   std::vector<NRLib::Grid<float> *> dummy_grids;
 

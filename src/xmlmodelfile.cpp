@@ -1633,7 +1633,6 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("high-cut-background-modelling");
   legalCommands.push_back("filter-multizone-background");
   legalCommands.push_back("segy-header");
-  legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
 
@@ -1764,17 +1763,6 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setFilterMultizoneBackground(filter_multizone_background);
 
   while(parseSegyHeader(root,errTxt) == true);
-
-  bool multizone = false;
-  if(parseMultizoneModel(root,errTxt) == true)
-    multizone = true;
-
-  if(((vp | vs | rho | si | ai | vpvs) && multizone) == true)
-    errTxt += "Multizone background model can not be estimated when file names or constant values\n"
-              "are given for the seismic parameters in <background>\n";
-
-  if((velocity_field & multizone) == true)
-    errTxt += "<velocity-field> can not be given when multizone background model is to be estimated in <background>\n";
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
