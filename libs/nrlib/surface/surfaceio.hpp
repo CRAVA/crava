@@ -423,7 +423,7 @@ void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
     is_multicolumn_ascii = FindMulticolumnAsciiLine(filename, header_start_line);
 
     if (is_multicolumn_ascii == false)
-      throw Exception("Error: Did not recognize file as a multicolumns ascii file.\n");
+      throw Exception("Error: Did not recognize file as a multicolumns ascii file. We require the file to have five columns X,Y,Z,IL and XL in an arbitrary order.\n");
 
     std::ifstream file;
     NRLib::OpenRead(file, filename);
