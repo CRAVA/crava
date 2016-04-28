@@ -1816,28 +1816,6 @@ XmlModelFile::parseSegyHeader(TiXmlNode * node, std::string & errTxt)
 }
 
 bool
-XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("multizone-model");
-  if(root == 0)
-    return(false);
-
-  errTxt += "Multizone background model combined with only one inversion interval is no longer supported. \n"
-            "For more multiple intervals in the background model use <multiple-intervals> under <output-volume>.";
-
-  return(true);
-
-  //std::vector<std::string> legalCommands;
-  //legalCommands.push_back("top-surface-file");
-
-  //if(parseFileName(root, "top-surface-file", file_name, errTxt) == true)
-  //  inputFiles_->addMultizoneSurfaceFile(file_name);
-
-  //checkForJunk(root, errTxt, legalCommands);
-  //return(true);
-}
-
-bool
 XmlModelFile::parseCorrelationDirection(TiXmlNode * node, std::string & errTxt)
 {
   TiXmlNode * root = node->FirstChildElement("correlation-direction");
