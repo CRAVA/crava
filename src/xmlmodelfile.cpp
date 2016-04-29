@@ -1142,16 +1142,90 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("top-surface-file");
-  legalCommands.push_back("base-surface-file");
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
 
-  std::string filenameTop  = "";
-  std::string filenameBase = "";
-  parseFileName(root, "top-surface-file", filenameTop, errTxt);
-  parseFileName(root, "base-surface-file", filenameBase, errTxt);
+  if(parseWaveletTopSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
-  inputFiles_->addWaveletEstIntFileTop(filenameTop);
-  inputFiles_->addWaveletEstIntFileBase(filenameBase);
+  if(parseWaveletBaseSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseWaveletTopSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("top-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
+    inputFiles_->addWaveletEstIntFileTop(filename);
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addWaveletEstIntFileTop(NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    inputFiles_->setTimeSurfTopFile("");
+
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseWaveletBaseSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
+    inputFiles_->addWaveletEstIntFileBase(filename);
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addWaveletEstIntFileBase(NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    inputFiles_->setTimeSurfTopFile("");
+
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

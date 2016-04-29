@@ -331,25 +331,25 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{erosion-priority} \necessary} \rnewkw{erosion-priority}{erosion-priority2}
+\subsubparagraph{\hbracket{erosion-priority} \necessary} \newkw{erosion-priority}
  \slist
    \item \Description Priority of the base surface file for this interval. The top surface file and all base surface files in the inversion intervals need to given different priority.
    \item \Argument Int
    \item \Default
  \elist
 
-\subsubparagraph{\hbracket{uncertainty}} \newkw{uncertainty}{uncertainty}
+\subsubparagraph{\hbracket{uncertainty}} \newkw{uncertainty}
  \slist
    \item \Description Uncertainty of the base surface file for this interval. Used to smooth relaisations across zone borders. Uncertainty on the lowest base surace will be ignored. 
    \item \Argument Value
    \item \Default 10
  \elist
 
-\subparagraph{\hbracket{number-of-layers} \necessary} \rnewkw{number-of-layers}{interval-number-of-layers}
+\subparagraph{\hbracket{number-of-layers}} \rnewkw{number-of-layers}{interval-number-of-layers}
  \slist
    \item \Description Number of layers for the interval
    \item \Argument Int
-   \item \Default
+   \item \Default Use resolution from seismic data.
  \elist
 
 \subsubsection{\hbracket{area-from-surface}}\newkw{area-from-surface}
@@ -1626,26 +1626,57 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default
  \elist
 
+
+ 
 \subsection{\hbracket{wavelet-estimation-interval}}\newkw{wavelet-estimation-interval}
  \slist
    \item \Description Controls the time interval used for wavelet estimation by a top and base surface.
    \item \Argument Elements controlling the time interval used for wavelet estimation
    \item \Default By default, estimation is done from all available seismic and well data.
  \elist
+ 
 
-\subsubsection{\hbracket{top-surface-file}}\newkw{top-surface-file}
+\subsubsection{\hbracket{top-surface}}\rnewkw{top-surface}{top-surface3}
  \slist
-   \item \Description File name for standard surface file giving the top of the time interval used for wavelet estimation.
+   \item \Description File name for standard surface file, or a constant value, giving the top of the time interval used for wavelet estimation.
+   \item \Argument File name
+   \item \Default
+ \elist
+  
+\paragraph{\hbracket{time-file}}\rnewkw{time-file}{time-file3}
+ \slist
+   \item \Description File name for standard surface file giving the top of the time interval used for wavelet estimation. This or \rkw{time-value}{time-value3} must be given.
    \item \Argument File name
    \item \Default
  \elist
 
-\subsubsection{\hbracket{base-surface-file}}\newkw{base-surface-file}
+\paragraph{\hbracket{time-value}}\rnewkw{time-value}{time-value3}
  \slist
-   \item \Description File name for standard surface file giving the base of the time interval used for wavelet estimation.
+   \item \Description Value giving the top time used the wavelet estimation. This or \rkw{time-file}{time-file3} must be given.
+   \item \Argument Value
+   \item \Default
+ \elist 
+
+\subsubsection{\hbracket{base-surface}}\rnewkw{base-surface}{base-surface3}
+ \slist
+   \item \Description File name for standard surface file, or a constant value, giving the base of the time interval used for wavelet estimation.
    \item \Argument File name
    \item \Default
  \elist
+  
+\paragraph{\hbracket{time-file}}\rnewkw{time-file}{time-file4}
+ \slist
+   \item \Description File name for standard surface file giving the base of the time interval used for wavelet estimation. This or \rkw{time-value}{time-value4} must be given.
+   \item \Argument File name
+   \item \Default
+ \elist
+
+\paragraph{\hbracket{time-value}} \rnewkw{time-value}{time-value4}
+ \slist
+   \item \Description Value giving the base time used the wavelet estimation. This or \rkw{time-file}{time-file3} must be given.
+   \item \Argument Value
+   \item \Default
+ \elist 
 
 \subsection{\hbracket{time-gradient-settings}}\newkw{time-gradient-settings}
  \slist
