@@ -106,7 +106,6 @@ SurfaceFileFormat FindSurfaceFileType(const std::string& filename)
         }
       }
     }
-    return SURF_UNKNOWN;
   }
 
   //Try multicolum ascii
@@ -290,7 +289,7 @@ bool FindMulticolumnAsciiLine(const std::string& filename, int & header_start_li
 
   //Find first line with five numbers
   bool found_mult_ascii_line = false;
-  while (found_mult_ascii_line == false) {
+  while (found_mult_ascii_line == false && NRLib::CheckEndOfFile(file)==false) {
 
     //Read line
     std::string line_string;
