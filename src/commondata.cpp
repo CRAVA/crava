@@ -9684,7 +9684,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
     if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
-    if ((output_grids_seismic & IO::RESIDUAL) > 0 || (output_grids_seismic & IO::SYNTHETIC_RESIDUAL) > 0)
+    if ((output_grids_seismic & IO::RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
     if ((output_grids_seismic & IO::FOURIER_RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Fourier residuals from inversion         :        yes\n");
