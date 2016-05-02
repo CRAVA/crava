@@ -1231,7 +1231,6 @@ XmlModelFile::parseWaveletBaseSurface(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-
 bool
 XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
 {
