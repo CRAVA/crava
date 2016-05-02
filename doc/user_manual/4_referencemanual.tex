@@ -1625,8 +1625,6 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
-
-
  
 \subsection{\hbracket{wavelet-estimation-interval}}\newkw{wavelet-estimation-interval}
  \slist
@@ -1635,11 +1633,10 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Default By default, estimation is done from all available seismic and well data.
  \elist
  
-
 \subsubsection{\hbracket{top-surface}}\rnewkw{top-surface}{top-surface3}
  \slist
    \item \Description File name for standard surface file, or a constant value, giving the top of the time interval used for wavelet estimation.
-   \item \Argument File name
+   \item \Argument Elements controlling the top surface.
    \item \Default
  \elist
   
@@ -1660,7 +1657,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subsubsection{\hbracket{base-surface}}\rnewkw{base-surface}{base-surface3}
  \slist
    \item \Description File name for standard surface file, or a constant value, giving the base of the time interval used for wavelet estimation.
-   \item \Argument File name
+   \item \Argument Elements controlling the base surface.
    \item \Default
  \elist
   
@@ -2759,21 +2756,51 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument Elements defining estimation interval
    \item \Default Everywhere facies and elastic logs are present.
  \elist
+ 
+ %%%%
 
-\paragraph{\hbracket{top-surface-file}}{\rnewkw{top-surface-file}{top-surface-file3}
+\paragraph{\hbracket{top-surface}}\rnewkw{top-surface}{top-surface4}
  \slist
-   \item \Description File name for standard surface file giving the top of the estimation interval.
+   \item \Description File name for standard surface file, or a constant value, giving the top of the time interval used for facies estimation.
+   \item \Argument Elements controlling the top surface.
+   \item \Default
+ \elist
+  
+\subparagraph{\hbracket{time-file}}\rnewkw{time-file}{time-file4}
+ \slist
+   \item \Description File name for standard surface file giving the top of the time interval used for facies estimation. This or \rkw{time-value}{time-value4} must be given.
    \item \Argument File name
    \item \Default
  \elist
 
-\paragraph{\hbracket{base-surface-file}}\rnewkw{base-surface-file}{base-surface-file3}
+\subparagraph{\hbracket{time-value}}\rnewkw{time-value}{time-value4}
  \slist
-   \item \Description File name for standard surface file giving the base of the estimation interval.
+   \item \Description Value giving the top time used the facies estimation. This or \rkw{time-file}{time-file4} must be given.
+   \item \Argument Value
+   \item \Default
+ \elist 
+
+\paragraph{\hbracket{base-surface}}\rnewkw{base-surface}{base-surface4}
+ \slist
+   \item \Description File name for standard surface file, or a constant value, giving the base of the time interval used for facies estimation.
+   \item \Argument Elements controlling the base surface.
+   \item \Default
+ \elist
+  
+\subparagraph{\hbracket{time-file}}\rnewkw{time-file}{time-file5}
+ \slist
+   \item \Description File name for standard surface file giving the base of the time interval used for facies estimation. This or \rkw{time-value}{time-value5} must be given.
    \item \Argument File name
    \item \Default
  \elist
 
+\subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value5}
+ \slist
+   \item \Description Value giving the base time used the facies estimation. This or \rkw{time-file}{time-file5} must be given.
+   \item \Argument Value
+   \item \Default
+ \elist  
+ 
 \subsubsection{\hbracket{prior-probabilities}}\newkw{prior-probabilities}
  \slist
    \item \Description Prior facies probabilities are given for all

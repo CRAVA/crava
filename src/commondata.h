@@ -361,10 +361,12 @@ public:
 
 private:
 
-  void               LoadWellMoveInterval(const InputFiles             * input_files,
-                                          const Simbox                 * estimation_simbox,
-                                          std::vector<Surface *>       & well_move_interval,
-                                          std::string                  & err_text) const;
+  void               LoadWellMoveInterval(const ModelSettings    * model_settings,
+                                          const InputFiles       * input_files,
+                                          const Simbox           * estimation_simbox,
+                                          SegyGeometry           * segy_geometry,
+                                          std::vector<Surface *> & well_move_interval,
+                                          std::string            & err_text) const;
 
   bool               OptimizeWellLocations(ModelSettings                                 * model_settings,
                                            InputFiles                                    * input_files,
@@ -373,6 +375,7 @@ private:
                                            std::vector<NRLib::Well *>                    & wells,
                                            std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                            std::vector<std::vector<SeismicStorage *> >   & seismic_data,
+                                           SegyGeometry                                  * segy_geometry,
                                            const std::vector<NRLib::Matrix>              & reflection_matrix,
                                            std::string                                   & err_text) const;
 

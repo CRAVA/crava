@@ -770,8 +770,8 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   }
 
   if(parseWaveletEstimationInterval(root, errTxt) == false){
-    inputFiles_->addDefaultWaveletEstIntFileTop();
-    inputFiles_->addDefaultWaveletEstIntFileBase();
+    inputFiles_->addWaveletEstIntFileTop("");
+    inputFiles_->addWaveletEstIntFileBase("");
   }
 
   modelSettings_->clearTimeLapseTravelTime();
@@ -2238,7 +2238,10 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-absolute-elastic-parameters");
   legalCommands.push_back("volume-fractions");
 
-  parseFaciesEstimationInterval(root, errTxt);
+  if (parseFaciesEstimationInterval(root, errTxt) == false) {
+    inputFiles_->setFaciesEstIntFile(0, "");
+    inputFiles_->setFaciesEstIntFile(1, "");
+  }
 
   parsePriorFaciesProbabilities(root, errTxt);
 
@@ -2264,7 +2267,6 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-
 bool
 XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt)
 {
@@ -2273,20 +2275,86 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("top-surface-file");
-  legalCommands.push_back("base-surface-file");
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
+
+  if(parseFaciesTopSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  if(parseFaciesBaseSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesTopSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("top-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
 
   std::string filename;
-  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->setFaciesEstIntFile(0, filename);
-  else
-    errTxt += "Must specify <top-surface-file> in command <"+root->ValueStr()+"> "+
-      lineColumnText(root)+".\n";
-  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->setFaciesEstIntFile(0, NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesBaseSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->setFaciesEstIntFile(1, filename);
-  else
-    errTxt += "Must specify <base-surface-file> in command <"+root->ValueStr()+">"+
-      lineColumnText(root)+".\n";
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->setFaciesEstIntFile(1, NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);

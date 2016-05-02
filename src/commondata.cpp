@@ -115,7 +115,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
     // 7. Optimization of well location
     if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
-      optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
+      optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, segy_geometry, reflection_matrix_, err_text);
     if (!model_settings->getOptimizeWellLocation())
       optimize_well_location_ = true;
 
@@ -4665,6 +4665,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         std::vector<NRLib::Well *>                    & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::vector<std::vector<SeismicStorage *> >   & seismic_data,
+                                        SegyGeometry                                  * segy_geometry,
                                         const std::vector<NRLib::Matrix>              & reflection_matrix,
                                         std::string                                   & err_text_common) const{
 
@@ -4673,7 +4674,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   LogKit::WriteHeader("Estimating optimized well location");
 
   std::vector<Surface *>      well_move_interval;
-  LoadWellMoveInterval(input_files, estimation_simbox, well_move_interval, err_text);
+  LoadWellMoveInterval(model_settings, input_files, estimation_simbox, segy_geometry, well_move_interval, err_text);
 
   size_t n_wells = wells.size();
 
@@ -4885,9 +4886,6 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
       if (new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
         new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
-      //if (use_for_wavelet_estimation == ModelSettings::NOTSET) {
-      //  use_for_wavelet_estimation = ModelSettings::NO;
-      //}
       new_well.SetDeviated(true);
       LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
@@ -4904,10 +4902,12 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
 
 }
 
-void CommonData::LoadWellMoveInterval(const InputFiles             * input_files,
-                                      const Simbox                 * estimation_simbox,
-                                      std::vector<Surface *>       & well_move_interval,
-                                      std::string                  & err_text) const
+void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
+                                      const InputFiles       * input_files,
+                                      const Simbox           * estimation_simbox,
+                                      SegyGeometry           * segy_geometry,
+                                      std::vector<Surface *> & well_move_interval,
+                                      std::string            & err_text) const
 {
   const double x0 = estimation_simbox->getx0();
   const double y0 = estimation_simbox->gety0();
@@ -4924,11 +4924,23 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
   if (topWMI != "" && baseWMI != "") {
     well_move_interval.resize(2);
     try {
+
       if (NRLib::IsNumber(topWMI))
         well_move_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(topWMI.c_str()));
       else {
-        Surface tmpSurf(topWMI);
-        well_move_interval[0] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            well_move_interval[0] = new Surface(topWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(topWMI) != NRLib::SURF_MULT_ASCII)
+          well_move_interval[0] = new Surface(topWMI);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + topWMI + " without segy geometry.";
       }
     }
     catch (NRLib::Exception & e) {
@@ -4939,8 +4951,20 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
       if (NRLib::IsNumber(baseWMI))
         well_move_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(baseWMI.c_str()));
       else {
-        Surface tmpSurf(baseWMI);
-        well_move_interval[1] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            well_move_interval[1] = new Surface(baseWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+        }
+        else if (NRLib::FindSurfaceFileType(baseWMI) != NRLib::SURF_MULT_ASCII)
+          well_move_interval[1] = new Surface(baseWMI);
+        else
+          err_text += "Cannot read multicolumn ascii surface " + baseWMI + " without segy geometry.";
+
       }
     }
     catch (NRLib::Exception & e) {
