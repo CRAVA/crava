@@ -2971,231 +2971,234 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   FindWaveletEstimationInterval(model_settings, input_files, wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, segy_geometry, err_text_tmp);
   well_wavelets.resize(model_settings->getNumberOfAngles(0));
 
-  if (err_text_tmp != "")
+  if (err_text_tmp != "") {
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
+  }
+  else {
 
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
 
-  if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
-    //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
-    if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
-      SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
+    if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
+      //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
+      if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
+        SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
 
-  shift_grids.resize(n_timelapses);
-  gain_grids.resize(n_timelapses);
+    shift_grids.resize(n_timelapses);
+    gain_grids.resize(n_timelapses);
 
-  for (int i = 0; i < n_timelapses; i++) {
+    for (int i = 0; i < n_timelapses; i++) {
 
-    int n_angles = model_settings->getNumberOfAngles(i);
+      int n_angles = model_settings->getNumberOfAngles(i);
 
-    std::vector<float> sn_ratio = model_settings->getSNRatio(i);
-    std::vector<float> angles   = model_settings->getAngle(i);
+      std::vector<float> sn_ratio = model_settings->getSNRatio(i);
+      std::vector<float> angles   = model_settings->getAngle(i);
 
-    //Fra ModelAvoDynamic::processSeismic:
-    std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
+      //Fra ModelAvoDynamic::processSeismic:
+      std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
 
-    //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
-    bool estimate_failed = false;
-    for (size_t j = 0; j < estimate_wavelets.size(); j++) {
-      if (estimate_wavelets[j]) {
-        if (read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
-          estimate_failed = true;
-          return false;
+      //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
+      bool estimate_failed = false;
+      for (size_t j = 0; j < estimate_wavelets.size(); j++) {
+        if (estimate_wavelets[j]) {
+          if (read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
+            estimate_failed = true;
+            return false;
+          }
         }
       }
-    }
 
-    std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
+      std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    wavelets[i].resize(n_angles, NULL);
+      wavelets[i].resize(n_angles, NULL);
 
-    std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
+      std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
 
-    bool has_3D_wavelet = false;
+      bool has_3D_wavelet = false;
 
-    shift_grids[i].resize(n_angles);
-    gain_grids[i].resize(n_angles);
+      shift_grids[i].resize(n_angles);
+      gain_grids[i].resize(n_angles);
 
-    for (int j = 0; j < n_angles; j++) {
+      for (int j = 0; j < n_angles; j++) {
 
-      local_noise_scale[j] = NULL;
-      shift_grids[i][j]    = NULL;
-      gain_grids[i][j]     = NULL;
+        local_noise_scale[j] = NULL;
+        shift_grids[i][j]    = NULL;
+        gain_grids[i][j]     = NULL;
 
-      if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
-        has_3D_wavelet = true;
-      if (estimate_wavelets[j] == true)
-        model_settings->setWaveletScale(i,j,1.0);
-    }
+        if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
+          has_3D_wavelet = true;
+        if (estimate_wavelets[j] == true)
+          model_settings->setWaveletScale(i,j,1.0);
+      }
 
-    unsigned int n_wells = model_settings->getNumberOfWells();
+      unsigned int n_wells = model_settings->getNumberOfWells();
 
-    //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
-    t_grad_x.resize(n_wells);
-    t_grad_y.resize(n_wells);
-    NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
-    NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
+      //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
+      t_grad_x.resize(n_wells);
+      t_grad_y.resize(n_wells);
+      NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
+      NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
-    bool failed = false;
+      bool failed = false;
 
-    if (has_3D_wavelet) {
-      if (input_files->getRefSurfaceFile() != "") {
-        Surface t0_surf;
-        try {
-          t0_surf =Surface(input_files->getRefSurfaceFile());
-        }
-        catch (NRLib::Exception & e) {
-          err_text += e.what();
-          failed = true;
-        }
-        if (!failed) {
-          Surface * correlation_direction = NULL;
+      if (has_3D_wavelet) {
+        if (input_files->getRefSurfaceFile() != "") {
+          Surface t0_surf;
+          try {
+            t0_surf =Surface(input_files->getRefSurfaceFile());
+          }
+          catch (NRLib::Exception & e) {
+            err_text += e.what();
+            failed = true;
+          }
+          if (!failed) {
+            Surface * correlation_direction = NULL;
 
-          if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
-            try {
-              Surface tmp_surf(input_files->getCorrDirFile(""));
-              if (estimation_simbox.CheckSurface(tmp_surf) == true)
-                correlation_direction = new Surface(tmp_surf);
-              else {
-                err_text += "Error: Correlation surface does not cover volume.\n";
+            if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
+              try {
+                Surface tmp_surf(input_files->getCorrDirFile(""));
+                if (estimation_simbox.CheckSurface(tmp_surf) == true)
+                  correlation_direction = new Surface(tmp_surf);
+                else {
+                  err_text += "Error: Correlation surface does not cover volume.\n";
+                }
+              }
+              catch (NRLib::Exception & e) {
+                err_text += e.what();
               }
             }
-            catch (NRLib::Exception & e) {
-              err_text += e.what();
-            }
+
+            double v0=model_settings->getAverageVelocity();
+            ComputeStructureDepthGradient(v0,
+                                          model_settings->getGradientSmoothingRange(),
+                                          &t0_surf,
+                                          correlation_direction,
+                                          full_inversion_simbox,
+                                          estimation_simbox,
+                                          structure_depth_grad_x,
+                                          structure_depth_grad_y);
+            Wavelet3D::setGradientMaps(structure_depth_grad_x,
+                                       structure_depth_grad_y);
+            ComputeReferenceTimeGradient(&t0_surf,
+                                         estimation_simbox,
+                                         ref_time_grad_x,
+                                         ref_time_grad_y);
           }
-
-          double v0=model_settings->getAverageVelocity();
-          ComputeStructureDepthGradient(v0,
-                                        model_settings->getGradientSmoothingRange(),
-                                        &t0_surf,
-                                        correlation_direction,
-                                        full_inversion_simbox,
-                                        estimation_simbox,
-                                        structure_depth_grad_x,
-                                        structure_depth_grad_y);
-          Wavelet3D::setGradientMaps(structure_depth_grad_x,
-                                     structure_depth_grad_y);
-          ComputeReferenceTimeGradient(&t0_surf,
-                                       estimation_simbox,
-                                       ref_time_grad_x,
-                                       ref_time_grad_y);
+          else {
+            err_text += "Problems reading reference time surface in (x,y).\n";
+          }
         }
-        else {
-          err_text += "Problems reading reference time surface in (x,y).\n";
+        bool estimate_well_gradient = model_settings->getEstimateWellGradientFromSeismic();
+        float distance, sigma_m;
+        model_settings->getTimeGradientSettings(distance, sigma_m, i);
+        std::vector<std::vector<double> > SigmaXY;
+
+        for (size_t w = 0; w < n_wells; w++) {
+          if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
+            double v0=model_settings->getAverageVelocity();
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
+          }
+          else {
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+          }
         }
       }
-      bool estimate_well_gradient = model_settings->getEstimateWellGradientFromSeismic();
-      float distance, sigma_m;
-      model_settings->getTimeGradientSettings(distance, sigma_m, i);
-      std::vector<std::vector<double> > SigmaXY;
 
-      for (size_t w = 0; w < n_wells; w++) {
-        if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
-          double v0=model_settings->getAverageVelocity();
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
+      if (estimation_simbox.getdz() > 4.01f && model_settings->getEstimateNumberOfWavelets(i) > 0) { // Require this density for wavelet estimation
+        LogKit::LogFormatted(LogKit::Low,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
+        LogKit::LogFormatted(LogKit::Low," CRAVA are not reliable and the output results should be treated accordingly.\n");
+        LogKit::LogFormatted(LogKit::Low," The number of layers must be increased. \n");
+        std::string text("");
+        text += "Increase the number of layers to improve the quality of the wavelet estimation.\n";
+        text += " The minimum sampling density is "+NRLib::ToString(estimation_simbox.getdz())+", and it should be ";
+        text += "lower than 4.0.\n To obtain the desired density, the number of layers should be at least ";
+        text += NRLib::ToString(static_cast<int>(estimation_simbox.GetLZ()/4.0))+"\n";
+        TaskList::addTask(text);
+      }
+
+      // check if local noise is set for some angles.
+      bool local_noise_set = false;
+
+      for (int j = 0; j < n_angles; j++) {
+
+        float angle = float(angles[j]*180.0/M_PI);
+        LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
+
+        SeismicStorage * seismic_data_tmp = NULL;
+        if (forward_modeling_ == false) {
+          seismic_data_tmp = seismic_data[i][j];
         }
-        else {
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+        if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
+          error += Process1DWavelet(model_settings,
+                                    input_files,
+                                    seismic_data_tmp,
+                                    mapped_blocked_logs,
+                                    wavelet_estim_interval,
+                                    estimation_simbox,
+                                    full_inversion_simbox,
+                                    reflection_matrix[i],
+                                    err_text,
+                                    wavelets[i][j],
+                                    well_wavelets[j],
+                                    shift_grids[i][j],
+                                    gain_grids[i][j],
+                                    local_noise_scale[j],
+                                    i, //Timelapse
+                                    j, //Angle
+                                    angles[j],
+                                    sn_ratio[j],
+                                    estimate_wavelets[j],
+                                    use_ricker_wavelet[j]);
+        else
+          error += Process3DWavelet(model_settings,
+                                    input_files,
+                                    seismic_data_tmp,
+                                    mapped_blocked_logs,
+                                    wavelet_estim_interval,
+                                    estimation_simbox,
+                                    full_inversion_simbox,
+                                    reflection_matrix[i],
+                                    err_text,
+                                    wavelets[i][j],
+                                    i, //Timelapse
+                                    j, //Angle
+                                    angles[j],
+                                    sn_ratio[j],
+                                    ref_time_grad_x_,
+                                    ref_time_grad_y_,
+                                    t_grad_x_,
+                                    t_grad_y_,
+                                    estimate_wavelets[j]);
+
+        if (local_noise_scale[j] != NULL)
+          local_noise_set = true;
+
+      } //angle
+
+      if (local_noise_set == true) {
+        for (int k=0; k < n_angles; k++) {
+          if (local_noise_scale[k]==NULL)
+            local_noise_scale[k] = new Grid2D(full_inversion_simbox.getnx(),
+                                              full_inversion_simbox.getny(),
+                                              1.0);
         }
       }
+
+      local_noise_scales[i]     = local_noise_scale;
+      global_noise_estimates[i] = sn_ratio;
+      sn_ratios[i]              = sn_ratio;
+
+    } //timelapse
+
+    for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
+      if (wavelet_estim_interval[i] != NULL)
+        delete wavelet_estim_interval[i];
     }
 
-    if (estimation_simbox.getdz() > 4.01f && model_settings->getEstimateNumberOfWavelets(i) > 0) { // Require this density for wavelet estimation
-      LogKit::LogFormatted(LogKit::Low,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
-      LogKit::LogFormatted(LogKit::Low," CRAVA are not reliable and the output results should be treated accordingly.\n");
-      LogKit::LogFormatted(LogKit::Low," The number of layers must be increased. \n");
-      std::string text("");
-      text += "Increase the number of layers to improve the quality of the wavelet estimation.\n";
-      text += " The minimum sampling density is "+NRLib::ToString(estimation_simbox.getdz())+", and it should be ";
-      text += "lower than 4.0.\n To obtain the desired density, the number of layers should be at least ";
-      text += NRLib::ToString(static_cast<int>(estimation_simbox.GetLZ()/4.0))+"\n";
-      TaskList::addTask(text);
-    }
 
-    // check if local noise is set for some angles.
-    bool local_noise_set = false;
-
-    for (int j = 0; j < n_angles; j++) {
-
-      float angle = float(angles[j]*180.0/M_PI);
-      LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-
-      SeismicStorage * seismic_data_tmp = NULL;
-      if (forward_modeling_ == false) {
-        seismic_data_tmp = seismic_data[i][j];
-      }
-      if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
-        error += Process1DWavelet(model_settings,
-                                  input_files,
-                                  seismic_data_tmp,
-                                  mapped_blocked_logs,
-                                  wavelet_estim_interval,
-                                  estimation_simbox,
-                                  full_inversion_simbox,
-                                  reflection_matrix[i],
-                                  err_text,
-                                  wavelets[i][j],
-                                  well_wavelets[j],
-                                  shift_grids[i][j],
-                                  gain_grids[i][j],
-                                  local_noise_scale[j],
-                                  i, //Timelapse
-                                  j, //Angle
-                                  angles[j],
-                                  sn_ratio[j],
-                                  estimate_wavelets[j],
-                                  use_ricker_wavelet[j]);
-      else
-        error += Process3DWavelet(model_settings,
-                                  input_files,
-                                  seismic_data_tmp,
-                                  mapped_blocked_logs,
-                                  wavelet_estim_interval,
-                                  estimation_simbox,
-                                  full_inversion_simbox,
-                                  reflection_matrix[i],
-                                  err_text,
-                                  wavelets[i][j],
-                                  i, //Timelapse
-                                  j, //Angle
-                                  angles[j],
-                                  sn_ratio[j],
-                                  ref_time_grad_x_,
-                                  ref_time_grad_y_,
-                                  t_grad_x_,
-                                  t_grad_y_,
-                                  estimate_wavelets[j]);
-
-      if (local_noise_scale[j] != NULL)
-        local_noise_set = true;
-
-    } //angle
-
-    if (local_noise_set == true) {
-      for (int k=0; k < n_angles; k++) {
-        if (local_noise_scale[k]==NULL)
-          local_noise_scale[k] = new Grid2D(full_inversion_simbox.getnx(),
-                                            full_inversion_simbox.getny(),
-                                            1.0);
-      }
-    }
-
-    local_noise_scales[i]     = local_noise_scale;
-    global_noise_estimates[i] = sn_ratio;
-    sn_ratios[i]              = sn_ratio;
-
-  } //timelapse
-
-  for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
-    if (wavelet_estim_interval[i] != NULL)
-      delete wavelet_estim_interval[i];
+    Timings::setTimeWavelets(wall,cpu);
   }
-
-
-  Timings::setTimeWavelets(wall,cpu);
 
   if (err_text != "") {
     err_text_common += err_text;
