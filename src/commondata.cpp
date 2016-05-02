@@ -3060,7 +3060,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                 if (estimation_simbox.CheckSurface(tmp_surf) == true)
                   correlation_direction = new Surface(tmp_surf);
                 else {
-                  err_text += "Error: Correlation surface does not cover volume.\n";
+                  err_text += "Error when setting up 3D wavelet: Correlation surface " + tmp_surf.GetName() + " does not cover volume.\n";
                 }
               }
               catch (NRLib::Exception & e) {
@@ -5392,17 +5392,20 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   if (tmp_err_text != "")
     err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
 
+  bool facies_estim_interval_ok = true;
   if (model_settings->getFaciesProbFromRockPhysics()== false) {
     tmp_err_text = "";
     FindFaciesEstimationInterval(model_settings, input_files, facies_estim_interval, full_inversion_simbox, segy_geometry, tmp_err_text);
 
-    if (tmp_err_text != "")
+    if (tmp_err_text != "") {
       err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+      facies_estim_interval_ok = false;
+    }
   }
   else
     facies_estim_interval.resize(0);
 
-  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS && facies_estim_interval_ok == true) {
     if (n_facies > 0) {
       prior_facies.resize(n_intervals);
 
@@ -7251,7 +7254,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             if (simbox->CheckSurface(*tmp_surf) == true)
               correlation_direction = new Surface(*tmp_surf);
             else
-              err_text_tmp += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+              err_text_tmp += "Error: Correlation surface " + tmp_surf->GetName() + "does not cover volume" + interval_text + ".\n";
           }
 
           if (err_text_tmp == "") {
@@ -10090,28 +10093,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    //if (model_settings->getMultizoneBackground() == true) {
-    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
-    //  std::vector<int> erosion               = model_settings->getErosionPriority();
-    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
-    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
-    //  int nZones = static_cast<int>(surface_files.size()-1);
-    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-    //  for (int i=0; i<nZones; i++) {
-    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-    //    if (structure[i+1] == ModelSettings::TOP)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-    //    else if (structure[i+1] == ModelSettings::BASE)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-    //    else if (structure[i+1] == ModelSettings::COMPACTION)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
-    //  }
-    //}
+
   }
   else
   {

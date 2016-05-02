@@ -137,9 +137,9 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     w++;
   }
 
-  GetWellTrends(well_trend_vp,  high_cut_well_trend_vp,  blocked_logs, nz, name_vp,  err_text_tmp);
-  GetWellTrends(well_trend_vs,  high_cut_well_trend_vs,  blocked_logs, nz, name_vs,  err_text_tmp);
-  GetWellTrends(well_trend_rho, high_cut_well_trend_rho, blocked_logs, nz, name_rho, err_text_tmp);
+  GetWellTrends(well_trend_vp,  high_cut_well_trend_vp,  blocked_logs, nz, name_vp,  interval_name, err_text_tmp);
+  GetWellTrends(well_trend_vs,  high_cut_well_trend_vs,  blocked_logs, nz, name_vs,  interval_name, err_text_tmp);
+  GetWellTrends(well_trend_rho, high_cut_well_trend_rho, blocked_logs, nz, name_rho, interval_name, err_text_tmp);
 
   if (err_text_tmp != "") {
     err_text += err_text_tmp;
@@ -450,9 +450,14 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
                           const std::map<std::string, BlockedLogsCommon *> & blocked_logs,
                           const int                                        & nz,
                           const std::string                                & name,
+                          const std::string                                & interval_name,
                           std::string                                      & err_text)
 {
   int i_wells = 0;
+
+  std::string interval_text = "";
+  if (interval_name != "")
+    interval_text = " for interval " + interval_name;
 
   int w = 0;
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs.begin(); it != blocked_logs.end(); it++) {
@@ -471,8 +476,8 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
         else if (name == "Rho")
           blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), well_trend[w]);
         else {
-          err_text += "ERROR in Background::GetWellTrends(): ";
-          err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
+          err_text += "ERROR in Background::GetWellTrends()" + interval_text + ": ";
+          err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
         }
         i_wells++;
       }
@@ -485,7 +490,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
     w++;
   }
   if (i_wells == 0) {
-    err_text += "\nERROR in Background::GetWellTrends(): There are no wells\n";
+    err_text += "\nERROR in Background::GetWellTrends()" + interval_text + ": There are no wells\n";
     err_text += "available for the estimation of background trend.\n";
   }
 
@@ -503,8 +508,8 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
       else if (name == "Rho")
         blocked_log->GetVerticalTrend(blocked_log->GetRhoHighCutBackground(), high_cut_well_trend[w]);
       else {
-        err_text += "ERROR in Background::GetWellTrends(): ";
-        err_text += "Log \'"+name+"\' requested, but no such log exists.\n";
+        err_text += "ERROR in Background::GetWellTrends()"+ interval_text + ": ";
+        err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
       }
     }
     else
