@@ -14,7 +14,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
                                      InputFiles    * input_files,
                                      const Simbox  * estimation_simbox,
                                      SegyGeometry  * segy_geometry,
-                                     std::string   & err_text,
+                                     std::string   & err_text_common,
                                      bool          & failed)
 {
 
@@ -42,15 +42,15 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
   }
 
   uncertainties_.resize(n_intervals_+1); //Two more than needed, but now follows erosion priorities.
-
   std::vector<Surface>    surfaces(n_intervals_+1);                 //Store surfaces.
 
   // Temp variables
-  std::string             previous_interval_name("");
-  std::string             top_surface_file_name_temp("");
-  std::string             base_surface_file_name_temp("");
-  Surface               * top_surface  = NULL;
-  Surface               * base_surface = NULL;
+  std::string   err_text = "";
+  std::string   previous_interval_name("");
+  std::string   top_surface_file_name_temp("");
+  std::string   base_surface_file_name_temp("");
+  Surface     * top_surface  = NULL;
+  Surface     * base_surface = NULL;
 
   // 1. ERODE SURFACES AND SET SURFACES OF SIMBOXES -----------------------------------------
 
@@ -95,22 +95,28 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
                          *estimation_simbox,
                          err_text);
 
-        CreateVisibleSurfaces(surfaces, eroded_surfaces_, visible_surfaces);
 
+        if (err_text == "") {
 
-        //Check if eroded surfaces have max distance greater than zero.
-        //H-TODO Make removal of intervals automatic
-        for (int i = 0; i<n_intervals_; i++) {
+          CreateVisibleSurfaces(surfaces, eroded_surfaces_, visible_surfaces);
 
-          double max_distance = eroded_surfaces_[i+1].Max() - eroded_surfaces_[i].Min();
+          //Check if eroded surfaces have max distance greater than zero.
+          //H-TODO Make removal of intervals automatic
+          for (int i = 0; i<n_intervals_; i++) {
 
-          //If max distance of eroded surfaces is zero we can't set up interval simboxes
-          if (max_distance == 0) {
-            LogKit::LogMessage(LogKit::Error,"Error: Eroded surfaces for interval " + interval_names_[i] + " has maximum thickness equal to zero. This interval should be removed.\n");
-            err_text += "Eroded surfaces for interval " + interval_names_[i] + " has maximum distance equal to zero. This interval should be removed.\n";
-            TaskList::addTask("Removed interval " + interval_names_[i]);
-            failed = true;
+            double max_distance = eroded_surfaces_[i+1].Max() - eroded_surfaces_[i].Min();
+
+            //If max distance of eroded surfaces is zero we can't set up interval simboxes
+            if (max_distance == 0) {
+              LogKit::LogMessage(LogKit::Error,"Error: Eroded surfaces for interval " + interval_names_[i] + " has maximum thickness equal to zero. This interval should be removed.\n");
+              err_text += "Eroded surfaces for interval " + interval_names_[i] + " has maximum distance equal to zero. This interval should be removed.\n";
+              TaskList::addTask("Removed interval " + interval_names_[i]);
+              failed = true;
+            }
           }
+        }
+        else {
+          failed = true;
         }
 
       }
@@ -136,6 +142,13 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
         v_surf_for_zone[0] = *top_surface;
         v_surf_for_zone[1] = *base_surface;
         visible_surfaces[0] = v_surf_for_zone;
+
+        //Make sure both surfaces have the same resolution
+        if (eroded_surfaces_[0].GetDX()*eroded_surfaces_[0].GetDY() > eroded_surfaces_[1].GetDX()*eroded_surfaces_[1].GetDY())
+          ResampleSurface(eroded_surfaces_[0], eroded_surfaces_[1], segy_geometry);
+        else
+          ResampleSurface(eroded_surfaces_[1], eroded_surfaces_[0], segy_geometry);
+
       }
       else { //If only one surface-file is used, similar to setup of estimation_simbox.
         top_surface_file_name_temp = input_files->getTimeSurfTopFile();
@@ -199,6 +212,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
                               failed);
     }
     catch(NRLib::Exception & e) {
+      LogKit::LogFormatted(LogKit::Error,"\nSetting up interval simboxes failed: " + NRLib::ToString(e.what()));
       failed = true;
       err_text += e.what();
     }
@@ -273,6 +287,13 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
   for (int i = 0; i > n_intervals_; i++) {
     surface_files_.push_back(interval_base_time_surfaces.find(interval_names_[i])->second);
   }
+
+  if (err_text != "") {
+    err_text_common += "\nSetting up multiinterval grid failed:\n";
+    err_text_common += err_text;
+    failed = true;
+  }
+
 
 }
 
@@ -363,8 +384,6 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       other_output_format+= IO::ASCII;
 
     // Make a simbox for the original interval --------------------------------------------
-    //SegyGeometry * geometry = model_settings->getAreaParameters();
-
     float min_samp_dens = model_settings->getMinSamplingDensity();
 
     // Make extended interval_simbox for the inversion interval ---------------------------
@@ -372,7 +391,14 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     // Case 1: Single correlation surface
     if (it_single != corr_dir_single_surfaces.end() && it_top == corr_dir_top_surfaces.end() && it_base == corr_dir_base_surfaces.end()) {
       corr_dir = true;
-      Surface * corr_surf  = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
+      Surface * corr_surf = MakeSurfaceFromFileName(it_single->second,  *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
+
+      //Resample corr surf to same resolution as top or base, but dont resample if corr surf follows the geometry and top/base does not
+      if (top_surface.GetDX()*top_surface.GetDY() >= base_surface.GetDX()*base_surface.GetDY())
+        ResampleSurface(*corr_surf, top_surface, segy_geometry);
+      else
+        ResampleSurface(*corr_surf, base_surface, segy_geometry);
+
       interval_simboxes[i] =  new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf,
                                          other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf;
@@ -382,6 +408,17 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       corr_dir = true;
       Surface * corr_surf_top  = MakeSurfaceFromFileName(it_top->second,  *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
+
+
+      if (top_surface.GetDX()*top_surface.GetDY() >= base_surface.GetDX()*base_surface.GetDY()) {
+        ResampleSurface(*corr_surf_top, top_surface, segy_geometry);
+        ResampleSurface(*corr_surf_base, top_surface, segy_geometry);
+      }
+      else {
+        ResampleSurface(*corr_surf_top, base_surface, segy_geometry);
+        ResampleSurface(*corr_surf_base, base_surface, segy_geometry);
+      }
+
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -391,6 +428,13 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     else if (top_conform == true && it_base != corr_dir_base_surfaces.end()) {
       corr_dir = true;
       Surface * corr_surf_base = MakeSurfaceFromFileName(it_base->second, *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
+
+      //Resample corr surf to same resolution as top or base, but dont resample if corr surf follows the geometry and top/base does not
+      if (top_surface.GetDX()*top_surface.GetDY() >= base_surface.GetDX()*base_surface.GetDY())
+        ResampleSurface(*corr_surf_base, top_surface, segy_geometry);
+      else
+        ResampleSurface(*corr_surf_base, base_surface, segy_geometry);
+
       interval_simboxes[i] = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, &top_surface, corr_surf_base,
                                         other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_base;
@@ -399,6 +443,13 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
     else if (it_top != corr_dir_top_surfaces.end() && base_conform == true) {
       corr_dir = true;
       Surface * corr_surf_top = MakeSurfaceFromFileName(it_top->second, *estimation_simbox, model_settings, input_files, segy_geometry, err_text_tmp);
+
+      //Resample corr surf to same resolution as top or base, but dont resample if corr surf follows the geometry and top/base does not
+      if (top_surface.GetDX()*top_surface.GetDY() >= base_surface.GetDX()*base_surface.GetDY())
+        ResampleSurface(*corr_surf_top, top_surface, segy_geometry);
+      else
+        ResampleSurface(*corr_surf_top, base_surface, segy_geometry);
+
       interval_simboxes[i]    = new Simbox(estimation_simbox, interval_names[i], n_layers, dz, model_settings->getLzLimit(), top_surface, base_surface, corr_surf_top, &base_surface,
                                            other_output_flag, other_output_domain, other_output_format, err_text_tmp, failed_tmp);
       delete corr_surf_top;
@@ -448,10 +499,10 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       if (interval_simboxes[i]->status() == Simbox::BOXOK) {
         if (corr_dir) {
           LogIntervalInformation(interval_simboxes[i], interval_names[i],
-            "Time inversion interval (extended relative to output interval due to correlation)","Two-way-time");
+            " Time inversion interval (extended relative to output interval due to correlation)","Two-way-time");
         }
         else{
-          LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval","Two-way-time");
+          LogIntervalInformation(interval_simboxes[i], interval_names[i], " Time output interval","Two-way-time");
         }
       }
       else {
@@ -479,14 +530,18 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
         err_text_tmp += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
       }
 
-      if (interval_names.size() == 1)
-        LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids: \n");
-      else
-        LogKit::LogFormatted(LogKit::Low,"\nTime simulation grids for interval \'"+interval_names[i]+"\':\n");
-      LogKit::LogFormatted(LogKit::Low,"  Output grid        %4i * %4i * %4i   : %10llu\n",
-                            interval_simboxes[i]->getnx(),interval_simboxes[i]->getny(),interval_simboxes[i]->getnz(),
-                            static_cast<unsigned long long int>(interval_simboxes[i]->getnx()*interval_simboxes[i]->getny()*interval_simboxes[i]->getnz()));
-      LogKit::LogFormatted(LogKit::Low,"  FFT grid           %4i * %4i * %4i   :%11llu\n",
+      if (interval_names.size() == 1) {
+        LogKit::LogFormatted(LogKit::Low,"\n Time simulation grids: \n");
+
+        LogKit::LogFormatted(LogKit::Low,"   Output grid        %4i * %4i * %4i   : %10llu\n",
+                              interval_simboxes[i]->getnx(),interval_simboxes[i]->getny(),interval_simboxes[i]->getnz(),
+                              static_cast<unsigned long long int>(interval_simboxes[i]->getnx()*interval_simboxes[i]->getny()*interval_simboxes[i]->getnz()));
+      }
+      else {
+        LogKit::LogFormatted(LogKit::Low,"\n Time simulation grids for interval \'"+interval_names[i]+"\':\n");
+      }
+
+      LogKit::LogFormatted(LogKit::Low,"   FFT grid           %4i * %4i * %4i   :%11llu\n",
                             interval_simboxes[i]->GetNXpad(),interval_simboxes[i]->GetNYpad(),interval_simboxes[i]->GetNZpad(),
                             static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad()));
     }
@@ -548,13 +603,16 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
   }
   else { //If the file name is a value
 
-    double x_min, x_max, y_min, y_max;
+    //double x_min, x_max, y_min, y_max;
 
-    FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
-                                estimation_simbox.getlx(), estimation_simbox.getly(),
-                                estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
+    //FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
+    //                            estimation_simbox.getlx(), estimation_simbox.getly(),
+    //                            estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
 
-    new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(file_name.c_str()));
+    //new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(file_name.c_str())); //H-REMOVE
+
+    new_surface = new Surface(estimation_simbox.getx0(), estimation_simbox.gety0(), estimation_simbox.getlx(), estimation_simbox.getly(),
+                              2, 2, estimation_simbox.getAngle(), atof(file_name.c_str()));
   }
 
   return new_surface;
@@ -618,11 +676,13 @@ void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_su
         l++;
 
       Surface temp_surface = Surface(surfaces[l]);
+      bool eroded = false;
 
       //Find closest eroded surface downward
       for (int k=l+1; k<n_surf; k++) {
         if (eroded_surfaces[k].GetN() > 0) {
           ErodeSurface(temp_surface, eroded_surfaces[k], surfaces[surf_max_res], false);
+          eroded = true;
           break;
         }
       }
@@ -630,14 +690,20 @@ void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_su
       for (int k=l-1; k>=0; k--) {
         if (eroded_surfaces[k].GetN() > 0) {
           ErodeSurface(temp_surface, eroded_surfaces[k], surfaces[surf_max_res], true);
+          eroded = true;
           break;
         }
       }
+
+      //Also resample non-eroded surfaces to the same resolution as the other surfaces
+      if (eroded == false)
+        ResampleSurface(temp_surface, surfaces[surf_max_res]);
+
       eroded_surfaces[l] = temp_surface;
     }
   }
   else{
-    err_text += "Could not process surface erosion since one or more of the surfaces does not cover the inversion area.";
+    err_text += "\nCould not process surface erosion since one or more of the surfaces does not cover the inversion area.";
   }
 }
 
@@ -645,9 +711,10 @@ void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_su
 void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
                                       const Surface &  priority_surface,
                                       const Surface &  resolution_surface,
-                                      const bool    &  compare_upward) const{
+                                      const bool    &  compare_upward) const
+{
 
-  int nx       = static_cast<int>(resolution_surface.GetNI());
+  int nx       = static_cast<int>(resolution_surface.GetNI()); //H-TODO
   int ny       = static_cast<int>(resolution_surface.GetNJ());
   double x_ref = resolution_surface.GetXRef();
   double y_ref = resolution_surface.GetYRef();
@@ -664,8 +731,6 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   for (int i=0; i<nx; i++) {
     for (int j=0; j<ny; j++) {
       resolution_surface.GetXY(i, j, x, y);
-
-      //simbox.getXYCoord(i,j,x,y);
 
       z_priority = priority_surface.GetZ(x,y);
       z          = surface.GetZ(x,y);
@@ -695,8 +760,55 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
 
 }
 
-// --------------------------------------------------------------------------------
-void MultiIntervalGrid::CreateVisibleSurfaces(const std::vector<Surface> & surfaces,
+void  MultiIntervalGrid::ResampleSurface(Surface       & surface,
+                                         const Surface & resolution_surface,
+                                         SegyGeometry  * segy_geometry) const
+{
+  if (resolution_surface.GetDX()*resolution_surface.GetDY() < surface.GetDX()*surface.GetDY()) {
+
+    //Do not resample if surface follows seismic, but resolution surface does not
+    if (segy_geometry == NULL ||
+        (segy_geometry != NULL && !(surface.GetAngle() == segy_geometry->GetAngle() && resolution_surface.GetAngle() != segy_geometry->GetAngle()))) {
+
+      //Create a new surface with the same size, but with a new resolution
+      int nx       = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
+      int ny       = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
+
+      double x_ref     = surface.GetXRef();
+      double y_ref     = surface.GetYRef();
+      double lx        = surface.GetLengthX();
+      double ly        = surface.GetLengthY();
+      std::string name = surface.GetName();
+      double angle     = surface.GetAngle();
+
+      NRLib::Grid2D<double> new_surface(nx,ny,0);
+      Surface tmp_surface = Surface(x_ref, y_ref, lx, ly, new_surface, angle);
+
+      double x;
+      double y;
+      double z;
+
+      double missing = surface.GetMissingValue();
+      for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+
+          tmp_surface.GetXY(i, j, x, y);
+          z = surface.GetZ(x,y);
+
+          new_surface(i,j) = z;
+
+        }
+      }
+
+      surface = Surface(x_ref, y_ref, lx, ly, new_surface, angle);
+      surface.SetName(name);
+      surface.SetMissingValue(missing);
+    }
+  }
+}
+
+ //--------------------------------------------------------------------------------
+void MultiIntervalGrid::CreateVisibleSurfaces(const std::vector<Surface> & surfaces, //H-REMOVE
                                               const std::vector<Surface> & eroded_surfaces,
                                               std::vector<std::vector<Surface> > & visible_surfaces)
 {
@@ -754,8 +866,8 @@ void MultiIntervalGrid::EstimateZPaddingSize(Simbox          * simbox,
   if (simbox->GetIntervalName() != "")
     output_name = " for interval \'" + simbox->GetIntervalName() + "\'";
 
-  LogKit::LogFormatted(logLevel,"\nZ padding sizes" + text2 + output_name + ":\n");
-  LogKit::LogFormatted(logLevel,"  zPad, zPadFac, nz, nzPad                 : %5.0fms, %5.3f, %5d, %4d\n",
+  LogKit::LogFormatted(logLevel,"\n Z padding sizes" + text2 + output_name + ":\n");
+  LogKit::LogFormatted(logLevel,"   zPad, zPadFac, nz, nzPad                 : %5.0fms, %5.3f, %5d, %4d\n",
                        z_pad, z_pad_fac, nz, nz_pad);
 }
 
@@ -808,16 +920,16 @@ void  MultiIntervalGrid::LogIntervalInformation(const Simbox      * simbox,
   double zmin, zmax;
   simbox->getMinMaxZ(zmin,zmax);
   if (interval_name != "")
-    LogKit::LogFormatted(LogKit::Low," Interval name: "+ interval_name +"\n");
-  LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+    LogKit::LogFormatted(LogKit::Low,"  Interval name: "+ interval_name +"\n");
+  LogKit::LogFormatted(LogKit::Low,"  %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,
                        zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+  LogKit::LogFormatted(LogKit::Low,"   Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        simbox->getlz()*simbox->getAvgRelThick(),
                        simbox->getlz()*simbox->getMinRelThick(),
                        simbox->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
+  LogKit::LogFormatted(LogKit::Low,"   Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
                        simbox->getdz()*simbox->getAvgRelThick(),
                        simbox->getdz(),
                        simbox->getdz()*simbox->getMinRelThick());
@@ -829,15 +941,15 @@ void MultiIntervalGrid::LogIntervalInformation(const Simbox      * simbox,
   LogKit::LogFormatted(LogKit::Low,"\n"+header_text1+"\n");
   double zmin, zmax;
   simbox->getMinMaxZ(zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low," %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+  LogKit::LogFormatted(LogKit::Low,"  %13s          avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        header_text2.c_str(),
                        zmin+simbox->getlz()*simbox->getAvgRelThick()*0.5,
                        zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
+  LogKit::LogFormatted(LogKit::Low,"   Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
                        simbox->getlz()*simbox->getAvgRelThick(),
                        simbox->getlz()*simbox->getMinRelThick(),
                        simbox->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
+  LogKit::LogFormatted(LogKit::Low,"   Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n",
                        simbox->getdz()*simbox->getAvgRelThick(),
                        simbox->getdz(),
                        simbox->getdz()*simbox->getMinRelThick());

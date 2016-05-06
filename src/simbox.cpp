@@ -337,8 +337,8 @@ base_eroded_surface_(NULL)
     if (interval_name != "")
       interval_text += " in interval " + interval_name;
 
-    LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
-    LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
+    LogKit::LogFormatted(LogKit::High,"\n Number of layers" + interval_text + " increased from %d", n_layers);
+    LogKit::LogFormatted(LogKit::High,"  to %d because of the correlation direction.\n",nz);
   }
 
   new_base_surface.Add(shift_bot);

@@ -101,6 +101,10 @@ private:
                     const Surface &  resolution_surface,
                     const bool    &  compare_upward) const;
 
+  void ResampleSurface(Surface       &  surface,
+                       const Surface &  resolution_surface,
+                       SegyGeometry  * segy_geometry = NULL) const;
+
   void ErodeAllSurfaces(std::vector<Surface>            & eroded_surfaces,
                         const std::vector<int>          & erosion_priorities,
                         const std::vector<Surface>      & surface,

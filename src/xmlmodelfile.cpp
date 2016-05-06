@@ -4753,7 +4753,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   }
   else {
     if(topDepthGiven == false && baseDepthGiven == false) {
-      errTxt += "Velocity field, but no depth surface given in command <"
+      errTxt += "Velocity field given, but no depth surface given in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     }
     else
