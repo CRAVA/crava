@@ -807,28 +807,50 @@ void  MultiIntervalGrid::ResampleSurface(Surface       & surface,
   }
 }
 
- //--------------------------------------------------------------------------------
-void MultiIntervalGrid::CreateVisibleSurfaces(const std::vector<Surface> & surfaces, //H-REMOVE
+// --------------------------------------------------------------------------------
+void MultiIntervalGrid::CreateVisibleSurfaces(const std::vector<Surface> & surfaces,
                                               const std::vector<Surface> & eroded_surfaces,
                                               std::vector<std::vector<Surface> > & visible_surfaces)
 {
-  for(size_t i=0;i<surfaces.size()-1;i++) {
+  for (int i = 0; i < static_cast<int>(surfaces.size()-1); i++) {
     visible_surfaces[i].resize(2);
     visible_surfaces[i][0] = eroded_surfaces[i];
     visible_surfaces[i][1] = eroded_surfaces[i+1];
-    for(int j=0;j<2;j++) {
-      std::vector<double>::const_iterator above = surfaces[i].begin();
-      std::vector<double>::const_iterator below = surfaces[i+1].begin();
-      std::vector<double>::iterator       surf  = visible_surfaces[i][j].begin();
-      for(;surf != visible_surfaces[i][j].end();++surf) {
-        if(*surf < *above)
-          *surf = *above;
-        else if(*surf > *below)
-          *surf = *below;
+    double x;
+    double y;
+    for (int j = 0; j < 2; j++) {
 
-        ++above;
-        ++below;
+      int ni = static_cast<int>(visible_surfaces[i][j].GetNI());
+      int nj = static_cast<int>(visible_surfaces[i][j].GetNJ());
+      double surf_missing = visible_surfaces[i][j].GetMissingValue();
+
+      for (int ii = 0; ii < ni; ii++) {
+        for (int jj = 0; jj < nj; jj++) {
+
+          visible_surfaces[i][j].GetXY(ii,jj,x,y);
+
+          double surf = visible_surfaces[i][j](ii,jj);
+
+          if (surf != surf_missing) {
+
+            double above = surfaces[i].GetZ(x,y);
+            double below = surfaces[i+1].GetZ(x,y);
+
+            double above_missing = surfaces[i].GetMissingValue();
+            double below_missing = surfaces[i+1].GetMissingValue();
+
+            if (surf < above && above != above_missing)
+              surf = above;
+            else if (surf > below && below != below_missing)
+              surf = below;
+
+          }
+
+          visible_surfaces[i][j](ii,jj) = surf;
+
+        }
       }
+
     }
   }
 }
