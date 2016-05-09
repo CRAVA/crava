@@ -603,14 +603,7 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
   }
   else { //If the file name is a value
 
-    //double x_min, x_max, y_min, y_max;
-
-    //FindSmallestSurfaceGeometry(estimation_simbox.getx0(), estimation_simbox.gety0(),
-    //                            estimation_simbox.getlx(), estimation_simbox.getly(),
-    //                            estimation_simbox.getAngle(), x_min, y_min, x_max, y_max);
-
-    //new_surface = new Surface(x_min-100, y_min-100, x_max-x_min+200, y_max-y_min+200, 2, 2, 0.0, atof(file_name.c_str())); //H-REMOVE
-
+    //Create a surface that follows the seismic data
     new_surface = new Surface(estimation_simbox.getx0(), estimation_simbox.gety0(), estimation_simbox.getlx(), estimation_simbox.getly(),
                               2, 2, estimation_simbox.getAngle(), atof(file_name.c_str()));
   }
@@ -707,19 +700,20 @@ void  MultiIntervalGrid::ErodeAllSurfaces(std::vector<Surface>       & eroded_su
   }
 }
 
-// --------------------------------------------------------------------------------
 void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
                                       const Surface &  priority_surface,
                                       const Surface &  resolution_surface,
                                       const bool    &  compare_upward) const
 {
 
-  int nx       = static_cast<int>(resolution_surface.GetNI()); //H-TODO
-  int ny       = static_cast<int>(resolution_surface.GetNJ());
-  double x_ref = resolution_surface.GetXRef();
-  double y_ref = resolution_surface.GetYRef();
-  double lx    = resolution_surface.GetLengthX();
-  double ly    = resolution_surface.GetLengthY();
+  int nx           = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
+  int ny           = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
+  double x_ref     = surface.GetXRef();
+  double y_ref     = surface.GetYRef();
+  double lx        = surface.GetLengthX();
+  double ly        = surface.GetLengthY();
+  std::string name = surface.GetName();
+  double angle     = surface.GetAngle();
 
   NRLib::Grid2D<double> eroded_surface(nx,ny,0);
   double x;
@@ -727,32 +721,33 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
   double z;
   double z_priority;
 
-  double missing = surface.GetMissingValue();
+  Surface tmp_surface = Surface(x_ref, y_ref, lx, ly, eroded_surface, angle);
+
+  double missing          = surface.GetMissingValue();
+  double priority_missing = priority_surface.GetMissingValue();
   for (int i=0; i<nx; i++) {
     for (int j=0; j<ny; j++) {
-      resolution_surface.GetXY(i, j, x, y);
+
+      tmp_surface.GetXY(i, j, x, y);
 
       z_priority = priority_surface.GetZ(x,y);
       z          = surface.GetZ(x,y);
 
       if (compare_upward) {
-        if (z < z_priority && z != missing)
+        if (z < z_priority && z != missing && z_priority != priority_missing)
           eroded_surface(i,j) = z_priority;
         else
           eroded_surface(i,j) = z;
       }
 
       else {
-        if (z > z_priority && z_priority != missing)
+        if (z > z_priority && z_priority != priority_missing && z != missing)
           eroded_surface(i,j) = z_priority;
         else
           eroded_surface(i,j) = z;
       }
     }
   }
-
-  std::string name = surface.GetName();
-  double angle     = surface.GetAngle();
 
   surface = Surface(x_ref, y_ref, lx, ly, eroded_surface, angle);
   surface.SetName(name);
@@ -771,9 +766,8 @@ void  MultiIntervalGrid::ResampleSurface(Surface       & surface,
         (segy_geometry != NULL && !(surface.GetAngle() == segy_geometry->GetAngle() && resolution_surface.GetAngle() != segy_geometry->GetAngle()))) {
 
       //Create a new surface with the same size, but with a new resolution
-      int nx       = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
-      int ny       = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
-
+      int nx           = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
+      int ny           = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
       double x_ref     = surface.GetXRef();
       double y_ref     = surface.GetYRef();
       double lx        = surface.GetLengthX();
