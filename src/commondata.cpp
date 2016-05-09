@@ -662,8 +662,22 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
 
-  double dz_min = FindDzMin(multi_interval_grid);
-  int nz_new    = static_cast<int>(output_simbox.getlz() / dz_min);
+  int nz_new = 0;
+  if (multi_interval_grid->GetNIntervals() == 1) {
+    if (model_settings->getTimeNz("") > 0) {
+      //Layers given in model file
+      nz_new = model_settings->getTimeNz("");
+    }
+    else {
+      //Use dz from seismic
+      nz_new = static_cast<int>(output_simbox.getlz() / model_settings->getTimeDz());
+    }
+  }
+  else {
+    //Multiinterval, use minimum dz from all intervals
+    double dz_min = FindDzMin(multi_interval_grid);
+    nz_new        = static_cast<int>(output_simbox.getlz() / dz_min);
+  }
 
   output_simbox.setDepth(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface(), nz_new, false); //Also set nz_pad = nz
 
