@@ -547,7 +547,8 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
   if (format == SURF_UNKNOWN) {
     format = FindSurfaceFileType(filename);
     if (format == SURF_UNKNOWN) {
-      throw FileFormatError("Failed to determine file format for surface file: " + filename + "Allowed formats are Irap Classic, Storm binary, Sgri and Multicolumn Ascii (X,Y,Z,IL,XL).");
+      throw FileFormatError("Failed to determine file format for surface file: " + filename
+                            + "Allowed formats are Irap Classic, Storm binary, Sgri, Multicolumn Ascii (X,Y,Z,IL,XL) and XYZ ascii.");
     }
   }
 

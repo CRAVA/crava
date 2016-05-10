@@ -242,8 +242,8 @@ file name for the top surface is given under command
 \kw{top-surface}\kwindex{top-surface}, \kw{time-file}, and the base
 surface is given similarly under \kw{base-surface}
 \kwindex{base-surface}, \kw{time-file}. The file format is binary
-storm, ASCII Irap or a Multicolumn ASCII format (file with five columns,
-x, y, z, IL and XL). Top and base time values for the inversion
+storm, ASCII Irap, Multicolumn ASCII format (file with five columns,
+x, y, z, IL and XL) or XYZ ASCII (file with three columns, x, y z). The last two surfaces must follow the segy geometry. Top and base time values for the inversion
 interval can be given as constants instead of files, by using the
 command \kw{time-value}\kwindex{time-value}.   
 
@@ -562,14 +562,14 @@ Crava can read and write the following 3D grid
 \subsubsection{Surfaces}
 The standard format for reading and writing
   surfaces is binary storm, but \crava can also read Roxar ASCII
-  surfaces (formerly known as ASCII Irap classic) and Multicolumn ASCII
-  surfaces (see example below). In addition
-  some surfaces related to 3D-inversion are read as sgri (NORSAR). On input,
+  surfaces (formerly known as ASCII Irap classic), Multicolumn ASCII
+  surfaces (see example below) and XYZ ASCII surfaces. Multicolumn ASCII and XYZ ASCII files must follow the segy geometry.
+   In addition some surfaces related to 3D-inversion are read as sgri (NORSAR). On input,
   the surface format will be automatically detected. For writing we currently support Roxar Ascii and Storm binary.
   
 \paragraph{Multicolumn Ascii example}
 The multicolumn ascii file is a text file with five columns, and each columns needs ta have a header name:
-X or UTMX; Y or UTMY; IL or Inline; XL or Crossline; Z, TWT or Attribute. The order of the columns is arbitrary. The file might also have some text before the header-row. This surface is based segy-geometry and must follow the corresponding seismic cube, as the reference point, angle and area are taken from the geometry. We require even sampling in the file, but we do not require as fine sampling as in the seismic. It is for example possible to give only the four corners of the surface. Base on this a segy geometry will be required for using multicolumn ascii files. The standard missing value is defined as $-999.25$.
+X or UTMX; Y or UTMY; IL or Inline; XL or Crossline; Z, TWT or Attribute. The order of the columns is arbitrary. The file might also have some text before the header-row. This surface is based segy-geometry and must follow the corresponding seismic cube, as the reference point, angle and area are taken from the geometry. We require even sampling in the file, but we do not require as fine sampling as in the seismic. It is for example possible to give only the four corners of the surface. A segy geometry will be required for using multicolumn ascii files. The standard missing value is defined as $-999.25$.
 
 A file may look like:
 \begin{table}[h]
@@ -582,6 +582,23 @@ X         &         Y              &     Inline       &   Crossline     &    Att
 447256.0    &        6799789.0    &       2100.0       &       5640.0      &        2480.06712\\ 
 447393.0    &        6811038.5     &      2120.0      &        5600.0      &        2549.43453\\ 
 455517.0    &        6810939.5     &      2120.0      &        5640.0      &        2338.12905\\ 
+\end{tabular}
+\end{table}
+
+\paragraph{XYZ Ascii example}
+The xyz ascii file is a text file with three columns, X, Y and Z. The columns may have a header name, X or UTMX; Y or UTMY; Z, TWT or Attribute. Columns may also be given in an arbitrary order. If there is no header line, it is assumed that the order is x, y, z. This surface is based segy-geometry and must follow the corresponding seismic cube. We require even sampling in the file, but we do not require as fine sampling as in the seismic. It is for example possible to give only the four corners of the surface. A segy geometry will be required for using xyz ascii files. The standard missing value is defined as $-999.25$.
+
+A file may look like:
+\begin{table}[h]
+\centering
+\label{tab:xyzascii}
+\begin{tabular}{lll}
+
+X         &         Y              &    Z\\ 
+455380.0    &        6799690.0   &        2467.05737 \\ 
+447256.0    &        6799789.0    &       2480.06712\\ 
+447393.0    &        6811038.5     &      2549.43453\\ 
+455517.0    &        6810939.5     &      2338.12905\\ 
 \end{tabular}
 \end{table}
 
