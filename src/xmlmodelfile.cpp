@@ -4852,7 +4852,7 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
       +lineColumnText(root)+".\n";
   }
 
-  double u_value, uncertainty = 10.0;
+  double u_value, uncertainty = -1;
   if(parseValue(root, "uncertainty", u_value, err_txt) == true)
     uncertainty = u_value;
   modelSettings_->setUncertaintyBaseSurface(interval_name, uncertainty);

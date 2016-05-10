@@ -3263,10 +3263,16 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(wavelet_est_int_top) != NRLib::SURF_MULT_ASCII)
-          wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_top);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
+          else
+            wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
+        }
 
       }
     }
@@ -3288,11 +3294,16 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(wavelet_est_int_bot) != NRLib::SURF_MULT_ASCII)
-          wavelet_estim_interval[1] = new Surface(wavelet_est_int_top);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_bot);
 
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
+          else
+            wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -4343,10 +4354,16 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
 
       }
-      else if (NRLib::FindSurfaceFileType(top_surface_file_name) != NRLib::SURF_MULT_ASCII)
-        top_surface = new Surface(top_surface_file_name);
-      else
-        err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.";
+      else {
+        int surf_type = NRLib::FindSurfaceFileType(top_surface_file_name);
+
+        if (surf_type == NRLib::SURF_MULT_ASCII)
+          err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.\n";
+        else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          err_text += "Cannot read xyz ascii surface " + top_surface_file_name + " without segy geometry.\n";
+        else
+          top_surface = new Surface(top_surface_file_name);
+      }
 
       MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
       MultiIntervalGrid::InterpolateMissing(top_surface);
@@ -4393,10 +4410,16 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                                          segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                          segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
             }
-            else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
-              base_surface = new Surface(base_surface_file_name);
-            else
-              err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+            else {
+              int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+
+              if (surf_type == NRLib::SURF_MULT_ASCII)
+                err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
+              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+                err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
+              else
+                base_surface = new Surface(base_surface_file_name);
+            }
 
             MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
             MultiIntervalGrid::InterpolateMissing(base_surface);
@@ -4426,10 +4449,16 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
                                        segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                        segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
-          else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
-            base_surface = new Surface(base_surface_file_name);
-          else
-            err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+          else {
+            int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+
+            if (surf_type == NRLib::SURF_MULT_ASCII)
+              err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
+            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
+            else
+              base_surface = new Surface(base_surface_file_name);
+          }
 
           MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
           MultiIntervalGrid::InterpolateMissing(base_surface);
@@ -4960,10 +4989,17 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
                                                 segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                                 segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(topWMI) != NRLib::SURF_MULT_ASCII)
-          well_move_interval[0] = new Surface(topWMI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + topWMI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(topWMI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + topWMI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + topWMI + " without segy geometry.\n";
+          else
+            well_move_interval[0] = new Surface(topWMI);
+        }
+
       }
     }
     catch (NRLib::Exception & e) {
@@ -4984,10 +5020,16 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
                                                 segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                                 segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(baseWMI) != NRLib::SURF_MULT_ASCII)
-          well_move_interval[1] = new Surface(baseWMI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + baseWMI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(baseWMI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + baseWMI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + baseWMI + " without segy geometry.\n";
+          else
+            well_move_interval[1] = new Surface(baseWMI);
+        }
 
       }
     }
@@ -5767,10 +5809,16 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
                                                    segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                                    segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(topFEI) != NRLib::SURF_MULT_ASCII)
-          facies_estim_interval[0] = new Surface(topFEI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(topFEI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + topFEI + " without segy geometry.\n";
+          else
+            facies_estim_interval[0] = new Surface(topFEI);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -5791,11 +5839,16 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
                                                    segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                                    segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(baseFEI) != NRLib::SURF_MULT_ASCII)
-          facies_estim_interval[1] = new Surface(baseFEI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(baseFEI);
 
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + baseFEI + " without segy geometry.\n";
+          else
+            facies_estim_interval[1] = new Surface(baseFEI);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -7269,10 +7322,16 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
-          else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
-            tmp_surf = new Surface(file_name);
-          else
-            err_text_tmp += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.";
+          else {
+            int surf_type = NRLib::FindSurfaceFileType(file_name);
+
+            if (surf_type == NRLib::SURF_MULT_ASCII)
+              err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
+            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
+            else
+              tmp_surf = new Surface(file_name);
+          }
 
           if (err_text_tmp == "") {
             if (simbox->CheckSurface(*tmp_surf) == true)

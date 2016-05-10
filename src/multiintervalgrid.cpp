@@ -73,8 +73,14 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
         std::map<std::string, double>::const_iterator it = uncertainty_base_surfaces.find(interval_name);
         if(it != uncertainty_base_surfaces.end())
           uncty = it->second;
-        uncertainties_[i+1] = uncty;
-        if(i == n_intervals_-1 && uncertainties_[i+1] > 0.001)
+
+        //Set default to 10.0 if uncertainty is not given in model file
+        if (uncty < 0)
+          uncertainties_[i+1] = 10.0;
+        else
+          uncertainties_[i+1] = uncty;
+
+        if(i == n_intervals_-1 && uncty > 0.001)
           LogKit::LogMessage(LogKit::Warning,"Warning: Uncertainty on last base surface is ignored.\n\n");
 
         base_surface = MakeSurfaceFromFileName(base_surface_file_name_temp, *estimation_simbox, model_settings, input_files, segy_geometry, err_text);
@@ -594,17 +600,23 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
     }
-    else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
-      new_surface = new Surface(file_name);
-    else
-      err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.";
+    else {
+      int surf_type = NRLib::FindSurfaceFileType(file_name);
+
+      if (surf_type == NRLib::SURF_MULT_ASCII)
+        err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
+      else if (surf_type == NRLib::SURF_XYZ_ASCII)
+        err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
+      else
+        new_surface = new Surface(file_name);
+    }
 
     RemoveNaNFromSurface(new_surface);
     InterpolateMissing(new_surface);
   }
   else { //If the file name is a value
 
-    //Create a surface that follows the seismic data
+    //Create a constant surface that follows the seismic data
     new_surface = new Surface(estimation_simbox.getx0(), estimation_simbox.gety0(), estimation_simbox.getlx(), estimation_simbox.getly(),
                               2, 2, estimation_simbox.getAngle(), atof(file_name.c_str()));
   }
