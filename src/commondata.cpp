@@ -3260,7 +3260,8 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             wavelet_estim_interval[0] = new Surface(wavelet_est_int_top, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(wavelet_est_int_top) != NRLib::SURF_MULT_ASCII)
           wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
@@ -3284,7 +3285,8 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(wavelet_est_int_bot) != NRLib::SURF_MULT_ASCII)
           wavelet_estim_interval[1] = new Surface(wavelet_est_int_top);
@@ -4337,7 +4339,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
         top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                  segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
 
       }
       else if (NRLib::FindSurfaceFileType(top_surface_file_name) != NRLib::SURF_MULT_ASCII)
@@ -4387,7 +4390,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
               double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
               base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                         segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
             }
             else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
               base_surface = new Surface(base_surface_file_name);
@@ -4419,7 +4423,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
           else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
             base_surface = new Surface(base_surface_file_name);
@@ -4952,7 +4957,8 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             well_move_interval[0] = new Surface(topWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(topWMI) != NRLib::SURF_MULT_ASCII)
           well_move_interval[0] = new Surface(topWMI);
@@ -4975,7 +4981,8 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             well_move_interval[1] = new Surface(baseWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(baseWMI) != NRLib::SURF_MULT_ASCII)
           well_move_interval[1] = new Surface(baseWMI);
@@ -5757,7 +5764,8 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             facies_estim_interval[0] = new Surface(topFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(topFEI) != NRLib::SURF_MULT_ASCII)
           facies_estim_interval[0] = new Surface(topFEI);
@@ -5780,7 +5788,8 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             facies_estim_interval[1] = new Surface(baseFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
         else if (NRLib::FindSurfaceFileType(baseFEI) != NRLib::SURF_MULT_ASCII)
           facies_estim_interval[1] = new Surface(baseFEI);
@@ -7257,7 +7266,8 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
               tmp_surf = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                     segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
           else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
             tmp_surf = new Surface(file_name);
