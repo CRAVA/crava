@@ -1012,7 +1012,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     if (estimate)
       LogKit::LogFormatted(LogKit::Warning, "\nWARNING: The wavelet scale specified in the model file ("
            +NRLib::ToString(scale,2)
-           +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
+           +") has no effect when the wavelet is estimated and not read from file\n\n");
   }
   std::string tmpErr;
 
@@ -1020,7 +1020,11 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
    if(scaleGiven==false) // no commands given
    {
     modelSettings_->addWaveletScale(1);
-    modelSettings_->addEstimateGlobalWaveletScale(false);
+
+    //if (estimate)
+      modelSettings_->addEstimateGlobalWaveletScale(false);
+    //else
+      //modelSettings_->addEstimateGlobalWaveletScale(true); //Estimate scale true by default //H-REMOVE
    }
     errTxt += tmpErr;
   }

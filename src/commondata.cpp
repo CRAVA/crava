@@ -694,6 +694,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   WriteOutputSurfaces(model_settings, output_simbox);
 
   if (err_text_tmp != "") {
+    err_text += "Error when setting up output simbox: ";
     err_text += err_text_tmp;
     return false;
   }
@@ -1465,7 +1466,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     }
   }
   catch (NRLib::Exception & e) {
-    err_text += "Error: " + NRLib::ToString(e.what());
+    err_text += "Error when reading well data: " + NRLib::ToString(e.what());
   }
 
   if (err_text != "") {
@@ -3137,7 +3138,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
       for (int j = 0; j < n_angles; j++) {
 
         float angle = float(angles[j]*180.0/M_PI);
-        LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
+        LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg\n",angle);
 
         SeismicStorage * seismic_data_tmp = NULL;
         if (forward_modeling_ == false) {
@@ -3214,11 +3215,8 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
     Timings::setTimeWavelets(wall,cpu);
   }
 
-  if (err_text != "") {
-    err_text_common += err_text;
-    return false;
-  }
-  else if (error > 0) { //Should be covered by err_text
+  if (err_text != "" || error > 0) {
+    err_text_common += "Error when setting up wavelets: \n";
     err_text_common += err_text;
     return false;
   }
@@ -3344,12 +3342,12 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   int error = 0;
   if (model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
     Surface help(input_files->getScaleFile(i_timelapse, j_angle));
-    gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
+    gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
     ResampleSurfaceToGrid2D(&help, gain_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
-    shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
+    shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
     ResampleSurfaceToGrid2D(&helpShift, shift_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalNoise(i_timelapse) && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
@@ -3391,6 +3389,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       }
       else {
 
+        LogKit::LogFormatted(LogKit::Low,"  Reading wavelet from file " + wavelet_file + ".\n");
         wavelet = new Wavelet1D(wavelet_file,
                                 file_format,
                                 model_settings,
@@ -3403,7 +3402,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
       std::string tmp_err_text;
-      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
+      float prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
       if (tmp_err_text != "") {
         err_text += tmp_err_text;
         error = 1;
@@ -3412,11 +3411,14 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
-            wavelet->multiplyRAmpByConstant(prescale);
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+          LogKit::LogFormatted(LogKit::Low,"  Wavelet is scaled by estimated global scale equal to " + NRLib::ToString(prescale) + ".\n");
+          wavelet->multiplyRAmpByConstant(prescale);
+        }
         else {
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-              std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
+                                +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
               err_text += text;
               error++;
@@ -5767,6 +5769,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   }
 
   if (err_text != "") {
+    err_text_common += "Failed setting up prior facies: \n";
     err_text_common += err_text;
     return false;
   }
