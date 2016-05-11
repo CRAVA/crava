@@ -3412,11 +3412,12 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_low   = 0.33f;
 
         if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
-          LogKit::LogFormatted(LogKit::Low,"  Wavelet is scaled by estimated global scale equal to " + NRLib::ToString(prescale) + ".\n");
+          LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
           wavelet->multiplyRAmpByConstant(prescale);
         }
         else {
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
+            //H-TODO Should the first one be ==1.0 (no scale-value given)? Should we report on the difference between scale given in model file and estimated prescale?
             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
                                 +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {

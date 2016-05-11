@@ -775,7 +775,10 @@ By default, the wavelet and noise are estimated in the region between
 the top and base surface for the inversion area. This may be limited
 using the \kw{wavelet-estimation-interval} command under 
 \kw{survey}, where a separate set of restricting surfaces are given
-with \rkw{top-surface}{top-surface3} and \rkw{base-surface}{base-surface3}. Since these are
+with \rkw{top-surface}{top-surface3}, \rkw{time-file}{time-file3} and 
+\rkw{base-surface}{base-surface3}, \rkw{time-file}{time-file3}. It is
+also possible to specify these restrictions a contant value, using
+the \rkw{time-value}{time-value3} keyword. Since these are
 under \kw{wavelet}, they can be different for each angle. 
 
 Some wavelet estimation options are also found under the command
