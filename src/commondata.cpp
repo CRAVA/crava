@@ -4666,12 +4666,24 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       if (interval_name != "")
         LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
 
+
+
       int n_intervals_inside = 0;
       for (size_t j = 0; j < wells.size(); j++) {
 
+        std::string err_text_tmp = "";
         bool is_inside = true;
         BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i),
-                                                           model_settings->getRunFromPanel(), false, is_inside, err_text);
+                                                           model_settings->getRunFromPanel(), false, is_inside, err_text_tmp);
+
+        if (err_text_tmp != "") {
+          if (n_intervals > 1)
+            err_text += "Blocking of " + wells[j]->GetWellName() + " for interval " + interval_name + " failed: \n";
+          else
+            err_text += "Blocking of " + wells[j]->GetWellName() + " failed: \n";
+
+          err_text += err_text_tmp;
+        }
 
 
         if (is_inside == true) {
@@ -5476,6 +5488,11 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
 
       for (int i = 0; i < n_intervals; i++) {
 
+        std::string interval_name = multiple_interval_grid_->GetIntervalNames()[i];
+        if (interval_name != "")
+          LogKit::LogFormatted(LogKit::Low,"\nEstimating facies prior probabilites for interval " + interval_name +".\n");
+
+
         const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i);
         int   nz              = simbox->getnz();
         float dz              = static_cast<float>(simbox->getdz());
@@ -5698,6 +5715,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
       map_type my_map;
 
       std::string interval_name = multi_interval_grid->GetIntervalName(i);
+      if (interval_name != "")
+        LogKit::LogFormatted(LogKit::Low,"Setting up facies prior probabilities for interval " + interval_name + ".\n");
+
       my_map = model_settings->getPriorFaciesProb(interval_name);
 
       prior_facies[i].resize(n_facies);
@@ -8377,7 +8397,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               std::string tmp_err_text("");
               float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
               if (corr_mat == NULL) {
-                err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
+                err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed.\n";
                 err_text += tmp_err_text;
                 failed_temp_corr = true;
               }
@@ -8420,7 +8440,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                                   multi_zone_available,
                                                   tmp_err_txt);
             if (tmp_err_txt != "") {
-              err_text += "Error with covariance estimate in interval "+interval_names[i]+":\n"+tmp_err_txt;
+              if (interval_names[i] != "")
+                err_text += "Error with covariance estimation in interval "+interval_names[i]+":\n"+tmp_err_txt;
+              else
+                err_text += "Error with covariance estimation:\n"+tmp_err_txt;
               failed_param_cov = true;
             }
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
@@ -8432,6 +8455,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, false, tmp_err_txt);
               if (analyze_all->GetEnoughData() == false) {
                 err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
+                err_text += tmp_err_txt;
                 failed_param_cov = true;
                 failed_temp_corr = true;
               }
@@ -8513,7 +8537,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
 
       if (failed_temp_corr == true || failed_param_cov == true) {
-        err_text += "Could not construct prior correlation.\n\n";
         failed = true;
       }
     }
@@ -8524,6 +8547,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
   delete analyze_all;
 
   if (err_text != "") {
+    err_text_common += "Error when setting up prior correlations: \n";
     err_text_common += err_text;
     return false;
   }

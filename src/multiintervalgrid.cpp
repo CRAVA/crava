@@ -220,6 +220,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
     catch(NRLib::Exception & e) {
       LogKit::LogFormatted(LogKit::Error,"\nSetting up interval simboxes failed: " + NRLib::ToString(e.what()));
       failed = true;
+      err_text += "Setting up interval simboxes failed:\n";
       err_text += e.what();
     }
   }
@@ -532,6 +533,8 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       if (grid_size > std::numeric_limits<unsigned int>::max()) {
         float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
         float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+        if (interval_names[i] != "")
+          err_text_tmp += "Error with grid size for interval " + interval_names[i] + ":\n";
         err_text_tmp += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
         err_text_tmp += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
       }
