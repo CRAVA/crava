@@ -753,7 +753,7 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   int i_index = ni_file/2;
   for (int j = 1; j < nj_file; j++) {
     if (ilxl_grid_file_xl(i_index,j-1) != missing && ilxl_grid_file_xl(i_index,j) != missing) {
-      int diff_xl = std::abs(ilxl_grid_file_xl(i_index,j-1) - ilxl_grid_file_xl(i_index,j));
+      int diff_xl = static_cast<int>(std::abs(ilxl_grid_file_xl(i_index,j-1) - ilxl_grid_file_xl(i_index,j)));
 
       if (diff_xl != d_xl_file) {
         throw Exception("Found sampling of IL-values in file to be " + NRLib::ToString(diff_xl) +
