@@ -375,7 +375,6 @@ SegY::SegY(const StormContGrid     * storm_grid,
       if (!storm_grid->GetTopSurface().IsMissing(z_top) && !storm_grid->GetBotSurface().IsMissing(z_bot)) {
         z_bot         -= z0;
         z_top         -= z0;
-
         int first_data = static_cast<int>(floor((z_top+z_shift)/dz));
         int end_data   = static_cast<int>(floor((z_bot-z_shift)/dz));
 
@@ -894,7 +893,6 @@ SegY::ReadHeader(TraceHeader & header)
     break;
   }
   if (header.GetDt()/1000 != dz_) {
-
     if(dz_ == 0)
       dz_ = static_cast<float>(header.GetDt()/1000.0);
     else if(header.GetDt() > 0) {
