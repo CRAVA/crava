@@ -895,9 +895,6 @@ SegY::ReadHeader(TraceHeader & header)
   }
   if (header.GetDt()/1000 != dz_) {
 
-    //H-REMOVE
-    dz_ = 0;
-
     if(dz_ == 0)
       dz_ = static_cast<float>(header.GetDt()/1000.0);
     else if(header.GetDt() > 0) {
