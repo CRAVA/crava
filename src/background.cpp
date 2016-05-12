@@ -998,7 +998,10 @@ Background::SmoothTrendWithLocalLinearRegression(std::vector<double> & trend,
           break;
         }
       }
-      trend[k] = log(static_cast<double>(value));
+      if (value > 0)
+        trend[k] = log(static_cast<double>(value));
+      else
+        trend[k] = RMISSING;
     }
     else {
       trend[k] = log(static_cast<double>(y[0]));

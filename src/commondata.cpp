@@ -7739,7 +7739,7 @@ void CommonData::SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
 
   if (count > 0) {
     long long nxyz = static_cast<long>(grid->GetNI())*static_cast<long>(grid->GetNJ())*static_cast<long>(grid->GetNK());
-    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average\n",
+    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average.\n",
                          count, 100.0f*static_cast<float>(count)/(static_cast<float>(count) + static_cast<float>(nxyz)),
                          avg);
   }
@@ -8380,7 +8380,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             n_corr_T = n_corr_T/2;
 
           if (interval_names[i] != "")
-            LogKit::LogFormatted(LogKit::Low,"\nInterval: " + interval_names[i] + "\n\n");
+            LogKit::LogFormatted(LogKit::Low,"\nInterval: " + interval_names[i] + "\n");
 
           if (!estimate_temp_corr) {
             // 2. Use variogram with correlation range
