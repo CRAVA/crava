@@ -657,7 +657,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
 
-  LogKit::LogFormatted(LogKit::Low,"\nCreating output simbox");
+  LogKit::LogFormatted(LogKit::Low,"\n\nCreating the output simbox, used for the final written result (visualization) grid");
 
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
@@ -784,7 +784,56 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         std::string file_name = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(file_name);
 
-        if (file_type == IO::SEGY) {
+
+        if (file_type == IO::STORM || file_type == IO::SGRI) {
+          StormContGrid * stormgrid = NULL;
+
+          try {
+            stormgrid = new StormContGrid(0,0,0);
+            stormgrid->ReadFromFile(file_name);
+          }
+          catch (NRLib::Exception & e) {
+            err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
+            break;
+          }
+
+          if (file_type == IO::STORM)
+            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
+          else
+            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
+
+        } //STORM / SGRI
+        else if (file_type == IO::CRAVA) {
+
+          int nx_pad = full_inversion_simbox.GetNXpad();
+          int ny_pad = full_inversion_simbox.GetNYpad();
+          int nz_pad = 0;  //Not set before ReadSeismicData. Get it from file.
+
+          GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
+
+          FFTGrid *  grid = CreateFFTGrid(full_inversion_simbox.getnx(),
+                                          full_inversion_simbox.getny(),
+                                          full_inversion_simbox.getnz(),
+                                          nx_pad,
+                                          ny_pad,
+                                          nz_pad,
+                                          model_settings->getFileGrid());
+
+          std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
+          std::string par_name = "Seismic data angle stack "+angle;
+          LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
+
+          grid->setAccessMode(FFTGrid::RANDOMACCESS);
+          grid->readCravaFile(file_name, err_text);
+
+          grid->endAccess();
+
+          seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
+        }
+        else { //Try to read as segy
+
+          if (file_type != IO::SEGY)
+            LogKit::LogFormatted(LogKit::Warning,"\n Did not recognize "+file_name+", will read as SEGY.");
 
           SegY              * segy   = NULL;
           TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(this_timelapse, i);
@@ -834,54 +883,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
         } //SEGY
-        else if (file_type == IO::STORM || file_type == IO::SGRI) {
-          StormContGrid * stormgrid = NULL;
-
-          try {
-            stormgrid = new StormContGrid(0,0,0);
-            stormgrid->ReadFromFile(file_name);
-          }
-          catch (NRLib::Exception & e) {
-            err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
-            break;
-          }
-
-          if (file_type == IO::STORM)
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
-          else
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
-
-        } //STORM / SGRI
-        else if (file_type == IO::CRAVA) {
-
-          int nx_pad = full_inversion_simbox.GetNXpad();
-          int ny_pad = full_inversion_simbox.GetNYpad();
-          int nz_pad = 0;  //Not set before ReadSeismicData. Get it from file.
-
-          GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
-
-          FFTGrid *  grid = CreateFFTGrid(full_inversion_simbox.getnx(),
-                                          full_inversion_simbox.getny(),
-                                          full_inversion_simbox.getnz(),
-                                          nx_pad,
-                                          ny_pad,
-                                          nz_pad,
-                                          model_settings->getFileGrid());
-
-          std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
-          std::string par_name = "Seismic data angle stack "+angle;
-          LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-
-          grid->setAccessMode(FFTGrid::RANDOMACCESS);
-          grid->readCravaFile(file_name, err_text);
-
-          grid->endAccess();
-
-          seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
-        }
-        else {
-          err_text += "Error when reading file " + file_name +". File type not recognized.\n";
-        }
       } //n_angles
 
       //Logging if seismic data is on segy format
@@ -4045,7 +4046,17 @@ CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
     if (file_type == IO::CRAVA) {
       geometry = GetGeometryFromCravaFile(grid_file);
     }
-    else if (file_type == IO::SEGY) {
+    else if (file_type == IO::STORM)
+      geometry = GetGeometryFromStormFile(grid_file, err_text);
+    else if (file_type==IO::SGRI) {
+      bool scale = true;
+      geometry = GetGeometryFromStormFile(grid_file, err_text, scale);
+    }
+    else {
+
+      if (file_type != IO::SEGY)
+        LogKit::LogFormatted(LogKit::Warning,"Trying to read grid dimensions from file "+grid_file+". Did not recognize file format, will read as SegY.\n");
+
       try
       {
         geometry = SegY::FindGridGeometry(grid_file, thf);
@@ -4054,15 +4065,6 @@ CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
       {
         err_text = e.what();
       }
-    }
-    else if (file_type == IO::STORM)
-      geometry = GetGeometryFromStormFile(grid_file, err_text);
-    else if (file_type==IO::SGRI) {
-      bool scale = true;
-      geometry = GetGeometryFromStormFile(grid_file, err_text, scale);
-    }
-    else {
-      err_text = "Trying to read grid dimensions from file "+grid_file+": unknown file format.\n";
     }
   }
   else {

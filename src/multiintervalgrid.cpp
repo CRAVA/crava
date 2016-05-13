@@ -448,7 +448,7 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       if (interval_simboxes[i]->status() == Simbox::BOXOK) {
         if (corr_dir) {
           LogIntervalInformation(interval_simboxes[i], interval_names[i],
-            "Time inversion interval (extended relative to output interval due to correlation):","Two-way-time");
+            "Time inversion interval (extended relative to output interval due to correlation)","Two-way-time");
         }
         else{
           LogIntervalInformation(interval_simboxes[i], interval_names[i], "Time output interval","Two-way-time");

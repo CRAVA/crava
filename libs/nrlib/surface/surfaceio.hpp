@@ -423,7 +423,7 @@ void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
     is_multicolumn_ascii = FindMulticolumnAsciiLine(filename, header_start_line);
 
     if (is_multicolumn_ascii == false)
-      throw Exception("Error: Did not recognize file as a multicolumns ascii file.\n");
+      throw Exception("Error: Did not recognize file as a multicolumns ascii file. We require the ascii file to have five columns X,Y,Z,IL and XL in an arbitrary order, each with its own header.\n");
 
     std::ifstream file;
     NRLib::OpenRead(file, filename);
@@ -480,7 +480,7 @@ void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
       err_txt += "Could not find variable name for Attribute in file " + filename +". (Tried Attribute, Z, TWT).\n";
 
     if (err_txt != "")
-      throw Exception("Error when finding header information in " + filename + " :" + err_txt + "\n");
+      throw Exception("Error when finding header information in " + filename + " :" + err_txt + "\n. We require the multicolumn ascii file file to have five columns (X,Y,Z,IL,XL) in an arbitrary order.");
 
     std::vector<double> il_vec = data[il_index];
     std::vector<double> xl_vec = data[xl_index];

@@ -117,7 +117,10 @@ This ratio is given with \kw{signal-to-noise-ratio}\kwindex{signal-to-noise-rati
 
 \subsection{Inversion volume}
 \label{sec:basicvol}
-The volume used for inversion is given horizontally by a rectangle, and vertically bounded by a top and base surface. It is defined by the command \kw{output-volume}\kwindex{output-volume} under \kw{project-settings}. Typically, it may look something like this:
+The volume used for inversion is given horizontally by a rectangle, and vertically bounded by a top and base surface. It is defined by the command \kw{output-volume}\kwindex{output-volume} under \kw{project-settings}. It is possible to perform either single or multiple interval inversion.
+
+\subsubsection{Single interval inversion}
+The output volume for single interval inversion is set by one top and one base surface by the keyword \kw{interval-two-surfaces} or \kw{interval-one-surface} where a top surface and thickness are given.  Typically, it may look something like this:
 \svex{ex:volume}
 <crava>
 <project-settings>
@@ -146,6 +149,58 @@ The volume used for inversion is given horizontally by a rectangle, and vertical
 </crava>
 \end{verbatim}
 \end{example}
+
+\subsubsection{Multiple interval inversion}
+To perform multiple interval inversion one must define several surfaces in the \kw{multiple-intervals}. Here one defines one top surface and several base surfaces (one for each interval). In addition one must set the \kw{erosion-priority} which defines which surface to be used when two surfaces intersect. All the base surfaces need to be given a unique priority. The surface with highest priority is given erosion priority two (top surface has priority one), while the surface with lowest priority is given priority n, where n is equal to the number of surfaces.
+
+The inversion is done separately for each interval and finally combined to a final grid, which consist of the first top surface and the last base surface. The resolution used in the output grid is taken from the smallest resolution from all intervals. One can also set the \kw{uncertainty} for all base surfaces, this is used to smooth results across border when they are merged to a final grid. To represent uncertainties between intervals a beta distribution with parameters $\alpha = \beta = 2$ is used. The distribution is symmetric around its center, being the surface between the intervals. The limits in the Beta distribution, given by the keyword \kw{uncertainty}, is the distance of the uncertainty in ms in each direction from the surface. 
+
+Each interval given in \kw{multiple-intervals} are defined by a name. This name is used as a reference when other interval based settings are set. These are \kw{vp-vs-ratio}, \kw{correlation-direction}, \kw{parameter-autocovariance}, \kw{prior-probabilities} and \kw{volume-fractions}.
+
+It may look something like this:
+\svex{ex:volume-multiple}
+<crava>
+<project-settings>
+  <output-volume>
+    <utm-coordinates>
+      <reference-point-x>  403050.0   </reference-point-x>
+      <reference-point-y> 7211900.0   </reference-point-y>
+      <length-x>              500.0   </length-x>
+      <length-y>              500.0   </length-y>
+      <angle>                  23.627 </angle>
+      <sample-density-x>       50.0   </sample-density-x>
+      <sample-density-y>       50.0   </sample-density-y>
+    </utm-coordinates>
+
+    <multiple-intervals>
+      <top-surface>
+        <time-file>   horizons/FlatTop_3100ms.storm </time-file>
+      </top-surface>
+      <interval>
+        <name>IntervalA</name>
+        <base-surface>
+      	  <time-file>horizons/BaseA.storm</time-file>
+      	  <erosion-priority>2</erosion-priority>
+          <uncertainty>60</uncertainty>
+    	</base-surface>
+    	<number-of-layers>100</number-of-layers>
+      </interval>
+      <interval>
+    	<name>IntervalB</name>
+        <base-surface>
+      	  <time-file>horizons/BaseB.storm</time-file>
+      	  <erosion-priority>4</erosion-priority>
+          <uncertainty>40</uncertainty>
+    	</base-surface>
+    	<number-of-layers>120</number-of-layers>
+	  </interval> 
+    </multiple-intervals>
+  </output-volume>
+</project-settings>
+</crava>
+\end{verbatim}
+\end{example}
+
 
 \subsubsection{Lateral extent}
 The lateral extent of the inversion volume is specified by the command
@@ -295,7 +350,9 @@ Since seismic data only contain information about relative elastic parameters, t
 \label{sec:basicbg}
 The background model is given under the \kw{background}\kwindex{background} command. It can be given from file, using \kw{vp-file}\kwindex{vp-file}, \kw{vs-file}\kwindex{vs-file} and \kw{density-file}\kwindex{density-file}. These files should either be on Storm, crava, Sgri or SegY format. Alternatively, constant values can be used for background model, specified with \kw{vp-constant}\kwindex{vp-constant}, \kw{vs-constant}\kwindex{vs-constant} and \kw{density-constant}\kwindex{density-constant}. Any combinations of files and constants are also accepted. If none of these are given, the background model will be estimated.
 
-A multizone background model is made using the \kw{multizone-model} keyword. The \kw{zone} keyword is repeated for each zone in the model, where the zones must be given in descending order downward in the reservoir. The last \rkw{base-surface-file}{base-surface-file-multizone} given defines the base of the reservoir, and the background model is created between this and the top surface given in \rkw{top-surface-file}{top-surface-file-multizone}. These surfaces need to be the same surfaces as \kw{top-surface} and \kw{base-surface} in \kw{interval-two-surfaces}. The surfaces can not contain missing values. In each zone, the \kw{correlation-structure} needs to be given. The correlation structure must be one of 'top', 'base' and 'compation', and it tells if the correlation structure should follow the top or base horizon, or if it should be a compation between these. The \kw{erosion-priority} defines which surface to be used whenever two surfaces intersect. All the surfaces need to be given a unique prioriry. The surface with highest priority is given erosion priority one, while the surface with lowest priority is given priority $n$, where $n$ is equal to the number of surfaces. In each zone, a local background model is created by estimating a depth trend for the zone volume, then interpolating well logs into the depth trends using kriging. The full multizone background model is then made by joining the local background models in all the zones. To represent the uncertainty in the interfaces between the zones, a Beta distribution with parameters  $\alpha=\beta=2$ is used. The distribution is symmetric around its center, being the surface between the zones. The limitis in the Beta distribution is given by the keyword \kw{surface-uncertainty}, being the distance of the uncertainty in ms in each direction from the surface. The surface uncertainty must be zero for the top surface and the last base surface. 
+
+Multiinterval (Multizone) background model is achieved by doing a \kw{multiple-intervals} inversion and with estimating background models activated. The surfaces are set under \kw{output-volume}.  It is not possible to  use multiinterval background with a single interval/zone inversion directly. To achieve this, one must first run Crava in estimation mode with \kw{multiple-intervals} and estimate a background model, where the written background model must then be used as input in a single interval inversion. The multiinterval background model will follow the other setting for multiinterval inversion, like \kw{correlation-direction}, \kw{erosion-priority} and \kw{uncertainty}. In each interval, a local background model is created by estimating a depth trend for the zone volume, then interpolating well logs into the depth trends using kriging. The full multiinterval background model is then made by joining the local background models in all the intervals.
+
 \subsubsection{Covariances}
 \label{sec:basiccorr}
 As shown in \autoref{sec:statmodthe} the prior covariance structure for the elastic parameters consists of three parts:
@@ -491,33 +548,51 @@ The command \kw{kriging-to-wells}\kwindex{kriging-to-wells} can be
 used to krige realisations to well data. By default, this is done if
 the \kw{simulation} command is used. 
 
-\subsection{Standard grid formats}
+\subsection{Standard formats for input and output}
 \label{sec:gridformats}
-\begin{itemize}
-\item {\bf 3D-grid:} Crava can read and write the following 3D grid
-  formats: SegY, storm, Sgri (NORSAR) and crava (internal) . On
+
+\subsubsection{3D-grid}
+Crava can read and write the following 3D grid
+  formats: SegY, Storm, Sgri (NORSAR) and crava (internal) . On
   output, the format is controlled by a \kw{format} keyword. On input,
   the program automatically detects the format, although it may need
   help to correctly read SegY formats, using the \kw{segy-format}
   keyword. The default output format is storm.
 
-\item {\bf Surfaces:} The standard format for reading and writing
+\subsubsection{Surfaces}
+The standard format for reading and writing
   surfaces is binary storm, but \crava can also read Roxar ASCII
   surfaces (formerly known as ASCII Irap classic) and Multicolumn ASCII
-  surfaces (file with five columns, x, y, z,  IL and XL). In addition
+  surfaces (see example below). In addition
   some surfaces related to 3D-inversion are read as sgri (NORSAR). On input,
-  the surface format will be automatically detected.
+  the surface format will be automatically detected. For writing we currently support Roxar Ascii and Storm binary.
+  
+\paragraph{Multicolumn Ascii example}
+The multicolumn ascii file is a text file with five columns, and each columns needs ta have a header name:
+X or UTMX; Y or UTMY; IL or Inline; XL or Crossline; Z, TWT or Attribute. The order of the columns is arbitrary. The file might also have some text before the header-row. This surface is based segy-geometry and must follow the corresponding seismic cube, as the reference point, angle and area are taken from the geometry. We require even sampling in the file, but we do not require as fine sampling as in the seismic. It is for example possible to give only the four corners of the surface. Base on this a segy geometry will be required for using multicolumn ascii files. The standard missing value is defined as $-999.25$.
 
-\item {\bf Wavelets:} Wavelets are either on JASON or NORSAR format,
-  both for reading and writing. Auto-detect is used on reading, use \kw{format}
+A file may look like:
+\begin{table}[h]
+\centering
+\label{tab:multicolumnascii}
+\begin{tabular}{lllll}
+
+X         &         Y              &     Inline       &   Crossline     &    Attribute\\ 
+455380.0    &        6799690.0   &        2100.0      &       5600.0       &       2467.05737 \\ 
+447256.0    &        6799789.0    &       2100.0       &       5640.0      &        2480.06712\\ 
+447393.0    &        6811038.5     &      2120.0      &        5600.0      &        2549.43453\\ 
+455517.0    &        6810939.5     &      2120.0      &        5640.0      &        2338.12905\\ 
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Wavelets}
+Wavelets are either on JASON or NORSAR format,
+  both for reading and writing. Auto-detect is used on reading, use \kw{format3}
   for writing. The default output format is JASON.
 
-\item{\bf Wells:} Wells are either on RMS or NORSAR format, both for
-  reading and writing. Auto-detect is used on reading use \kw{format} to
-  control writing. The default output format is RMS.
-
-\end{itemize}
-
+\subsubsection{Wells}
+For reading we support wells on RMS, NORSAR and LAS format. For writing we currently support RMS and NORSAR. Auto-detect is used on reading; use \kw{format2} to control writing. The default output format is RMS.
 
 \section{Advanced inversion options}
 \label{sec:advinvusr}

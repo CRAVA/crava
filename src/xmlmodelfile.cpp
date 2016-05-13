@@ -1142,21 +1142,94 @@ XmlModelFile::parseWaveletEstimationInterval(TiXmlNode * node, std::string & err
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("top-surface-file");
-  legalCommands.push_back("base-surface-file");
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
 
-  std::string filenameTop  = "";
-  std::string filenameBase = "";
-  parseFileName(root, "top-surface-file", filenameTop, errTxt);
-  parseFileName(root, "base-surface-file", filenameBase, errTxt);
+  if(parseWaveletTopSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
-  inputFiles_->addWaveletEstIntFileTop(filenameTop);
-  inputFiles_->addWaveletEstIntFileBase(filenameBase);
+  if(parseWaveletBaseSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
 
+bool
+XmlModelFile::parseWaveletTopSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("top-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
+    inputFiles_->addWaveletEstIntFileTop(filename);
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addWaveletEstIntFileTop(NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    inputFiles_->setTimeSurfTopFile("");
+
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseWaveletBaseSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
+    inputFiles_->addWaveletEstIntFileBase(filename);
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->addWaveletEstIntFileBase(NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    inputFiles_->setTimeSurfTopFile("");
+
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
 
 bool
 XmlModelFile::parseWavelet3D(TiXmlNode * node, std::string & errTxt)
@@ -1633,7 +1706,6 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("high-cut-background-modelling");
   legalCommands.push_back("filter-multizone-background");
   legalCommands.push_back("segy-header");
-  legalCommands.push_back("multizone-model");
 
   modelSettings_->setBackgroundType("background");
 
@@ -1765,17 +1837,6 @@ XmlModelFile::parseBackground(TiXmlNode * node, std::string & errTxt)
 
   while(parseSegyHeader(root,errTxt) == true);
 
-  bool multizone = false;
-  if(parseMultizoneModel(root,errTxt) == true)
-    multizone = true;
-
-  if(((vp | vs | rho | si | ai | vpvs) && multizone) == true)
-    errTxt += "Multizone background model can not be estimated when file names or constant values\n"
-              "are given for the seismic parameters in <background>\n";
-
-  if((velocity_field & multizone) == true)
-    errTxt += "<velocity-field> can not be given when multizone background model is to be estimated in <background>\n";
-
   checkForJunk(root, errTxt, legalCommands);
   return(true);
 }
@@ -1825,28 +1886,6 @@ XmlModelFile::parseSegyHeader(TiXmlNode * node, std::string & errTxt)
   checkForJunk(root, errTxt, legalCommands, true);
   return(true);
 
-}
-
-bool
-XmlModelFile::parseMultizoneModel(TiXmlNode * node, std::string & errTxt)
-{
-  TiXmlNode * root = node->FirstChildElement("multizone-model");
-  if(root == 0)
-    return(false);
-
-  errTxt += "Multizone background model combined with only one inversion interval is no longer supported. \n"
-            "For more multiple intervals in the background model use <multiple-intervals> under <output-volume>.";
-
-  return(true);
-
-  //std::vector<std::string> legalCommands;
-  //legalCommands.push_back("top-surface-file");
-
-  //if(parseFileName(root, "top-surface-file", file_name, errTxt) == true)
-  //  inputFiles_->addMultizoneSurfaceFile(file_name);
-
-  //checkForJunk(root, errTxt, legalCommands);
-  //return(true);
 }
 
 bool

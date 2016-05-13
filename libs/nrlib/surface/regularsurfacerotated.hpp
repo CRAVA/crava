@@ -527,7 +527,7 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
   if (format == SURF_UNKNOWN) {
     format = FindSurfaceFileType(filename);
     if (format == SURF_UNKNOWN) {
-      throw FileFormatError("Failed to determine file format for surface file: " + filename);
+      throw FileFormatError("Failed to determine file format for surface file: " + filename + "Allowed formats are Irap Classic, Storm binary, Sgri and Multicolumn Ascii (X,Y,Z,IL,XL).");
     }
   }
 
@@ -555,7 +555,7 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
       angle_ = segy_angle;
       break;
     default:
-      throw FileFormatError("Reading of file " + filename + " on format " + ToString(format)
+      throw FileFormatError("Reading of file " + filename + " on format " + GetSurfFormatString(format)
                              + " as a rotated grid is currently not supported.");
   }
 
@@ -587,7 +587,7 @@ void RegularSurfaceRotated<A>::WriteToFile(const std::string& filename,
       break;
     default:
       throw FileFormatError("Writing of surface to file " + filename + " on format "
-                            + ToString(format) + " is currently not supported.");
+                            + GetSurfFormatString(format) + " is currently not supported.");
   }
 }
 

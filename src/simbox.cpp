@@ -223,7 +223,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with one correlation surface" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -386,7 +386,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with two correlation surfaces" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
