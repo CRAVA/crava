@@ -770,8 +770,8 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   }
 
   if(parseWaveletEstimationInterval(root, errTxt) == false){
-    inputFiles_->addDefaultWaveletEstIntFileTop();
-    inputFiles_->addDefaultWaveletEstIntFileBase();
+    inputFiles_->addWaveletEstIntFileTop("");
+    inputFiles_->addWaveletEstIntFileBase("");
   }
 
   modelSettings_->clearTimeLapseTravelTime();
@@ -1012,7 +1012,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     if (estimate)
       LogKit::LogFormatted(LogKit::Warning, "\nWARNING: The wavelet scale specified in the model file ("
            +NRLib::ToString(scale,2)
-           +") has no effect when the wavelet\n         is estimated and not read from file\n\n");
+           +") has no effect when the wavelet is estimated and not read from file\n\n");
   }
   std::string tmpErr;
 
@@ -1020,7 +1020,11 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
    if(scaleGiven==false) // no commands given
    {
     modelSettings_->addWaveletScale(1);
-    modelSettings_->addEstimateGlobalWaveletScale(false);
+
+    //if (estimate)
+      modelSettings_->addEstimateGlobalWaveletScale(false);
+    //else
+      //modelSettings_->addEstimateGlobalWaveletScale(true); //Estimate scale true by default //H-REMOVE
    }
     errTxt += tmpErr;
   }
@@ -2238,7 +2242,10 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("use-absolute-elastic-parameters");
   legalCommands.push_back("volume-fractions");
 
-  parseFaciesEstimationInterval(root, errTxt);
+  if (parseFaciesEstimationInterval(root, errTxt) == false) {
+    inputFiles_->setFaciesEstIntFile(0, "");
+    inputFiles_->setFaciesEstIntFile(1, "");
+  }
 
   parsePriorFaciesProbabilities(root, errTxt);
 
@@ -2264,7 +2271,6 @@ XmlModelFile::parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt)
   return(true);
 }
 
-
 bool
 XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt)
 {
@@ -2273,20 +2279,86 @@ XmlModelFile::parseFaciesEstimationInterval(TiXmlNode * node, std::string & errT
     return(false);
 
   std::vector<std::string> legalCommands;
-  legalCommands.push_back("top-surface-file");
-  legalCommands.push_back("base-surface-file");
+  legalCommands.push_back("top-surface");
+  legalCommands.push_back("base-surface");
+
+  if(parseFaciesTopSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  if(parseFaciesBaseSurface(root, errTxt) == false){
+    errTxt += "Top surface not specified in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesTopSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("top-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
 
   std::string filename;
-  if(parseFileName(root, "top-surface-file", filename, errTxt) == true)
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->setFaciesEstIntFile(0, filename);
-  else
-    errTxt += "Must specify <top-surface-file> in command <"+root->ValueStr()+"> "+
-      lineColumnText(root)+".\n";
-  if(parseFileName(root, "base-surface-file", filename, errTxt) == true)
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->setFaciesEstIntFile(0, NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
+
+  checkForJunk(root, errTxt, legalCommands);
+  return(true);
+}
+
+bool
+XmlModelFile::parseFaciesBaseSurface(TiXmlNode * node, std::string & errTxt)
+{
+  TiXmlNode * root = node->FirstChildElement("base-surface");
+  if(root == 0)
+    return(false);
+
+  std::vector<std::string> legalCommands;
+  legalCommands.push_back("time-file");
+  legalCommands.push_back("time-value");
+
+  std::string filename;
+  bool timeFile = parseFileName(root,"time-file", filename, errTxt);
+  if(timeFile == true)
     inputFiles_->setFaciesEstIntFile(1, filename);
-  else
-    errTxt += "Must specify <base-surface-file> in command <"+root->ValueStr()+">"+
-      lineColumnText(root)+".\n";
+
+  float value;
+  bool timeValue = parseValue(root,"time-value", value, errTxt);
+  if(timeValue == true) {
+    if(timeFile == false)
+      inputFiles_->setFaciesEstIntFile(1, NRLib::ToString(value));
+    else
+      errTxt += "Both file and value given for top time in command <"
+        +root->ValueStr()+"> "+lineColumnText(root)+".\n";
+  }
+  else if(timeFile == false) {
+    errTxt += "No time surface given in command <"+root->ValueStr()+"> "
+      +lineColumnText(root)+".\n";
+  }
 
   checkForJunk(root, errTxt, legalCommands);
   return(true);
@@ -4685,7 +4757,7 @@ XmlModelFile::parseIntervalTwoSurfaces(TiXmlNode * node, std::string & errTxt)
   }
   else {
     if(topDepthGiven == false && baseDepthGiven == false) {
-      errTxt += "Velocity field, but no depth surface given in command <"
+      errTxt += "Velocity field given, but no depth surface given in command <"
         +root->ValueStr()+"> "+lineColumnText(root)+".\n";
     }
     else
@@ -4784,7 +4856,7 @@ XmlModelFile::parseIntervalBaseSurface(TiXmlNode * node, std::string & interval_
       +lineColumnText(root)+".\n";
   }
 
-  double u_value, uncertainty = 10.0;
+  double u_value, uncertainty = -1;
   if(parseValue(root, "uncertainty", u_value, err_txt) == true)
     uncertainty = u_value;
   modelSettings_->setUncertaintyBaseSurface(interval_name, uncertainty);
@@ -5350,7 +5422,6 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
   legalCommands.push_back("original");
   legalCommands.push_back("synthetic");
   legalCommands.push_back("residuals");
-  legalCommands.push_back("synthetic-residuals");
   legalCommands.push_back("fourier-residuals");
 
   bool value    = false;
@@ -5368,12 +5439,6 @@ XmlModelFile::parseGridSeismicData(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "synthetic", value, errTxt) == true && value == true)
   {
     paramFlag += IO::SYNTHETIC_SEISMIC_DATA;
-    modelSettings_->setGenerateSeismicAfterInv(true);
-  }
-
-  if(parseBool(root, "synthetic-residuals", value, errTxt) == true && value == true)
-  {
-    paramFlag += IO::SYNTHETIC_RESIDUAL;
     modelSettings_->setGenerateSeismicAfterInv(true);
   }
 

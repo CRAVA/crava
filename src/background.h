@@ -108,6 +108,7 @@ private:
                              const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs,
                              const int                                        & nz,
                              const std::string                                & name,
+                             const std::string                                & interval_name,
                              std::string                                      & err_text);
 
 
