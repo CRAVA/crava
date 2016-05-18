@@ -176,7 +176,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_)
+    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_ && read_wells_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, segy_geometry, err_text);
@@ -1172,6 +1172,11 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     std::vector<std::vector<int> >          facies_nr_wells;
     std::vector<std::vector<std::string> >  facies_names_wells;
 
+    std::vector<std::string> no_hit_wells;
+    std::vector<std::string> empty_wells;
+    std::vector<std::string> facies_not_ok_wells;
+    std::vector<std::string> upwards_wells;
+
     for (int well = 0; well < n_wells; well++) {
       valid_index[well] = false;
       std::string well_file_name = input_files->getWellFile(well);
@@ -1254,12 +1259,14 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             no_hit++;
             TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
+            no_hit_wells.push_back(new_well.GetWellName());
           }
           if (new_well.GetNData() == 0) {
             LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
             well_valid = false;
             empty++;
             TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
+            empty_wells.push_back(new_well.GetWellName());
           }
           //Check well for valid facies
           bool facies_log_in_well;
@@ -1291,6 +1298,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             facies_log_not_ok++;
             TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
+            facies_not_ok_wells.push_back(new_well.GetWellName());
           }
           bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[well]);
           if (monotonous == false) {
@@ -1298,6 +1306,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             upwards++;
             TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
+            upwards_wells.push_back(new_well.GetWellName());
           }
 
           well_names[well]            = new_well.GetWellName();
@@ -1448,7 +1457,32 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         full_inversion_simbox->getx0(), full_inversion_simbox->gety0(),
         full_inversion_simbox->getlx(), full_inversion_simbox->getly(),
         (full_inversion_simbox->getAngle()*180)/M_PI);
-      err_text += "No wells available for estimation.";
+
+      err_text += "No wells available for estimation.\n";
+      if (no_hit > 0) {
+        err_text += " " + NRLib::ToString(no_hit) + " wells are outside the inversion area: ";
+        for (int j = 0; j < static_cast<int>(no_hit_wells.size()); j++)
+          err_text += no_hit_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (empty > 0) {
+        err_text += " " + NRLib::ToString(empty) + " wells contain no log entries: ";
+        for (int j = 0; j < static_cast<int>(empty_wells.size()); j++)
+          err_text += empty_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (facies_log_not_ok > 0) {
+        err_text += " " + NRLib::ToString(facies_log_not_ok) + " have wrong facies logs: ";
+        for (int j = 0; j < static_cast<int>(facies_not_ok_wells.size()); j++)
+          err_text += facies_not_ok_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (upwards > 0) {
+        err_text += " " + NRLib::ToString(upwards) + " wells are moving upwards in TWT: ";
+        for (int j = 0; j < static_cast<int>(upwards_wells.size()); j++)
+          err_text += upwards_wells[j] + "; ";
+        err_text += "\n";
+      }
     }
 
     if (n_facies > 0) {

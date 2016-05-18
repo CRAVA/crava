@@ -490,8 +490,9 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
     w++;
   }
   if (i_wells == 0) {
-    err_text += "\nERROR in Background::GetWellTrends()" + interval_text + ": There are no wells\n";
-    err_text += "available for the estimation of background trend.\n";
+    err_text += "\nERROR in Background::GetWellTrends()" + interval_text + ": There are no wells ";
+    err_text += "available for the estimation of background trend for " + name + ".\n";
+    err_text += "Wells can be added for background trend estimation with the <use-for-background-trend> keyword under <well> in the modelfile.\n";
   }
 
   w = 0;
