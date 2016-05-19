@@ -6537,7 +6537,17 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
           if (!missing && data_trace[0] == 0) {
             std::vector<float> data_trace_new;
+            bool first_value_found = false;
             for (size_t k_trace = 0; k_trace < n_trace; k_trace++) {
+
+              //Also update z0_data from segy when removing zero padding at top
+              if (is_segy && first_value_found == false) {
+                if (data_trace[k_trace] != 0)
+                  first_value_found = true;
+                else
+                  z0_data += segy->GetDz();
+              }
+
               if (data_trace[k_trace] != 0)
                 data_trace_new.push_back(data_trace[k_trace]);
             }
@@ -6597,10 +6607,11 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           if (grid_type != DATA) {
             float trend_inc = (trend_last - trend_first) / (res_fac*(n_trace - 1));
 
-            data_trace_trend_long.resize(rmt);
-            for (int k_trace = 0; k_trace < rmt; k_trace++) {
+            data_trace_trend_long.resize(static_cast<int>(res_fac*(n_trace-1)+1));
+            for (int k_trace = 0; k_trace < static_cast<int>((res_fac*(n_trace-1)+1)); k_trace++) {
               data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
             }
+
           }
 
           //Includes a shift
@@ -6624,7 +6635,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                                      data_trace_trend_long,
                                      z0_data,     // Time of first data sample
                                      dz_min,
-                                     rmt,
+                                     static_cast<int>(data_trace_trend_long.size()),
                                      nz,
                                      nzp);
 
@@ -7526,6 +7537,16 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
           for (int j = 0; j < 3; j++)
             vertical_trends(i,j) = interval_vertical_trends[j];
+
+          //H-REMOVE
+          bool debug_trace = false;
+            if (debug_trace) {
+            std::vector<double> grid_trace;
+            for (int k = 0; k < static_cast<int>(background_parameters[0][0]->GetNK()); k++) {
+              grid_trace.push_back(background_parameters[0][0]->GetValue(195, 65, k));
+            }
+          }
+
 
           //These logs are written out in CravaResult if multiple interval isn't used
           if (n_intervals == 1)
