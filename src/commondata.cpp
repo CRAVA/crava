@@ -4301,8 +4301,21 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
     if (file_type == IO::CRAVA) {
       GetZPaddingFromCravaFile(grid_file, err_text, nz);
     }
+    else if (file_type == IO::STORM || file_type == IO::SGRI) {
 
-    else if (file_type == IO::SEGY) {
+      StormContGrid * stormgrid = NULL;
+      stormgrid = new StormContGrid(0,0,0);
+      stormgrid->ReadFromFile(grid_file);
+      nz = static_cast<int>(stormgrid->GetNK());
+
+      if (stormgrid != NULL)
+        delete stormgrid;
+
+    }
+    else { //Default segy
+
+      LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(grid_file)
+                                          +", will try to read it as segy.\n");
 
       SegY              * segy   = NULL;
       TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(0, 0);
@@ -4326,21 +4339,6 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
       nz = static_cast<int>(segy->GetNz());
       if (segy != NULL)
         delete segy;
-    }
-
-    else if (file_type == IO::STORM || file_type == IO::SGRI) {
-
-      StormContGrid * stormgrid = NULL;
-      stormgrid = new StormContGrid(0,0,0);
-      stormgrid->ReadFromFile(grid_file);
-      nz = static_cast<int>(stormgrid->GetNK());
-
-      if (stormgrid != NULL)
-        delete stormgrid;
-
-    }
-    else {
-      err_text = "Trying to read grid dimensions from unknown file format.\n";
     }
   }
   else {
@@ -6090,19 +6088,6 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
       err_text +="Error: Background file "+file_name+"is a CRAVA file. CRAVA input not allowed when using multiple zones.\n";
     }
   }
-  else if (fileType == IO::SEGY)
-    ReadSegyFile(file_name,
-                  interval_grids,
-                  interval_simboxes,
-                  inversion_simbox,
-                  model_settings,
-                  geometry,
-                  grid_type,
-                  par_name,
-                  offset,
-                  format,
-                  err_text,
-                  nopadding);
   else if (fileType == IO::STORM)
     ReadStormFile(file_name,
                   interval_grids,
@@ -6123,9 +6108,24 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   err_text,
                   true,
                   nopadding);
-  else {
-    err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
+  else { //Default Segy
+    LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
+                        +", will try to read it as segy.\n");
+
+    ReadSegyFile(file_name,
+                 interval_grids,
+                 interval_simboxes,
+                 inversion_simbox,
+                 model_settings,
+                 geometry,
+                 grid_type,
+                 par_name,
+                 offset,
+                 format,
+                 err_text,
+                 nopadding);
   }
+
 }
 
 
