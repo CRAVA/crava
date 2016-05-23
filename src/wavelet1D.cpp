@@ -588,7 +588,7 @@ Wavelet1D::Wavelet1D(fftw_real * vec,
 
 void
 Wavelet1D::shiftAndScale(float shift,
-                       float gain)
+                         float scale)
 {
   int k;
 
@@ -600,8 +600,8 @@ Wavelet1D::shiftAndScale(float shift,
   float iShift=shift/dz_;
 
   for(k=0;k < cnzp_; k++) {
-    ampMultiplier.re = float(gain*cos(2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
-    ampMultiplier.im = float(gain*sin(-2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
+    ampMultiplier.re = float(scale*cos(2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
+    ampMultiplier.im = float(scale*sin(-2.0*(NRLib::Pi*(iShift)*k)/float(nzp_)));
 
     tmp.re = ampMultiplier.re*cAmp_[k].re - ampMultiplier.im*cAmp_[k].im;
     tmp.im = ampMultiplier.im*cAmp_[k].re + ampMultiplier.re*cAmp_[k].im;
@@ -986,7 +986,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     LogKit::LogFormatted(LogKit::Medium,"\n  Reporting  estimated errors (as standard deviations) in different ways:\n");
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
-    LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev         Gain   S/N         Gain   S/N \n");
+    LogKit::LogFormatted(LogKit::Low,"  Well                  shift[ms]     StdDev        Scale   S/N        Scale   S/N \n");
     LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
 
     w = 0;
@@ -1009,18 +1009,18 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   }
 
   if (estimateSomething) {
-    float minLocalGain = 0.3334f;
-    float maxLocalGain = 3.0f;
+    float minLocalScale = 0.3334f;
+    float maxLocalScale = 3.0f;
 
     w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
       const BlockedLogsCommon * blocked_log = iter->second;
 
-      if((scaleOptWell[w] >= maxLocalGain || scaleOptWell[w] <= minLocalGain) && nActiveData[w]>0) {
+      if((scaleOptWell[w] >= maxLocalScale || scaleOptWell[w] <= minLocalScale) && nActiveData[w]>0) {
         std::string text;
-        text  = "\nWARNING: An optimal local gain cannot be established for well "+ blocked_log->GetWellName()+". The gain-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
-        text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalGain,2)+", "+NRLib::ToString(maxLocalGain,2)+">.\n";
+        text  = "\nWARNING: An optimal local scale cannot be established for well "+ blocked_log->GetWellName()+". The scale-value found ("+NRLib::ToString(scaleOptWell[w],3)+")\n";
+        text += "         is outside the interval accepted by CRAVA which is <"+NRLib::ToString(minLocalScale,2)+", "+NRLib::ToString(maxLocalScale,2)+">.\n";
         LogKit::LogFormatted(LogKit::Warning, text);
         if (doEstimateWavelet) {
           TaskList::addTask("Well "+ blocked_log->GetWellName()+" should not be used in the wavelet estimation for angle stack "+angle+".");

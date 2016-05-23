@@ -81,7 +81,7 @@ InputFiles::addInputPathAndCheckFiles()
   for(i=0;i<waveletEstIntFileBase_.size();i++)
     errTxt += addPathAndCheck(waveletEstIntFileBase_[i], true);
   for(i=0;i<faciesEstIntFile_.size();i++)
-    errTxt += addPathAndCheck(faciesEstIntFile_[i]);
+    errTxt += addPathAndCheck(faciesEstIntFile_[i], true);
   for(i=0;i<wellMoveIntFile_.size();i++)
     errTxt += addPathAndCheck(wellMoveIntFile_[i], true);
   errTxt += addPathAndCheck(timeSurfTopFile_, true);

@@ -80,6 +80,8 @@ private:
   bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt);
   bool    parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesTopSurface(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt);
   bool parseAboveReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseBelowReservoir(TiXmlNode * node, std::string & errTxt);
