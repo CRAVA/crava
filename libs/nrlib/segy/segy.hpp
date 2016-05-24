@@ -110,7 +110,7 @@ public:
 
   std::vector<float>        GetAllValues();                           ///< Return vector with all values.
 
-  void                      CreateRegularGrid();
+  void                      CreateRegularGrid(bool regularize_if_needed);
   const SegyGeometry      * GetGeometry(void) const { return geometry_ ;} //Only makes sense after command above, or FindAndSetGeometry below.
   //<<<End read all trace mode
 

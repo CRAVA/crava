@@ -821,8 +821,10 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             err_text += NRLib::ToString(e.what());
           }
 
-          segy->CreateRegularGrid(); //sets geometry
-
+          bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
+          bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
+          bool regularize_if_needed = area_from_segy && storm_output;
+          segy->CreateRegularGrid(regularize_if_needed); //sets geometry
           segy->GetGeometry()->WriteGeometry();
 
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
@@ -4136,15 +4138,7 @@ SegyGeometry * CommonData::GetGeometryFromStormFile(const std::string & file_nam
     int    nx        = static_cast<int>(storm_grid->GetNI());
     int    ny        = static_cast<int>(storm_grid->GetNJ());
     double rot       = storm_grid->GetAngle();
-    double IL0       = 0.0;  ///< Dummy value since information is not contained in format
-    double XL0       = 0.0;  ///< Dummy value since information is not contained in format
-    double IL_step_X =   1;  ///< Dummy value since information is not contained in format
-    double IL_step_Y =   1;  ///< Dummy value since information is not contained in format
-    double XL_step_X =   1;  ///< Dummy value since information is not contained in format
-    double XL_step_Y =   1;  ///< Dummy value since information is not contained in format
-    geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, ///< When XL, IL is available.
-                                IL0, XL0, IL_step_X, IL_step_Y,
-                                XL_step_X, XL_step_Y, rot);
+    geometry = new SegyGeometry(x0, y0, dx, dy, nx, ny, rot);
   }
   else {
     err_text += tmp_err_text;
@@ -6005,7 +5999,7 @@ void CommonData::GetZPaddingFromCravaFile(const std::string & file_name,
 void
 CommonData::ReadSegyFile(const std::string                 & file_name,
                          std::vector<NRLib::Grid<float> *> & interval_grids,
-                         const std::vector<Simbox *>         & interval_simboxes,
+                         const std::vector<Simbox *>       & interval_simboxes,
                          const NRLib::Volume               * volume,
                          const ModelSettings               * model_settings,
                          const SegyGeometry               *& geometry,
@@ -6055,8 +6049,10 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     catch (NRLib::Exception & e) {
       err_text += NRLib::ToString(e.what());
     }
-    segy->CreateRegularGrid();
-
+    bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
+    bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
+    bool regularize_if_needed =  area_from_segy && storm_output;
+    segy->CreateRegularGrid(regularize_if_needed);
   }
   catch (NRLib::Exception & e) {
     err_text += e.what();
