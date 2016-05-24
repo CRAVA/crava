@@ -476,7 +476,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
         else if (name == "Rho")
           blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), well_trend[w]);
         else {
-          err_text += "ERROR in Background::GetWellTrends()" + interval_text + ": ";
+          err_text += "Error when estimating background trends" + interval_text + ": ";
           err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
         }
         i_wells++;
@@ -490,8 +490,9 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
     w++;
   }
   if (i_wells == 0) {
-    err_text += "\nERROR in Background::GetWellTrends()" + interval_text + ": There are no wells\n";
-    err_text += "available for the estimation of background trend.\n";
+    err_text += "Error when estimating background trends" + interval_text + ": There are no wells ";
+    err_text += "available for the estimation of background trend for " + name + ".\n";
+    err_text += "Wells can be added for background trend estimation with the <use-for-background-trend> keyword under <well> in the modelfile.\n";
   }
 
   w = 0;
@@ -508,7 +509,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
       else if (name == "Rho")
         blocked_log->GetVerticalTrend(blocked_log->GetRhoHighCutBackground(), high_cut_well_trend[w]);
       else {
-        err_text += "ERROR in Background::GetWellTrends()"+ interval_text + ": ";
+        err_text += "Error when estimating background trends"+ interval_text + ": ";
         err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
       }
     }

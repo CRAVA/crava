@@ -176,7 +176,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     }
 
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
-    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_)
+    if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_ && read_wells_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
                                           local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, segy_geometry, err_text);
@@ -1172,6 +1172,11 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     std::vector<std::vector<int> >          facies_nr_wells;
     std::vector<std::vector<std::string> >  facies_names_wells;
 
+    std::vector<std::string> no_hit_wells;
+    std::vector<std::string> empty_wells;
+    std::vector<std::string> facies_not_ok_wells;
+    std::vector<std::string> upwards_wells;
+
     for (int well = 0; well < n_wells; well++) {
       valid_index[well] = false;
       std::string well_file_name = input_files->getWellFile(well);
@@ -1254,12 +1259,14 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             no_hit++;
             TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
+            no_hit_wells.push_back(new_well.GetWellName());
           }
           if (new_well.GetNData() == 0) {
             LogKit::LogFormatted(LogKit::Low,"  IGNORED (no log entries found)\n");
             well_valid = false;
             empty++;
             TaskList::addTask("Check the log entries in well "+new_well.GetWellName()+".");
+            empty_wells.push_back(new_well.GetWellName());
           }
           //Check well for valid facies
           bool facies_log_in_well;
@@ -1291,6 +1298,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             facies_log_not_ok++;
             TaskList::addTask("Check the facies logs in well "+new_well.GetWellName()+".\n       The facies logs in this well are wrong and the well is ignored");
+            facies_not_ok_wells.push_back(new_well.GetWellName());
           }
           bool monotonous = RemoveDuplicateLogEntriesFromWell(new_well, model_settings, full_inversion_simbox, n_merges[well]);
           if (monotonous == false) {
@@ -1298,6 +1306,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             well_valid = false;
             upwards++;
             TaskList::addTask("Check the TWT log in well "+new_well.GetWellName()+".\n       The well is moving too much upwards, and the well is ignored");
+            upwards_wells.push_back(new_well.GetWellName());
           }
 
           well_names[well]            = new_well.GetWellName();
@@ -1448,7 +1457,32 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         full_inversion_simbox->getx0(), full_inversion_simbox->gety0(),
         full_inversion_simbox->getlx(), full_inversion_simbox->getly(),
         (full_inversion_simbox->getAngle()*180)/M_PI);
-      err_text += "No wells available for estimation.";
+
+      err_text += "No wells available for estimation.\n";
+      if (no_hit > 0) {
+        err_text += " " + NRLib::ToString(no_hit) + " wells are outside the inversion area: ";
+        for (int j = 0; j < static_cast<int>(no_hit_wells.size()); j++)
+          err_text += no_hit_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (empty > 0) {
+        err_text += " " + NRLib::ToString(empty) + " wells contain no log entries: ";
+        for (int j = 0; j < static_cast<int>(empty_wells.size()); j++)
+          err_text += empty_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (facies_log_not_ok > 0) {
+        err_text += " " + NRLib::ToString(facies_log_not_ok) + " have wrong facies logs: ";
+        for (int j = 0; j < static_cast<int>(facies_not_ok_wells.size()); j++)
+          err_text += facies_not_ok_wells[j] + "; ";
+        err_text += "\n";
+      }
+      if (upwards > 0) {
+        err_text += " " + NRLib::ToString(upwards) + " wells are moving upwards in TWT: ";
+        for (int j = 0; j < static_cast<int>(upwards_wells.size()); j++)
+          err_text += upwards_wells[j] + "; ";
+        err_text += "\n";
+      }
     }
 
     if (n_facies > 0) {
@@ -4267,8 +4301,21 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
     if (file_type == IO::CRAVA) {
       GetZPaddingFromCravaFile(grid_file, err_text, nz);
     }
+    else if (file_type == IO::STORM || file_type == IO::SGRI) {
 
-    else if (file_type == IO::SEGY) {
+      StormContGrid * stormgrid = NULL;
+      stormgrid = new StormContGrid(0,0,0);
+      stormgrid->ReadFromFile(grid_file);
+      nz = static_cast<int>(stormgrid->GetNK());
+
+      if (stormgrid != NULL)
+        delete stormgrid;
+
+    }
+    else { //Default segy
+
+      LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(grid_file)
+                                          +", will try to read it as segy.\n");
 
       SegY              * segy   = NULL;
       TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(0, 0);
@@ -4292,21 +4339,6 @@ int CommonData::GetNzFromGridOnFile(ModelSettings     * model_settings,
       nz = static_cast<int>(segy->GetNz());
       if (segy != NULL)
         delete segy;
-    }
-
-    else if (file_type == IO::STORM || file_type == IO::SGRI) {
-
-      StormContGrid * stormgrid = NULL;
-      stormgrid = new StormContGrid(0,0,0);
-      stormgrid->ReadFromFile(grid_file);
-      nz = static_cast<int>(stormgrid->GetNK());
-
-      if (stormgrid != NULL)
-        delete stormgrid;
-
-    }
-    else {
-      err_text = "Trying to read grid dimensions from unknown file format.\n";
     }
   }
   else {
@@ -6056,19 +6088,6 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
       err_text +="Error: Background file "+file_name+"is a CRAVA file. CRAVA input not allowed when using multiple zones.\n";
     }
   }
-  else if (fileType == IO::SEGY)
-    ReadSegyFile(file_name,
-                  interval_grids,
-                  interval_simboxes,
-                  inversion_simbox,
-                  model_settings,
-                  geometry,
-                  grid_type,
-                  par_name,
-                  offset,
-                  format,
-                  err_text,
-                  nopadding);
   else if (fileType == IO::STORM)
     ReadStormFile(file_name,
                   interval_grids,
@@ -6089,9 +6108,24 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   err_text,
                   true,
                   nopadding);
-  else {
-    err_text += "\nReading of file \'"+file_name+"\' for grid type \'"+par_name+"\'failed. File type not recognized.\n";
+  else { //Default Segy
+    LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
+                        +", will try to read it as segy.\n");
+
+    ReadSegyFile(file_name,
+                 interval_grids,
+                 interval_simboxes,
+                 inversion_simbox,
+                 model_settings,
+                 geometry,
+                 grid_type,
+                 par_name,
+                 offset,
+                 format,
+                 err_text,
+                 nopadding);
   }
+
 }
 
 
@@ -6503,7 +6537,17 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           //Remove zeroes. F.ex. background on segy-format with a non-constant top-surface, the vector is filled with zeroes at the beginning.
           if (!missing && data_trace[0] == 0) {
             std::vector<float> data_trace_new;
+            bool first_value_found = false;
             for (size_t k_trace = 0; k_trace < n_trace; k_trace++) {
+
+              //Also update z0_data from segy when removing zero padding at top
+              if (is_segy && first_value_found == false) {
+                if (data_trace[k_trace] != 0)
+                  first_value_found = true;
+                else
+                  z0_data += segy->GetDz();
+              }
+
               if (data_trace[k_trace] != 0)
                 data_trace_new.push_back(data_trace[k_trace]);
             }
@@ -6563,10 +6607,11 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
           if (grid_type != DATA) {
             float trend_inc = (trend_last - trend_first) / (res_fac*(n_trace - 1));
 
-            data_trace_trend_long.resize(rmt);
-            for (int k_trace = 0; k_trace < rmt; k_trace++) {
+            data_trace_trend_long.resize(static_cast<int>(res_fac*(n_trace-1)+1));
+            for (int k_trace = 0; k_trace < static_cast<int>((res_fac*(n_trace-1)+1)); k_trace++) {
               data_trace_trend_long[k_trace] = trend_first + k_trace * trend_inc;
             }
+
           }
 
           //Includes a shift
@@ -6590,7 +6635,7 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
                                      data_trace_trend_long,
                                      z0_data,     // Time of first data sample
                                      dz_min,
-                                     rmt,
+                                     static_cast<int>(data_trace_trend_long.size()),
                                      nz,
                                      nzp);
 
@@ -7492,6 +7537,16 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
           for (int j = 0; j < 3; j++)
             vertical_trends(i,j) = interval_vertical_trends[j];
+
+          //H-REMOVE
+          bool debug_trace = false;
+            if (debug_trace) {
+            std::vector<double> grid_trace;
+            for (int k = 0; k < static_cast<int>(background_parameters[0][0]->GetNK()); k++) {
+              grid_trace.push_back(background_parameters[0][0]->GetValue(195, 65, k));
+            }
+          }
+
 
           //These logs are written out in CravaResult if multiple interval isn't used
           if (n_intervals == 1)
