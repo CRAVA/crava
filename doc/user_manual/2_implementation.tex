@@ -68,7 +68,7 @@ The estimation of the background model is made in two steps. First,
 we estimate a depth trend for the entire volume, and then we
 interpolate well logs into this volume using kriging. The estimation
 will by default contain information up to 6Hz, but this high-cut limit
-can be adjusted using the \texttt{<high-cut-background-modelling>}
+can be adjusted using the \kw{high-cut-background-modelling}
 keyword.
 
 When identifying the depth trend, it is important that the wells are
@@ -167,7 +167,7 @@ omitted as it often give parameter over- and undershooting away
 from wells.
 
 \subsubsection{Multizone background model}
-In the \kw{multizone-model}, the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The full multizone background model is made from the zone background models by using Beta distributions with $\alpha = \beta =2$ for the transitions between the zones. The limits of the Beta distribution may be different for each surface, and they are given as input to the model. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
+Multizone background model is achieved by doing a \kw{multiple-intervals} inversion and with estimating background models activated. The surfaces are set under \kw{output-volume}. When estimating the multizone background model the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The settings for interval uncertainty and erosion priority are set under \kw{multiple-intervals}. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
 
 \subsubsection{Background model from rock physics}
 When rock physics models are used, the background model is generated using these. Each facies is defined as a \kw{rock} possibly containing trends using the rock physics template model described in \autoref{sec:rockPhysics}. The resulting background model is generated as a weighted average of the rock models, where the weights are the corresponding facies \kw{prior-probabilities}. 

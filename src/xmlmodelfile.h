@@ -52,6 +52,8 @@ private:
   bool parseWavelet(TiXmlNode * node, std::string & errTxt);
   bool parseLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool parseWaveletEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool   parseWaveletTopSurface(TiXmlNode * node, std::string & errTxt);
+  bool   parseWaveletBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool parseWavelet3D(TiXmlNode * node, std::string & errTxt);
   bool parseTravelTime(TiXmlNode * node, std::string & errTxt);
   bool parseRMSVelocities(TiXmlNode * node, std::string & errTxt);
@@ -68,9 +70,7 @@ private:
   bool parseEarthModel(TiXmlNode * node, std::string & errTxt);
   bool parsePriorLocalWavelet(TiXmlNode * node, std::string & errTxt);
   bool   parseBackground(TiXmlNode * node, std::string & errTxt);
-  bool parseMultizoneModel(TiXmlNode * node, std::string & errTxt);
   bool parseSegyHeader(TiXmlNode * node, std::string & errTxt);
-  //bool parseZone(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool   parsePriorFaciesProbabilities(TiXmlNode * node, std::string & errTxt);
   bool    parseFaciesInterval(TiXmlNode * node, std::string & errTxt);
@@ -80,6 +80,8 @@ private:
   bool      parseVolumeFractionsPerInterval(TiXmlNode * node, std::map<std::string, float> & fraction_map, float & prob, std::string & errTxt);
   bool    parseFaciesVolumeFractions(TiXmlNode * node, std::string & errTxt);
   bool   parseFaciesEstimationInterval(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesTopSurface(TiXmlNode * node, std::string & errTxt);
+  bool    parseFaciesBaseSurface(TiXmlNode * node, std::string & errTxt);
   bool parsePriorRMSVelocities(TiXmlNode * node, std::string & errTxt);
   bool parseAboveReservoir(TiXmlNode * node, std::string & errTxt);
   bool parseBelowReservoir(TiXmlNode * node, std::string & errTxt);

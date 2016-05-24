@@ -94,8 +94,6 @@ public:
   void setInputDirectory(std::string inputDirectory)                      { inputDirectory_       = inputDirectory    ;}
   void setPriorFaciesProb(std::string name,std::string file)              { priorFaciesProb_[name] = file             ;}
   void addTrendCubes(std::string trendParameterFile)                      { trendCubes_.push_back(trendParameterFile) ;}
-  void addDefaultWaveletEstIntFileTop(void)                               { waveletEstIntFileTop_.push_back("")       ;}
-  void addDefaultWaveletEstIntFileBase(void)                              { waveletEstIntFileBase_.push_back("")      ;}
   void setParamAutoCovFile(const std::string & interval_name, const std::string & file_name)       { paramAutoCovFiles_[interval_name]  = file_name ;}
   void setCorrDirFile(const std::string & interval_name, const std::string & file_name)            { corrDirFiles_[interval_name]       = file_name ;}
   void setCorrDirTopSurfaceFile(const std::string & interval_name, const std::string & file_name)  { corrDirTopFiles_[interval_name]    = file_name ;}

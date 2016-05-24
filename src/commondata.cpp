@@ -115,7 +115,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
     // 7. Optimization of well location
     if (model_settings->getOptimizeWellLocation() && read_seismic_ && read_wells_ && setup_reflection_matrix_ && temporary_wavelet_ && block_wells_)
-      optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, reflection_matrix_, err_text);
+      optimize_well_location_ = OptimizeWellLocations(model_settings, input_files, &estimation_simbox_, full_inversion_simbox_, wells_, mapped_blocked_logs_, seismic_data_, segy_geometry, reflection_matrix_, err_text);
     if (!model_settings->getOptimizeWellLocation())
       optimize_well_location_ = true;
 
@@ -657,13 +657,27 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   //Create output simbox for writing. Top and bot surfaces are the visible surfaces, eroded surfaces from full_inversion_simbox
   //This simbox is the combined simbox for all intervals, so we make it with the smallest resolution from all interval simboxes
 
-  LogKit::LogFormatted(LogKit::Low,"\nCreating output simbox");
+  LogKit::LogFormatted(LogKit::Low,"\n\nCreating the output simbox, used for the final written result (visualization) grid");
 
   output_simbox = Simbox(full_inversion_simbox);
   output_simbox.SetSurfaces(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface());
 
-  double dz_min = FindDzMin(multi_interval_grid);
-  int nz_new    = static_cast<int>(output_simbox.getlz() / dz_min);
+  int nz_new = 0;
+  if (multi_interval_grid->GetNIntervals() == 1) {
+    if (model_settings->getTimeNz("") > 0) {
+      //Layers given in model file
+      nz_new = model_settings->getTimeNz("");
+    }
+    else {
+      //Use dz from seismic
+      nz_new = static_cast<int>(output_simbox.getlz() / model_settings->getTimeDz());
+    }
+  }
+  else {
+    //Multiinterval, use minimum dz from all intervals
+    double dz_min = FindDzMin(multi_interval_grid);
+    nz_new        = static_cast<int>(output_simbox.getlz() / dz_min);
+  }
 
   output_simbox.setDepth(full_inversion_simbox.GetTopErodedSurface(), full_inversion_simbox.GetBaseErodedSurface(), nz_new, false); //Also set nz_pad = nz
 
@@ -680,6 +694,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   WriteOutputSurfaces(model_settings, output_simbox);
 
   if (err_text_tmp != "") {
+    err_text += "Error when setting up output simbox: ";
     err_text += err_text_tmp;
     return false;
   }
@@ -784,7 +799,56 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         std::string file_name = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(file_name);
 
-        if (file_type == IO::SEGY) {
+
+        if (file_type == IO::STORM || file_type == IO::SGRI) {
+          StormContGrid * stormgrid = NULL;
+
+          try {
+            stormgrid = new StormContGrid(0,0,0);
+            stormgrid->ReadFromFile(file_name);
+          }
+          catch (NRLib::Exception & e) {
+            err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
+            break;
+          }
+
+          if (file_type == IO::STORM)
+            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
+          else
+            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
+
+        } //STORM / SGRI
+        else if (file_type == IO::CRAVA) {
+
+          int nx_pad = full_inversion_simbox.GetNXpad();
+          int ny_pad = full_inversion_simbox.GetNYpad();
+          int nz_pad = 0;  //Not set before ReadSeismicData. Get it from file.
+
+          GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
+
+          FFTGrid *  grid = CreateFFTGrid(full_inversion_simbox.getnx(),
+                                          full_inversion_simbox.getny(),
+                                          full_inversion_simbox.getnz(),
+                                          nx_pad,
+                                          ny_pad,
+                                          nz_pad,
+                                          model_settings->getFileGrid());
+
+          std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
+          std::string par_name = "Seismic data angle stack "+angle;
+          LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
+
+          grid->setAccessMode(FFTGrid::RANDOMACCESS);
+          grid->readCravaFile(file_name, err_text);
+
+          grid->endAccess();
+
+          seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
+        }
+        else { //Try to read as segy
+
+          if (file_type != IO::SEGY)
+            LogKit::LogFormatted(LogKit::Warning,"\n Did not recognize "+file_name+", will read as SEGY.");
 
           SegY              * segy   = NULL;
           TraceHeaderFormat * format = model_settings->getTraceHeaderFormat(this_timelapse, i);
@@ -836,54 +900,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
         } //SEGY
-        else if (file_type == IO::STORM || file_type == IO::SGRI) {
-          StormContGrid * stormgrid = NULL;
-
-          try {
-            stormgrid = new StormContGrid(0,0,0);
-            stormgrid->ReadFromFile(file_name);
-          }
-          catch (NRLib::Exception & e) {
-            err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
-            break;
-          }
-
-          if (file_type == IO::STORM)
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
-          else
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
-
-        } //STORM / SGRI
-        else if (file_type == IO::CRAVA) {
-
-          int nx_pad = full_inversion_simbox.GetNXpad();
-          int ny_pad = full_inversion_simbox.GetNYpad();
-          int nz_pad = 0;  //Not set before ReadSeismicData. Get it from file.
-
-          GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
-
-          FFTGrid *  grid = CreateFFTGrid(full_inversion_simbox.getnx(),
-                                          full_inversion_simbox.getny(),
-                                          full_inversion_simbox.getnz(),
-                                          nx_pad,
-                                          ny_pad,
-                                          nz_pad,
-                                          model_settings->getFileGrid());
-
-          std::string angle    = NRLib::ToString(angles[i]*(180/M_PI), 1);
-          std::string par_name = "Seismic data angle stack "+angle;
-          LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
-
-          grid->setAccessMode(FFTGrid::RANDOMACCESS);
-          grid->readCravaFile(file_name, err_text);
-
-          grid->endAccess();
-
-          seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
-        }
-        else {
-          err_text += "Error when reading file " + file_name +". File type not recognized.\n";
-        }
       } //n_angles
 
       //Logging if seismic data is on segy format
@@ -1452,7 +1468,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     }
   }
   catch (NRLib::Exception & e) {
-    err_text += "Error: " + NRLib::ToString(e.what());
+    err_text += "Error when reading well data: " + NRLib::ToString(e.what());
   }
 
   if (err_text != "") {
@@ -2972,237 +2988,237 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
   FindWaveletEstimationInterval(model_settings, input_files, wavelet_est_int_top, wavelet_est_int_bot, wavelet_estim_interval, full_inversion_simbox, segy_geometry, err_text_tmp);
   well_wavelets.resize(model_settings->getNumberOfAngles(0));
 
-  if (err_text_tmp != "")
+  if (err_text_tmp != "") {
     err_text += "Error when finding wavelet estimation interval: " + err_text_tmp + "\n";
+  }
+  else {
 
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
+    double wall=0.0, cpu=0.0;
+    TimeKit::getTime(wall,cpu);
 
-  if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
-    //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
-    if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
-      SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
+    if (refmat_from_file_global_vpvs_ == false && GetMultipleIntervalGrid()->GetNIntervals() == 1)
+      //Do not set up reflection matrix from background if it failed, or was not set up (f.x. estimation mode with only wavelet)
+      if (!(model_settings->getVpVsRatios().size() == 0 && !model_settings->getVpVsRatioFromWells() && setup_background_model_ == false))
+        SetupCorrectReflectionMatrix(model_settings, reflection_matrix); //Single zone, can find correct Vp/Vs and thus reflectionmatrix.
 
-  shift_grids.resize(n_timelapses);
-  gain_grids.resize(n_timelapses);
+    shift_grids.resize(n_timelapses);
+    gain_grids.resize(n_timelapses);
 
-  for (int i = 0; i < n_timelapses; i++) {
+    for (int i = 0; i < n_timelapses; i++) {
 
-    int n_angles = model_settings->getNumberOfAngles(i);
+      int n_angles = model_settings->getNumberOfAngles(i);
 
-    std::vector<float> sn_ratio = model_settings->getSNRatio(i);
-    std::vector<float> angles   = model_settings->getAngle(i);
+      std::vector<float> sn_ratio = model_settings->getSNRatio(i);
+      std::vector<float> angles   = model_settings->getAngle(i);
 
-    //Fra ModelAvoDynamic::processSeismic:
-    std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
+      //Fra ModelAvoDynamic::processSeismic:
+      std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
 
-    //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
-    bool estimate_failed = false;
-    for (size_t j = 0; j < estimate_wavelets.size(); j++) {
-      if (estimate_wavelets[j]) {
-        if (read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
-          estimate_failed = true;
-          return false;
+      //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
+      bool estimate_failed = false;
+      for (size_t j = 0; j < estimate_wavelets.size(); j++) {
+        if (estimate_wavelets[j]) {
+          if (read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
+            estimate_failed = true;
+            return false;
+          }
         }
       }
-    }
 
-    std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
+      std::vector<bool> use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
-    wavelets[i].resize(n_angles, NULL);
+      wavelets[i].resize(n_angles, NULL);
 
-    std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
+      std::vector<Grid2D *> local_noise_scale(n_angles); ///< Scale factors for local noise
 
-    bool has_3D_wavelet = false;
+      bool has_3D_wavelet = false;
 
-    shift_grids[i].resize(n_angles);
-    gain_grids[i].resize(n_angles);
+      shift_grids[i].resize(n_angles);
+      gain_grids[i].resize(n_angles);
 
-    for (int j = 0; j < n_angles; j++) {
+      for (int j = 0; j < n_angles; j++) {
 
-      local_noise_scale[j] = NULL;
-      shift_grids[i][j]    = NULL;
-      gain_grids[i][j]     = NULL;
+        local_noise_scale[j] = NULL;
+        shift_grids[i][j]    = NULL;
+        gain_grids[i][j]     = NULL;
 
-      if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
-        has_3D_wavelet = true;
-      if (estimate_wavelets[j] == true)
-        model_settings->setWaveletScale(i,j,1.0);
-    }
+        if (model_settings->getWaveletDim(j) == Wavelet::THREE_D)
+          has_3D_wavelet = true;
+        if (estimate_wavelets[j] == true)
+          model_settings->setWaveletScale(i,j,1.0);
+      }
 
-    unsigned int n_wells = model_settings->getNumberOfWells();
+      unsigned int n_wells = model_settings->getNumberOfWells();
 
-    //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
-    t_grad_x.resize(n_wells);
-    t_grad_y.resize(n_wells);
-    NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
-    NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
+      //Store ref_time_grad_x, ref_time_grad_y, t_grad_x and t_grad_y. They are needed to reestimate SNRatio of a 3DWavelet in ModelAVODynamic
+      t_grad_x.resize(n_wells);
+      t_grad_y.resize(n_wells);
+      NRLib::Grid2D<float> structure_depth_grad_x; ///< Depth gradient in x-direction for structure ( correlationDirection-t0)*v0/2
+      NRLib::Grid2D<float> structure_depth_grad_y; ///< Depth gradient in y-direction for structure ( correlationDirection-t0)*v0/2
 
-    bool failed = false;
+      bool failed = false;
 
-    if (has_3D_wavelet) {
-      if (input_files->getRefSurfaceFile() != "") {
-        Surface t0_surf;
-        try {
-          t0_surf =Surface(input_files->getRefSurfaceFile());
-        }
-        catch (NRLib::Exception & e) {
-          err_text += e.what();
-          failed = true;
-        }
-        if (!failed) {
-          Surface * correlation_direction = NULL;
+      if (has_3D_wavelet) {
+        if (input_files->getRefSurfaceFile() != "") {
+          Surface t0_surf;
+          try {
+            t0_surf =Surface(input_files->getRefSurfaceFile());
+          }
+          catch (NRLib::Exception & e) {
+            err_text += e.what();
+            failed = true;
+          }
+          if (!failed) {
+            Surface * correlation_direction = NULL;
 
-          if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
-            try {
-              Surface tmp_surf(input_files->getCorrDirFile(""));
-              if (estimation_simbox.CheckSurface(tmp_surf) == true)
-                correlation_direction = new Surface(tmp_surf);
-              else {
-                err_text += "Error: Correlation surface does not cover volume.\n";
+            if (input_files->getCorrDirFiles().find("") != input_files->getCorrDirFiles().end()) {//H can be given as top and base? can be given per inteval?
+              try {
+                Surface tmp_surf(input_files->getCorrDirFile(""));
+                if (estimation_simbox.CheckSurface(tmp_surf) == true)
+                  correlation_direction = new Surface(tmp_surf);
+                else {
+                  err_text += "Error when setting up 3D wavelet: Correlation surface " + tmp_surf.GetName() + " does not cover volume.\n";
+                }
+              }
+              catch (NRLib::Exception & e) {
+                err_text += e.what();
               }
             }
-            catch (NRLib::Exception & e) {
-              err_text += e.what();
-            }
+
+            double v0=model_settings->getAverageVelocity();
+            ComputeStructureDepthGradient(v0,
+                                          model_settings->getGradientSmoothingRange(),
+                                          &t0_surf,
+                                          correlation_direction,
+                                          full_inversion_simbox,
+                                          estimation_simbox,
+                                          structure_depth_grad_x,
+                                          structure_depth_grad_y);
+            Wavelet3D::setGradientMaps(structure_depth_grad_x,
+                                       structure_depth_grad_y);
+            ComputeReferenceTimeGradient(&t0_surf,
+                                         estimation_simbox,
+                                         ref_time_grad_x,
+                                         ref_time_grad_y);
           }
-
-          double v0=model_settings->getAverageVelocity();
-          ComputeStructureDepthGradient(v0,
-                                        model_settings->getGradientSmoothingRange(),
-                                        &t0_surf,
-                                        correlation_direction,
-                                        full_inversion_simbox,
-                                        estimation_simbox,
-                                        structure_depth_grad_x,
-                                        structure_depth_grad_y);
-          Wavelet3D::setGradientMaps(structure_depth_grad_x,
-                                     structure_depth_grad_y);
-          ComputeReferenceTimeGradient(&t0_surf,
-                                       estimation_simbox,
-                                       ref_time_grad_x,
-                                       ref_time_grad_y);
+          else {
+            err_text += "Problems reading reference time surface in (x,y).\n";
+          }
         }
-        else {
-          err_text += "Problems reading reference time surface in (x,y).\n";
+        bool estimate_well_gradient = model_settings->getEstimateWellGradientFromSeismic();
+        float distance, sigma_m;
+        model_settings->getTimeGradientSettings(distance, sigma_m, i);
+        std::vector<std::vector<double> > SigmaXY;
+
+        for (size_t w = 0; w < n_wells; w++) {
+          if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
+            double v0=model_settings->getAverageVelocity();
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
+          }
+          else {
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
+            mapped_blocked_logs.find(wells_[w]->GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+          }
         }
       }
-      bool estimate_well_gradient = model_settings->getEstimateWellGradientFromSeismic();
-      float distance, sigma_m;
-      model_settings->getTimeGradientSettings(distance, sigma_m, i);
-      std::vector<std::vector<double> > SigmaXY;
 
-      for (size_t w = 0; w < n_wells; w++) {
-        if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
-          double v0=model_settings->getAverageVelocity();
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
+      if (estimation_simbox.getdz() > 4.01f && model_settings->getEstimateNumberOfWavelets(i) > 0) { // Require this density for wavelet estimation
+        LogKit::LogFormatted(LogKit::Low,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
+        LogKit::LogFormatted(LogKit::Low," CRAVA are not reliable and the output results should be treated accordingly.\n");
+        LogKit::LogFormatted(LogKit::Low," The number of layers must be increased. \n");
+        std::string text("");
+        text += "Increase the number of layers to improve the quality of the wavelet estimation.\n";
+        text += " The minimum sampling density is "+NRLib::ToString(estimation_simbox.getdz())+", and it should be ";
+        text += "lower than 4.0.\n To obtain the desired density, the number of layers should be at least ";
+        text += NRLib::ToString(static_cast<int>(estimation_simbox.GetLZ()/4.0))+"\n";
+        TaskList::addTask(text);
+      }
+
+      // check if local noise is set for some angles.
+      bool local_noise_set = false;
+
+      for (int j = 0; j < n_angles; j++) {
+
+        float angle = float(angles[j]*180.0/M_PI);
+        LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg\n",angle);
+
+        SeismicStorage * seismic_data_tmp = NULL;
+        if (forward_modeling_ == false) {
+          seismic_data_tmp = seismic_data[i][j];
         }
-        else {
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetTimeGradientSettings(distance, sigma_m);
-          mapped_blocked_logs.find(wells_[w]->GetWellName())->second->FindSeismicGradient(seismic_data[i], &estimation_simbox, n_angles, t_grad_x[w], t_grad_y[w], SigmaXY);
+        if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
+          error += Process1DWavelet(model_settings,
+                                    input_files,
+                                    seismic_data_tmp,
+                                    mapped_blocked_logs,
+                                    wavelet_estim_interval,
+                                    estimation_simbox,
+                                    full_inversion_simbox,
+                                    reflection_matrix[i],
+                                    err_text,
+                                    wavelets[i][j],
+                                    well_wavelets[j],
+                                    shift_grids[i][j],
+                                    gain_grids[i][j],
+                                    local_noise_scale[j],
+                                    i, //Timelapse
+                                    j, //Angle
+                                    angles[j],
+                                    sn_ratio[j],
+                                    estimate_wavelets[j],
+                                    use_ricker_wavelet[j]);
+        else
+          error += Process3DWavelet(model_settings,
+                                    input_files,
+                                    seismic_data_tmp,
+                                    mapped_blocked_logs,
+                                    wavelet_estim_interval,
+                                    estimation_simbox,
+                                    full_inversion_simbox,
+                                    reflection_matrix[i],
+                                    err_text,
+                                    wavelets[i][j],
+                                    i, //Timelapse
+                                    j, //Angle
+                                    angles[j],
+                                    sn_ratio[j],
+                                    ref_time_grad_x_,
+                                    ref_time_grad_y_,
+                                    t_grad_x_,
+                                    t_grad_y_,
+                                    estimate_wavelets[j]);
+
+        if (local_noise_scale[j] != NULL)
+          local_noise_set = true;
+
+      } //angle
+
+      if (local_noise_set == true) {
+        for (int k=0; k < n_angles; k++) {
+          if (local_noise_scale[k]==NULL)
+            local_noise_scale[k] = new Grid2D(full_inversion_simbox.getnx(),
+                                              full_inversion_simbox.getny(),
+                                              1.0);
         }
       }
+
+      local_noise_scales[i]     = local_noise_scale;
+      global_noise_estimates[i] = sn_ratio;
+      sn_ratios[i]              = sn_ratio;
+
+    } //timelapse
+
+    for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
+      if (wavelet_estim_interval[i] != NULL)
+        delete wavelet_estim_interval[i];
     }
 
-    if (estimation_simbox.getdz() > 4.01f && model_settings->getEstimateNumberOfWavelets(i) > 0) { // Require this density for wavelet estimation
-      LogKit::LogFormatted(LogKit::Low,"\n\nWARNING: The minimum sampling density is lower than 4.0. The WAVELETS generated by \n");
-      LogKit::LogFormatted(LogKit::Low," CRAVA are not reliable and the output results should be treated accordingly.\n");
-      LogKit::LogFormatted(LogKit::Low," The number of layers must be increased. \n");
-      std::string text("");
-      text += "Increase the number of layers to improve the quality of the wavelet estimation.\n";
-      text += " The minimum sampling density is "+NRLib::ToString(estimation_simbox.getdz())+", and it should be ";
-      text += "lower than 4.0.\n To obtain the desired density, the number of layers should be at least ";
-      text += NRLib::ToString(static_cast<int>(estimation_simbox.GetLZ()/4.0))+"\n";
-      TaskList::addTask(text);
-    }
 
-    // check if local noise is set for some angles.
-    bool local_noise_set = false;
-
-    for (int j = 0; j < n_angles; j++) {
-
-      float angle = float(angles[j]*180.0/M_PI);
-      LogKit::LogFormatted(LogKit::Low,"\nAngle stack : %.1f deg",angle);
-
-      SeismicStorage * seismic_data_tmp = NULL;
-      if (forward_modeling_ == false) {
-        seismic_data_tmp = seismic_data[i][j];
-      }
-      if (model_settings->getWaveletDim(j) == Wavelet::ONE_D)
-        error += Process1DWavelet(model_settings,
-                                  input_files,
-                                  seismic_data_tmp,
-                                  mapped_blocked_logs,
-                                  wavelet_estim_interval,
-                                  estimation_simbox,
-                                  full_inversion_simbox,
-                                  reflection_matrix[i],
-                                  err_text,
-                                  wavelets[i][j],
-                                  well_wavelets[j],
-                                  shift_grids[i][j],
-                                  gain_grids[i][j],
-                                  local_noise_scale[j],
-                                  i, //Timelapse
-                                  j, //Angle
-                                  angles[j],
-                                  sn_ratio[j],
-                                  estimate_wavelets[j],
-                                  use_ricker_wavelet[j]);
-      else
-        error += Process3DWavelet(model_settings,
-                                  input_files,
-                                  seismic_data_tmp,
-                                  mapped_blocked_logs,
-                                  wavelet_estim_interval,
-                                  estimation_simbox,
-                                  full_inversion_simbox,
-                                  reflection_matrix[i],
-                                  err_text,
-                                  wavelets[i][j],
-                                  i, //Timelapse
-                                  j, //Angle
-                                  angles[j],
-                                  sn_ratio[j],
-                                  ref_time_grad_x_,
-                                  ref_time_grad_y_,
-                                  t_grad_x_,
-                                  t_grad_y_,
-                                  estimate_wavelets[j]);
-
-      if (local_noise_scale[j] != NULL)
-        local_noise_set = true;
-
-    } //angle
-
-    if (local_noise_set == true) {
-      for (int k=0; k < n_angles; k++) {
-        if (local_noise_scale[k]==NULL)
-          local_noise_scale[k] = new Grid2D(full_inversion_simbox.getnx(),
-                                            full_inversion_simbox.getny(),
-                                            1.0);
-      }
-    }
-
-    local_noise_scales[i]     = local_noise_scale;
-    global_noise_estimates[i] = sn_ratio;
-    sn_ratios[i]              = sn_ratio;
-
-  } //timelapse
-
-  for (size_t i = 0; i < wavelet_estim_interval.size(); i++) {
-    if (wavelet_estim_interval[i] != NULL)
-      delete wavelet_estim_interval[i];
+    Timings::setTimeWavelets(wall,cpu);
   }
 
-
-  Timings::setTimeWavelets(wall,cpu);
-
-  if (err_text != "") {
-    err_text_common += err_text;
-    return false;
-  }
-  else if (error > 0) { //Should be covered by err_text
+  if (err_text != "" || error > 0) {
+    err_text_common += "Error when setting up wavelets: \n";
     err_text_common += err_text;
     return false;
   }
@@ -3244,12 +3260,19 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             wavelet_estim_interval[0] = new Surface(wavelet_est_int_top, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(wavelet_est_int_top) != NRLib::SURF_MULT_ASCII)
-          wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_top);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
+          else
+            wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
+        }
 
       }
     }
@@ -3268,13 +3291,19 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(wavelet_est_int_bot) != NRLib::SURF_MULT_ASCII)
-          wavelet_estim_interval[1] = new Surface(wavelet_est_int_top);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_bot);
 
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
+          else
+            wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -3315,12 +3344,12 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   int error = 0;
   if (model_settings->getUseLocalWavelet() && input_files->getScaleFile(i_timelapse,j_angle) != "") {
     Surface help(input_files->getScaleFile(i_timelapse, j_angle));
-    gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //gainGrid
+    gain_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
     ResampleSurfaceToGrid2D(&help, gain_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalWavelet() && input_files->getShiftFile(i_timelapse,j_angle) != "") {
     Surface helpShift(input_files->getShiftFile(i_timelapse, j_angle));
-    shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0); //shiftGrid
+    shift_grid = new Grid2D(full_inversion_simbox.getnx(),full_inversion_simbox.getny(), 0.0);
     ResampleSurfaceToGrid2D(&helpShift, shift_grid, full_inversion_simbox);
   }
   if (model_settings->getUseLocalNoise(i_timelapse) && input_files->getLocalNoiseFile(i_timelapse,j_angle) != "") {
@@ -3362,6 +3391,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       }
       else {
 
+        LogKit::LogFormatted(LogKit::Low,"  Reading wavelet from file " + wavelet_file + ".\n");
         wavelet = new Wavelet1D(wavelet_file,
                                 file_format,
                                 model_settings,
@@ -3374,7 +3404,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
       std::string tmp_err_text;
-      float       prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
+      float prescale  = wavelet->findGlobalScaleForGivenWavelet(model_settings, &estimation_simbox, seismic_data, mapped_blocked_logs, tmp_err_text);
       if (tmp_err_text != "") {
         err_text += tmp_err_text;
         error = 1;
@@ -3383,11 +3413,15 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) // prescale, then we have correct size order, and later scale estimation will be ok.
-            wavelet->multiplyRAmpByConstant(prescale);
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+          LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
+          wavelet->multiplyRAmpByConstant(prescale);
+        }
         else {
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-              std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale.\n";
+            //H-TODO Should the first one be ==1.0 (no scale-value given)? Should we report on the difference between scale given in model file and estimated prescale?
+            std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
+                                +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
               err_text += text;
               error++;
@@ -4047,7 +4081,17 @@ CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
     if (file_type == IO::CRAVA) {
       geometry = GetGeometryFromCravaFile(grid_file);
     }
-    else if (file_type == IO::SEGY) {
+    else if (file_type == IO::STORM)
+      geometry = GetGeometryFromStormFile(grid_file, err_text);
+    else if (file_type==IO::SGRI) {
+      bool scale = true;
+      geometry = GetGeometryFromStormFile(grid_file, err_text, scale);
+    }
+    else {
+
+      if (file_type != IO::SEGY)
+        LogKit::LogFormatted(LogKit::Warning,"Trying to read grid dimensions from file "+grid_file+". Did not recognize file format, will read as SegY.\n");
+
       try
       {
         geometry = SegY::FindGridGeometry(grid_file, thf);
@@ -4056,15 +4100,6 @@ CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
       {
         err_text = e.what();
       }
-    }
-    else if (file_type == IO::STORM)
-      geometry = GetGeometryFromStormFile(grid_file, err_text);
-    else if (file_type==IO::SGRI) {
-      bool scale = true;
-      geometry = GetGeometryFromStormFile(grid_file, err_text, scale);
-    }
-    else {
-      err_text = "Trying to read grid dimensions from file "+grid_file+": unknown file format.\n";
     }
   }
   else {
@@ -4312,13 +4347,20 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
         top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                  segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
 
       }
-      else if (NRLib::FindSurfaceFileType(top_surface_file_name) != NRLib::SURF_MULT_ASCII)
-        top_surface = new Surface(top_surface_file_name);
-      else
-        err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.";
+      else {
+        int surf_type = NRLib::FindSurfaceFileType(top_surface_file_name);
+
+        if (surf_type == NRLib::SURF_MULT_ASCII)
+          err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.\n";
+        else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          err_text += "Cannot read xyz ascii surface " + top_surface_file_name + " without segy geometry.\n";
+        else
+          top_surface = new Surface(top_surface_file_name);
+      }
 
       MultiIntervalGrid::RemoveNaNFromSurface(top_surface);
       MultiIntervalGrid::InterpolateMissing(top_surface);
@@ -4362,12 +4404,19 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
               double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
               base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                         segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
             }
-            else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
-              base_surface = new Surface(base_surface_file_name);
-            else
-              err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+            else {
+              int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+
+              if (surf_type == NRLib::SURF_MULT_ASCII)
+                err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
+              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+                err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
+              else
+                base_surface = new Surface(base_surface_file_name);
+            }
 
             MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
             MultiIntervalGrid::InterpolateMissing(base_surface);
@@ -4394,12 +4443,19 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
-          else if (NRLib::FindSurfaceFileType(base_surface_file_name) != NRLib::SURF_MULT_ASCII)
-            base_surface = new Surface(base_surface_file_name);
-          else
-            err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.";
+          else {
+            int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+
+            if (surf_type == NRLib::SURF_MULT_ASCII)
+              err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
+            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
+            else
+              base_surface = new Surface(base_surface_file_name);
+          }
 
           MultiIntervalGrid::RemoveNaNFromSurface(base_surface);
           MultiIntervalGrid::InterpolateMissing(base_surface);
@@ -4605,12 +4661,24 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       if (interval_name != "")
         LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
 
+
+
       int n_intervals_inside = 0;
       for (size_t j = 0; j < wells.size(); j++) {
 
+        std::string err_text_tmp = "";
         bool is_inside = true;
         BlockedLogsCommon * bl_tmp = new BlockedLogsCommon(wells[j], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked, multiple_interval_grid->GetIntervalSimbox(i),
-                                                           model_settings->getRunFromPanel(), false, is_inside, err_text);
+                                                           model_settings->getRunFromPanel(), false, is_inside, err_text_tmp);
+
+        if (err_text_tmp != "") {
+          if (n_intervals > 1)
+            err_text += "Blocking of " + wells[j]->GetWellName() + " for interval " + interval_name + " failed: \n";
+          else
+            err_text += "Blocking of " + wells[j]->GetWellName() + " failed: \n";
+
+          err_text += err_text_tmp;
+        }
 
 
         if (is_inside == true) {
@@ -4657,6 +4725,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
                                         std::vector<NRLib::Well *>                    & wells,
                                         std::map<std::string, BlockedLogsCommon *>    & mapped_blocked_logs,
                                         std::vector<std::vector<SeismicStorage *> >   & seismic_data,
+                                        SegyGeometry                                  * segy_geometry,
                                         const std::vector<NRLib::Matrix>              & reflection_matrix,
                                         std::string                                   & err_text_common) const{
 
@@ -4665,7 +4734,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   LogKit::WriteHeader("Estimating optimized well location");
 
   std::vector<Surface *>      well_move_interval;
-  LoadWellMoveInterval(input_files, estimation_simbox, well_move_interval, err_text);
+  LoadWellMoveInterval(model_settings, input_files, estimation_simbox, segy_geometry, well_move_interval, err_text);
 
   size_t n_wells = wells.size();
 
@@ -4877,9 +4946,6 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
       if (new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
         new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
-      //if (use_for_wavelet_estimation == ModelSettings::NOTSET) {
-      //  use_for_wavelet_estimation = ModelSettings::NO;
-      //}
       new_well.SetDeviated(true);
       LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
@@ -4896,10 +4962,12 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
 
 }
 
-void CommonData::LoadWellMoveInterval(const InputFiles             * input_files,
-                                      const Simbox                 * estimation_simbox,
-                                      std::vector<Surface *>       & well_move_interval,
-                                      std::string                  & err_text) const
+void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
+                                      const InputFiles       * input_files,
+                                      const Simbox           * estimation_simbox,
+                                      SegyGeometry           * segy_geometry,
+                                      std::vector<Surface *> & well_move_interval,
+                                      std::string            & err_text) const
 {
   const double x0 = estimation_simbox->getx0();
   const double y0 = estimation_simbox->gety0();
@@ -4916,11 +4984,31 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
   if (topWMI != "" && baseWMI != "") {
     well_move_interval.resize(2);
     try {
+
       if (NRLib::IsNumber(topWMI))
         well_move_interval[0] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(topWMI.c_str()));
       else {
-        Surface tmpSurf(topWMI);
-        well_move_interval[0] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            well_move_interval[0] = new Surface(topWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+        }
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(topWMI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + topWMI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + topWMI + " without segy geometry.\n";
+          else
+            well_move_interval[0] = new Surface(topWMI);
+        }
+
       }
     }
     catch (NRLib::Exception & e) {
@@ -4931,8 +5019,27 @@ void CommonData::LoadWellMoveInterval(const InputFiles             * input_files
       if (NRLib::IsNumber(baseWMI))
         well_move_interval[1] = new Surface(x0,y0,lx,ly,nx,ny,0.0,atof(baseWMI.c_str()));
       else {
-        Surface tmpSurf(baseWMI);
-        well_move_interval[1] = new Surface(tmpSurf);
+
+        if (segy_geometry != NULL) {
+            std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+            well_move_interval[1] = new Surface(baseWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+        }
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(baseWMI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + baseWMI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + baseWMI + " without segy geometry.\n";
+          else
+            well_move_interval[1] = new Surface(baseWMI);
+        }
+
       }
     }
     catch (NRLib::Exception & e) {
@@ -5357,21 +5464,29 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   if (tmp_err_text != "")
     err_text += "Prior facies probabilities failed.\n"+tmp_err_text;
 
+  bool facies_estim_interval_ok = true;
   if (model_settings->getFaciesProbFromRockPhysics()== false) {
     tmp_err_text = "";
     FindFaciesEstimationInterval(model_settings, input_files, facies_estim_interval, full_inversion_simbox, segy_geometry, tmp_err_text);
 
-    if (tmp_err_text != "")
+    if (tmp_err_text != "") {
       err_text += "Reading facies estimation interval failed.\n"+tmp_err_text;
+      facies_estim_interval_ok = false;
+    }
   }
   else
     facies_estim_interval.resize(0);
 
-  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS) {
+  if (model_settings->getIsPriorFaciesProbGiven()==ModelSettings::FACIES_FROM_WELLS && facies_estim_interval_ok == true) {
     if (n_facies > 0) {
       prior_facies.resize(n_intervals);
 
       for (int i = 0; i < n_intervals; i++) {
+
+        std::string interval_name = multiple_interval_grid_->GetIntervalNames()[i];
+        if (interval_name != "")
+          LogKit::LogFormatted(LogKit::Low,"\nEstimating facies prior probabilites for interval " + interval_name +".\n");
+
 
         const Simbox * simbox = multiple_interval_grid_->GetIntervalSimbox(i);
         int   nz              = simbox->getnz();
@@ -5595,6 +5710,9 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
       map_type my_map;
 
       std::string interval_name = multi_interval_grid->GetIntervalName(i);
+      if (interval_name != "")
+        LogKit::LogFormatted(LogKit::Low,"Setting up facies prior probabilities for interval " + interval_name + ".\n");
+
       my_map = model_settings->getPriorFaciesProb(interval_name);
 
       prior_facies[i].resize(n_facies);
@@ -5666,6 +5784,7 @@ bool CommonData::SetupPriorFaciesProb(ModelSettings                             
   }
 
   if (err_text != "") {
+    err_text_common += "Failed setting up prior facies: \n";
     err_text_common += err_text;
     return false;
   }
@@ -5705,12 +5824,19 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             facies_estim_interval[0] = new Surface(topFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(topFEI) != NRLib::SURF_MULT_ASCII)
-          facies_estim_interval[0] = new Surface(topFEI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(topFEI);
+
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + topFEI + " without segy geometry.\n";
+          else
+            facies_estim_interval[0] = new Surface(topFEI);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -5728,13 +5854,19 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
             double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
             facies_estim_interval[1] = new Surface(baseFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
         }
-        else if (NRLib::FindSurfaceFileType(baseFEI) != NRLib::SURF_MULT_ASCII)
-          facies_estim_interval[1] = new Surface(baseFEI);
-        else
-          err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.";
+        else {
+          int surf_type = NRLib::FindSurfaceFileType(baseFEI);
 
+          if (surf_type == NRLib::SURF_MULT_ASCII)
+            err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.\n";
+          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            err_text += "Cannot read xyz ascii surface " + baseFEI + " without segy geometry.\n";
+          else
+            facies_estim_interval[1] = new Surface(baseFEI);
+        }
       }
     }
     catch (NRLib::Exception & e) {
@@ -7207,18 +7339,25 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
               tmp_surf = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0());
+                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                     segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
           }
-          else if (NRLib::FindSurfaceFileType(file_name) != NRLib::SURF_MULT_ASCII)
-            tmp_surf = new Surface(file_name);
-          else
-            err_text_tmp += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.";
+          else {
+            int surf_type = NRLib::FindSurfaceFileType(file_name);
+
+            if (surf_type == NRLib::SURF_MULT_ASCII)
+              err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
+            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
+            else
+              tmp_surf = new Surface(file_name);
+          }
 
           if (err_text_tmp == "") {
             if (simbox->CheckSurface(*tmp_surf) == true)
               correlation_direction = new Surface(*tmp_surf);
             else
-              err_text_tmp += "Error: Correlation surface does not cover volume" + interval_text + ".\n";
+              err_text_tmp += "Error: Correlation surface " + tmp_surf->GetName() + "does not cover volume" + interval_text + ".\n";
           }
 
           if (err_text_tmp == "") {
@@ -7596,7 +7735,7 @@ void CommonData::SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
 
   if (count > 0) {
     long long nxyz = static_cast<long>(grid->GetNI())*static_cast<long>(grid->GetNJ())*static_cast<long>(grid->GetNK());
-    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average\n",
+    LogKit::LogFormatted(LogKit::Medium, "\nThe grid contains %ld undefined grid cells (%.2f%). Setting these to global average.\n",
                          count, 100.0f*static_cast<float>(count)/(static_cast<float>(count) + static_cast<float>(nxyz)),
                          avg);
   }
@@ -8237,7 +8376,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             n_corr_T = n_corr_T/2;
 
           if (interval_names[i] != "")
-            LogKit::LogFormatted(LogKit::Low,"\nInterval: " + interval_names[i] + "\n\n");
+            LogKit::LogFormatted(LogKit::Low,"\nInterval: " + interval_names[i] + "\n");
 
           if (!estimate_temp_corr) {
             // 2. Use variogram with correlation range
@@ -8255,7 +8394,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               std::string tmp_err_text("");
               float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
               if (corr_mat == NULL) {
-                err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed\n";
+                err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed.\n";
                 err_text += tmp_err_text;
                 failed_temp_corr = true;
               }
@@ -8298,7 +8437,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                                                   multi_zone_available,
                                                   tmp_err_txt);
             if (tmp_err_txt != "") {
-              err_text += "Error with covariance estimate in interval "+interval_names[i]+":\n"+tmp_err_txt;
+              if (interval_names[i] != "")
+                err_text += "Error with covariance estimation in interval "+interval_names[i]+":\n"+tmp_err_txt;
+              else
+                err_text += "Error with covariance estimation:\n"+tmp_err_txt;
               failed_param_cov = true;
             }
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
@@ -8310,6 +8452,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, false, tmp_err_txt);
               if (analyze_all->GetEnoughData() == false) {
                 err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
+                err_text += tmp_err_txt;
                 failed_param_cov = true;
                 failed_temp_corr = true;
               }
@@ -8391,7 +8534,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
       }
 
       if (failed_temp_corr == true || failed_param_cov == true) {
-        err_text += "Could not construct prior correlation.\n\n";
         failed = true;
       }
     }
@@ -8402,6 +8544,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
   delete analyze_all;
 
   if (err_text != "") {
+    err_text_common += "Error when setting up prior correlations: \n";
     err_text_common += err_text;
     return false;
   }
@@ -9648,7 +9791,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Medium,"  Synthetic seismic data (forward modelled):        yes\n");
     if ((output_grids_seismic & IO::ORIGINAL_SEISMIC_DATA) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Original seismic data (in output grid)   :        yes\n");
-    if ((output_grids_seismic & IO::RESIDUAL) > 0 || (output_grids_seismic & IO::SYNTHETIC_RESIDUAL) > 0)
+    if ((output_grids_seismic & IO::RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Seismic data residuals                   :        yes\n");
     if ((output_grids_seismic & IO::FOURIER_RESIDUAL) > 0)
       LogKit::LogFormatted(LogKit::Medium,"  Fourier residuals from inversion         :        yes\n");
@@ -10057,28 +10200,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"    Azimuth                                : %10.1f\n",90.0 - vario->getAngle()*(180/M_PI));
     }
     LogKit::LogFormatted(LogKit::Low,"  High cut frequency for well logs         : %10.1f\n",model_settings->getMaxHzBackground());
-    //if (model_settings->getMultizoneBackground() == true) {
-    //  std::vector<std::string> surface_files = input_files->getMultizoneSurfaceFiles();
-    //  std::vector<int> erosion               = model_settings->getErosionPriority();
-    //  std::vector<double> uncertainty        = model_settings->getSurfaceUncertainty();
-    //  std::vector<int> structure             = model_settings->getCorrelationStructure();
-    //  int nZones = static_cast<int>(surface_files.size()-1);
-    //  LogKit::LogFormatted(LogKit::Low,"\n  Multizone background model:\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface file                       : "+surface_files[0]+"\n");
-    //  LogKit::LogFormatted(LogKit::Low,"    Top surface erosion priority           : %10d\n",erosion[0]);
-    //  for (int i=0; i<nZones; i++) {
-    //    LogKit::LogFormatted(LogKit::Low,"\n    Zone%2d\n",i+1);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface file                    : "+surface_files[i+1]+"\n");
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface erosion priority        : %10d\n",erosion[i+1]);
-    //    LogKit::LogFormatted(LogKit::Low,"      Base surface Beta uncertainty        : %10.1f\n",uncertainty[i+1]);
-    //    if (structure[i+1] == ModelSettings::TOP)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :        Top\n");
-    //    else if (structure[i+1] == ModelSettings::BASE)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                :       Base\n");
-    //    else if (structure[i+1] == ModelSettings::COMPACTION)
-    //      LogKit::LogFormatted(LogKit::Low,"      Correlation structure                : Compaction\n");
-    //  }
-    //}
+
   }
   else
   {

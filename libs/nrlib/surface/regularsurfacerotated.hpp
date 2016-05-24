@@ -66,7 +66,11 @@ public:
                         double            ly        = 0.0,
                         int             * ilxl_area = NULL,
                         double            il0_ref   = 0.0,
-                        double            xl0_ref   = 0.0);
+                        double            xl0_ref   = 0.0,
+                        double            il_step_x = 0.0,
+                        double            il_step_y = 0.0,
+                        double            xl_step_x = 0.0,
+                        double            xl_step_y = 0.0);
 
   Surface<A>* Clone() const
   { return new RegularSurfaceRotated<A>(*this); }
@@ -185,7 +189,11 @@ public:
                     double            ly        = 0.0,
                     int             * ilxl_area = NULL,
                     double            il0_ref   = 0.0,
-                    double            xl0_ref   = 0.0);
+                    double            xl0_ref   = 0.0,
+                    double            il_step_x = 0.0,
+                    double            il_step_y = 0.0,
+                    double            xl_step_x = 0.0,
+                    double            xl_step_y = 0.0);
 
   /// \brief Write surface to file on given format.
   /// If the file format does not support rotation, the resampled surface is written to file.
@@ -275,7 +283,11 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(std::string       filename,
                                                 double            ly,
                                                 int             * ilxl_area,
                                                 double            il0_ref,
-                                                double            xl0_ref)
+                                                double            xl0_ref,
+                                                double            il_step_x,
+                                                double            il_step_y,
+                                                double            xl_step_x,
+                                                double            xl_step_y)
 
 {
   ReadFromFile(filename,
@@ -287,7 +299,11 @@ RegularSurfaceRotated<A>::RegularSurfaceRotated(std::string       filename,
                ly,
                ilxl_area,
                il0_ref,
-               xl0_ref);
+               xl0_ref,
+               il_step_x,
+               il_step_y,
+               xl_step_x,
+               xl_step_y);
 }
 
 
@@ -522,12 +538,17 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
                                             double            ly,
                                             int             * ilxl_area,
                                             double            il0_ref,
-                                            double            xl0_ref)
+                                            double            xl0_ref,
+                                            double            il_step_x,
+                                            double            il_step_y,
+                                            double            xl_step_x,
+                                            double            xl_step_y)
 {
   if (format == SURF_UNKNOWN) {
     format = FindSurfaceFileType(filename);
     if (format == SURF_UNKNOWN) {
-      throw FileFormatError("Failed to determine file format for surface file: " + filename);
+      throw FileFormatError("Failed to determine file format for surface file: " + filename
+                            + "Allowed formats are Irap Classic, Storm binary, Sgri, Multicolumn Ascii (X,Y,Z,IL,XL) and XYZ ascii.");
     }
   }
 
@@ -542,6 +563,22 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
     case SURF_SGRI:
       ReadSgriSurf(filename, surface_, angle_);
       break;
+    case SURF_XYZ_ASCII:
+      ReadXYZAsciiSurf(filename,
+                       surface_,
+                       x_ref,
+                       y_ref,
+                       lx,
+                       ly,
+                       ilxl_area,
+                       il0_ref,
+                       xl0_ref,
+                       il_step_x,
+                       il_step_y,
+                       xl_step_x,
+                       xl_step_y);
+      angle_ = segy_angle;
+      break;
     case SURF_MULT_ASCII:
       ReadMulticolumnAsciiSurf(filename,
                                surface_,
@@ -555,7 +592,7 @@ void RegularSurfaceRotated<A>::ReadFromFile(std::string       filename,
       angle_ = segy_angle;
       break;
     default:
-      throw FileFormatError("Reading of file " + filename + " on format " + ToString(format)
+      throw FileFormatError("Reading of file " + filename + " on format " + GetSurfFormatString(format)
                              + " as a rotated grid is currently not supported.");
   }
 
@@ -587,7 +624,7 @@ void RegularSurfaceRotated<A>::WriteToFile(const std::string& filename,
       break;
     default:
       throw FileFormatError("Writing of surface to file " + filename + " on format "
-                            + ToString(format) + " is currently not supported.");
+                            + GetSurfFormatString(format) + " is currently not supported.");
   }
 }
 
