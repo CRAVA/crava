@@ -7538,16 +7538,6 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           for (int j = 0; j < 3; j++)
             vertical_trends(i,j) = interval_vertical_trends[j];
 
-          //H-REMOVE
-          bool debug_trace = false;
-            if (debug_trace) {
-            std::vector<double> grid_trace;
-            for (int k = 0; k < static_cast<int>(background_parameters[0][0]->GetNK()); k++) {
-              grid_trace.push_back(background_parameters[0][0]->GetValue(195, 65, k));
-            }
-          }
-
-
           //These logs are written out in CravaResult if multiple interval isn't used
           if (n_intervals == 1)
             bg_blocked_logs = bg_blocked_logs_tmp;

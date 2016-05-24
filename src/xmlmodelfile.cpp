@@ -1020,11 +1020,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
    if(scaleGiven==false) // no commands given
    {
     modelSettings_->addWaveletScale(1);
-
-    //if (estimate)
-      modelSettings_->addEstimateGlobalWaveletScale(false);
-    //else
-      //modelSettings_->addEstimateGlobalWaveletScale(true); //Estimate scale true by default //H-REMOVE
+    modelSettings_->addEstimateGlobalWaveletScale(false);
    }
     errTxt += tmpErr;
   }
