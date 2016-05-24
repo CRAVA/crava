@@ -1288,10 +1288,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //Floor the comparison as this is also done in segy.cpp when writing to file
-  //There is also a difference when using segy dz in simbox, as it is first turned to number of layers (int) and back to dz
-  double simbox_dz = floor(simbox.getdz());
-  double segy_dz = floor(model_settings->getSegyDz());
+  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
+  double simbox_dz = floor(simbox.getdz()*10)/10;
+  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
   if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
       if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING)
         LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("

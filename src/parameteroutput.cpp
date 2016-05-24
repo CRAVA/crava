@@ -724,15 +724,15 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
                                   const double          z0)
 {
   //If output grid and input segy have the same resolution (dz) we use nz from segy
-  float dz_output_r = float(floor(((outgrid->GetLZ()/outgrid->GetNK())*100)/100));
-  float dz_input    = floor(model_settings->getSegyDz());
+  float dz_output_r = float(floor((outgrid->GetLZ()/outgrid->GetNK())*10)/10);
+  float dz_input    = floor(model_settings->getSegyDz()*10)/10;
   int nz_output;
   if (dz_output_r == dz_input) {
     nz_output = model_settings->getSegyNz();
   }
   else {
-    float dz_output   = float(floor((outgrid->GetLZ()/outgrid->GetNK())));
-    nz_output = int(ceil((outgrid->GetZMax() - z0)/dz_output));
+    float dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
+    nz_output       = int(ceil((outgrid->GetZMax() - z0)/dz_output));
   }
 
   return nz_output;
