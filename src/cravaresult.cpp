@@ -213,6 +213,15 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   Simbox & output_simbox                      = common_data->GetOutputSimbox();
   n_intervals_                                = multi_interval_grid->GetNIntervals();
 
+  //Rapport
+  if (n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) {
+    LogKit::LogFormatted(LogKit::Low,"\nThe results are combined and resampled to the final output (visualization) grid with " + NRLib::ToString(output_simbox.getnz())
+                                      + " layers before they are written to file.\n");
+  }
+  else {
+    LogKit::LogFormatted(LogKit::Low,"\nThe results are written to file based on the output (visualization) grid with " + NRLib::ToString(output_simbox.getnz()) + " layers.\n");
+  }
+
   std::vector<NRLib::Grid<float> *> dummy_grids;
 
   int nx           = output_simbox.getnx();
@@ -1362,7 +1371,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //Write seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
   if (model_settings->getForwardModeling() == false &&
       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
-      || (model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0
       || (model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0 )) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data\n");
 
@@ -1454,8 +1462,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
           ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
 
-        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_RESIDUAL) > 0
-                       || (model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
+        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
           StormContGrid residual(*(synt_seismic_data_[j]));
           for (size_t k=0;k<seismic_storm->GetNK();k++) {
             for (size_t j=0;j<seismic_storm->GetNJ();j++) {

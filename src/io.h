@@ -166,8 +166,7 @@ public:
   enum           outputGridsSeismic{ORIGINAL_SEISMIC_DATA  = 1,
                                     SYNTHETIC_SEISMIC_DATA = 2,
                                     RESIDUAL               = 4,
-                                    SYNTHETIC_RESIDUAL     = 8,
-                                    FOURIER_RESIDUAL       = 16};
+                                    FOURIER_RESIDUAL       = 8};
 
   enum           outputWells{WELLS              = 1,
                              BLOCKED_WELLS      = 2,

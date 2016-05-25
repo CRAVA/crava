@@ -138,8 +138,8 @@ Simbox::Simbox(const Simbox             * estimation_simbox,
 {
   std::string output_name = "";
   if (interval_name != "")
-    output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating simbox%s\n",output_name.c_str());
+    output_name = " for interval " + interval_name;
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary simbox (used for inversion grid)" + output_name + ".\n");
   interval_name_  = interval_name;
   status_         = NODEPTH;
   cosrot_         = cos(estimation_simbox->getAngle());
@@ -223,7 +223,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with one correlation surface" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with one correlation surface" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -337,8 +337,8 @@ base_eroded_surface_(NULL)
     if (interval_name != "")
       interval_text += " in interval " + interval_name;
 
-    LogKit::LogFormatted(LogKit::High,"\nNumber of layers" + interval_text + " increased from %d", n_layers);
-    LogKit::LogFormatted(LogKit::High," to %d because of the correlation direction.\n",nz);
+    LogKit::LogFormatted(LogKit::High,"\n Number of layers" + interval_text + " increased from %d", n_layers);
+    LogKit::LogFormatted(LogKit::High,"  to %d because of the correlation direction.\n",nz);
   }
 
   new_base_surface.Add(shift_bot);
@@ -386,7 +386,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating extended simbox with two correlation surfaces" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with two correlation surfaces" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;

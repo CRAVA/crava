@@ -773,7 +773,6 @@ private:
   double                            time_lz_;                    ///< Used when top and base surfaces are parallel
   double                            time_dz_;                    ///< Used when top and base surfaces are parallel or for giving a sampling density instead of layers
   std::map<std::string, int>        time_nz_;                    ///< Number of layers for each interval
-  //int                               time_nz_;                    ///< Used when top and base surfaces are parallel
   bool                              velocityFromInv_;            ///< Velocity for time depth from inverted Vp.
 
   int                               segy_nz_;                    ///< nz of input segy seismic cube, first offset
