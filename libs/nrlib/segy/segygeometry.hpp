@@ -124,11 +124,6 @@ private:
                        double & dxILn, double & dyILn,
                        double & dxIXn, double & dyXLn,
                        double   frac);
-  void   Regularize_old(double   x0,   double   y0,
-                        double   x1,   double   y1,
-                        double   dIL,  double   dXL,
-                        double & dxIL, double & dyIL,
-                        double & dxXL, double & dyXL);
 
   void   SetupGeometrySingleTrace(const SegYTrace * trace);
 
