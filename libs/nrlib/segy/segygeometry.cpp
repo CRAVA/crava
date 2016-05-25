@@ -170,11 +170,11 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> & traces,
         dyXL = (y1 - y0 - dyIL*dIL1        )/dXL1;
       }
 
-      LogKit::LogFormatted(LogKit::Low,"\n                      x            y         IL       XL");
-      LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------\n");
-      LogKit::LogFormatted(LogKit::Low,"Origin     %12.2f %12.2f   %8d %8d\n", x0, y0, il0, xl0);
-      LogKit::LogFormatted(LogKit::Low,"Corner 1   %12.2f %12.2f   %8d %8d\n", x1, y1, il1, xl1);
-      LogKit::LogFormatted(LogKit::Low,"Corner 2   %12.2f %12.2f   %8d %8d\n", x2, y2, il2, xl2);
+      LogKit::LogFormatted(LogKit::High,"\n                      x            y         IL       XL");
+      LogKit::LogFormatted(LogKit::High,"\n--------------------------------------------------------\n");
+      LogKit::LogFormatted(LogKit::High,"Origin     %12.2f %12.2f   %8d %8d\n", x0, y0, il0, xl0);
+      LogKit::LogFormatted(LogKit::High,"Corner 1   %12.2f %12.2f   %8d %8d\n", x1, y1, il1, xl1);
+      LogKit::LogFormatted(LogKit::High,"Corner 2   %12.2f %12.2f   %8d %8d\n", x2, y2, il2, xl2);
 
       double dIL   = std::sqrt(dxIL*dxIL + dyIL*dyIL);
       double dXL   = std::sqrt(dxXL*dxXL + dyXL*dyXL);
@@ -183,10 +183,10 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> & traces,
       double rotIL =               atan(std::abs(dyIL/dxIL));
       double rotXL = NRLib::Pi/2 - atan(std::abs(dyXL/dxXL));
 
-      LogKit::LogFormatted(LogKit::Low,"\n               dx           dy    increment       length        angle");
-      LogKit::LogFormatted(LogKit::Low,"\n---------------------------------------------------------------------");
-      LogKit::LogFormatted(LogKit::Low,"\nIL   %12.4f %12.4f %12.4f %12.4f %12.4f"  , dxIL, dyIL, dIL, lenIL, NRLib::RadToDeg(rotIL));
-      LogKit::LogFormatted(LogKit::Low,"\nXL   %12.4f %12.4f %12.4f %12.4f %12.4f\n", dxXL, dyXL, dXL, lenXL, NRLib::RadToDeg(rotXL));
+      LogKit::LogFormatted(LogKit::High,"\n               dx           dy    increment       length        angle");
+      LogKit::LogFormatted(LogKit::High,"\n---------------------------------------------------------------------");
+      LogKit::LogFormatted(LogKit::High,"\nIL   %12.4f %12.4f %12.4f %12.4f %12.4f"  , dxIL, dyIL, dIL, lenIL, NRLib::RadToDeg(rotIL));
+      LogKit::LogFormatted(LogKit::High,"\nXL   %12.4f %12.4f %12.4f %12.4f %12.4f\n", dxXL, dyXL, dXL, lenXL, NRLib::RadToDeg(rotXL));
 
       if (regularize_if_needed) {
         bool regularized = Regularize(dxIL, dyIL, dxXL, dyXL,
@@ -196,11 +196,11 @@ SegyGeometry::SegyGeometry(std::vector<SegYTrace *> & traces,
           rotIL =               atan(std::abs(dyIL/dxIL));
           rotXL = NRLib::Pi/2 - atan(std::abs(dyXL/dxXL));
 
-          LogKit::LogFormatted(LogKit::Low,"\nAfter regularization:");
-          LogKit::LogFormatted(LogKit::Low,"\n               dx           dy    increment       length        angle");
-          LogKit::LogFormatted(LogKit::Low,"\n---------------------------------------------------------------------");
-          LogKit::LogFormatted(LogKit::Low,"\nIL   %12.4f %12.4f %12.4f %12.4f %12.4f"  , dxIL, dyIL, dIL, lenIL, NRLib::RadToDeg(rotIL));
-          LogKit::LogFormatted(LogKit::Low,"\nXL   %12.4f %12.4f %12.4f %12.4f %12.4f\n", dxXL, dyXL, dXL, lenXL, NRLib::RadToDeg(rotXL));
+          LogKit::LogFormatted(LogKit::High,"\nAfter regularization:");
+          LogKit::LogFormatted(LogKit::High,"\n               dx           dy    increment       length        angle");
+          LogKit::LogFormatted(LogKit::High,"\n---------------------------------------------------------------------");
+          LogKit::LogFormatted(LogKit::High,"\nIL   %12.4f %12.4f %12.4f %12.4f %12.4f"  , dxIL, dyIL, dIL, lenIL, NRLib::RadToDeg(rotIL));
+          LogKit::LogFormatted(LogKit::High,"\nXL   %12.4f %12.4f %12.4f %12.4f %12.4f\n", dxXL, dyXL, dXL, lenXL, NRLib::RadToDeg(rotXL));
         }
       }
     }
@@ -360,7 +360,7 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
   double b = std::sqrt(dxXL*dxXL + dyXL*dyXL);
   double R = acos((dxIL*dxXL + dyIL*dyXL)/(a*b));
 
-  LogKit::LogFormatted(LogKit::Low,"\nAngle between IL and XL axes : %.4f\n",RadToDeg(R));
+  LogKit::LogFormatted(LogKit::High,"\nAngle between IL and XL axes : %.4f\n",RadToDeg(R));
 
   double dxILn = 0.0;
   double dyILn = 0.0;
@@ -371,11 +371,11 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
                 dxILn, dyILn, dxXLn, dyXLn, // New values
                 dyIL/dxIL);                 // IL axis is not rotated in this case as original ratio is used.
 
-  LogKit::LogFormatted(LogKit::High,"\nChanging angle of XL axis so that it becomes orthogonal to IL axis.\n");
-  LogKit::LogFormatted(LogKit::High,"\n               dx           dy");
-  LogKit::LogFormatted(LogKit::High,"\n------------------------------");
-  LogKit::LogFormatted(LogKit::High,"\nIL   %12.4f %12.4f"  , dxILn, dyILn);
-  LogKit::LogFormatted(LogKit::High,"\nXL   %12.4f %12.4f\n", dxXLn, dyXLn);
+  LogKit::LogFormatted(LogKit::DebugLow,"\nChanging angle of XL axis so that it becomes orthogonal to IL axis.\n");
+  LogKit::LogFormatted(LogKit::DebugLow,"\n               dx           dy");
+  LogKit::LogFormatted(LogKit::DebugLow,"\n------------------------------");
+  LogKit::LogFormatted(LogKit::DebugLow,"\nIL   %12.4f %12.4f"  , dxILn, dyILn);
+  LogKit::LogFormatted(LogKit::DebugLow,"\nXL   %12.4f %12.4f\n", dxXLn, dyXLn);
 
 
   double dx1  = (dxILn - dxIL)*dIL1 + (dxXLn - dxXL)*dXL1;  // Corner corrections
@@ -386,11 +386,11 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
   double dxy1 = std::sqrt(dx1*dx1 + dy1*dy1);
   double dxy2 = std::sqrt(dx2*dx2 + dy2*dy2);
 
-  LogKit::LogFormatted(LogKit::High,"\nFinding maximum mismatch between corner trace locations in SEGY volume and in grid.\n");
-  LogKit::LogFormatted(LogKit::High,"\n              Delta_x    Delta_y   Delta_xy");
-  LogKit::LogFormatted(LogKit::High,"\n-------------------------------------------");
-  LogKit::LogFormatted(LogKit::High,"\nCorner 1   %10.2f %10.2f %10.2f"  , dx1, dy1, dxy1);
-  LogKit::LogFormatted(LogKit::High,"\nCorner 2   %10.2f %10.2f %10.2f\n", dx2, dy2, dxy2);
+  LogKit::LogFormatted(LogKit::DebugLow,"\nFinding maximum mismatch between corner trace locations in SEGY volume and in grid.\n");
+  LogKit::LogFormatted(LogKit::DebugLow,"\n              Delta_x    Delta_y   Delta_xy");
+  LogKit::LogFormatted(LogKit::DebugLow,"\n-------------------------------------------");
+  LogKit::LogFormatted(LogKit::DebugLow,"\nCorner 1   %10.2f %10.2f %10.2f"  , dx1, dy1, dxy1);
+  LogKit::LogFormatted(LogKit::DebugLow,"\nCorner 2   %10.2f %10.2f %10.2f\n", dx2, dy2, dxy2);
 
   double max_dx = std::max(std::abs(dx1), std::abs(dx2));
   double max_dy = std::max(std::abs(dy1), std::abs(dy2));
@@ -400,10 +400,10 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
   double tol_x  = tol*std::min(std::abs(dxIL), std::abs(dxXL));
   double tol_y  = tol*std::min(std::abs(dyIL), std::abs(dyXL));
 
-  LogKit::LogFormatted(LogKit::High,"\nAllowing a mismatch of %.2f of IL and XL increments.\n",tol);
-  LogKit::LogFormatted(LogKit::High,"\n                           x          y");
-  LogKit::LogFormatted(LogKit::High,"\n---------------------------------------");
-  LogKit::LogFormatted(LogKit::High,"\nAllowed mismatch     %7.2f %10.2f\n", tol_x, tol_y);
+  LogKit::LogFormatted(LogKit::DebugLow,"\nAllowing a mismatch of %.2f of IL and XL increments.\n",tol);
+  LogKit::LogFormatted(LogKit::DebugLow,"\n                           x          y");
+  LogKit::LogFormatted(LogKit::DebugLow,"\n---------------------------------------");
+  LogKit::LogFormatted(LogKit::DebugLow,"\nAllowed mismatch     %7.2f %10.2f\n", tol_x, tol_y);
 
   if (max_dx > tol_x || max_dy > tol_y) {
     regularized = true;
@@ -419,8 +419,8 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
     double dmin   = std::numeric_limits<double>::infinity();
     double fmin   = 0.0;
 
-    LogKit::LogFormatted(LogKit::High,"\n                Angle    Delta_x    Delta_y   Delta_xy");
-    LogKit::LogFormatted(LogKit::High,"\n------------------------------------------------------");
+    LogKit::LogFormatted(LogKit::DebugLow,"\n                Angle    Delta_x    Delta_y   Delta_xy");
+    LogKit::LogFormatted(LogKit::DebugLow,"\n------------------------------------------------------");
 
     for (int i = 0 ; i < 11 ; i++) {
       double frac = minf + step*static_cast<double>(i);
@@ -444,8 +444,8 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
 
       double angle = NRLib::RadToDeg(atan(frac));
 
-      LogKit::LogFormatted(LogKit::High,"\nCorner 1   %10.4f %10.2f %10.2f %10.2f", angle, dx1, dy1, dxy1);
-      LogKit::LogFormatted(LogKit::High,"\nCorner 2   %10.4f %10.2f %10.2f %10.2f", angle, dx2, dy2, dxy2);
+      LogKit::LogFormatted(LogKit::DebugLow,"\nCorner 1   %10.4f %10.2f %10.2f %10.2f", angle, dx1, dy1, dxy1);
+      LogKit::LogFormatted(LogKit::DebugLow,"\nCorner 2   %10.4f %10.2f %10.2f %10.2f", angle, dx2, dy2, dxy2);
     }
 
     LogKit::LogFormatted(LogKit::High,"\n\nOptimal angle     :  %8.4f", NRLib::RadToDeg(atan(fmin)));
@@ -465,7 +465,7 @@ SegyGeometry::Regularize(double & dxIL, double & dyIL,
     double b = std::sqrt(dxXL*dxXL + dyXL*dyXL);
     double R = acos((dxIL*dxXL + dyIL*dyXL)/(a*b));
 
-    LogKit::LogFormatted(LogKit::Low,"\nAngle between IL and XL axes : %.4f\n",RadToDeg(R));
+    LogKit::LogFormatted(LogKit::High,"\nAngle between IL and XL axes : %.4f\n",RadToDeg(R));
   }
   else {
     LogKit::LogFormatted(LogKit::High,"\nRegularization not needed.\n");
