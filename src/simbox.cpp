@@ -1232,8 +1232,6 @@ Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errT
   double dx  = lx/static_cast<double>(nx);
   double dy  = ly/static_cast<double>(ny);
 
-  bool failed = false;
-
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -1252,7 +1250,6 @@ Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errT
   {
     errText += "Could not set rotation angle.\n";
     errText += e.what();
-    failed = true;
     return true; // Failed
   }
   cosrot_      = cos(rot);

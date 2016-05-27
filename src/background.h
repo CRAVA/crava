@@ -220,6 +220,13 @@ private:
                                                     float                 max_value,
                                                     std::string           parName);
 
+
+
+  static
+  FFTGrid    * CopyFFTGrid(FFTGrid   * origGrid,
+                           const bool  expTrans,
+                           const bool  fileGrid);
+
   static
   void         CheckLogForOnlyMissing(const std::vector<double> & log,
                                       const std::string         & log_name,

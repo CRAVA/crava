@@ -4360,8 +4360,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
   LogKit::LogFormatted(LogKit::Low,"\nSetting top and base surfaces for the entire inversion volume:\n");
   bool failed = false;
 
-  const std::vector<std::string> interval_names = model_settings->getIntervalNames();
-  const std::string top_surface_file_name       = input_files->getTimeSurfTopFile();
+  const std::string top_surface_file_name = input_files->getTimeSurfTopFile();
 
   Surface * top_surface  = NULL;
   Surface * base_surface = NULL;
@@ -5215,7 +5214,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     simbox = estimation_simbox;
 
   // rock physics data
-  const std::vector<std::string>                    interval_names          = model_settings->getIntervalNames();
   const std::string                                 path                    = input_files->getInputDirectory();
   const std::vector<std::string>                    trend_cube_parameters   = model_settings->getTrendCubeParameters();
   std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_intervals);
@@ -5306,7 +5304,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::sort(all_facies_names.begin(), all_facies_names.end());
 
     std::string prev_facies  = "";
-    std::string rock_err_txt = "";
 
     for (size_t f = 0; f < all_facies_names.size(); f++) {
       if (all_facies_names[f] != prev_facies) {

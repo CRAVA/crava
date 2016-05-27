@@ -2562,7 +2562,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("probability");
 
   std::string facies_name;
-  std::string file_name;
   float value;
   parseValue(root, "name", facies_name, errTxt, true);
   parseValue(root, "probability", value, errTxt, true);
@@ -2624,7 +2623,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("fraction");
 
   std::string facies_name;
-  std::string file_name;
   float value;
   parseValue(root, "name", facies_name, errTxt, true);
 
@@ -2685,7 +2683,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("fraction");
 
   std::string faciesname;
-  std::string filename;
   float value;
   parseValue(root, "name", faciesname, errTxt, true);
   parseValue(root, "fraction", value, errTxt, true);

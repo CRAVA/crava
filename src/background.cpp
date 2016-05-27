@@ -1411,6 +1411,21 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   delete [] missing;
 }
 
+FFTGrid *
+Background::CopyFFTGrid(FFTGrid   * orig_grid,
+                        const bool  exp_trans,
+                        const bool  file_grid)
+{
+  FFTGrid * new_grid;
+
+  if (file_grid)
+    new_grid = new FFTFileGrid(static_cast<FFTFileGrid *>(orig_grid), exp_trans);
+  else
+    new_grid = new FFTGrid(orig_grid, exp_trans);
+
+  return (new_grid);
+}
+
 void
 Background::CheckLogForOnlyMissing(const std::vector<double> & log,
                                    const std::string         & log_name,
