@@ -1739,7 +1739,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
       wavelets_          = common_data->GetWavelet(0);
 
-      std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
       //Resample wavelet to output simbox, and generate seismic logs.
       int n_wavelets = static_cast<int>(wavelets_.size());
       for (int i = 0; i < n_wavelets; i++) {
@@ -2156,9 +2155,6 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
-    int output_format = model_settings->getOutputGridFormat();
-    if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
-      output_format += IO::ASCII;
 
     depth_mapping->setMappingFromVelocity(grid_vp, simbox, model_settings->getOutputGridFormat());
   }

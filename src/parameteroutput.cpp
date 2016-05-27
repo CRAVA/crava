@@ -473,6 +473,8 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
   (void) padding;
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
+  if (model_settings->getWriteAsciiSurfaces() && !(format_flag & IO::ASCII))
+    format_flag += IO::ASCII;
   int domain_flag       = model_settings->getOutputGridDomain();
 
   if (format_flag > 0) {//Output format specified.
