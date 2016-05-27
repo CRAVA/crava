@@ -339,8 +339,8 @@ public:
 
   void                                   FindMeanVsVp(const NRLib::Surface<double> & top,
                                                       const NRLib::Surface<double> & bot,
-                                                      double                         mean_vs_vp,
-                                                      int                            n_vs_vp) const;
+                                                      double                       & mean_vs_vp,
+                                                      int                          & n_vs_vp) const;
 
   bool                                   VolumeFocus(const NRLib::Volume                            & volume,
                                                      std::vector<double>                            & x_pos_blocked,

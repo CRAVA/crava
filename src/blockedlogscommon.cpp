@@ -4014,8 +4014,8 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
 //--------------------------------------------------------------------------------------
 void BlockedLogsCommon::FindMeanVsVp(const NRLib::Surface<double> & top,
                                      const NRLib::Surface<double> & bot,
-                                     double                         mean_vs_vp,
-                                     int                            n_vs_vp) const
+                                     double                       & mean_vs_vp,
+                                     int                          & n_vs_vp) const
 {
   std::vector<bool> active_cell(n_blocks_, true);
 
