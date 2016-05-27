@@ -1448,7 +1448,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
         }
 
-        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
+        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
 
         //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
         for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {

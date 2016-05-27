@@ -3046,11 +3046,9 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
       std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
 
       //Estimation of a wavelet requires the reading of seismic, reading of wells and reflection matrix to be ok. Check blocking of wells since they are used in estimation.
-      bool estimate_failed = false;
       for (size_t j = 0; j < estimate_wavelets.size(); j++) {
         if (estimate_wavelets[j]) {
           if (read_seismic_ == false || read_wells_ == false || setup_reflection_matrix_ == false || block_wells_ == false) {
-            estimate_failed = true;
             return false;
           }
         }
@@ -5261,6 +5259,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
     if (n_wells > 0) {
       for (int i = 0; i < n_wells; i++) {
+        //H-TODO Should well_data->GetUseForRockPhysics() be used here?
         blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0], cont_logs_to_be_blocked, disc_logs_to_be_blocked, err_text);
       }
     }
@@ -8247,7 +8246,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
 
     //Read auto_covariance from file, this overrides estimate_param_cov and estimate_temp_corr
     const std::map<std::string, std::string> & param_auto_cov_files = input_files->getParamAutoCovFiles();
-    bool failed_auto_cov = false;
 
     for (size_t i = 0; i < n_intervals; i++) {
       if (param_auto_cov_files.find(interval_names[i]) != param_auto_cov_files.end()) {
@@ -8266,7 +8264,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
         prior_corr_XY[i] = FindCorrXYGrid(interval_simboxes[i], model_settings);
 
         if (tmp_err_text != "") {
-          failed_auto_cov = true;
           err_text += tmp_err_text;
         }
         else if (print_result == true) {

@@ -1169,8 +1169,6 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   double dx  = geometry->GetDx();
   double dy  = geometry->GetDy();
 
-  bool failed = false;
-
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -1189,7 +1187,6 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   {
     errText += "Could not set rotation angle.\n";
     errText += e.what();
-    failed = true;
     return true; // Failed
   }
   cosrot_      = cos(rot);

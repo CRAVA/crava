@@ -240,7 +240,6 @@ int main(int argc, char** argv)
                                                                                simbox->GetNZpad());
 
         //Background grids are overwritten in avoinversion
-        std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i_interval);
         crava_result->AddBackgroundVp(seismicParametersIntervals[i_interval].GetMeanVp());
         crava_result->AddBackgroundVs(seismicParametersIntervals[i_interval].GetMeanVs());
         crava_result->AddBackgroundRho(seismicParametersIntervals[i_interval].GetMeanRho());
