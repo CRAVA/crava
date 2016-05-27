@@ -46,7 +46,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
 
   // Temp variables
   std::string   err_text = "";
-  std::string   previous_interval_name("");
   std::string   top_surface_file_name_temp("");
   std::string   base_surface_file_name_temp("");
   Surface     * top_surface  = NULL;
