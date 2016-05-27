@@ -350,7 +350,8 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
                                      const Simbox                   * simbox,
                                      const CravaTrend               & trend_cubes,
                                      const std::vector<std::string> & cont_logs_to_be_blocked,
-                                     const std::vector<std::string> & disc_logs_to_be_blocked)
+                                     const std::vector<std::string> & disc_logs_to_be_blocked,
+                                     std::string                    & err_text)
 : first_S_(IMISSING),
   last_S_ (IMISSING),
   first_M_(IMISSING),
@@ -360,7 +361,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
 {
 
   bool failed          = false;
-  std::string err_text = "";
+  std::string tmp_err_text = "";
 
   // FACIES
   if (well->HasDiscLog("Facies")) {
@@ -383,7 +384,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   //First run RemoveMissingLogValues since x_pos etc. are needed in FindSizeAndBlockPointers
   RemoveMissingLogValues(well, x_pos_raw_logs_, y_pos_raw_logs_, z_pos_raw_logs_,
                          facies_raw_logs_, continuous_raw_logs_, discrete_raw_logs_, cont_logs_to_be_blocked,
-                         disc_logs_to_be_blocked, n_data_, failed, err_text);
+                         disc_logs_to_be_blocked, n_data_, failed, tmp_err_text);
 
   std::vector<int> b_ind(n_data_); // Gives which block each well log entry contributes to
   n_layers_ = simbox->getnz();
@@ -393,43 +394,50 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
   FindSizeAndBlockPointers(simbox, true, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
 
   if (is_inside == false)
-    err_text += "Well "+well->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
+    tmp_err_text += "Error when blocking logs for RockPhysics: Well "+well->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
 
-  FindBlockIJK(simbox, b_ind, first_M_, last_M_, first_B_, last_B_, i_pos_, j_pos_, k_pos_, dz);
+  if (tmp_err_text != "") {
 
-  FindTrendPositions(i_pos_, j_pos_, k_pos_, n_blocks_, trend_cubes, s1_, s2_);
+    FindBlockIJK(simbox, b_ind, first_M_, last_M_, first_B_, last_B_, i_pos_, j_pos_, k_pos_, dz);
 
-  std::vector<double> blocked_vp;
-  std::vector<double> blocked_vs;
-  std::vector<double> blocked_rho;
-  std::vector<double> blocked_porosity;
-  std::vector<int>    blocked_facies;
+    FindTrendPositions(i_pos_, j_pos_, k_pos_, n_blocks_, trend_cubes, s1_, s2_);
 
-  if (well->HasContLog("Vp"))
-    BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
+    std::vector<double> blocked_vp;
+    std::vector<double> blocked_vs;
+    std::vector<double> blocked_rho;
+    std::vector<double> blocked_porosity;
+    std::vector<int>    blocked_facies;
 
-  if (well->HasContLog("Vs"))
-    BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
+    if (well->HasContLog("Vp"))
+      BlockContinuousLog(b_ind, well->GetContLog("Vp"),       blocked_vp);
 
-  if (well->HasContLog("Rho"))
-    BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
+    if (well->HasContLog("Vs"))
+      BlockContinuousLog(b_ind, well->GetContLog("Vs"),       blocked_vs);
 
-  if (well->HasContLog("Porosity"))
-    BlockPorosityLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
+    if (well->HasContLog("Rho"))
+      BlockContinuousLog(b_ind, well->GetContLog("Rho"),      blocked_rho);
 
-  BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
+    if (well->HasContLog("Porosity"))
+      BlockPorosityLog(b_ind, well->GetContLog("Porosity"), blocked_porosity);
 
-  vp_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
-  vs_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
-  rho_for_facies_.resize(n_facies,      std::vector<double>(n_blocks_, RMISSING));
-  porosity_for_facies_.resize(n_facies, std::vector<double>(n_blocks_, RMISSING));
+    BlockFaciesLog(b_ind, facies_raw_logs_, facies_map, static_cast<int>(facies_map.size()), blocked_facies);
 
-  AssignToFacies(blocked_vp,       blocked_facies, facies_nr, vp_for_facies_);
-  AssignToFacies(blocked_vs,       blocked_facies, facies_nr, vs_for_facies_);
-  AssignToFacies(blocked_rho,      blocked_facies, facies_nr, rho_for_facies_);
-  AssignToFacies(blocked_porosity, blocked_facies, facies_nr, porosity_for_facies_);
+    vp_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
+    vs_for_facies_.resize(n_facies,       std::vector<double>(n_blocks_, RMISSING));
+    rho_for_facies_.resize(n_facies,      std::vector<double>(n_blocks_, RMISSING));
+    porosity_for_facies_.resize(n_facies, std::vector<double>(n_blocks_, RMISSING));
 
-  CalculateBulkShear(n_blocks_, n_facies, bulk_modulus_, shear_modulus_);
+    AssignToFacies(blocked_vp,       blocked_facies, facies_nr, vp_for_facies_);
+    AssignToFacies(blocked_vs,       blocked_facies, facies_nr, vs_for_facies_);
+    AssignToFacies(blocked_rho,      blocked_facies, facies_nr, rho_for_facies_);
+    AssignToFacies(blocked_porosity, blocked_facies, facies_nr, porosity_for_facies_);
+
+    CalculateBulkShear(n_blocks_, n_facies, bulk_modulus_, shear_modulus_);
+  }
+  else
+    err_text += tmp_err_text;
+
+
 }
 
 BlockedLogsCommon::BlockedLogsCommon(const BlockedLogsCommon & logs)

@@ -48,7 +48,8 @@ public:
                     const Simbox                   * simbox,
                     const CravaTrend               & trend_cubes,
                     const std::vector<std::string> & cont_logs_to_be_blocked,
-                    const std::vector<std::string> & disc_logs_to_be_blocked);
+                    const std::vector<std::string> & disc_logs_to_be_blocked,
+                    std::string                    & err_text);
 
   //Copy constructor
   BlockedLogsCommon(const BlockedLogsCommon & logs);

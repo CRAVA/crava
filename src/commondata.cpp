@@ -961,7 +961,6 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
   int n_timelapses = model_settings->getNumberOfTimeLapses();
   int n_intervals  = multiple_interval_grid->GetNIntervals();
-  bool cover_ok    = false;
   double top_grid  = multiple_interval_grid->GetIntervalSimbox(0)->getTopZMin();
   double bot_grid  = multiple_interval_grid->GetIntervalSimbox(n_intervals-1)->getBotZMax();
   float guard_zone = model_settings->getGuardZone();
@@ -984,12 +983,12 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
         SegY * segy = seismic_data_angle->GetSegY();
 
-        cover_ok = CheckThatDataCoverGrid(segy,
-                                          offset[i],
-                                          top_grid,
-                                          bot_grid,
-                                          guard_zone,
-                                          err_text_tmp);
+        CheckThatDataCoverGrid(segy,
+                               offset[i],
+                               top_grid,
+                               bot_grid,
+                               guard_zone,
+                               err_text_tmp);
 
       }
       else if (seismic_data_angle->GetSeismicType() == SeismicStorage::STORM || seismic_data_angle->GetSeismicType() == SeismicStorage::SGRI) {
@@ -1000,12 +999,12 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
         if (seismic_data_angle->GetSeismicType() == SeismicStorage::SGRI)
           scale = true;
 
-        cover_ok = CheckThatDataCoverGrid(stormgrid,
-                                          top_grid,
-                                          bot_grid,
-                                          guard_zone,
-                                          err_text_tmp,
-                                          scale);
+        CheckThatDataCoverGrid(stormgrid,
+                               top_grid,
+                               bot_grid,
+                               guard_zone,
+                               err_text_tmp,
+                               scale);
 
       }
 
@@ -4532,7 +4531,6 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
     }
     catch(NRLib::Exception & e) {
       err_text += e.what();
-      failed = true;
     }
   }
 
@@ -5221,7 +5219,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
   const std::string                                 path                    = input_files->getInputDirectory();
   const std::vector<std::string>                    trend_cube_parameters   = model_settings->getTrendCubeParameters();
   std::vector<std::vector<std::vector<double> > >   trend_cube_sampling(n_intervals);
-  const std::vector<std::vector<float> >            dummy_blocked_logs;
   const std::map<std::string,
     std::vector<DistributionWithTrendStorage *> >   reservoir_variable      = model_settings->getReservoirVariable();
 
@@ -5266,7 +5263,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     std::vector<BlockedLogsCommon *> blocked_logs_rock_physics(n_wells, NULL);
     if (n_wells > 0) {
       for (int i = 0; i < n_wells; i++) {
-        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0], cont_logs_to_be_blocked, disc_logs_to_be_blocked);
+        blocked_logs_rock_physics[i] = new BlockedLogsCommon(wells[i], &simbox, trend_cubes_[0], cont_logs_to_be_blocked, disc_logs_to_be_blocked, err_text);
       }
     }
 
@@ -5371,7 +5368,6 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
 
               PrintExpectationAndCovariance(expectation, covariance, has_trend);
 
-              //std::string tmp_err_txt = "";
               if (std::exp(expectation[0]) < vp_min  || std::exp(expectation[0]) > vp_max) {
                 tmp_err_txt += "Vp value of "+NRLib::ToString(std::exp(expectation[0]))+" detected: ";
                 tmp_err_txt += "Vp should be in the interval ("+NRLib::ToString(vp_min)+", "+NRLib::ToString(vp_max)+") m/s\n";
@@ -6282,7 +6278,6 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       if (missing_traces_simbox > 0) {
         if (missing_traces_simbox == interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny()) {
           err_text += "Error: Data in file "+file_name+" was completely outside the inversion area.\n";
-          failed = true;
         }
         else {
           if (grid_type == PARAMETER) {
@@ -7110,7 +7105,6 @@ CommonData::ReadStormFile(const std::string                 & file_name,
       if (missing_traces_simbox > 0) { //outsideTraces
         if (missing_traces_simbox == interval_simboxes[i_interval]->getnx()*interval_simboxes[i_interval]->getny()) {
           err_text += "Error: Data in file \'"+file_name+"\' was completely outside the inversion area.\n";
-          failed = true;
         }
         else {
           if (grid_type == FFTGrid::PARAMETER) {
@@ -8581,10 +8575,6 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           }
         }
       }
-
-      if (failed_temp_corr == true || failed_param_cov == true) {
-        failed = true;
-      }
     }
 
     Timings::setTimePriorCorrelation(wall,cpu);
@@ -9488,7 +9478,6 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * simbox,
   simbox->SetNZpad(simbox->getnz());
 
   std::string text1;
-  std::string text2;
   int logLevel = LogKit::Medium;
   if (model_settings->getEstimateXYPadding()) {
     text1 = " estimated from lateral correlation ranges in internal grid";
