@@ -123,15 +123,19 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
   use_for_facies_probabilities_ = well_data->GetUseForFaciesProbabilities();
   interpolate_                  = interpolate;
   is_deviated_                  = well_data->IsDeviated();
+  use_for_wavelet_estimation_   = well_data->GetUseForWaveletEstimation();
+  use_for_background_trend_     = well_data->GetUseForBackgroundTrend();
+  use_for_filtering_            = well_data->GetUseForFiltering();
+  use_for_rock_physics_         = well_data->GetUseForRockPhysics();
   facies_log_defined_           = false;
+  lateral_threshold_gradient_   = RMISSING;
+  sigma_m_                      = RMISSING;
   first_S_                      = IMISSING;
   last_S_                       = IMISSING;
   first_M_                      = IMISSING;
   last_M_                       = IMISSING;
   first_B_                      = IMISSING;
   last_B_                       = IMISSING;
-  lateral_threshold_gradient_   = RMISSING;
-  sigma_m_                      = RMISSING;
 
   std::string err_text_tmp = "";
 
@@ -352,13 +356,23 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
                                      const std::vector<std::string> & cont_logs_to_be_blocked,
                                      const std::vector<std::string> & disc_logs_to_be_blocked,
                                      std::string                    & err_text)
-: first_S_(IMISSING),
+: lateral_threshold_gradient_(RMISSING),
+  sigma_m_(RMISSING),
+  first_S_(IMISSING),
   last_S_ (IMISSING),
   first_M_(IMISSING),
-  last_M_(IMISSING),
-  first_B_ (IMISSING),
+  last_M_ (IMISSING),
+  first_B_(IMISSING),
   last_B_ (IMISSING)
+
 {
+  use_for_facies_probabilities_ = well->GetUseForFaciesProbabilities();
+  use_for_wavelet_estimation_   = well->GetUseForWaveletEstimation();
+  use_for_background_trend_     = well->GetUseForBackgroundTrend();
+  use_for_filtering_            = well->GetUseForFiltering();
+  use_for_rock_physics_         = well->GetUseForRockPhysics();
+  real_vs_log_                  = well->GetRealVsLog();
+  is_deviated_                  = well->IsDeviated();
 
   bool failed          = false;
   std::string tmp_err_text = "";
@@ -2553,7 +2567,7 @@ void BlockedLogsCommon::FindOptimalWellLocation(std::vector<SeismicStorage *> & 
                                                 float                           max_shift,
                                                 int                             i_max_offset,
                                                 int                             j_max_offset,
-                                                const std::vector<Surface *>    limits,
+                                                const std::vector<Surface *>  & limits,
                                                 int                           & i_move,
                                                 int                           & j_move,
                                                 float                         & k_move) const

@@ -176,7 +176,7 @@ private:
                                         const std::vector<Grid2D *>       & noiseScale,
                                         const ModelSettings               * modelSettings,
                                         FFTGrid                           * seismicLH,
-                                        const std::vector<std::string>      facies_names);
+                                        const std::vector<std::string>    & facies_names);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<double> & vp,
                                                        const std::vector<double> & vs,

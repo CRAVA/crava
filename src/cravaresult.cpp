@@ -36,6 +36,9 @@ post_rho_kriged_(NULL),
 background_vp_(NULL),
 background_vs_(NULL),
 background_rho_(NULL),
+background_trend_vp_(NULL),
+background_trend_vs_(NULL),
+background_trend_rho_(NULL),
 block_grid_(NULL),
 facies_prob_undef_(NULL),
 quality_grid_(NULL),
@@ -1393,9 +1396,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
 
         int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
-        int missing_traces_simbox  = 0;
-        int missing_traces_padding = 0;
-        int dead_traces_simbox     = 0;
 
         FFTGrid * fft_grid_resampled = NULL;
         bool delete_fft_grid         = true;
@@ -1423,6 +1423,10 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           else
             fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
           fft_grid_resampled->createRealGrid();
+
+          int missing_traces_simbox  = 0;
+          int missing_traces_padding = 0;
+          int dead_traces_simbox     = 0;
 
           common_data->FillInData(nrlib_grid,
                                   fft_grid_resampled,

@@ -396,7 +396,7 @@ private:
                                        const std::vector<int> & facies_nr,
                                        std::vector<int>       & facies_count) const;
 
-  void               GetGeometryFromGridOnFile(const std::string         grid_file,
+  void               GetGeometryFromGridOnFile(const std::string       & grid_file,
                                                const TraceHeaderFormat * thf,
                                                SegyGeometry           *& geometry,
                                                std::string             & err_text) const;
@@ -1070,8 +1070,8 @@ private:
   void               WriteOutputSurfaces(ModelSettings * model_settings,
                                          Simbox        & simbox) const;
 
-  void               DumpVector(const std::vector<float> data,
-                                const std::string        name) const;
+  void               DumpVector(const std::vector<float> & data,
+                                const std::string        & name) const;
 
   void               DumpVector(const fftw_real   * data,
                                 int                 n_data,

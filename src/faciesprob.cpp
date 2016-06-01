@@ -1174,7 +1174,7 @@ void FaciesProb::makeFaciesProb(int                                        nFac,
                                 const std::vector<Grid2D *>              & noiseScale,
                                 const ModelSettings                      * modelSettings,
                                 FFTGrid                                  * seismicLH,
-                                const std::vector<std::string>             facies_names)
+                                const std::vector<std::string>           & facies_names)
 {
   std::vector<double> vpFiltered; //float
   std::vector<double> vsFiltered;

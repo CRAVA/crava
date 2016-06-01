@@ -775,7 +775,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
   if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
     return(true);
 
-  const std::vector<std::vector<std::string> > seismic_timelapse_files = input_files->getTimeLapseSeismicFiles();
   int n_timelapses = model_settings->getNumberOfTimeLapses();
   seismic_data.resize(n_timelapses);
 
@@ -4098,10 +4097,10 @@ CommonData::ComputeTime(int year, int month, int day) const
 }
 
 void
-CommonData::GetGeometryFromGridOnFile(const std::string           grid_file,
-                                      const TraceHeaderFormat   * thf,
-                                      SegyGeometry             *& geometry,
-                                      std::string               & err_text) const
+CommonData::GetGeometryFromGridOnFile(const std::string        & grid_file,
+                                      const TraceHeaderFormat  * thf,
+                                      SegyGeometry            *& geometry,
+                                      std::string              & err_text) const
 {
   geometry = NULL;
 
@@ -10717,8 +10716,8 @@ void CommonData::ReleaseBackgroundGrids(int   i_interval,
 }
 
 void
-CommonData::DumpVector(const std::vector<float> data,
-                       const std::string        name) const
+CommonData::DumpVector(const std::vector<float> & data,
+                       const std::string        & name) const
 {
   std::ofstream dump(name.c_str(), std::ofstream::out);
   for (size_t i=0;i<data.size();i++)

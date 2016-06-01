@@ -243,7 +243,7 @@ public:
                                                                  float                           max_shift,
                                                                  int                             i_max_offset,
                                                                  int                             j_max_offset,
-                                                                 const std::vector<Surface *>    limits,
+                                                                 const std::vector<Surface *>  & limits,
                                                                  int                           & i_move,
                                                                  int                           & j_move,
                                                                  float                         & k_move) const;
@@ -780,7 +780,7 @@ private:
   int                                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
   int                                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
   int                                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
-  int                                         use_for_rock_physics_;           //Uses the indicator enum from MOdelsettings
+  int                                         use_for_rock_physics_;           //Uses the indicator enum from Modelsettings
 
   //Variables used for rockphysics
   std::vector<std::string>                    facies_names_;
