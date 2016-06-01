@@ -1392,9 +1392,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         if (offset.size() > 0 && offset[j] < 0)
           offset[j] = model_settings->getSegyOffset(i);
 
-        std::string angle_synt     = NRLib::ToString(j);
-        std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
-
         int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
 
         FFTGrid * fft_grid_resampled = NULL;

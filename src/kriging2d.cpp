@@ -131,28 +131,4 @@ Kriging2D::fillKrigingVector(NRLib::Vector          & k,
   }
 }
 
-CovGrid2D &
-Kriging2D::makeCovGrid2D(const Simbox * simbox,
-                         Vario        * vario,
-                         int            debugFlag)
-{
-  //
-  // Pretabulate all needed covariances
-  //
-  const int    nx = simbox->getnx();
-  const int    ny = simbox->getny();
-
-  const float  dx = static_cast<float>(simbox->getdx());
-  const float  dy = static_cast<float>(simbox->getdy());
-
-  CovGrid2D * cov = new CovGrid2D(vario, nx, ny, dx, dy);
-
-  if(debugFlag == 1) {
-    std::string baseName = IO::PrefixBackground() + "covGrid2D" + IO::SuffixAsciiIrapClassic();
-    std::string fileName = IO::makeFullFileName(IO::PathToBackground(), baseName);
-    cov->writeToFile(fileName);
-  }
-  return (*cov);
-}
-
 

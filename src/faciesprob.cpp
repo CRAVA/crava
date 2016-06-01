@@ -58,7 +58,7 @@ FaciesProb::FaciesProb(FFTGrid                                  * vp,
                        const std::vector<Grid2D *>              & noiseScale,
                        const ModelSettings                      * modelSettings,
                        FFTGrid                                  * seismicLH,
-                       const std::vector<std::string>             facies_names)
+                       const std::vector<std::string>           & facies_names)
 {
   makeFaciesProb(nFac,
                  vp,
@@ -927,7 +927,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
                                           AVOInversion                                       * avoInversionResult,
                                           const std::vector<Grid2D *>                        & noiseScale,
                                           const ModelSettings                                * modelSettings,
-                                          const std::vector<std::string>                       facies_names)
+                                          const std::vector<std::string>                     & facies_names)
 {
   std::vector<double> vpFiltered;
   std::vector<double> vsFiltered;

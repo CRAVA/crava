@@ -181,8 +181,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       cov_vprho->setAccessMode(FFTGrid::RANDOMACCESS);
       cov_vsrho->setAccessMode(FFTGrid::RANDOMACCESS);
 
-      //H Removed SetPriorSpatialCorrSyntWell if prior correlations isnt estimated, since that setup isnt compatible with doFiltering
-
       // Synthetic wells
       if (modelSettings->getFaciesProbFromRockPhysics()){
         for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++) {

@@ -41,9 +41,6 @@ public:
                                                             const FFTGrid               * cov_vsrho,
                                                             int                           wellnr);
 
-  void                     SetPriorSpatialCorrSyntWell(FFTGrid                          * parSpatialCorr,
-                                                       int                                wellnr);
-
   void                     DoFilteringSyntWells(SeismicParametersHolder                  & seismicParameters,
                                                 const NRLib::Matrix                      & priorVar0);
 

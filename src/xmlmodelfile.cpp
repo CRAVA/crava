@@ -4165,11 +4165,9 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     if(parseGaussianWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
-    std::string beta;
     if(parseBetaWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
-    std::string beta_end_mass;
     if(parseBetaEndMassWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
