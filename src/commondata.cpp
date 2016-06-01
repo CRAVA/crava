@@ -9640,7 +9640,7 @@ void  CommonData::PrintPriorVariances(const NRLib::Matrix & prior_param_cov) con
 
   LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
   LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"Interval + + :   %.1e   %.1e   %.1e (used by program)\n",prior_param_cov(0,0),prior_param_cov(1,1),prior_param_cov(2,2));
+  LogKit::LogFormatted(LogKit::Low,"               %.1e   %.1e   %.1e (used by program)\n",prior_param_cov(0,0),prior_param_cov(1,1),prior_param_cov(2,2));
 
   float corr01 = static_cast<float>(prior_param_cov(0,1)/(sqrt(prior_param_cov(0,0)*prior_param_cov(1,1))));
   float corr02 = static_cast<float>(prior_param_cov(0,2)/(sqrt(prior_param_cov(0,0)*prior_param_cov(2,2))));

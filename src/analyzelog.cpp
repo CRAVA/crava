@@ -1151,7 +1151,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
     }
     time(&timeend);
     long int time = static_cast<long int>(timeend - timestart);
-    printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);
+    //printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);
   }
 
   //
@@ -1200,7 +1200,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         temp_auto_cov[i](0,0) = 0.0;
         if(vp_fail == false) {
           LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vp autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
-                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+                                            CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           vp_fail = true;
         }
       }
@@ -1211,7 +1211,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         temp_auto_cov[i](2,2) = 0.0;
         if(rho_fail == false) {
           LogKit::LogFormatted(LogKit::Low,"\nWARNING: Rho autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
-                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+                                            CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           rho_fail = true;
         }
       }
@@ -1226,7 +1226,7 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
         temp_auto_cov[i](1,1) = 0.0;
         if(vs_fail == false) {
           LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vs autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
-                                            CommonData::ConvertFloatToString(min_dz) +" could not be estimated and is set to 0.\n", i, min_dz);
+                                            CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           vs_fail = true;
         }
       }
@@ -1462,8 +1462,8 @@ void            Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Ma
   // n=nend;
   //
   time(&timeend_tot);
-  LogKit::LogFormatted(LogKit::Low,"\nEstimated parameter autocovariance in %d seconds.\n",
-                   static_cast<int>(timeend_tot-timestart_tot));
+  //LogKit::LogFormatted(LogKit::Low,"\nEstimated parameter autocovariance in %d seconds.\n",
+  //                 static_cast<int>(timeend_tot-timestart_tot));
 
 }
 
@@ -1924,77 +1924,51 @@ void  Analyzelog::CheckVariances(const ModelSettings      * model_settings,
   //|
   //| The limits are for point variances. The minimum allowed variance
   //| for parameters will be scaled with 1/dt*dt
-  float minVarAlpha = model_settings->getVarVpMin();
-  float maxVarAlpha = model_settings->getVarVpMax();
-  float minVarBeta  = model_settings->getVarVsMin();
-  float maxVarBeta  = model_settings->getVarVsMax();
-  float minVarRho   = model_settings->getVarRhoMin();
-  float maxVarRho   = model_settings->getVarRhoMax();
-
-  /*
-  if (pointVar0[0][0] < minVarAlpha || pointVar0[0][0] > maxVarAlpha)
-  {
-    std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vp point variance "  << pointVar0[0][0]
-      << " is outside allowed interval Min=" << minVarAlpha << " Max=" << maxVarAlpha << "\n";
-    errTxt += o.str();
-  }
-  if (pointVar0[1][1] < minVarBeta || pointVar0[1][1] > maxVarBeta)
-  {
-    std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Vs point variance "  << pointVar0[1][1]
-      << " is outside allowed interval Min=" << minVarBeta << " Max=" << maxVarBeta << "\n";
-    errTxt += o.str();
-  }
-  if (pointVar0[2][2] < minVarRho || pointVar0[2][2] > maxVarRho)
-  {
-    std::ostringstream o;
-    o << std::scientific << std::setprecision(2) << "The Rho point variance "  << pointVar0[2][2]
-      << " is outside allowed interval Min=" << minVarRho << " Max=" << maxVarRho << "\n";
-    errTxt += o.str();
-  }
-
-  if (errTxt != "")
-  {
-    LogKit::LogFormatted(LogKit::Low,"\n\n---------------------------------------------------");
-    LogKit::LogFormatted(LogKit::Low,"\n                         ln Vp     ln Vs    ln Rho ");
-    LogKit::LogFormatted(LogKit::Low,"\nWell log variances:   %.2e  %.2e  %.2e ",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
-    LogKit::LogFormatted(LogKit::Low,"\n---------------------------------------------------\n");
-  }
-  */
+  float minVarVp  = model_settings->getVarVpMin();
+  float maxVarVp  = model_settings->getVarVpMax();
+  float minVarVs  = model_settings->getVarVsMin();
+  float maxVarVs  = model_settings->getVarVsMax();
+  float minVarRho = model_settings->getVarRhoMin();
+  float maxVarRho = model_settings->getVarRhoMax();
 
   //
   // We scale the minimum variances allowed with 1/dt since the variance decreases with increasing dt..
   //
-  if (var_0(0,0) < minVarAlpha/dz || var_0(0,0) > maxVarAlpha)
+  std::string err_txt_tmp = "";
+  if (var_0(0,0) < minVarVp/dz || var_0(0,0) > maxVarVp)
   {
     std::ostringstream o;
     o << std::scientific << std::setprecision(2) << "The Vp variance "  << var_0(0,0)
-      << " is outside allowed interval Min=" << minVarAlpha/dz << " Max=" << maxVarAlpha << "\n";
-    err_txt += o.str();
+      << " is outside allowed interval Min=" << minVarVp/dz << " Max=" << maxVarVp << "\n";
+    err_txt_tmp += o.str();
   }
-  if (var_0(1,1) < minVarBeta/dz || var_0(1,1)  > maxVarBeta)
+  if (var_0(1,1) < minVarVs/dz || var_0(1,1)  > maxVarVs)
   {
     std::ostringstream o;
     o << std::scientific << std::setprecision(2) << "The Vs variance "  << var_0(1,1)
-      << " is outside allowed interval Min=" << minVarBeta/dz << " Max=" << maxVarBeta << "\n";
-    err_txt += o.str();
+      << " is outside allowed interval Min=" << minVarVs/dz << " Max=" << maxVarVs << "\n";
+    err_txt_tmp += o.str();
   }
   if (var_0(2,2)  < minVarRho/dz || var_0(2,2)  > maxVarRho)
   {
     std::ostringstream o;
     o << std::scientific << std::setprecision(2) << "The Rho variance "  << var_0(2,2)
       << " is outside allowed interval Min=" << minVarRho/dz << " Max=" << maxVarRho << "\n";
-    err_txt += o.str();
+    err_txt_tmp += o.str();
   }
-  if (err_txt != "")
-  {
+
+  if (err_txt_tmp != "") {
+    err_txt += err_txt_tmp;
+    err_txt += "Allowed minimum and maximum variance limits can adjusted under <well> and <allowed-parameter-values> in the model file.\n";
+  }
+
+  //if (err_txt != "") //H-REMOVE
+  //{
     LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------");
     LogKit::LogFormatted(LogKit::Low,"\n                          ln Vp     ln Vs    ln Rho ");
-    //LogKit::LogFormatted(LogKit::Low,"\nWell log  variances:   %.2e  %.2e  %.2e",pointVar0[0][0],pointVar0[1][1],pointVar0[2][2]);
     LogKit::LogFormatted(LogKit::Low,"\nParameter variances:   %.2e  %.2e  %.2e (used by program)",var_0(0,0) ,var_0(1,1) ,var_0(2,2) );
     LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------\n");
-  }
+  //}
 }
 
 NRLib::Vector Analyzelog::Regress(const NRLib::Matrix                             & A,
