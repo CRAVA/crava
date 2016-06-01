@@ -160,7 +160,6 @@ public:
 
   // SET functions ------------------------------------------------------
 
-  void           SetTopBaseErodedNames(const std::string & topname, const std::string & botname, int outputFormat);
   void           setTopBotName(const std::string & topname, const std::string & botname, int outputFormat);
   void           SetErodedSurfaces(const NRLib::Surface<double> & top_surf, const NRLib::Surface<double> & bot_surf, bool  skip_check = true);
   bool           setArea(const SegyGeometry * geometry, std::string & errText);

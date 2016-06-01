@@ -112,11 +112,6 @@ public:
                                                                 int                                        nx_pad,
                                                                 int                                        ny_pad,
                                                                 int                                        nz_pad);
-
-  void                          copyBackgroundParameters(FFTGrid  * meanVp,
-                                                         FFTGrid  * meanVs,
-                                                         FFTGrid  * meanRho);
-
   void                          setCorrelationParameters(bool                                 estimated,
                                                          const NRLib::Matrix                & priorVar0,
                                                          const std::vector<NRLib::Matrix>   & auto_cov,
@@ -167,11 +162,6 @@ public:
   void                          printPostVariances(const NRLib::Matrix & postVar0) const;
 
   void                          getNextParameterCovariance(fftw_complex **& parVar) const;
-
-  void                          writeFilePriorVariances(const ModelSettings      * modelSettings,
-                                                        const std::vector<float> & priorCorrT,
-                                                        const Surface            * priorCorrXY,
-                                                        const float              & dt) const;
 
   void                          findParameterVariances(fftw_complex **& parVar,
                                                        fftw_complex     ii,

@@ -97,8 +97,6 @@ public:
                                 const std::string   & sgri_label,
                                 bool                  padding = false);
 
-  void              setTimeSimbox(Simbox * new_timeSimbox);
-
   void              setTimeDepthMapping(GridMapping * new_timeDepthMapping);
   void              Dump4Dparameters(const ModelSettings* modelSettings, std::string identifyer, int timestep,bool printPadding=true);
 

@@ -819,8 +819,6 @@ private:
 
   int                GetFillNumber(int i, int n, int np) const;
 
-  //int                FindClosestFactorableNumber(int leastint) const;
-
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,
                                             float                smooth_length) const;
@@ -1022,11 +1020,7 @@ private:
                                          std::vector <float> & gravity_std_dev,
                                          std::string         & err_text) const;
 
-  void               ProcessHorizons(std::vector<Surface>   & horizons,
-                                     const InputFiles       * input_files,
-                                     std::string            & err_text,
-                                     bool                   & failed,
-                                     int                      i_timelapse) const;
+
 
   void               CheckCovarianceParameters(NRLib::Matrix            & param_cov) const;
 
@@ -1035,12 +1029,13 @@ private:
                                               InputFiles    * input_files,
                                               Simbox        * inversion_simbox,
                                               std::string   & err_text_common) const;
-                                              */
 
-  //void               WriteFilePriorVariances(const ModelSettings      * model_settings,
-  //                                           const std::vector<double> & prior_corr_T,
-  //                                           const Surface             * prior_corr_XY,
-  //                                           const float               & dt) const;
+  void               ProcessHorizons(std::vector<Surface>   & horizons,
+                                     const InputFiles       * input_files,
+                                     std::string            & err_text,
+                                     bool                   & failed,
+                                     int                      i_timelapse) const;
+                                              */
 
   void               WriteFilePriorVariances(const ModelSettings               * model_settings,
                                              const NRLib::Matrix               & prior_param_cov,

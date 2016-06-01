@@ -495,13 +495,6 @@ private:
                                    unsigned int                  & n_blocks,
                                    bool                          & is_inside) const;
 
-  //void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
-  //                                 std::vector<int>              & bInd,
-  //                                 int                           & first_M,
-  //                                 int                           & last_M,
-  //                                 unsigned int                  & n_blocks,
-  //                                 std::string                   & err_text) const;
-
   void    FindBlockIJK(const Simbox                     * estimation_simbox,
                        const std::vector<int>           & bInd,
                        const int                        & first_M,

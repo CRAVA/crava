@@ -9397,7 +9397,7 @@ bool CommonData::SetupTravelTimeInversion(ModelSettings   * model_settings,
 
   return true;
 }
-*/
+
 
 void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
                                  const InputFiles       * input_files,
@@ -9422,7 +9422,7 @@ void CommonData::ProcessHorizons(std::vector<Surface>   & horizons,
       horizons[i] = Surface(travel_time_horizons[i]);
   }
 
-}
+}*/
 
 // --------------------------------------------------------------------------------
 void  CommonData::EstimateXYPaddingSizes(Simbox          * simbox,

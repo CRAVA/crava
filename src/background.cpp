@@ -788,7 +788,7 @@ Background::CalculateVerticalTrend(std::vector<std::vector<double> > & well_tren
     }
   }
 
-  Utils::writeVectorToFile(std::string("trend_mean_values_") + name, trend);
+  //Utils::writeVectorToFile(std::string("trend_mean_values_") + name, trend);
 
   SmoothTrendWithLocalLinearRegression(trend, count,
                                        i_wells, nz, dz,
@@ -796,7 +796,7 @@ Background::CalculateVerticalTrend(std::vector<std::vector<double> > & well_tren
                                        log_max,
                                        name);
 
-  Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend);
+  //Utils::writeVectorToFile(std::string("trend_after_linreg_") + name, trend);
 
   CommonData::ApplyFilter(filtered_log,
                           trend,
@@ -808,7 +808,7 @@ Background::CalculateVerticalTrend(std::vector<std::vector<double> > & well_tren
     trend[i] = filtered_log[i];
   }
 
-  Utils::writeVectorToFile(std::string("trend_after_filter_") + name, trend);
+  //Utils::writeVectorToFile(std::string("trend_after_filter_") + name, trend);
 
   delete [] count;
 }
@@ -1409,21 +1409,6 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   delete [] a;
   delete [] b;
   delete [] missing;
-}
-
-FFTGrid *
-Background::CopyFFTGrid(FFTGrid   * orig_grid,
-                        const bool  exp_trans,
-                        const bool  file_grid)
-{
-  FFTGrid * new_grid;
-
-  if (file_grid)
-    new_grid = new FFTFileGrid(static_cast<FFTFileGrid *>(orig_grid), exp_trans);
-  else
-    new_grid = new FFTGrid(orig_grid, exp_trans);
-
-  return (new_grid);
 }
 
 void

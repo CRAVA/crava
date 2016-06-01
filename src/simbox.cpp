@@ -1063,20 +1063,6 @@ void Simbox::WriteTopBaseSurfaceGrids(const std::string   & top_name,
   IO::writeSurfaceToFile(wbsurf, base_name, subdir, output_format);
 }
 
-void  Simbox::SetTopBaseErodedNames(const std::string       & top_name,
-                                    const std::string       & bot_name,
-                                    int                       output_format)
-{
-  std::string suffix;
-  if ((output_format & IO::ASCII) > 0 && (output_format & IO::STORM) == 0)
-    suffix = IO::SuffixAsciiIrapClassic();
-  else
-    suffix = IO::SuffixStormBinary();
-
-  top_eroded_name_  = IO::getFilePrefix()+top_name+suffix;
-  base_eroded_name_ = IO::getFilePrefix()+bot_name+suffix;
-}
-
 void
 Simbox::setTopBotName(const std::string & topname,
                       const std::string & botname,
