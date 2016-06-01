@@ -740,7 +740,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
   // 2.2.2 Calculate diagonal autocovariances
   //
   if(all_Vs_logs_synthetic){
-    LogKit::LogFormatted(LogKit::Low,"\nEstimating Vs autocovariance as 2 * Vp autocovariance, corr(Vp, Vs) = 0.7 and corr(Vs, Rho) = 0.\n");
+    LogKit::LogFormatted(LogKit::Low,"\n Estimating Vs autocovariance as 2 * Vp autocovariance, corr(Vp, Vs) = 0.7 and corr(Vs, Rho) = 0.\n");
   }
   bool vp_fail  = false;
   bool vs_fail  = false;
@@ -781,7 +781,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
       if(count[i](0,0)<2 || vp_fail == true){
         temp_auto_cov[i](0,0) = 0.0;
         if(vp_fail == false) {
-          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vp autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+          LogKit::LogFormatted(LogKit::Low,"\n WARNING: Vp autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
                                             CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           vp_fail = true;
         }
@@ -792,7 +792,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
       if(count[i](2,2)<2 || rho_fail == true){
         temp_auto_cov[i](2,2) = 0.0;
         if(rho_fail == false) {
-          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Rho autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+          LogKit::LogFormatted(LogKit::Low,"\n WARNING: Rho autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
                                             CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           rho_fail = true;
         }
@@ -807,7 +807,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
       } else{
         temp_auto_cov[i](1,1) = 0.0;
         if(vs_fail == false) {
-          LogKit::LogFormatted(LogKit::Low,"\nWARNING: Vs autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
+          LogKit::LogFormatted(LogKit::Low,"\n WARNING: Vs autocovariance for time lag " + CommonData::ConvertIntToString(i) +", dz = " +
                                             CommonData::ConvertFloatToString(min_dz) +", could not be estimated and is set to 0.\n", i, min_dz);
           vs_fail = true;
         }
@@ -1109,10 +1109,10 @@ void  Analyzelog::CheckVariances(const ModelSettings      * model_settings,
 
   if (err_txt != "")
   {
-    LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------");
-    LogKit::LogFormatted(LogKit::Low,"\n                          ln Vp     ln Vs    ln Rho ");
-    LogKit::LogFormatted(LogKit::Low,"\nParameter variances:   %.2e  %.2e  %.2e (used by program)",var_0(0,0) ,var_0(1,1) ,var_0(2,2) );
-    LogKit::LogFormatted(LogKit::Low,"\n--------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"\n --------------------------------------------------------------------");
+    LogKit::LogFormatted(LogKit::Low,"\n                           ln Vp     ln Vs    ln Rho ");
+    LogKit::LogFormatted(LogKit::Low,"\n Parameter variances:   %.2e  %.2e  %.2e (used by program)",var_0(0,0) ,var_0(1,1) ,var_0(2,2) );
+    LogKit::LogFormatted(LogKit::Low,"\n --------------------------------------------------------------------\n");
   }
 }
 

@@ -8529,7 +8529,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               int n_est = std::min(n_est_nonzero, n_corr_T);
               if (n_est_nonzero < n_corr_T) {
                 LogKit::LogFormatted(LogKit::High,
-                    "\nOnly able to estimate the autocovariance for %d of the predefined vector size of %d dz lags. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
+                    "\n Only able to estimate the autocovariance for %d of the predefined vector size of %d dz lags. The rest are set to 0.\n", n_est_nonzero, n_corr_T);
               }
 
               for (int j = 0; j < n_est; j++) {
@@ -9636,33 +9636,33 @@ void CommonData::WriteFilePriorVariances(const ModelSettings                * mo
 void  CommonData::PrintPriorVariances(const NRLib::Matrix & prior_param_cov) const
 {
 
-  LogKit::LogFormatted(LogKit::Low,"\nVariances and correlations for parameter residuals:\n\n");
+  LogKit::LogFormatted(LogKit::Low,"\n Variances and correlations for parameter residuals:\n\n");
 
-  LogKit::LogFormatted(LogKit::Low,"Variances           ln Vp     ln Vs    ln Rho         \n");
-  LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"               %.1e   %.1e   %.1e (used by program)\n",prior_param_cov(0,0),prior_param_cov(1,1),prior_param_cov(2,2));
+  LogKit::LogFormatted(LogKit::Low," Variances           ln Vp     ln Vs    ln Rho         \n");
+  LogKit::LogFormatted(LogKit::Low," ---------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"                %.1e   %.1e   %.1e (used by program)\n",prior_param_cov(0,0),prior_param_cov(1,1),prior_param_cov(2,2));
 
   float corr01 = static_cast<float>(prior_param_cov(0,1)/(sqrt(prior_param_cov(0,0)*prior_param_cov(1,1))));
   float corr02 = static_cast<float>(prior_param_cov(0,2)/(sqrt(prior_param_cov(0,0)*prior_param_cov(2,2))));
   float corr12 = static_cast<float>(prior_param_cov(1,2)/(sqrt(prior_param_cov(1,1)*prior_param_cov(2,2))));
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"Corr   | ln Vp     ln Vs    ln Rho \n");
-  LogKit::LogFormatted(LogKit::Low,"-------+---------------------------\n");
-  LogKit::LogFormatted(LogKit::Low,"ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
-  LogKit::LogFormatted(LogKit::Low,"ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
-  LogKit::LogFormatted(LogKit::Low,"ln Rho |                     %5.2f \n",1.0f);
+  LogKit::LogFormatted(LogKit::Low," Corr   | ln Vp     ln Vs    ln Rho \n");
+  LogKit::LogFormatted(LogKit::Low," -------+---------------------------\n");
+  LogKit::LogFormatted(LogKit::Low," ln Vp  | %5.2f     %5.2f     %5.2f \n",1.0f, corr01, corr02);
+  LogKit::LogFormatted(LogKit::Low," ln Vs  |           %5.2f     %5.2f \n",1.0f, corr12);
+  LogKit::LogFormatted(LogKit::Low," ln Rho |                     %5.2f \n",1.0f);
   LogKit::LogFormatted(LogKit::Low,"\n");
 
   if (std::abs(corr01) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
+    LogKit::LogFormatted(LogKit::Warning,"\n WARNING: The Vp-Vs correlation is wrong (%.2f).\n",corr01);
     TaskList::addTask("Check your prior correlations. Corr(Vp,Vs) is out of bounds.");
   }
   if (std::abs(corr02) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
+    LogKit::LogFormatted(LogKit::Warning,"\n WARNING: The Vp-Rho correlation is wrong (%.2f).\n",corr02);
     TaskList::addTask("Check your prior correlations. Corr(Vp,Rho) is out of bounds.");
   }
   if (std::abs(corr12) > 1.0) {
-    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
+    LogKit::LogFormatted(LogKit::Warning,"\n WARNING: The Vs-Rho correlation is wrong (%.2f).\n",corr12);
     TaskList::addTask("Check your prior correlations. Corr(Vs,Rho) is out of bounds.");
   }
 }
