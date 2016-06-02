@@ -436,10 +436,6 @@ private:
                                                  double       & x_max,
                                                  double       & y_max) const;
 
-  int                GetNzFromGridOnFile(ModelSettings     * model_settings,
-                                         const std::string & grid_file,
-                                         std::string       & err_text) const;
-
   void               SetSurfaces(const ModelSettings * const model_settings,
                                  Simbox              & full_inversion_simbox,
                                  bool                  multi_surface,
@@ -542,10 +538,6 @@ private:
   void               InterpolateLog(std::vector<double>       & log_interpolated,
                                     const std::vector<double> & log_resampled,
                                     int                         nd) const;
-
-  void               CutWell(std::string           well_file_name,
-                             NRLib::Well         & well,
-                             const NRLib::Volume & full_inversion_volume) const;
 
   void               ProcessLogsGeneralWell(NRLib::Well                     & new_well,
                                             const std::vector<std::string>  & log_names,

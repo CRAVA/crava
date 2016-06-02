@@ -97,6 +97,53 @@ SpatialSyntWellFilter::~SpatialSyntWellFilter()
   delete [] n_;
 }
 
+void SpatialSyntWellFilter::SetPriorSpatialCorrSyntWell(FFTGrid             * parSpatialCorr,
+                                                        int                   wellnr)
+{
+
+  double minValue     = std::pow(10.0,-9);
+  int nz              = parSpatialCorr->getNz();
+  double factorNorm   = 1/sqrt(2*NRLib::Pi);
+  double endValue     = parSpatialCorr->getRealValueCyclic(0,0,nz-2);
+  double div          = 1/(nz*.1);
+  // tapering limit at 90%
+  double smoothLimit  = nz*.9;
+
+  int n = syntWellData_[wellnr]->getWellLength();
+  priorSpatialCorr_[wellnr] = new double *[n];
+  n_[wellnr] = n;
+  for(int i=0;i<n;i++)
+    priorSpatialCorr_[wellnr][i] = new double[n];
+
+  int i1,j1,k1,l1, i2,j2,k2,l2;
+  const int * ipos = syntWellData_[wellnr]->getIpos();
+  const int * jpos = syntWellData_[wellnr]->getJpos();
+  const int * kpos = syntWellData_[wellnr]->getKpos();
+
+  for(l1=0;l1<n;l1++)
+  {
+    i1 = ipos[l1];
+    j1 = jpos[l1];
+    k1 = kpos[l1];
+    for(l2=0;l2<=l1;l2++)
+    {
+      i2 = ipos[l2];
+      j2 = jpos[l2];
+      k2 = kpos[l2];
+      if(abs(k2-k1)>smoothLimit){
+        priorSpatialCorr_[wellnr][l1][l2] = std::max(endValue*factorNorm*exp(-(div*(abs(k2-k1)-smoothLimit))*(div*(abs(k2-k1)-smoothLimit))*0.5), minValue);
+        priorSpatialCorr_[wellnr][l2][l1] = priorSpatialCorr_[wellnr][l1][l2];
+      }
+      else{
+        priorSpatialCorr_[wellnr][l1][l2] = parSpatialCorr->getRealValueCyclic(i1-i2,j1-j2,k1-k2);
+        priorSpatialCorr_[wellnr][l2][l1] = priorSpatialCorr_[wellnr][l1][l2];
+      }
+    }
+  }
+}
+
+
+
 void  SpatialSyntWellFilter::SetPriorSpatialCovarianceSyntWell(const FFTGrid               * cov_vp,
                                                                const FFTGrid               * cov_vs,
                                                                const FFTGrid               * cov_rho,
