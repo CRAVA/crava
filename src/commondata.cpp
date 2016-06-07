@@ -10325,10 +10325,11 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Maximum offset                           : %10.1f\n",model_settings->getMaxWellOffset());
         LogKit::LogFormatted(LogKit::Low,"  Maximum vertical shift                   : %10.1f\n",model_settings->getMaxWellShift());
       }
-        std::vector<float> angle            = model_settings->getAngle(i);
-        std::vector<float> SN_ratio         = model_settings->getSNRatio(i);
-        std::vector<bool>  estimate_wavelet = model_settings->getEstimateWavelet(i);
-        std::vector<bool>  match_energies   = model_settings->getMatchEnergies(i);
+        std::vector<float> angle              = model_settings->getAngle(i);
+        std::vector<float> SN_ratio           = model_settings->getSNRatio(i);
+        std::vector<bool>  estimate_wavelet   = model_settings->getEstimateWavelet(i);
+        std::vector<bool>  match_energies     = model_settings->getMatchEnergies(i);
+        std::vector<bool>  use_ricker_wavelet = model_settings->getUseRickerWavelet(i);
 
         for (int j = 0; j < model_settings->getNumberOfAngles(i); j++)
         {
@@ -10355,6 +10356,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
           LogKit::LogFormatted(LogKit::Low,"  Data                                     : "+input_files->getSeismicFile(i,j)+"\n");
           if (estimate_wavelet[j])
             LogKit::LogFormatted(LogKit::Low,"  Estimate wavelet                         : %10s\n", "yes");
+          else if (use_ricker_wavelet[j]) {
+            LogKit::LogFormatted(LogKit::Low,"  Ricker wavelet                           : %10s\n", "yes");
+            LogKit::LogFormatted(LogKit::Low,"  Ricker peak frequency                    : %10.2f\n",model_settings->getRickerPeakFrequency(i,j));
+          }
           else
             LogKit::LogFormatted(LogKit::Low,"  Read wavelet from file                   : "+input_files->getWaveletFile(i,j)+"\n");
           if (model_settings->getEstimateLocalShift(i,j))
