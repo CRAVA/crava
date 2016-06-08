@@ -3289,11 +3289,12 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   else { //Not estimation modus
     if (use_ricker_wavelet) {
 
-        wavelet = new Wavelet1D(model_settings,
-                                reflection_coefs,
-                                angle,
-                                model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
-                                error);
+      LogKit::LogFormatted(LogKit::Low,"  Setting up Ricker wavelet with peak frequency " + NRLib::ToString(model_settings->getRickerPeakFrequency(i_timelapse,j_angle)) + ".\n");
+      wavelet = new Wavelet1D(model_settings,
+                              reflection_coefs,
+                              angle,
+                              model_settings->getRickerPeakFrequency(i_timelapse,j_angle),
+                              error);
 
     }
     else {
@@ -9938,7 +9939,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                         : %10d\n", model_settings->getTimeNz(interval_names[i]));
     }
 
-    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax        : %10.2f\n", model_settings->getLzLimit());
+    LogKit::LogFormatted(LogKit::Low,"  Minimum allowed value for lmin/lmax      : %10.2f\n", model_settings->getLzLimit());
   }
 
   if (model_settings->getCorrDirUsed()) {
