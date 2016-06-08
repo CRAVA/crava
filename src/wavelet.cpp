@@ -148,10 +148,10 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
-  coeff_[0]       = reflCoef[0];
-  coeff_[1]       = reflCoef[1];
-  coeff_[2]       = reflCoef[2];
-   int length = 119;
+  coeff_[0]  = reflCoef[0];
+  coeff_[1]  = reflCoef[1];
+  coeff_[2]  = reflCoef[2];
+  int length = 119;
 
   dz_ = 1.0;
   nz_ = 2*length + 1;
@@ -793,7 +793,7 @@ Wavelet::findWaveletLength(float minRelativeAmp,
   std::vector<float> absramp(nzp_);
   for (int i=0 ; i <nzp_ ; i++) {
     absramp[i] = fabs(getRAmp(i));
-    //std::cout << i << "  "  << absramp[i] << std::endl;
+    //std::cout << i << "  "  << getRAmp(i) << std::endl;
   }
 
   float maxAmp = absramp[0];
@@ -805,17 +805,15 @@ Wavelet::findWaveletLength(float minRelativeAmp,
     }
   }
 
-  float minAmp = maxAmp*minRelativeAmp; // minimum relevant amplitude
-
-  int wLength  = nzp_;
-
-  bool peak_at_end = (maxInd == 0) || (maxInd == 1) || (maxInd == nzp_ - 2) || (maxInd == nzp_ - 1);
-
-  if (maxInd == 1 || maxInd == nzp_ - 2) {
-    LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: The estimated wavelet does not have maximum amplitude at first/last sample.\n");
-  }
+  float minAmp      = maxAmp*minRelativeAmp; // minimum relevant amplitude
+  int   wLength     = nzp_;
+  bool  peak_at_end = absramp[0] > absramp[(nzp_+1)/2]; // Peak is at either end, not in the centre.
 
   if (peak_at_end) {
+    if (maxInd != 0 && maxInd != nzp_ - 1) {
+      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: The estimated wavelet does not have maximum amplitude at first or last sample.");
+      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: Peak value is for sample %d. First sample is 0 and last sample is %d\n",maxInd,nzp_);
+    }
     for (int i=nzp_/2 ; i>0 ; i--) {
       if (absramp[i] > minAmp || absramp[i] > minAmp) {
         wLength = (i*2+1);// adds both sides
