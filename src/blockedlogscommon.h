@@ -262,9 +262,6 @@ public:
                                                                  std::map<std::string, std::vector<double> >  & cont_logs_seismic_resolution,
                                                                  std::vector<std::vector<double> >            & actual_synt_seismic_data,
                                                                  std::vector<std::vector<double> >            & well_synt_seismic_data,
-                                                                 double                                         z0,              // z-value of center in top layer
-                                                                 double                                         dz,              // dz in vertical trend
-                                                                 int                                            nz,              // layers in vertical trend
                                                                  std::string                                    type,
                                                                  int                                            i_angle) const;
 
@@ -362,14 +359,6 @@ public:
 private:
 
   // FUNCTIONS------------------------------------
-
-  void                                   SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                                 const std::vector<double> & z_pos,
-                                                                 int                         n_blocks,
-                                                                 const std::vector<double> & vertical_trend,
-                                                                 double                      z0,
-                                                                 double                      dzVt,
-                                                                 int                         nz) const;
 
   void                                   InterpolateTrend(const double                    * blocked_log,
                                                           double                          * trend) const;
@@ -612,14 +601,6 @@ private:
                                   double                      rho,
                                   const float               * coeff) const;
 
-  void    SetLogFromVerticalTrend(float                       *& blocked_log,
-                                  const std::vector<double>    & zpos,
-                                  int                            nBlocks,
-                                  float                        * vertical_trend,
-                                  double                         z0,
-                                  double                         dzVt,
-                                  int                            nz) const;
-
   void    CountBlocksWithData(const std::vector<double>                          & x_pos_blocked,
                               const std::vector<double>                          & y_pos_blocked,
                               const std::vector<double>                          & z_pos_blocked,
@@ -665,7 +646,8 @@ private:
                                 int                         first_B,
                                 int                         last_B,
                                 int                         first_S,
-                                int                         last_S,std::vector<double>       & x_pos_blocked,
+                                int                         last_S,
+                                std::vector<double>       & x_pos_blocked,
                                 std::vector<double>       & y_pos_blocked,
                                 std::vector<double>       & z_pos_blocked) const;
 

@@ -1,4 +1,4 @@
-// $Id: segygeometry.hpp 1199 2013-10-02 08:24:02Z anner $
+// $Id: segygeometry.hpp 1351 2016-05-13 07:27:35Z perroe $
 
 // Copyright (c)  2011, Norwegian Computing Center
 // All rights reserved.
@@ -44,11 +44,12 @@ public:
   Constructor
   @param[in] traces  Traces from segY cube
   */
-  SegyGeometry(std::vector<SegYTrace *> &traces);
+  SegyGeometry(std::vector<SegYTrace *> & traces,
+               bool                       regularize_if_needed = false);
   SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL information not available, generates internally.
                double rot);
   SegyGeometry(double x0,double y0,double dx,double dy, size_t nx,size_t ny, ///< When XL, IL is available.
-               double IL0, double XL0, double ilStepX, double ilStepY,
+               double ILStart, double XLStart, double ilStepX, double ilStepY,
                double xlStepX, double xlStepY, double rot);
   SegyGeometry(const RegularSurface<double> surf);
   SegyGeometry(const RegularSurfaceRotated<double> surf);
@@ -59,17 +60,18 @@ public:
 
   bool   IsInside(double x, double y) const;
 
-  size_t FindIndex(float x, float y) const;
+  size_t FindIndex(double x, double y) const;
   void   FindIndex(double x, double y, size_t &i, size_t  &j) const;               ///< Return grid index for i and j
   void   FindIndex(int IL, int XL, size_t &i, size_t &j) const;
-  bool   FindContIndex(double x, double y, float &xind, float  &yind) const; ///< Compute decimal index, to give location in cell. Return true if inside grid.
+  bool   FindContIndex(double x, double y, double &xind, double &yind) const; ///< Compute decimal index, to give location in cell. Return true if inside grid.
   void   FindILXL(float x, float y, int &IL, int &XL) const;
   void   FindILXL(double x, double y, int &IL, int &XL) const;
   void   FindILXL(size_t i, size_t j, int &IL, int &XL) const;
-  void   FindContILXL(float x, float y, double &IL, double &XL) const;
-  void   FindXYFromIJ(size_t i, size_t j, float &x, float &y) const;
-  void   FindXYFromILXL(int IL, int XL, float &x, float &y) const;
-  void   FindXYFromContILXL(float IL, float XL, float &x, float &y) const;
+  void   FindContILXL(double x, double y, double &IL, double &XL) const;
+  void   FindXYFromIJ(size_t i, size_t j, double &x, double &y) const;
+  void   FindXYFromILXL(int IL, int XL, double &x, double &y) const;
+  void   FindXYFromContILXL(double IL, double XL, double &x, double &y) const;
+  void   FindContIndexFromContILXL(double il, double xl, double &xind, double &yind) const;
 
   size_t GetNx()           const { return nx_        ;}            ///< return nx
   size_t GetNy()           const { return ny_        ;}            ///< return ny
@@ -90,6 +92,13 @@ public:
   double GetXLStepX()      const { return xl_stepX_   ;}
   double GetXLStepY()      const { return xl_stepY_   ;}
 
+  int    GetMinIL()        const { return minIL_      ;}
+  int    GetMaxIL()        const { return maxIL_      ;}
+  int    GetILStep()       const { return ILStep_     ;}
+  int    GetMinXL()        const { return minXL_      ;}
+  int    GetMaxXL()        const { return maxXL_      ;}
+  int    GetXLStep()       const { return XLStep_     ;}
+
   void   WriteGeometry() const;
   void   WriteILXL(bool errorMode = false) const;
 
@@ -102,15 +111,19 @@ public:
 
   std::vector<int> findAreaILXL(SegyGeometry * templateGeometry);
 
+  void   FindILXLGeometry();
+  void   FindILXLGeometry(int minIL, int maxIL, int ILStep, int minXL, int maxXL, int XLStep);
 
 private:
-  void   FindILXLGeometry();       ///< minIL, maxIL, stepIL, minXL, ...
-
-  void   Regularize(double   x0,   double   y0,
-                    double   x1,   double   y1,
-                    double   dIL,  double   dXL,
-                    double & dxIL, double & dyIL,
-                    double & dxXL, double & dyXL);
+  bool   Regularize(double & dxIL, double & dyIL,
+                    double & dxXL, double & dyXL,
+                    double   dIL1, double   dIL2,
+                    double   dXL1, double   dXL2);
+  void   Orthogonalize(double   dxIL , double   dyIL,
+                       double   dxXL , double   dyXL,
+                       double & dxILn, double & dyILn,
+                       double & dxIXn, double & dyXLn,
+                       double   frac);
 
   void   SetupGeometrySingleTrace(const SegYTrace * trace);
 

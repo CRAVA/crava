@@ -7,8 +7,8 @@
 #include <math.h>
 
 #include "nrlib/flens/nrlib_flens.hpp"
-
 #include "nrlib/iotools/logkit.hpp"
+
 #include "fftw.h"
 #include "rfftw.h"
 #include "fftw-int.h"
