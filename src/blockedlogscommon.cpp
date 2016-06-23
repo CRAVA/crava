@@ -2214,59 +2214,6 @@ void BlockedLogsCommon::EstimateCor(fftw_complex * var1_c,
   }
 }
 
-void BlockedLogsCommon::SetLogFromVerticalTrend(float                    *& blocked_log,
-                                                const std::vector<double> & zpos,
-                                                int                         n_blocks,
-                                                float                     * vertical_trend,
-                                                double                      z0,
-                                                double                      dzVt,
-                                                int                         nz) const
-{
-  assert (blocked_log == NULL);
-  //
-  // Initialise as undefined
-  //
-  for (int i=0 ; i<n_blocks ; i++)
-    blocked_log[i] = RMISSING;
-
-  //
-  // Aritmethic mean of values in overlapping cells
-  //
-  for (int i=0 ; i<n_blocks ; i++) {
-    double dz;
-    if (i==n_blocks-1)
-      dz = zpos[i]-zpos[i-1];
-    else
-      dz = zpos[i+1]-zpos[i];
-    double zi = zpos[i];
-    double a  = zi - 0.5*dz;     // Top of blocked log cell
-    double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
-
-    int j=0;
-    while (b<a && j<nz) {
-      b += dzVt;
-      j++;
-    }
-    // Now 'j' is the first vertical trend cell overlapping blocked log cell 'i'
-
-    float value;
-    if (j==nz) {
-      // We have come to the end of the end-of-vertical-trend
-      value = vertical_trend[j-1];
-    }
-    else if (b >= a+dz) {
-      // One single vertical-trend-cell covers a blocked log cell completely.
-      value = vertical_trend[j];
-    }
-    else {
-      double zj = b + 0.5*dzVt; // Center of vertical trend cell
-      value = vertical_trend[j]* static_cast<float>((zj+dzVt-zi)/dzVt) + vertical_trend[j]*static_cast<float>((zi-zj)/dzVt);
-    }
-    blocked_log[i] = value;
-
-    //LogKit::LogFormatted(LogKit::Error,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
-  }
-}
 //------------------------------------------------------------------------------
 void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well                            * well_data,
                                                   std::vector<double>                          & x_pos_raw_logs,
@@ -3004,67 +2951,10 @@ void BlockedLogsCommon::FillInSeismic(std::vector<double>   & seismic_data,
 }
 
 //--------------------------------------------------------------------------------------
-void BlockedLogsCommon::SetLogFromVerticalTrend(std::vector<double>       & blocked_log,
-                                                const std::vector<double> & z_pos,
-                                                int                         n_blocks,
-                                                const std::vector<double> & vertical_trend,
-                                                double                      z0,
-                                                double                      dzVt,
-                                                int                         nz) const
-{
-  //
-  // Initialise as undefined
-  //
-  for (int i=0 ; i<n_blocks ; i++)
-    blocked_log[i] = RMISSING;
-
-  //
-  // Aritmethic mean of values in overlapping cells
-  //
-  for (int i=0 ; i<n_blocks ; i++) {
-    double dz;
-    if (i==n_blocks-1)
-      dz = z_pos[i]-z_pos[i-1];
-    else
-      dz = z_pos[i+1]-z_pos[i];
-    double zi = z_pos[i];
-    double a  = zi - 0.5*dz;     // Top of blocked log cell
-    double b  = z0 + 0.5*dzVt;   // Base of first vertical trend cell
-
-    int j=0;
-    while (b<=a && j<nz) {
-      b += dzVt;
-      j++;
-    }
-    // Now 'j' is the first vertical trend cell overlapping blocked log cell 'i'
-
-    float value;
-    if (j==nz) {
-      // We have come to the end of the end-of-vertical-trend
-      value = static_cast<float>(vertical_trend[j-1]);
-    }
-    else if (b >= a+dz) {
-      // One single vertical-trend-cell covers a blocked log cell completely.
-      value = static_cast<float>(vertical_trend[j]);
-    }
-    else {
-      double zj = b + 0.5*dzVt; // Center of vertical trend cell
-      value = static_cast<float>( vertical_trend[j]* (zj+dzVt-zi)/dzVt + vertical_trend[j]*(zi-zj)/dzVt);
-    }
-    blocked_log[i] = value;
-
-    //LogKit::LogFormatted(LogKit::Error,"i j  blockedLog[i]   %d %d  %7.3f\n",i,j,blockedLog[i]);
-  }
-}
-
-//--------------------------------------------------------------------------------------
 void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>                    & vertical_trend,
                                                  std::map<std::string, std::vector<double> >  & cont_logs_seismic_resolution,
                                                  std::vector<std::vector<double> >            & actual_synt_seismic_data,
                                                  std::vector<std::vector<double> >            & well_synt_seismic_data,
-                                                 double                                         z0,              // z-value of center in top layer
-                                                 double                                         dz,              // dz in vertical trend
-                                                 int                                            nz,              // layers in vertical trend
                                                  std::string                                    type,
                                                  int                                            i_angle) const
 {
@@ -3082,15 +2972,15 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
       std::vector<double> v_trend(vertical_trend.size());
       for (size_t i=0;i<vertical_trend.size();i++)
         v_trend[i] = static_cast<double>(trace[i]);
-      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
-                              v_trend, z0, dz, nz);
+      for (size_t i=0 ; i<n_blocks_ ; i++)
+        blocked_log[i] = v_trend[k_pos_[i]];
       if (actual_synt_seismic_data_.size() == 0)
         actual_synt_seismic_data.resize(n_angles_); // nAngles is set along with real_seismic_data_
       actual_synt_seismic_data[i_angle] = blocked_log;
     }
     else {
-      SetLogFromVerticalTrend(blocked_log, z_pos_blocked_, n_blocks_,
-                              vertical_trend, z0, dz, nz);
+      for (size_t i=0 ; i<n_blocks_ ; i++)
+        blocked_log[i] = vertical_trend[k_pos_[i]];
       if (type == "VP_SEISMIC_RESOLUTION")
         cont_logs_seismic_resolution.insert(std::pair<std::string, std::vector<double> >("Vp", blocked_log));
       else if (type == "VS_SEISMIC_RESOLUTION")
@@ -3120,8 +3010,8 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
     std::vector<double> v_trend(vertical_trend.size());
     for (size_t i=0;i<vertical_trend.size();i++)
       v_trend[i] = static_cast<double>(trace[i]);
-    SetLogFromVerticalTrend(well_synt_seismic_data[i_angle], z_pos_blocked_, n_blocks_,
-                            v_trend, z0, dz, nz);
+    for (size_t i=0 ; i<n_blocks_ ; i++)
+      well_synt_seismic_data[i_angle][i] = v_trend[k_pos_[i]];
   }
 }
 
@@ -3818,9 +3708,6 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
                               cont_logs_seismic_resolution_,
                               actual_synt_seismic_data_,
                               well_synt_seismic_data_,
-                              z_pos_blocked_[0],
-                              dz_,
-                              nz,
                               log_type,
                               i);
 

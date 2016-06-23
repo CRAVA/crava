@@ -148,14 +148,14 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
-  coeff_[0]       = reflCoef[0];
-  coeff_[1]       = reflCoef[1];
-  coeff_[2]       = reflCoef[2];
-   int length = 119;
+  coeff_[0]  = reflCoef[0];
+  coeff_[1]  = reflCoef[1];
+  coeff_[2]  = reflCoef[2];
+  int length = 119;
 
   dz_ = 1.0;
   nz_ = 2*length + 1;
- // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
+  // cz_   =  static_cast<int>(floor((fabs(shift/dz_))+0.5));
   cz_ = length;
   nzp_  = nz_;
   cnzp_ = nzp_/2+1;
@@ -168,8 +168,6 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
     t = (i-cz_) * dz_;
     rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
   }
-
-
   formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
@@ -451,7 +449,6 @@ Wavelet::resample(float dz,
     norm2 += static_cast<double> (wlet[k]*wlet[k]);
   norm_       = static_cast<float>(sqrt( norm2));
 
-
   rAmp_       = static_cast<fftw_real *>(wlet); // rAmp_ is not allocated
   //if (cAmp_ != NULL)
   //  delete [] cAmp_;
@@ -464,7 +461,7 @@ Wavelet::resample(float dz,
   dz_         = dz;
   inFFTorder_ = true;
 
-  if( ModelSettings::getDebugLevel() > 0 ) {
+  if (ModelSettings::getDebugLevel() > 0 ) {
     std::string fileName = "resampled_wavelet_";
     float dzOut = 1.0; // sample at least as dense as this
     writeWaveletToFile(fileName, dzOut,false);
@@ -644,7 +641,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     halfLength=wLength/2;
   }
 
-  float shift = -dznew*halfLength;
+  float shift = -dznew*(halfLength + 1);
 
   std::string fName;
   std::ofstream file;
@@ -679,9 +676,9 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << dznew   << "\n"
          << wLength << "\n";
 
-    for(int i = halfLength; i > 0; i--)
+    for (int i = halfLength ; i >= 0 ; i--)
       file << std::setprecision(6) << waveletNew_r[i] << "\n";
-    for(int i=0;i<=halfLength;i++)
+    for (int i=0 ; i < halfLength ; i++)
       file << std::setprecision(6) << waveletNew_r[nzpNew-i-1] << "\n";
     file.close();
   }
@@ -716,9 +713,9 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
          << t0
          << "\n";
 
-    for(int i = halfLength; i > 0; i--)
+    for (int i = halfLength ; i >= 0 ; i--)
       file << std::setprecision(6) << waveletNew_r[i] << "\n";
-    for(int i=0;i<=halfLength;i++)
+    for (int i=0 ; i < halfLength ; i++)
       file << std::setprecision(6) << waveletNew_r[nzpNew-i-1] << "\n";
     file.close();
   }
@@ -783,7 +780,8 @@ Wavelet::doLocalShiftAndScale1D(Wavelet1D* localWavelet,// wavelet to shift and 
 }
 
 float
-Wavelet::findWaveletLength(float minRelativeAmp,float minimumWaveletLength)
+Wavelet::findWaveletLength(float minRelativeAmp,
+                           float minimumWaveletLength)
 {
   bool trans=false;
   if(isReal_==false) {
@@ -791,33 +789,79 @@ Wavelet::findWaveletLength(float minRelativeAmp,float minimumWaveletLength)
     trans=true;
   }
 
-  float maxAmp =  fabs(getRAmp(0)); // gets max amp
-  for(int i=1;i <nzp_;i++)
-    if(fabs(getRAmp(i)) > maxAmp)
-      maxAmp = fabs(getRAmp(i));
+  std::vector<float> absramp(nzp_);
+  for (int i=0 ; i <nzp_ ; i++) {
+    absramp[i] = fabs(getRAmp(i));
+    //LogKit::LogFormatted(LogKit::Warning,"i=%3d  amp=%12.2f\n",i,getRAmp(i));
+  }
 
-  float minAmp= maxAmp*minRelativeAmp; // minimum relevant amplitude
-
-  int wLength=nzp_;
-
-  for(int i=nzp_/2;i>0;i--) {
-    if(fabs(getRAmp(i)) >minAmp) {
-      wLength= (i*2+1);// adds both sides
-      break;
-    }
-    if(fabs(getRAmp(nzp_-i)) > minAmp) {
-      wLength= (2*i+1);// adds both sides
-      break;
+  float maxAmp = absramp[0];
+  int   maxInd = 0;
+  for (int i=1 ; i <nzp_ ; i++) {
+    if (absramp[i] > maxAmp) {
+      maxAmp = absramp[i];
+      maxInd = i;
     }
   }
-  wLength=std::max(wLength,2*(static_cast<int>(minimumWaveletLength/dz_+1)/2)+1); // always odd number
-  wLength = std::min(wLength,2*((nzp_+1)/2) - 1); // always odd number less than or equal to nzp_
+  //LogKit::LogFormatted(LogKit::Warning,"maxInd=%3d  MaxAmp=%12.2f\n",maxInd,maxAmp);
 
+  float minAmp      = maxAmp*minRelativeAmp; // minimum relevant amplitude
+  int   wLength     = nzp_;
+  bool  peak_at_end = absramp[0] > absramp[(nzp_+1)/2]; // Peak is at either end, not in the centre.
+
+  if (peak_at_end) {
+    if (maxInd != 0 && maxInd != nzp_ - 1) {
+      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: The estimated wavelet does not have maximum amplitude at first or last sample.");
+      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: Peak value is for sample %d. First sample is 0 and last sample is %d\n",maxInd,nzp_);
+    }
+    int i1 = 0;
+    for (int i=nzp_/2 ; i>0 ; i--) {
+      if (absramp[i] > minAmp) {
+        i1 = i;
+        break;
+      }
+    }
+    int i2 = 0;
+    for (int i=nzp_/2 ; i<nzp_ ; i++) {
+      if (absramp[i] > minAmp) {
+        i2 = i;
+        break;
+      }
+    }
+    wLength = nzp_ - (i2 - i1);
+  }
+  else {
+    int i1 = 0;
+    for (int i=0 ; i < nzp_/2 ; i++) {
+      if (absramp[i] > minAmp) {
+        i1 = i;
+        break;
+      }
+    }
+    int i2 = 0;
+    for (int i=nzp_ - 1 ; i > nzp_/2 ; i--) {
+      if (absramp[i] > minAmp) {
+        i2 = i;
+        break;
+      }
+    }
+    wLength = i2 - i1;
+  }
+  int minLength = 2*(static_cast<int>(minimumWaveletLength/dz_ + 1)/2) + 1;
+  int maxLength = 2*((nzp_+1)/2) - 1;
+  if (wLength < minLength) {
+    LogKit::LogFormatted(LogKit::Warning,"\n  Estimated wavelet length:  %.1fms",dz_*static_cast<float>(wLength));
+    wLength = minLength;
+    LogKit::LogFormatted(LogKit::Warning,"\n  Enforced wavelet length :  %.1fms\n",dz_*static_cast<float>(wLength));
+  }
+  if (wLength > maxLength) {
+    LogKit::LogFormatted(LogKit::Warning,"\n  Estimated wavelet length:  %.1fms",dz_*static_cast<float>(wLength));
+    wLength = maxLength;
+    LogKit::LogFormatted(LogKit::Warning,"\n  Enforced wavelet length :  %.1fms\n",dz_*static_cast<float>(wLength));
+  }
   if(trans==true)
     fft1DInPlace();
-
-
-  return ( dz_*static_cast<float>(wLength));
+  return (dz_*static_cast<float>(wLength));
 }
 
 float

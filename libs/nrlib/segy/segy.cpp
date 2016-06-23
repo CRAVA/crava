@@ -451,9 +451,12 @@ SegY::GetTraceData(int IL, int XL, std::vector<float> & result, const Volume * v
   if(geometry_ == NULL)
     throw Exception("Can not find data without geometry set.\n");
 
-  float x,y;
-  geometry_->FindXYFromILXL(IL, XL, x, y);
-  GetTraceData(x, y, result, volume);
+  double xd ,yd;
+  geometry_->FindXYFromILXL(IL, XL, xd, yd);
+
+  float xf = static_cast<double>(xd);
+  float yf = static_cast<double>(yd);
+  GetTraceData(xf, yf, result, volume);
 }
 
 void
@@ -922,9 +925,9 @@ SegY::SetGeometry(const SegyGeometry * geometry)
   }
 }
 
-void SegY::CreateRegularGrid()
+void SegY::CreateRegularGrid(bool regularize_if_needed)
 {
-  geometry_  = new SegyGeometry(traces_);
+  geometry_  = new SegyGeometry(traces_, regularize_if_needed);
   n_traces_  = static_cast<int>(traces_.size());
 }
 
@@ -998,8 +1001,6 @@ SegY::GetValue(double x, double y, double z, int outsideMode) const
   if(geometry_ == NULL)
     throw Exception("Geometry is not defined.\n");
 
-  int i, j;
-  float xind,yind;
   float value;
   double x0 = geometry_->GetX0()+0.5*geometry_->GetDx()*geometry_->GetCosRot()-0.5*geometry_->GetDy()*geometry_->GetSinRot();
   double y0 = geometry_->GetY0()+0.5*geometry_->GetDy()*geometry_->GetCosRot()+0.5*geometry_->GetDx()*geometry_->GetSinRot();
@@ -1007,10 +1008,11 @@ SegY::GetValue(double x, double y, double z, int outsideMode) const
   double sy = -(x-x0)*geometry_->GetSinRot() + (y-y0)*geometry_->GetCosRot() + 0.5*geometry_->GetDy();
   if (geometry_!=NULL)
   {
-    int ok = geometry_->FindContIndex(static_cast<float>(x),static_cast<float>(y),xind,yind);
+    double xind, yind;
+    int ok = geometry_->FindContIndex(x, y, xind, yind);
 
-    i = static_cast<int>(xind);
-    j = static_cast<int>(yind);
+    int    i  = static_cast<int>(xind);
+    int    j  = static_cast<int>(yind);
     size_t nx = geometry_->GetNx();
     size_t ny = geometry_->GetNy();
 
