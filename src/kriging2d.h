@@ -23,10 +23,6 @@ public:
                            const CovGrid2D     & cov,
                            bool                  getResiduals = false);
 
-  static CovGrid2D & makeCovGrid2D(const Simbox * simbox,
-                                   Vario        * vario,
-                                   int            debugFlag);
-
 private:
   static void  subtractTrend(NRLib::Vector            & d,
                              const std::vector<float> & data,

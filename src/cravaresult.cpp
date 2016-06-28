@@ -36,6 +36,9 @@ post_rho_kriged_(NULL),
 background_vp_(NULL),
 background_vs_(NULL),
 background_rho_(NULL),
+background_trend_vp_(NULL),
+background_trend_vs_(NULL),
+background_trend_rho_(NULL),
 block_grid_(NULL),
 facies_prob_undef_(NULL),
 quality_grid_(NULL),
@@ -1288,9 +1291,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  double simbox_dz = floor(simbox.getdz() * 100) / 100;
-  double segy_dz = floor(model_settings->getSegyDz() * 100) / 100;
-
+  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
+  double simbox_dz = floor(simbox.getdz()*10)/10;
+  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
   if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
       if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING)
         LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
@@ -1389,13 +1392,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         if (offset.size() > 0 && offset[j] < 0)
           offset[j] = model_settings->getSegyOffset(i);
 
-        std::string angle_synt     = NRLib::ToString(j);
-        std::string file_name_synt = IO::makeFullFileName(IO::PathToSeismicData(), IO::FileTemporarySeismic()+angle_synt);
-
         int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
-        int missing_traces_simbox  = 0;
-        int missing_traces_padding = 0;
-        int dead_traces_simbox     = 0;
 
         FFTGrid * fft_grid_resampled = NULL;
         bool delete_fft_grid         = true;
@@ -1424,6 +1421,10 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
             fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
           fft_grid_resampled->createRealGrid();
 
+          int missing_traces_simbox  = 0;
+          int missing_traces_padding = 0;
+          int dead_traces_simbox     = 0;
+
           common_data->FillInData(nrlib_grid,
                                   fft_grid_resampled,
                                   &simbox,
@@ -1448,7 +1449,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
           fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
         }
 
-        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled); // deletes fft_grid_resampled
+        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
 
         //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
         for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
@@ -1739,7 +1740,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
       reflection_matrix_ = common_data->GetReflectionMatrixTimeLapse(0);
       wavelets_          = common_data->GetWavelet(0);
 
-      std::vector<bool> estimate_wavelet = model_settings->getEstimateWavelet(0);
       //Resample wavelet to output simbox, and generate seismic logs.
       int n_wavelets = static_cast<int>(wavelets_.size());
       for (int i = 0; i < n_wavelets; i++) {
@@ -2156,9 +2156,6 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
-    int output_format = model_settings->getOutputGridFormat();
-    if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
-      output_format += IO::ASCII;
 
     depth_mapping->setMappingFromVelocity(grid_vp, simbox, model_settings->getOutputGridFormat());
   }

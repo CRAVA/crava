@@ -151,26 +151,6 @@ SeismicParametersHolder::setBackgroundParametersInterval(const std::vector<NRLib
 }
 
 //--------------------------------------------------------------------
-void
-SeismicParametersHolder::copyBackgroundParameters(FFTGrid  * meanVp,
-                                                  FFTGrid  * meanVs,
-                                                  FFTGrid  * meanRho)
-{
-  if(meanVp_!=NULL)
-    delete meanVp_;
-
-  if(meanVs_!=NULL)
-    delete meanVs_;
-
-  if(meanRho_!=NULL)
-    delete meanRho_;
-
-  meanVp_  = new FFTGrid(meanVp);
-  meanVs_  = new FFTGrid(meanVs);
-  meanRho_ = new FFTGrid(meanRho);
-}
-
-//--------------------------------------------------------------------
 
 void
 SeismicParametersHolder::setCorrelationParameters(bool                                  cov_estimated,
@@ -887,84 +867,6 @@ SeismicParametersHolder::getPriorCorrTFiltered(int nz, int nzp) const
   return priorCorrTFiltered;
 }
 
-//--------------------------------------------------------------------
-//void
-//SeismicParametersHolder::writeFilePriorCorrT(fftw_real   * priorCorrT,
-//                                             const int   & nzp,
-//                                             const float & dt) const
-//{
-//  // This is the cyclic and filtered version of CorrT
-//  std::string baseName = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixGeneralData();
-//  std::string fileName = IO::makeFullFileName(IO::PathToCorrelations(), baseName);
-//  std::ofstream file;
-//  NRLib::OpenWrite(file, fileName);
-//  file << std::fixed
-//       << std::right
-//       << std::setprecision(6)
-//       << dt << "\n";
-//  for(int i=0 ; i<nzp; i++) {
-//    file << std::setw(9) << priorCorrT[i] << "\n";
-//  }
-//  file.close();
-//}
-//--------------------------------------------------------------------
-//void
-//SeismicParametersHolder::writeFilePostCorrT(const std::vector<float> & postCov,
-//                                            const std::string        & subDir,
-//                                            const std::string        & baseName) const
-//{
-//  std::string fileName = IO::makeFullFileName(subDir,baseName);
-//  std::ofstream file;
-//  NRLib::OpenWrite(file, fileName);
-//  file << std::fixed;
-//  file << std::setprecision(6);
-//  file << std::right;
-//  float c0 = 1.0f/postCov[0];
-//
-//  for(int k=0 ; k < static_cast<int>(postCov.size()) ; k++)
-//    file << std::setw(9) << postCov[k]*c0 << "\n";
-//
-//  file.close();
-//}
-
-//--------------------------------------------------------------------
-void
-SeismicParametersHolder::writeFilePriorVariances(const ModelSettings      * modelSettings,
-                                                 const std::vector<float> & priorCorrT,
-                                                 const Surface            * priorCorrXY,
-                                                 const float              & dt) const
-{
-  std::string baseName1 = IO::PrefixPrior() + IO::FileParameterCov() + IO::SuffixCrava();
-  std::string baseName2 = IO::PrefixPrior() + IO::FileTemporalCorr() + IO::SuffixCrava();
-  std::string baseName3 = IO::PrefixPrior() + IO::FileLateralCorr();
-  std::string fileName1 = IO::makeFullFileName(IO::PathToCorrelations(), baseName1);
-  std::string fileName2 = IO::makeFullFileName(IO::PathToCorrelations(), baseName2);
-
-  std::ofstream file;
-  NRLib::OpenWrite(file, fileName1);
-  file << std::fixed
-       << std::right
-       << std::setprecision(10);
-  for(int i=0 ; i<3 ; i++) {
-    for(int j=0 ; j<3 ; j++) {
-      file << std::setw(13) << priorVar0_(i,j) << " ";
-    }
-    file << "\n";
-  }
-  file.close();
-
-  NRLib::OpenWrite(file, fileName2);
-  file << std::fixed
-       << std::right
-       << std::setprecision(8)
-       << dt << "\n";
-  for(int i=0 ; i<static_cast<int>(priorCorrT.size()); i++) {
-    file << std::setw(11) << priorCorrT[i] << "\n";
-  }
-  file.close();
-
-  IO::writeSurfaceToFile(*priorCorrXY, baseName3, IO::PathToCorrelations(), modelSettings->getOutputGridFormat());
-}
 //--------------------------------------------------------------------
 void
 SeismicParametersHolder::printPriorVariances(void) const

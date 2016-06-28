@@ -128,28 +128,28 @@ private:
 
 
   static
-  void         SetupKrigingData2D(std::vector<KrigingData2D>                 & kriging_data_vp,
-                                  std::vector<KrigingData2D>                 & kriging_data_vs,
-                                  std::vector<KrigingData2D>                 & kriging_data_rho,
-                                  std::vector<double>                        & trend_vp,
-                                  std::vector<double>                        & trend_vs,
-                                  std::vector<double>                        & trend_rho,
-                                  const int                                    output_flag,
-                                  const int                                  & nz,
-                                  const float                                & dz,
-                                  const int                                  & tot_blocks,
-                                  const std::vector<int>                     & n_blocks,
-                                  const std::vector<std::vector<double> >    & bl_vp,
-                                  const std::vector<std::vector<double> >    & bl_vs,
-                                  const std::vector<std::vector<double> >    & bl_rho,
-                                  const std::vector<std::vector<double> >    & vt_vp,
-                                  const std::vector<std::vector<double> >    & vt_vs,
-                                  const std::vector<std::vector<double> >    & vt_rho,
-                                  const std::vector<const std::vector<int> *>  ipos,
-                                  const std::vector<const std::vector<int> *>  jpos,
-                                  const std::vector<const std::vector<int> *>  kpos,
-                                  const std::string                          & interval_name,
-                                  const std::vector<std::string>             & well_names);
+  void         SetupKrigingData2D(std::vector<KrigingData2D>                  & kriging_data_vp,
+                                  std::vector<KrigingData2D>                  & kriging_data_vs,
+                                  std::vector<KrigingData2D>                  & kriging_data_rho,
+                                  std::vector<double>                         & trend_vp,
+                                  std::vector<double>                         & trend_vs,
+                                  std::vector<double>                         & trend_rho,
+                                  const int                                     output_flag,
+                                  const int                                   & nz,
+                                  const float                                 & dz,
+                                  const int                                   & tot_blocks,
+                                  const std::vector<int>                      & n_blocks,
+                                  const std::vector<std::vector<double> >     & bl_vp,
+                                  const std::vector<std::vector<double> >     & bl_vs,
+                                  const std::vector<std::vector<double> >     & bl_rho,
+                                  const std::vector<std::vector<double> >     & vt_vp,
+                                  const std::vector<std::vector<double> >     & vt_vs,
+                                  const std::vector<std::vector<double> >     & vt_rho,
+                                  const std::vector<const std::vector<int> *> & ipos,
+                                  const std::vector<const std::vector<int> *> & jpos,
+                                  const std::vector<const std::vector<int> *> & kpos,
+                                  const std::string                           & interval_name,
+                                  const std::vector<std::string>              & well_names);
 
 
   static
@@ -219,13 +219,6 @@ private:
                                                     float                 min_value,
                                                     float                 max_value,
                                                     std::string           parName);
-
-
-
-  static
-  FFTGrid    * CopyFFTGrid(FFTGrid   * origGrid,
-                           const bool  expTrans,
-                           const bool  fileGrid);
 
   static
   void         CheckLogForOnlyMissing(const std::vector<double> & log,

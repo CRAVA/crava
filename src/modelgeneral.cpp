@@ -337,32 +337,6 @@ ModelGeneral::AdvanceTime(int time_step, SeismicParametersHolder & seismicParame
 }
 
 void
-ModelGeneral::setTimeSimbox(Simbox * new_timeSimbox)
-{
-  if (simbox_ != NULL)
-    delete simbox_;
-
-  simbox_ = new Simbox(*new_timeSimbox);
-  double zmin,zmax;
-
-  simbox_->getMinMaxZ(zmin,zmax);
-  LogKit::LogFormatted(LogKit::Low,"\n\nNew time interval:\n");
-  LogKit::LogFormatted(LogKit::Low,"  Absolute time limits avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                       zmin+ simbox_->getlz()* simbox_->getAvgRelThick()*0.5,
-                       zmin, zmax);
-  LogKit::LogFormatted(LogKit::Low,"  Interval thickness    avg / min / max    : %7.1f /%7.1f /%7.1f\n",
-                       simbox_->getlz()*simbox_->getAvgRelThick(),
-                        simbox_->getlz()*simbox_->getMinRelThick(),
-                        simbox_->getlz());
-  LogKit::LogFormatted(LogKit::Low,"  Sampling density      avg / min / max    : %7.2f /%7.2f /%7.2f\n\n",
-                        simbox_->getdz()*simbox_->getAvgRelThick(),
-                        simbox_->getdz()*simbox_->getMinRelThick(),
-                        simbox_->getdz());
-
-
-}
-
-void
 ModelGeneral::LastUpdateOfStaticAndDynamicParts(SeismicParametersHolder &  seismicParameters,ModelSettings* model_settings)
 {
   bool debug=true;

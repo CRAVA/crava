@@ -181,8 +181,6 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
       cov_vprho->setAccessMode(FFTGrid::RANDOMACCESS);
       cov_vsrho->setAccessMode(FFTGrid::RANDOMACCESS);
 
-      //H Removed SetPriorSpatialCorrSyntWell if prior correlations isnt estimated, since that setup isnt compatible with doFiltering
-
       // Synthetic wells
       if (modelSettings->getFaciesProbFromRockPhysics()){
         for (int j = 0; j < spat_synt_well_filter->GetNumberOfSyntWellsToBeFiltered(); j ++) {
@@ -1828,10 +1826,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
     }
     else if(modelSettings->getFaciesProbRelative() == false)
     {
-      baseName += "Absolute_";
-      if(modelSettings->getFaciesProbFromRockPhysics())
-        baseName += "Rock_Physics_";
-
       std::vector<double> trend_min;
       std::vector<double> trend_max;
       FindSamplingMinMax(modelGeneral_->GetTrendCubes().GetTrendCubeSampling(), trend_min, trend_max);
@@ -1904,10 +1898,8 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
       for (int i=0;i<nfac;i++) {
         FFTGrid * grid = fprob_->createLHCube(likelihood, i,
                                               modelGeneral_->GetPriorFacies(), modelGeneral_->GetPriorFaciesCubes());
-        std::string fileName = IO::PrefixLikelihood() + facies_names[i];
 
         seismicParameters.AddLHCube(grid);
-
       }
     }
 

@@ -46,7 +46,6 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
 
   // Temp variables
   std::string   err_text = "";
-  std::string   previous_interval_name("");
   std::string   top_surface_file_name_temp("");
   std::string   base_surface_file_name_temp("");
   Surface     * top_surface  = NULL;
@@ -722,8 +721,8 @@ void  MultiIntervalGrid::ErodeSurface(Surface       &  surface,
                                       const bool    &  compare_upward) const
 {
 
-  int nx           = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
-  int ny           = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
+  int nx           = static_cast<int>((surface.GetLengthX() / resolution_surface.GetDX()) + 1);
+  int ny           = static_cast<int>((surface.GetLengthY() / resolution_surface.GetDY()) + 1);
   double x_ref     = surface.GetXRef();
   double y_ref     = surface.GetYRef();
   double lx        = surface.GetLengthX();
@@ -782,8 +781,8 @@ void  MultiIntervalGrid::ResampleSurface(Surface       & surface,
         (segy_geometry != NULL && !(surface.GetAngle() == segy_geometry->GetAngle() && resolution_surface.GetAngle() != segy_geometry->GetAngle()))) {
 
       //Create a new surface with the same size, but with a new resolution
-      int nx           = static_cast<int>(surface.GetLengthX() / resolution_surface.GetDX());
-      int ny           = static_cast<int>(surface.GetLengthY() / resolution_surface.GetDY());
+      int nx           = static_cast<int>((surface.GetLengthX() / resolution_surface.GetDX()) + 1);
+      int ny           = static_cast<int>((surface.GetLengthY() / resolution_surface.GetDY()) + 1);
       double x_ref     = surface.GetXRef();
       double y_ref     = surface.GetYRef();
       double lx        = surface.GetLengthX();

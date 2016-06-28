@@ -223,7 +223,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with one correlation surface" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary simbox (used for inversion grid) with one correlation surface" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -386,7 +386,7 @@ base_eroded_surface_(NULL)
   std::string output_name = "";
   if (interval_name != "")
     output_name = " for interval \'" + interval_name + "\'";
-  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary extended simbox (used for inversion grid) with two correlation surfaces" + output_name + ".\n");
+  LogKit::LogFormatted(LogKit::Low,"\nCreating a temporary simbox (used for inversion grid) with two correlation surfaces" + output_name + ".\n");
 
   interval_name_  = interval_name;
   status_         = BOXOK;
@@ -1063,20 +1063,6 @@ void Simbox::WriteTopBaseSurfaceGrids(const std::string   & top_name,
   IO::writeSurfaceToFile(wbsurf, base_name, subdir, output_format);
 }
 
-void  Simbox::SetTopBaseErodedNames(const std::string       & top_name,
-                                    const std::string       & bot_name,
-                                    int                       output_format)
-{
-  std::string suffix;
-  if ((output_format & IO::ASCII) > 0 && (output_format & IO::STORM) == 0)
-    suffix = IO::SuffixAsciiIrapClassic();
-  else
-    suffix = IO::SuffixStormBinary();
-
-  top_eroded_name_  = IO::getFilePrefix()+top_name+suffix;
-  base_eroded_name_ = IO::getFilePrefix()+bot_name+suffix;
-}
-
 void
 Simbox::setTopBotName(const std::string & topname,
                       const std::string & botname,
@@ -1169,8 +1155,6 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   double dx  = geometry->GetDx();
   double dy  = geometry->GetDy();
 
-  bool failed = false;
-
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -1189,7 +1173,6 @@ Simbox::setArea(const SegyGeometry * geometry, std::string & errText)
   {
     errText += "Could not set rotation angle.\n";
     errText += e.what();
-    failed = true;
     return true; // Failed
   }
   cosrot_      = cos(rot);
@@ -1232,8 +1215,6 @@ Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errT
   double dx  = lx/static_cast<double>(nx);
   double dy  = ly/static_cast<double>(ny);
 
-  bool failed = false;
-
   try
   {
     SetDimensions(x0,y0,lx,ly);
@@ -1252,7 +1233,6 @@ Simbox::setArea(const NRLib::Volume * volume, int nx, int ny, std::string & errT
   {
     errText += "Could not set rotation angle.\n";
     errText += e.what();
-    failed = true;
     return true; // Failed
   }
   cosrot_      = cos(rot);

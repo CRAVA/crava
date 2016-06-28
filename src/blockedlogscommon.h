@@ -48,7 +48,8 @@ public:
                     const Simbox                   * simbox,
                     const CravaTrend               & trend_cubes,
                     const std::vector<std::string> & cont_logs_to_be_blocked,
-                    const std::vector<std::string> & disc_logs_to_be_blocked);
+                    const std::vector<std::string> & disc_logs_to_be_blocked,
+                    std::string                    & err_text);
 
   //Copy constructor
   BlockedLogsCommon(const BlockedLogsCommon & logs);
@@ -174,12 +175,6 @@ public:
                                                         std::vector<double>    & blocked_log,
                                                         int                      i_offset = 0,
                                                         int                      j_offset = 0) const;
-  /*
-  void                                   GetBlockedGrid(const FFTGrid       * grid,
-                                                        std::vector<double> & blocked_log,
-                                                        int                   i_offset = 0,
-                                                        int                   j_offset = 0);
-                                                        */
 
   void                                   GetBlockedGrid(const NRLib::Grid<float> * grid,
                                                         std::vector<double>      & blocked_log,
@@ -242,7 +237,7 @@ public:
                                                                  float                           max_shift,
                                                                  int                             i_max_offset,
                                                                  int                             j_max_offset,
-                                                                 const std::vector<Surface *>    limits,
+                                                                 const std::vector<Surface *>  & limits,
                                                                  int                           & i_move,
                                                                  int                           & j_move,
                                                                  float                         & k_move) const;
@@ -335,8 +330,8 @@ public:
 
   void                                   FindMeanVsVp(const NRLib::Surface<double> & top,
                                                       const NRLib::Surface<double> & bot,
-                                                      double                         mean_vs_vp,
-                                                      int                            n_vs_vp) const;
+                                                      double                       & mean_vs_vp,
+                                                      int                          & n_vs_vp) const;
 
   bool                                   VolumeFocus(const NRLib::Volume                            & volume,
                                                      std::vector<double>                            & x_pos_blocked,
@@ -482,13 +477,6 @@ private:
                                    int                           & last_M,
                                    unsigned int                  & n_blocks,
                                    bool                          & is_inside) const;
-
-  //void    FindSizeAndBlockPointers(const StormContGrid           & stormgrid,
-  //                                 std::vector<int>              & bInd,
-  //                                 int                           & first_M,
-  //                                 int                           & last_M,
-  //                                 unsigned int                  & n_blocks,
-  //                                 std::string                   & err_text) const;
 
   void    FindBlockIJK(const Simbox                     * estimation_simbox,
                        const std::vector<int>           & bInd,
@@ -761,7 +749,7 @@ private:
   int                                         use_for_background_trend_;       //Uses the indicator enum from Modelsettings
   int                                         use_for_filtering_;              //Uses the indicator enum from Modelsettings
   int                                         use_for_wavelet_estimation_;     //Uses the indicator enum from Modelsettings
-  int                                         use_for_rock_physics_;           //Uses the indicator enum from MOdelsettings
+  int                                         use_for_rock_physics_;           //Uses the indicator enum from Modelsettings
 
   //Variables used for rockphysics
   std::vector<std::string>                    facies_names_;

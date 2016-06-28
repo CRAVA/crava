@@ -476,7 +476,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
         else if (name == "Rho")
           blocked_log->GetVerticalTrend(blocked_log->GetRhoBlocked(), well_trend[w]);
         else {
-          err_text += "ERROR in Background::GetWellTrends()" + interval_text + ": ";
+          err_text += "Error when estimating background trends" + interval_text + ": ";
           err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
         }
         i_wells++;
@@ -490,8 +490,9 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
     w++;
   }
   if (i_wells == 0) {
-    err_text += "\nERROR in Background::GetWellTrends()" + interval_text + ": There are no wells\n";
-    err_text += "available for the estimation of background trend.\n";
+    err_text += "Error when estimating background trends" + interval_text + ": There are no wells ";
+    err_text += "available for the estimation of background trend for " + name + ".\n";
+    err_text += "Wells can be added for background trend estimation with the <use-for-background-trend> keyword under <well> in the modelfile.\n";
   }
 
   w = 0;
@@ -508,7 +509,7 @@ Background::GetWellTrends(std::vector<std::vector<double> >                & wel
       else if (name == "Rho")
         blocked_log->GetVerticalTrend(blocked_log->GetRhoHighCutBackground(), high_cut_well_trend[w]);
       else {
-        err_text += "ERROR in Background::GetWellTrends()"+ interval_text + ": ";
+        err_text += "Error when estimating background trends"+ interval_text + ": ";
         err_text += "Log \'"+name+"\' requested in well " + blocked_log->GetWellName() + ", but no such log exists.\n";
       }
     }
@@ -537,28 +538,28 @@ Background::WriteTrendsToFile(std::vector<double> & trend,
 
 //-------------------------------------------------------------------------------
 void
-Background::SetupKrigingData2D(std::vector<KrigingData2D>                & kriging_data_vp,
-                               std::vector<KrigingData2D>                & kriging_data_vs,
-                               std::vector<KrigingData2D>                & kriging_data_rho,
-                               std::vector<double>                       & trend_vp,
-                               std::vector<double>                       & trend_vs,
-                               std::vector<double>                       & trend_rho,
-                               const int                                   output_flag,
-                               const int                                 & nz,
-                               const float                               & dz,
-                               const int                                 & tot_blocks,
-                               const std::vector<int>                    & n_blocks,
-                               const std::vector<std::vector<double> >   & bl_vp,
-                               const std::vector<std::vector<double> >   & bl_vs,
-                               const std::vector<std::vector<double> >   & bl_rho,
-                               const std::vector<std::vector<double> >   & vt_vp,
-                               const std::vector<std::vector<double> >   & vt_vs,
-                               const std::vector<std::vector<double> >   & vt_rho,
-                               const std::vector<const std::vector<int> *> ipos,
-                               const std::vector<const std::vector<int> *> jpos,
-                               const std::vector<const std::vector<int> *> kpos,
-                               const std::string                         & interval_name,
-                               const std::vector<std::string>            & well_names)
+Background::SetupKrigingData2D(std::vector<KrigingData2D>                  & kriging_data_vp,
+                               std::vector<KrigingData2D>                  & kriging_data_vs,
+                               std::vector<KrigingData2D>                  & kriging_data_rho,
+                               std::vector<double>                         & trend_vp,
+                               std::vector<double>                         & trend_vs,
+                               std::vector<double>                         & trend_rho,
+                               const int                                     output_flag,
+                               const int                                   & nz,
+                               const float                                 & dz,
+                               const int                                   & tot_blocks,
+                               const std::vector<int>                      & n_blocks,
+                               const std::vector<std::vector<double> >     & bl_vp,
+                               const std::vector<std::vector<double> >     & bl_vs,
+                               const std::vector<std::vector<double> >     & bl_rho,
+                               const std::vector<std::vector<double> >     & vt_vp,
+                               const std::vector<std::vector<double> >     & vt_vs,
+                               const std::vector<std::vector<double> >     & vt_rho,
+                               const std::vector<const std::vector<int> *> & ipos,
+                               const std::vector<const std::vector<int> *> & jpos,
+                               const std::vector<const std::vector<int> *> & kpos,
+                               const std::string                           & interval_name,
+                               const std::vector<std::string>              & well_names)
 {
   //
   // Although unnecessary, we have chosen to set up kriging data from
@@ -1408,21 +1409,6 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
   delete [] a;
   delete [] b;
   delete [] missing;
-}
-
-FFTGrid *
-Background::CopyFFTGrid(FFTGrid   * orig_grid,
-                        const bool  exp_trans,
-                        const bool  file_grid)
-{
-  FFTGrid * new_grid;
-
-  if (file_grid)
-    new_grid = new FFTFileGrid(static_cast<FFTFileGrid *>(orig_grid), exp_trans);
-  else
-    new_grid = new FFTGrid(orig_grid, exp_trans);
-
-  return (new_grid);
 }
 
 void

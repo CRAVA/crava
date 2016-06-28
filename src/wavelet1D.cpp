@@ -1072,7 +1072,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   }
 
   float empSNRatio = dataVar/(errStd*errStd);
-    if (doEstimateSNRatio==true)
+  if (doEstimateSNRatio==true)
     LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
   else
   {
@@ -1099,7 +1099,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
       LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
       LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
 
-      errText += "Invalid signal-to-noise ratio obtained for the angle-gather of "+angle+" degrees.\n";
+      errText += "Invalid signal-to-noise ratio obtained (" + NRLib::ToString(empSNRatio) + ") for the angle-gather of "+angle+" degrees. It should be larger than " + NRLib::ToString(minSNRatio) + ".\n";
       error += 1;
     }
     else {

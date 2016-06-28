@@ -1020,11 +1020,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
    if(scaleGiven==false) // no commands given
    {
     modelSettings_->addWaveletScale(1);
-
-    //if (estimate)
-      modelSettings_->addEstimateGlobalWaveletScale(false);
-    //else
-      //modelSettings_->addEstimateGlobalWaveletScale(true); //Estimate scale true by default //H-REMOVE
+    modelSettings_->addEstimateGlobalWaveletScale(false);
    }
     errTxt += tmpErr;
   }
@@ -2566,7 +2562,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("probability");
 
   std::string facies_name;
-  std::string file_name;
   float value;
   parseValue(root, "name", facies_name, errTxt, true);
   parseValue(root, "probability", value, errTxt, true);
@@ -2628,7 +2623,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("fraction");
 
   std::string facies_name;
-  std::string file_name;
   float value;
   parseValue(root, "name", facies_name, errTxt, true);
 
@@ -2689,7 +2683,6 @@ TiXmlNode * root = node->FirstChildElement("facies");
   legalCommands.push_back("fraction");
 
   std::string faciesname;
-  std::string filename;
   float value;
   parseValue(root, "name", faciesname, errTxt, true);
   parseValue(root, "fraction", value, errTxt, true);
@@ -4172,11 +4165,9 @@ XmlModelFile::parseDistributionWithTrend(TiXmlNode                              
     if(parseGaussianWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
-    std::string beta;
     if(parseBetaWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 
-    std::string beta_end_mass;
     if(parseBetaEndMassWithTrend(root, storage, is_shared, errTxt) == true)
       trendGiven++;
 

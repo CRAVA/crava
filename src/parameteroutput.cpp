@@ -473,6 +473,8 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
   (void) padding;
   std::string file_name = IO::makeFullFileName(sub_dir, f_name);
   int format_flag       = model_settings->getOutputGridFormat();
+  if (model_settings->getWriteAsciiSurfaces() && !(format_flag & IO::ASCII))
+    format_flag += IO::ASCII;
   int domain_flag       = model_settings->getOutputGridDomain();
 
   if (format_flag > 0) {//Output format specified.
@@ -724,15 +726,15 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
                                   const double          z0)
 {
   //If output grid and input segy have the same resolution (dz) we use nz from segy
-  float dz_output_r = float(floor(((outgrid->GetLZ()/outgrid->GetNK())*100)/100));
-  float dz_input    = floor(model_settings->getSegyDz() * 100) / 100;
+  float dz_output_r = float(floor((outgrid->GetLZ()/outgrid->GetNK())*10)/10);
+  float dz_input    = floor(model_settings->getSegyDz()*10)/10;
   int nz_output;
   if (dz_output_r == dz_input) {
     nz_output = model_settings->getSegyNz();
   }
   else {
-    float dz_output   = float(floor((outgrid->GetLZ()/outgrid->GetNK())));
-    nz_output = int(ceil((outgrid->GetZMax() - z0)/dz_output));
+    float dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
+    nz_output       = int(ceil((outgrid->GetZMax() - z0)/dz_output));
   }
 
   return nz_output;

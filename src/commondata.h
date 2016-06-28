@@ -396,7 +396,7 @@ private:
                                        const std::vector<int> & facies_nr,
                                        std::vector<int>       & facies_count) const;
 
-  void               GetGeometryFromGridOnFile(const std::string         grid_file,
+  void               GetGeometryFromGridOnFile(const std::string       & grid_file,
                                                const TraceHeaderFormat * thf,
                                                SegyGeometry           *& geometry,
                                                std::string             & err_text) const;
@@ -435,10 +435,6 @@ private:
                                                  double       & y_min,
                                                  double       & x_max,
                                                  double       & y_max) const;
-
-  int                GetNzFromGridOnFile(ModelSettings     * model_settings,
-                                         const std::string & grid_file,
-                                         std::string       & err_text) const;
 
   void               SetSurfaces(const ModelSettings * const model_settings,
                                  Simbox              & full_inversion_simbox,
@@ -542,10 +538,6 @@ private:
   void               InterpolateLog(std::vector<double>       & log_interpolated,
                                     const std::vector<double> & log_resampled,
                                     int                         nd) const;
-
-  void               CutWell(std::string           well_file_name,
-                             NRLib::Well         & well,
-                             const NRLib::Volume & full_inversion_volume) const;
 
   void               ProcessLogsGeneralWell(NRLib::Well                     & new_well,
                                             const std::vector<std::string>  & log_names,
@@ -819,8 +811,6 @@ private:
 
   int                GetFillNumber(int i, int n, int np) const;
 
-  //int                FindClosestFactorableNumber(int leastint) const;
-
   void               SmoothTraceInGuardZone(std::vector<float> & data_trace,
                                             float                dz_data,
                                             float                smooth_length) const;
@@ -1022,11 +1012,7 @@ private:
                                          std::vector <float> & gravity_std_dev,
                                          std::string         & err_text) const;
 
-  void               ProcessHorizons(std::vector<Surface>   & horizons,
-                                     const InputFiles       * input_files,
-                                     std::string            & err_text,
-                                     bool                   & failed,
-                                     int                      i_timelapse) const;
+
 
   void               CheckCovarianceParameters(NRLib::Matrix            & param_cov) const;
 
@@ -1035,12 +1021,13 @@ private:
                                               InputFiles    * input_files,
                                               Simbox        * inversion_simbox,
                                               std::string   & err_text_common) const;
-                                              */
 
-  //void               WriteFilePriorVariances(const ModelSettings      * model_settings,
-  //                                           const std::vector<double> & prior_corr_T,
-  //                                           const Surface             * prior_corr_XY,
-  //                                           const float               & dt) const;
+  void               ProcessHorizons(std::vector<Surface>   & horizons,
+                                     const InputFiles       * input_files,
+                                     std::string            & err_text,
+                                     bool                   & failed,
+                                     int                      i_timelapse) const;
+                                              */
 
   void               WriteFilePriorVariances(const ModelSettings               * model_settings,
                                              const NRLib::Matrix               & prior_param_cov,
@@ -1070,8 +1057,8 @@ private:
   void               WriteOutputSurfaces(ModelSettings * model_settings,
                                          Simbox        & simbox) const;
 
-  void               DumpVector(const std::vector<float> data,
-                                const std::string        name) const;
+  void               DumpVector(const std::vector<float> & data,
+                                const std::string        & name) const;
 
   void               DumpVector(const fftw_real   * data,
                                 int                 n_data,

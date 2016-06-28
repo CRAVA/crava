@@ -55,7 +55,7 @@ public:
              const std::vector<Grid2D *>              & noiseScale,
              const ModelSettings                      * modelSettings,
              FFTGrid                                  * seismicLH,
-             const std::vector<std::string>             facies_names);
+             const std::vector<std::string>           & facies_names);
 
   FaciesProb(FFTGrid                                            * vp,
              FFTGrid                                            * vs,
@@ -141,7 +141,7 @@ private:
                                                     AVOInversion                                          * avoInversionResult,
                                                     const std::vector<Grid2D *>                           & noiseScale,
                                                     const ModelSettings                                   * modelSettings,
-                                                    const std::vector<std::string>                          facies_names);
+                                                    const std::vector<std::string>                        & facies_names);
 
   void                   CalculateFaciesProbFromPosteriorElasticPDF(FFTGrid                                                   * vpgrid,
                                                                     FFTGrid                                                   * vsgrid,
@@ -176,21 +176,21 @@ private:
                                         const std::vector<Grid2D *>       & noiseScale,
                                         const ModelSettings               * modelSettings,
                                         FFTGrid                           * seismicLH,
-                                        const std::vector<std::string>      facies_names);
+                                        const std::vector<std::string>    & facies_names);
 
   std::vector<FFTGrid *> makeFaciesHistAndSetPriorProb(const std::vector<double> & vp,
                                                        const std::vector<double> & vs,
                                                        const std::vector<double> & rho,
-                                                       const std::vector<int>   & facies,
-                                                       const Simbox             * volume);
+                                                       const std::vector<int>    & facies,
+                                                       const Simbox              * volume);
 
   void                   makeFaciesDens(int                                nfac,
                                         const std::vector<NRLib::Matrix> & sigmaEOrig,
                                         bool                               useFilter,
                                         bool                               noVs,
-                                        const std::vector<double>         & vpFiltered,
-                                        const std::vector<double>         & vsFiltered,
-                                        const std::vector<double>         & rhoFiltered,
+                                        const std::vector<double>        & vpFiltered,
+                                        const std::vector<double>        & vsFiltered,
+                                        const std::vector<double>        & rhoFiltered,
                                         const std::vector<int>           & faciesLog,
                                         std::vector<FFTGrid *>           & density,
                                         Simbox                          ** volume,

@@ -900,10 +900,13 @@ SegY::ReadHeader(TraceHeader & header)
       dz_ = static_cast<float>(header.GetDt()/1000.0);
     else if(header.GetDt() > 0) {
       std::string error = "Different sampling densities given.";
-      error += "Initial sampling density of "+ToString(dz_)+" ms changed to " +
-        ToString(header.GetDt()/1000.0) + " in trace with XL " +
-        ToString(header.GetCrossline()) + " and inline " +
-        ToString(header.GetInline()) + ".\n";
+      if (binary_header_ != NULL && static_cast<float>(binary_header_->GetHdt()/1000) != 0.0) //dz_ taken from binary header
+        error += " Initial sampling density of "+ToString(dz_)+" ms given in BinaryHeader changed to ";
+      else
+        error += " Initial sampling density of "+ToString(dz_)+" ms changed to ";
+      error += ToString(header.GetDt()/1000.0) + " ms for TraceHeader in trace with XL " +
+               ToString(header.GetCrossline()) + " and inline " +
+               ToString(header.GetInline()) + ".\n";
       throw(Exception(error));
     }
   }

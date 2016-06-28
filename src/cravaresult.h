@@ -277,7 +277,7 @@ private:
 
   std::vector<StormContGrid *>                             facies_prob_geo_;
 
-  std::vector<StormContGrid *>                              lh_cubes_;
+  std::vector<StormContGrid *>                             lh_cubes_;
 
   StormContGrid                                          * quality_grid_;
 
