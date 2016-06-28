@@ -4044,12 +4044,13 @@ CommonData::GetGeometryFromGridOnFile(const std::string        & grid_file,
       }
       catch (NRLib::Exception & e)
       {
-        err_text = e.what();
+        err_text += "Error reading SegY-file " + grid_file + ":\n";
+        err_text += e.what();
       }
     }
   }
   else {
-    err_text = "Cannot get geometry from file. The file name is empty.\n";
+    err_text = "Cannot get geometry from file " + grid_file +". The file name is empty.\n";
   }
 }
 
@@ -4089,7 +4090,7 @@ SegyGeometry * CommonData::GetGeometryFromStormFile(const std::string & file_nam
 {
   SegyGeometry  * geometry  = NULL;
   StormContGrid * storm_grid = NULL;
-  std::string     tmp_err_text;
+  std::string     tmp_err_text = "";
   float scale_hor;
   if (scale==false)
   {
@@ -4108,7 +4109,7 @@ SegyGeometry * CommonData::GetGeometryFromStormFile(const std::string & file_nam
   }
   catch (NRLib::Exception & e)
   {
-    tmp_err_text = e.what();
+    tmp_err_text += e.what();
   }
 
   if (tmp_err_text == "") {
