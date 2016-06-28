@@ -810,6 +810,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             stormgrid->ReadFromFile(file_name);
           }
           catch (NRLib::Exception & e) {
+            err_text += "Error reading storm file " + file_name + ":\n";
             err_text_tmp += NRLib::ToString(e.what());
           }
 
@@ -893,6 +894,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 relative_padding);
           }
           catch (NRLib::Exception & e) {
+            err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
             err_text_tmp += NRLib::ToString(e.what());
           }
 
@@ -1358,6 +1360,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         }
       }
       catch (NRLib::Exception & e) {
+        err_text += "Error reading wells:\n";
         err_text += e.what();
         valid_index[well] = false;
       }
@@ -3222,6 +3225,7 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading file " + wavelet_est_int_top + " for wavelet estimation interval:\n";
       err_text += e.what();
     }
 
@@ -3252,6 +3256,7 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading file " + wavelet_est_int_bot + " for wavelet estimation interval:\n";
       err_text += e.what();
     }
   }
@@ -4109,6 +4114,7 @@ SegyGeometry * CommonData::GetGeometryFromStormFile(const std::string & file_nam
   }
   catch (NRLib::Exception & e)
   {
+    tmp_err_text += "Error reading storm file " + file_name + ":\n";
     tmp_err_text += e.what();
   }
 
@@ -4252,6 +4258,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
   }
   catch(NRLib::Exception & e) {
+    err_text += "Error reading surface " + top_surface_file_name + ":\n";
     err_text += e.what();
     failed = true;
   }
@@ -4347,6 +4354,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
       }
     }
     catch(NRLib::Exception & e) {
+      err_text += "Error reading surfaces: \n";
       err_text += e.what();
       failed = true;
     }
@@ -4377,6 +4385,7 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
 
     }
     catch(NRLib::Exception & e) {
+      err_text += "Error handeling surfaces: \n";
       err_text += e.what();
     }
   }
@@ -4453,6 +4462,10 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     }
   }
   catch(NRLib::Exception & e) {
+    if (est_simbox)
+      err_text += "Error blocking wells for estimation:\n";
+    else
+      err_text += "Error blocking wells for output simbox:\n";
     err_text += e.what();
   }
 
@@ -4503,6 +4516,7 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
       }
     }
     catch(NRLib::Exception & e) {
+      err_text += "Error blocking wells for correlation:\n";
       err_text += e.what();
     }
   }
@@ -4589,6 +4603,7 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
     }
   }
   catch (NRLib::Exception & e) {
+    err_text += "Error blocking wells for inversion:\n";
     err_text += e.what();
   }
 
@@ -4895,6 +4910,7 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading surface " + topWMI + " for well move interval:\n";
       err_text += e.what();
     }
 
@@ -4926,6 +4942,7 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading surface " + baseWMI + " for well move interval:\n";
       err_text += e.what();
     }
   }
@@ -5020,6 +5037,7 @@ bool CommonData::SetupTrendCubes(ModelSettings                  * model_settings
 
   }
   catch (NRLib::Exception & e) {
+    err_text += "Error setting up Trend Cubes:\n";
     err_text += e.what();
   }
 
@@ -5720,6 +5738,7 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading surface " + topFEI + " for wavelet estimation interval:\n";
       err_text += e.what();
     }
 
@@ -5750,6 +5769,7 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
       }
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading surface " + baseFEI + " for wavelet estimation interval:\n";
       err_text += e.what();
     }
   }
@@ -6061,6 +6081,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                           relative_padding);
     }
     catch (NRLib::Exception & e) {
+      err_text += "Error reading SegY-file: " + file_name + ":\n";
       err_text += NRLib::ToString(e.what());
     }
     bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
@@ -6892,6 +6913,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
     //stormgrid->WriteToFile(name);
   }
   catch (NRLib::Exception & e) {
+    err_text += "Error reading storm file " + file_name + ":\n";
     err_text += e.what();
     failed = true;
   }
@@ -6947,6 +6969,7 @@ CommonData::ReadStormFile(const std::string                 & file_name,
           delete fft_grid_tmp;
       }
       catch (NRLib::Exception & e) {
+        err_text += "Error resampling storm file " + file_name + ":\n";
         err_text += std::string(e.what());
       }
 

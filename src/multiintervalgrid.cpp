@@ -186,6 +186,10 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
   }
   catch(NRLib::Exception & e) {
     failed = true;
+    if (multiple_interval_setting_)
+      err_text += "Error setting up multiple interval grid:\n";
+    else
+      err_text += "Error setting up inversion grid:\n";
     err_text += e.what();
   }
 
