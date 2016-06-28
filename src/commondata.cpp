@@ -232,7 +232,7 @@ CommonData::CommonData(ModelSettings * model_settings,
 
       //Punkt o: diverse:
       ReadAngularCorrelations(model_settings, angular_correlations_);
-      if (setup_multigrid_)
+      if (setup_multigrid_ == true && read_seismic_ == true)
         CheckThatDataCoverGrid(model_settings, seismic_data_, multiple_interval_grid_, err_text);
     }
   }
@@ -782,6 +782,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
   for (int this_timelapse = 0; this_timelapse < n_timelapses; this_timelapse++) {
 
+    std::string err_text_timelapse = "";
+
     if (input_files->getNumberOfSeismicFiles(this_timelapse) > 0) {
 
       std::vector<float> angles = model_settings->getAngle(this_timelapse);
@@ -801,20 +803,28 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
         if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
+          std::string err_text_tmp = "";
 
           try {
             stormgrid = new StormContGrid(0,0,0);
             stormgrid->ReadFromFile(file_name);
           }
           catch (NRLib::Exception & e) {
-            err_text += "Error when reading storm-file " + file_name +": " + NRLib::ToString(e.what()) + "\n";
-            break;
+            err_text_tmp += NRLib::ToString(e.what());
           }
 
-          if (file_type == IO::STORM)
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
-          else
-            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
+          if (err_text_tmp == "") {
+
+            if (file_type == IO::STORM)
+              seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::STORM, angles[i], stormgrid);
+            else
+              seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SGRI, angles[i], stormgrid);
+          }
+          else {
+            err_text_timelapse += "Error when reading storm-file " + file_name +": \n";
+            err_text_timelapse += err_text_tmp + "\n";
+            LogKit::LogFormatted(LogKit::Error,"Reading storm-file " + file_name + " failed.\n");
+          }
 
         } //STORM / SGRI
         else if (file_type == IO::CRAVA) {
@@ -845,6 +855,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
         }
         else { //Try to read as segy
+
+          std::string err_text_tmp = "";
 
           if (file_type != IO::SEGY)
             LogKit::LogFormatted(LogKit::Warning,"\n Did not recognize "+file_name+", will read as SEGY.");
@@ -881,61 +893,78 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 relative_padding);
           }
           catch (NRLib::Exception & e) {
-            err_text += NRLib::ToString(e.what());
+            err_text_tmp += NRLib::ToString(e.what());
           }
 
-          bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
-          bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
-          bool regularize_if_needed = area_from_segy && storm_output;
-          segy->CreateRegularGrid(regularize_if_needed); //sets geometry
-          segy->GetGeometry()->WriteGeometry();
+          if (err_text_tmp == "") {
 
-          seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
+            bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
+            bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
+            bool regularize_if_needed = area_from_segy && storm_output;
+            segy->CreateRegularGrid(regularize_if_needed); //sets geometry
+            segy->GetGeometry()->WriteGeometry();
 
-          //Set segy nz and dz for first availible segy-cube. This is used to match written segy cube with input segy in ParameterOutput
-          if (model_settings->getSegyNz() == IMISSING) {
-            model_settings->setSegyNz(static_cast<int>(segy->GetNz()));
-            model_settings->setSegyDz(segy->GetDz());
+            seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::SEGY, angles[i], segy);
+
+            //Set segy nz and dz for first availible segy-cube. This is used to match written segy cube with input segy in ParameterOutput
+            if (model_settings->getSegyNz() == IMISSING) {
+              model_settings->setSegyNz(static_cast<int>(segy->GetNz()));
+              model_settings->setSegyDz(segy->GetDz());
+            }
+
+          }
+          else {
+            err_text_timelapse += "Failed to read SEGY-file " + file_name + ": \n";
+            err_text_timelapse += err_text_tmp + "\n";
+            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed.\n");
           }
 
         } //SEGY
       } //n_angles
 
       //Logging if seismic data is on segy format
-      bool segy_volumes_read = false;
-      for (int i = 0; i < n_angles; i++) {
-        int seismic_type = seismic_data[this_timelapse][i]->GetSeismicType();
-        if (seismic_type == 0)
-          segy_volumes_read = true;
-      }
-      if (segy_volumes_read) {
-        LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
-        LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+      if (err_text_timelapse == "") {
+        bool segy_volumes_read = false;
         for (int i = 0; i < n_angles; i++) {
           int seismic_type = seismic_data[this_timelapse][i]->GetSeismicType();
-          if (seismic_type == 0) {
-            SegY * segy      = seismic_data[this_timelapse][i]->GetSegY();
-            double geo_angle = (-1)*full_inversion_simbox.GetAngle()*(180/M_PI);
-            if (geo_angle < 0)
-              geo_angle += 360.0;
-            LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
-                                  segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
-                                  segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
-                                  segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
+          if (seismic_type == 0)
+            segy_volumes_read = true;
+        }
+        if (segy_volumes_read) {
+          LogKit::LogFormatted(LogKit::Low,"\nArea/resolution           x0           y0            lx         ly     azimuth         dx      dy\n");
+          LogKit::LogFormatted(LogKit::Low,"-------------------------------------------------------------------------------------------------\n");
+          for (int i = 0; i < n_angles; i++) {
+            int seismic_type = seismic_data[this_timelapse][i]->GetSeismicType();
+            if (seismic_type == 0) {
+              SegY * segy      = seismic_data[this_timelapse][i]->GetSegY();
+              double geo_angle = (-1)*full_inversion_simbox.GetAngle()*(180/M_PI);
+              if (geo_angle < 0)
+                geo_angle += 360.0;
+              LogKit::LogFormatted(LogKit::Low,"Seismic data %d   %11.2f  %11.2f    %10.2f %10.2f    %8.3f    %7.2f %7.2f\n",i,
+                                    segy->GetGeometry()->GetX0(), segy->GetGeometry()->GetY0(),
+                                    segy->GetGeometry()->Getlx(), segy->GetGeometry()->Getly(), geo_angle,
+                                    segy->GetGeometry()->GetDx(), segy->GetGeometry()->GetDy());
 
+            }
           }
         }
       }
 
     }//if seismicFiles
-  } //n_timeLapses
 
-  seismic_data[0][0]->FindSimbox(full_inversion_simbox, model_settings->getLzLimit(), estimation_simbox, err_text);
+    if (err_text_timelapse != "") {
+      err_text += "Error reading seismic data for timelapse " + NRLib::ToString(this_timelapse) + ":\n";
+      err_text += err_text_timelapse;
+    }
+
+  } //n_timeLapses
 
   if (err_text != "") {
     err_text_common += err_text;
     return false;
   }
+  else
+    seismic_data[0][0]->FindSimbox(full_inversion_simbox, model_settings->getLzLimit(), estimation_simbox, err_text);
 
   return true;
 }
