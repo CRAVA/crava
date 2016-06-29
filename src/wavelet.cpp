@@ -45,6 +45,7 @@ Wavelet::Wavelet(int dim)
     isReal_(true),
     dim_(dim),
     scale_(1),
+    pre_scale_(1),
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
@@ -63,6 +64,8 @@ Wavelet::Wavelet(int       dim,
     norm_(wavelet->getNorm()),
     waveletLength_(wavelet->getWaveletLength()),
     dim_(dim),
+    scale_(1),
+    pre_scale_(wavelet->pre_scale_),
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
@@ -104,6 +107,7 @@ Wavelet::Wavelet(const std::string   & fileName,
     isReal_(true),
     dim_(dim),
     scale_(1),
+    pre_scale_(1),
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
@@ -145,6 +149,7 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
     isReal_(true),
     dim_(dim),
     scale_(1),
+    pre_scale_(1),
     shiftGrid_(NULL),
     gainGrid_(NULL)
 {
@@ -512,7 +517,7 @@ void
 Wavelet::scale(float scale)
 {
   if (scale != 1.0f && scale != RMISSING) {
-    LogKit::LogFormatted(LogKit::Low,"\n  Scaling wavelet with factor : %.3f\n",scale);
+    LogKit::LogFormatted(LogKit::Low,"\n  Scaling wavelet. Total factor (with prescaling) : %.3f\n",scale*pre_scale_);
     for(int i=0; i < rnzp_ ; i++)
       if(rAmp_[i] != RMISSING)
         rAmp_[i]=rAmp_[i]*scale;

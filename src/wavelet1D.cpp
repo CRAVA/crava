@@ -62,6 +62,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
   cnzp_       = nzp_/2+1;
   rnzp_       = 2*cnzp_;
   scale_      = 1.0f;
+  pre_scale_  = 1.0f;
   cz_         = 0;
   inFFTorder_ = true;
   isReal_     = true;
@@ -999,7 +1000,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
         SNOptimalLocal[w]  = dataVarWell[w]/(errWellOptScale[w]*errWellOptScale[w]);
         LogKit::LogFormatted(LogKit::Low,"  %-20s   %6.2f     %9.2e      %6.2f %6.2f      %6.2f %6.2f\n",
               blocked_log->GetWellName().c_str(),shiftWell[w],sqrt(dataVarWell[w]),
-              optScale,SNOptimalGlobal[w],scaleOptWell[w],SNOptimalLocal[w]);
+              optScale*pre_scale_,SNOptimalGlobal[w],scaleOptWell[w]*pre_scale_,SNOptimalLocal[w]);
       }
       else
         LogKit::LogFormatted(LogKit::Low,"  %-20s      -            -             -      -           -      -\n",blocked_log->GetWellName().c_str());
