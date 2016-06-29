@@ -1783,8 +1783,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
       meanVs2_->changeSign();
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
-      if(modelSettings->getFaciesProbFromRockPhysics())
-        baseName += "Rock_Physics_";
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;

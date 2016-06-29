@@ -470,7 +470,6 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
       if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
         //int n_lags;
         for (size_t j = 0; j<interval_simboxes.size(); j++){
-          const std::string interval_name           = interval_simboxes[j]->GetIntervalName();
           const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
           const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
           const std::vector<double> well_log_vs     = log_data_vs.find(well_names[i])->second;
@@ -519,7 +518,6 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
           const std::vector<double> & z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
 
           for (size_t j = 0; j<interval_simboxes.size(); j++){
-            const std::string interval_name           = interval_simboxes[j]->GetIntervalName();
 
             for (size_t k = 0; k < well_log_vp.size(); k++){
               for (size_t l = k; l < well_log_vp.size(); l++){
