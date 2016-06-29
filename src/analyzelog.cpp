@@ -106,20 +106,23 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   }
   enough_data_for_corr_estimation = (min_blocks_with_data_for_corr_estim_ <= n_blocks_tot);
 
-  if(!enough_data_for_corr_estimation){
-    if (interval_simboxes.size() > 1){
+  if (!enough_data_for_corr_estimation) {
+    if (interval_simboxes.size() > 1) {
       TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
         " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in all intervals.\n");
+      err_txt += "There is not enough well data for estimation of prior correlations in all intervals. For estimation of prior correlations in all intervals at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+        " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n";
     }
-    else{
-      if(multi_zone_available == true)
+    else {
+      if (multi_zone_available == true)
         return;
       else {
-        std::string interval_name = interval_simboxes[0]->GetIntervalName();
-        TaskList::addTask("For estimation of prior correlations in interval '" + interval_name +  "', at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+        TaskList::addTask("For estimation of prior correlations at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
           " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
-        LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in interval '"+ interval_name + "'.\n");
+        LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations.\n");
+        err_txt += "There is not enough well data for estimation of prior correlations. For estimation of prior correlations at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
+          " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n";
       }
     }
     return;
