@@ -299,7 +299,11 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
   }
 
   if (err_text != "") {
-    err_text_common += "\nSetting up multiinterval grid failed:\n";
+    if (multiple_interval_setting_)
+      err_text_common += "\nSetting up multiinterval grid failed:\n";
+    else
+      err_text_common += "Setting up inversion grid failed:\n";
+
     err_text_common += err_text;
     failed = true;
   }
