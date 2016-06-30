@@ -954,7 +954,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       lib_matrProdScalVecCpx(kD, kW, ntheta_);
 
       // Copy matrix A to float**
-      float ** A = new float * [3];
+      float ** A = new float * [ntheta_];
       for (int i = 0; i < ntheta_; i++)
         A[i] = new float[3];
       for (int i = 0; i < ntheta_; i++){
