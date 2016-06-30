@@ -5757,7 +5757,10 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "minimum-horizontal-resolution", value, errTxt) == true)
     modelSettings_->setMinHorizontalRes(value);
   if(parseValue(root, "white-noise-component", value, errTxt) == true)
-    modelSettings_->setWNC(value);
+    if(value <= 0.0 || value >= 1.0)
+      errTxt = errTxt + "White noise component must be larger than 0 and smaller than 1. ("+NRLib::ToString(value)+" specified.)\n";
+    else
+      modelSettings_->setWNC(value);
   std::string filename;
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
