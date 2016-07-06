@@ -921,6 +921,10 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed.\n");
           }
 
+          if (segy->GetSamplingInconsistency() == true) {
+            TaskList::addTask("Check SegY cube " + file_name + ", sampling inconsistencies between BinaryHeader and TraceHeader are found");
+          }
+
         } //SEGY
       } //n_angles
 
