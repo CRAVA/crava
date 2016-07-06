@@ -1761,8 +1761,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
       }
     }
 
-    std::string baseName = IO::PrefixFaciesProbability();
-
     FFTGrid * likelihood = NULL;
     if ((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
       int nx = postVp_->getNx();
