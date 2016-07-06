@@ -922,7 +922,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
           if (segy->GetSamplingInconsistency() == true) {
-            TaskList::addTask("Check SegY cube " + file_name + ", sampling inconsistencies between BinaryHeader and TraceHeader are found");
+            TaskList::addTask("Check SegY cube " + file_name + ", sampling inconsistencies between BinaryHeader and TraceHeader are found.");
           }
 
         } //SEGY
@@ -1496,13 +1496,13 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
 
       err_text += "No wells available for estimation.\n";
       if (no_hit > 0) {
-        err_text += " " + NRLib::ToString(no_hit) + " wells are outside the inversion area: ";
+        err_text += " " + NRLib::ToString(no_hit) + " well(s) are outside the inversion area: ";
         for (int j = 0; j < static_cast<int>(no_hit_wells.size()); j++)
           err_text += no_hit_wells[j] + "; ";
         err_text += "\n";
       }
       if (empty > 0) {
-        err_text += " " + NRLib::ToString(empty) + " wells contain no log entries: ";
+        err_text += " " + NRLib::ToString(empty) + " well(s) contain no log entries: ";
         for (int j = 0; j < static_cast<int>(empty_wells.size()); j++)
           err_text += empty_wells[j] + "; ";
         err_text += "\n";
@@ -1514,7 +1514,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
         err_text += "\n";
       }
       if (upwards > 0) {
-        err_text += " " + NRLib::ToString(upwards) + " wells are moving upwards in TWT: ";
+        err_text += " " + NRLib::ToString(upwards) + " well(s) are moving upwards in TWT: ";
         for (int j = 0; j < static_cast<int>(upwards_wells.size()); j++)
           err_text += upwards_wells[j] + "; ";
         err_text += "\n";

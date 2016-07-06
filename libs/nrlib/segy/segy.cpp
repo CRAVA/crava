@@ -904,34 +904,32 @@ SegY::ReadHeader(TraceHeader & header)
       dz_ = static_cast<float>(header.GetDt()/1000.0);
     else if(header.GetDt() > 0) {
 
-      //Allow different sampling as long as BinaryHeader has sampling of 1.0, 2.0 or 4.0
       if (binary_header_ != NULL) {
-
+        //Allow different sampling as long as BinaryHeader has sampling of 1.0, 2.0 or 4.0
         float binary_header_dz = static_cast<float>(binary_header_->GetHdt()/1000);
         if (binary_header_dz == 1.0 || binary_header_dz == 2.0 || binary_header_dz == 4.0) {
           dz_ = static_cast<float>(binary_header_->GetHdt()/1000);
           if (sampling_inconsistency_ == false) {
             LogKit::LogFormatted(LogKit::Warning,"\n\nWarning: Different sampling densities given:\n");
-            LogKit::LogFormatted(LogKit::Warning," Initial sampling density of "+ToString(dz_)+" ms given in BinaryHeader changed to " + ToString(header.GetDt()/1000.0) + " ms for TraceHeader in trace with XL ");
+            LogKit::LogFormatted(LogKit::Warning," Initial sampling density of "+ToString(dz_)+"ms given in BinaryHeader changed to " + ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL ");
             LogKit::LogFormatted(LogKit::Warning," " + ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n");
-            LogKit::LogFormatted(LogKit::Warning," " + ToString(dz_) + "ms sampling from BinaryHeader will be used.");
+            LogKit::LogFormatted(LogKit::Warning," " + ToString(dz_) + "ms sampling from BinaryHeader will be used when reading this SegY file.");
             sampling_inconsistency_ = true;
           }
         }
         else {
-          std::string error = "Different sampling densities given.";
-          error += " Initial sampling density of "+ToString(dz_)+" ms given in BinaryHeader changed to ";
-          error += ToString(header.GetDt()/1000.0) + " ms for TraceHeader in trace with XL " + ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n";
-          error += "We only accept sampling rates of 1ms, 2ms or 4ms in BinaryHeader.\n";
+          std::string error =  "Different sampling densities given.";
+          error += " Initial sampling density of "+ToString(dz_)+"ms given in BinaryHeader changed to ";
+          error += ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL " + ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n";
+          error += "When inconsistencies are found Crava uses the sampling density from BinaryHeader if it is either 1ms, 2ms or 4ms. Here it is the unaccepted rate of "+ToString(dz_)+"ms.\n";
           throw(Exception(error));
         }
       }
       else {
         std::string error = "Different sampling densities given.";
-        error += " Initial sampling density of "+ToString(dz_)+" ms changed to ";
-        error += ToString(header.GetDt()/1000.0) + " ms for TraceHeader in trace with XL " +
-                 ToString(header.GetCrossline()) + " and inline " +
-                 ToString(header.GetInline()) + ".\n";
+        error += " Initial sampling density of "+ToString(dz_)+"ms changed to ";
+        error += ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL " +
+                 ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n";
         throw(Exception(error));
       }
     }
