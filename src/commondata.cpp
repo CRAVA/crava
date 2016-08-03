@@ -1353,6 +1353,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[well], n_invalid_vs[well], n_invalid_rho[well]);
             FilterLogs(new_well, model_settings);
             LookForSyntheticVsLog(new_well, model_settings, rank_corr[well]);
+            well_synthetic_vs_log[well] = new_well.HasSyntheticVsLog();
             CalculateDeviation(new_well, model_settings, dev_angle[well], full_inversion_simbox);
 
             if (n_facies > 0)
@@ -1840,6 +1841,7 @@ void CommonData::LookForSyntheticVsLog(NRLib::Well          & well,
           LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
           break;
         default :
+          real_vs_log = ModelSettings::YES;
           LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
           break;
       }
