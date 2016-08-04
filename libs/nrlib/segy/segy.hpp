@@ -179,6 +179,8 @@ public:
   float                     GetDz()      const { return dz_       ;}
   float                     GetTop()     const { return z0_       ;}
 
+  bool                      GetSamplingInconsistency() const { return sampling_inconsistency_ ;}
+
   enum                      OutsideModes{MISSING, ZERO, CLOSEST};
 
   size_t                    FindNumberOfTraces(void);
@@ -242,6 +244,8 @@ private:
   std::string               file_name_;
 
   float                     rmissing_;
+
+  bool                      sampling_inconsistency_;   ///< If sampling in trace header is inconsistent with sampling in binary header
 
 };
 
