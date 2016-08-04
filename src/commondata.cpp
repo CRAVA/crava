@@ -751,6 +751,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                  std::vector<std::vector<SeismicStorage* > > & seismic_data) const
 {
   std::string err_text = "";
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
 
   //Skip if there is no AVO-seismic.
   int timelapse_seismic_files = 0;
@@ -965,6 +967,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
   } //n_timeLapses
 
+  Timings::setTimeReadSeismic(wall,cpu);
+
   if (err_text != "") {
     err_text_common += err_text;
     return false;
@@ -1178,6 +1182,9 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
 
   int n_facies = static_cast<int>(facies_names_.size()); //Lazy, could have been size_t, but treated as int below.
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   try {
     if (n_wells > 0)
       LogKit::WriteHeader("Reading wells");
@@ -1353,6 +1360,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
             SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[well], n_invalid_vs[well], n_invalid_rho[well]);
             FilterLogs(new_well, model_settings);
             LookForSyntheticVsLog(new_well, model_settings, rank_corr[well]);
+            well_synthetic_vs_log[well] = new_well.HasSyntheticVsLog();
             CalculateDeviation(new_well, model_settings, dev_angle[well], full_inversion_simbox);
 
             if (n_facies > 0)
@@ -1538,6 +1546,8 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
   catch (NRLib::Exception & e) {
     err_text += "Error when reading well data: " + NRLib::ToString(e.what());
   }
+
+  Timings::setTimeWells(wall,cpu);
 
   if (err_text != "") {
     err_text_common += err_text;
@@ -1840,6 +1850,7 @@ void CommonData::LookForSyntheticVsLog(NRLib::Well          & well,
           LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is defined as synthetic.)\n",rank_correlation);
           break;
         default :
+          real_vs_log = ModelSettings::YES;
           LogKit::LogFormatted(LogKit::Low,"   Vp-Vs rank correlation is %5.3f. (Well log is treated as real.)\n",rank_correlation);
           break;
       }

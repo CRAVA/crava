@@ -127,6 +127,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     else { //Resample storm or segy to seis_cube
 
+      double wall=0.0, cpu=0.0;
+      TimeKit::getTime(wall,cpu);
+
       seis_cubes_[i] = ModelGeneral::CreateFFTGrid(nx, ny, nz, nxp, nyp, nzp, model_settings->getFileGrid());
       seis_cubes_[i]->createRealGrid();
       seis_cubes_[i]->setType(FFTGrid::DATA); //PARAMETER
@@ -177,6 +180,9 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                            +NRLib::ToString(dead_traces_simbox)+" of "+NRLib::ToString(simbox->getnx()*simbox->getny())+"\n");
       }
       delete dead_traces_map;
+
+      Timings::setTimeResamplingSeismic(wall,cpu); //Adds in the time for this interval
+
     }
 
   }
