@@ -6269,9 +6269,6 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
   assert(grid_type != CTMISSING);
 
-  double wall=0.0, cpu=0.0;
-  TimeKit::getTime(wall,cpu);
-
   float scalevert = 1.0f;
   float scalehor  = 1.0f;
 
@@ -6576,8 +6573,6 @@ void CommonData::FillInData(NRLib::Grid<float>  * grid_new,
 
   fftwnd_destroy_plan(fftplan1);
   fftwnd_destroy_plan(fftplan2);
-
-  Timings::setTimeResamplingSeismic(wall,cpu);
 }
 
 int CommonData::GetFillNumber(int i, int n, int np) const{
