@@ -19,9 +19,6 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
 {
   LogKit::WriteHeader("Timings summary", logLevel);
 
-  double c_loadingSeismic = c_seismic_ - c_resamplingSeismic_;
-  double w_loadingSeismic = w_seismic_ - w_resamplingSeismic_;
-
   double c_prediction     = c_inversion_ - c_kriging_pred_;
   double w_prediction     = w_inversion_ - w_kriging_pred_;
 
@@ -35,7 +32,7 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
 
   LogKit::LogFormatted(logLevel,"\nSection                              CPU time               Wall time");
   LogKit::LogFormatted(logLevel,"\n-----------------------------------------------------------------------\n");
-  reportOne("Loading seismic data       ", c_loadingSeismic    , w_loadingSeismic    , c_total_, w_total_,logLevel);
+  reportOne("Loading seismic data       ", c_readseismic_      , w_readseismic_      , c_total_, w_total_,logLevel);
   reportOne("Resampling seismic data    ", c_resamplingSeismic_, w_resamplingSeismic_, c_total_, w_total_,logLevel);
   reportOne("Wells                      ", c_wells_            , w_wells_            , c_total_, w_total_,logLevel);
   reportOne("Wavelets                   ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
@@ -83,7 +80,7 @@ Timings::calculateRest(void)
   //
   // Note that kriging times are included in c_inversion_ and c_simulation_
   //
-  c_rest_ = c_total_ - (c_seismic_
+  c_rest_ = c_total_ - (c_readseismic_
                         + c_wells_
                         + c_wavelets_
                         + c_priorExpectation_
@@ -93,7 +90,7 @@ Timings::calculateRest(void)
                         + c_simulation_
                         + c_filtering_
                         + c_facies_);
-  w_rest_ = w_total_ - (w_seismic_
+  w_rest_ = w_total_ - (w_readseismic_
                         + w_wells_
                         + w_wavelets_
                         + w_priorExpectation_
@@ -153,11 +150,11 @@ Timings::setTimeTotal(double& wall, double& cpu)
 }
 
 void
-Timings::setTimeSeismic(double& wall, double& cpu)
+Timings::setTimeReadSeismic(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
-  w_seismic_ = wall;
-  c_seismic_ = cpu;
+  w_readseismic_ = wall;
+  c_readseismic_ = cpu;
 }
 
 void
@@ -263,8 +260,8 @@ double Timings::c_total_             = 0.0;
 double Timings::w_rest_              = 0.0;
 double Timings::c_rest_              = 0.0;
 
-double Timings::w_seismic_           = 0.0;
-double Timings::c_seismic_           = 0.0;
+double Timings::w_readseismic_       = 0.0;
+double Timings::c_readseismic_       = 0.0;
 
 double Timings::w_resamplingSeismic_ = 0.0;
 double Timings::c_resamplingSeismic_ = 0.0;
