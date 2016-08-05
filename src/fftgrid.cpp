@@ -2204,7 +2204,7 @@ void
 FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
-    LogKit::LogFormatted(LogKit::Low,"\nWriting CRAVA file "+fileName+"...");
+    LogKit::LogFormatted(LogKit::Low," Writing CRAVA file "+fileName+"...");
     std::ofstream binFile;
     std::string fName = fileName + IO::SuffixCrava();
     NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
@@ -2232,7 +2232,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
       NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();
-    LogKit::LogFormatted(LogKit::Low,"done.");
+    LogKit::LogFormatted(LogKit::Low,"done.\n");
   }
   catch (NRLib::Exception & e) {
     std::string message = "Error: "+std::string(e.what())+"\n";
