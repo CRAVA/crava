@@ -471,6 +471,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                 geometry,
                                 tmp_err_text);
       if (geometry!=NULL) {
+        model_settings->setSeismicDataAreaParameters(geometry);
         geometry->WriteGeometry();
         //tilfelle iv og v
         if (model_settings->getAreaILXL().size() > 0 || model_settings->getSnapGridToSeismicData()) {
@@ -1296,8 +1297,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           //Check if well is valid
           bool well_valid = true;
           bool facies_ok  = true;
-
-          if (CheckWellAgainstSimbox(full_inversion_simbox, new_well) == 1) {
+          if (CheckWellAgainstSimbox(full_inversion_simbox, new_well, model_settings->getSeismicDataAreaParameters()) == 1) {
             well_valid = false;
             no_hit++;
             TaskList::addTask("Consider increasing the inversion volume such that well "+new_well.GetWellName()+ " can be included");
@@ -1355,10 +1355,10 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           well_synthetic_vs_log[well] = new_well.HasSyntheticVsLog();
 
           if (well_valid == true) {
-
             valid_index[well] = true;
             SetWrongLogEntriesInWellUndefined(new_well, model_settings, n_invalid_vp[well], n_invalid_vs[well], n_invalid_rho[well]);
             FilterLogs(new_well, model_settings);
+            FindILXLAtStartPosition(model_settings->getSeismicDataAreaParameters(), new_well.GetXPos0(), new_well.GetYPos0());
             LookForSyntheticVsLog(new_well, model_settings, rank_corr[well]);
             well_synthetic_vs_log[well] = new_well.HasSyntheticVsLog();
             CalculateDeviation(new_well, model_settings, dev_angle[well], full_inversion_simbox);
@@ -1772,6 +1772,20 @@ bool compare(const std::pair<int, double>& i1, const std::pair<int, double>& i2)
 {
   return (i1.second < i2.second);
 }
+
+//--------------------------------------------------------------------------
+void CommonData::FindILXLAtStartPosition(const SegyGeometry * full_geometry,
+                                         double               xpos0,
+                                         double               ypos0) const
+//--------------------------------------------------------------------------
+{
+  if (full_geometry != NULL) {
+    int IL0, XL0;
+    full_geometry->FindILXL(static_cast<float>(xpos0), static_cast<float>(ypos0), IL0, XL0);
+    LogKit::LogFormatted(LogKit::Low,"   IL/XL at start of well is %d/%d\n",IL0,XL0);
+  }
+}
+
 
 void CommonData::LookForSyntheticVsLog(NRLib::Well          & well,
                                        const ModelSettings  * model_settings,
@@ -2551,8 +2565,9 @@ bool CommonData::SetupReflectionMatrix(ModelSettings              * model_settin
   return true;
 }
 
-int CommonData::CheckWellAgainstSimbox(const Simbox      * simbox,
-                                       const NRLib::Well & well) const
+int CommonData::CheckWellAgainstSimbox(const Simbox       * simbox,
+                                       const NRLib::Well  & well,
+                                       const SegyGeometry * full_geometry) const
 {
   bool inside_area = false;
   int error        = 1;
@@ -2583,6 +2598,7 @@ int CommonData::CheckWellAgainstSimbox(const Simbox      * simbox,
     else {
       LogKit::LogFormatted(LogKit::Low," \nWell "+well.GetWellName()+":\n");
       LogKit::LogFormatted(LogKit::Low,"   IGNORED (well is not inside inversion area)\n");
+      FindILXLAtStartPosition(full_geometry, x_pos[0], y_pos[0]);
     }
   }
   return(error);
@@ -9992,7 +10008,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
       const std::string & base_name = input_files->getBaseTimeSurface(interval_names[i]);
 
       if (NRLib::IsNumber(base_name))
-        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Stop time                              : %10.2f\n", atof(base_name.c_str()));
+        LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Stop time                                : %10.2f\n", atof(base_name.c_str()));
       else
         LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Base surface                             : "+base_name+"\n");
       LogKit::LogFormatted(LogKit::Low,"  "+buffer+"Number of layers                         : %10d\n", model_settings->getTimeNz(interval_names[i]));
