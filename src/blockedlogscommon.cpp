@@ -329,7 +329,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
 
   std::vector<int> b_ind(n_data_); // Gives which block each well log entry contributes to
   n_layers_ = simbox->getnz();
-  double dz;
 
   bool is_inside = true;
   FindSizeAndBlockPointers(simbox, true, b_ind, n_layers_, first_M_, last_M_, n_blocks_, is_inside);
@@ -338,7 +337,7 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well              * well,
     tmp_err_text += "Error when blocking logs for RockPhysics: Well "+well->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
 
   if (tmp_err_text != "") {
-
+    double dz;
     FindBlockIJK(simbox, b_ind, first_M_, last_M_, first_B_, last_B_, i_pos_, j_pos_, k_pos_, dz);
 
     FindTrendPositions(i_pos_, j_pos_, k_pos_, n_blocks_, trend_cubes, s1_, s2_);
@@ -617,7 +616,8 @@ void BlockedLogsCommon::BlockWellForCorrelationEstimation(const MultiIntervalGri
       }
     }
   }catch(NRLib::Exception & e) {
-    err_text += "Error: "+std::string(e.what());
+    err_text += "Error blocking logs for correlation estimation:\n";
+    err_text += std::string(e.what());
     failed = true;
   }
 }
@@ -751,7 +751,8 @@ void BlockedLogsCommon::BlockWell(const Simbox                                  
     }
 
   }catch(NRLib::Exception & e) {
-    err_text += "Error: "+std::string(e.what());
+    err_text += "Error blocking wells:\n";
+    err_text += std::string(e.what());
     failed = true;
   }
 
