@@ -535,18 +535,21 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       interval_simboxes[i]->SetXPadFactor(estimation_simbox->GetXPadFactor());
       interval_simboxes[i]->SetYPadFactor(estimation_simbox->GetYPadFactor());
 
-      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad())
-                                        *static_cast<unsigned long long int>(interval_simboxes[i]->GetNYpad())
-                                        *static_cast<unsigned long long int>(interval_simboxes[i]->GetNZpad());
-
-      if (grid_size > std::numeric_limits<unsigned int>::max()) {
-        float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
-        float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
-        if (interval_names[i] != "")
-          err_text_tmp += "Error with grid size for interval " + interval_names[i] + ":\n";
-        err_text_tmp += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
-        err_text_tmp += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
-      }
+      //
+      // NBNB-PAL: 20160809: Dette skal ikke være nødvendig lenger. CRAVA skal håndtere store grid.
+      //
+      //unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad())
+      //                                  *static_cast<unsigned long long int>(interval_simboxes[i]->GetNYpad())
+      //                                  *static_cast<unsigned long long int>(interval_simboxes[i]->GetNZpad());
+      //
+      //if (grid_size > std::numeric_limits<unsigned int>::max()) {
+      //  float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
+      //  float fmax  = 4.0f*static_cast<float>(std::numeric_limits<unsigned int>::max()/static_cast<float>(1024*1024*1024));
+      //  if (interval_names[i] != "")
+      //    err_text_tmp += "Error with grid size for interval " + interval_names[i] + ":\n";
+      //  err_text_tmp += "Grids as large as "+NRLib::ToString(fsize,1)+"GB cannot be handled. The largest accepted grid size\n";
+      //  err_text_tmp += "is "+NRLib::ToString(fmax)+"GB. Please reduce the number of layers or the lateral resolution.\n";
+      //}
 
       if (interval_names.size() == 1) {
         LogKit::LogFormatted(LogKit::Low,"\n Time simulation grids: \n");

@@ -895,6 +895,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 padding,
                                 only_volume,
                                 relative_padding);
+            segy->ReportSizeOfVolume();
           }
           catch (NRLib::Exception & e) {
             err_text_tmp += "Error reading SegY-file " + file_name + ":\n";

@@ -132,7 +132,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
                                      time_simbox->GetNXpad(),
                                      time_simbox->GetNYpad(),
                                      time_simbox->GetNZpad());
-  long long int grid_size_pad = static_cast<long long int>(4)*dummy_grid->getrsize();
+  size_t grid_size_pad = static_cast<size_t>(4)*dummy_grid->getrsize();
 
   delete dummy_grid;
   dummy_grid = new FFTGrid(time_simbox->getnx(),
@@ -141,7 +141,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
                            time_simbox->getnx(),
                            time_simbox->getny(),
                            time_simbox->getnz());
-  long long int grid_size_base = 4*dummy_grid->getrsize();
+  size_t grid_size_base = static_cast<size_t>(4)*dummy_grid->getrsize();
   delete dummy_grid;
   int n_grid_parameters   = 3;                                      // Vp + Vs + Rho, padded
   int n_grid_background   = 3;                                    // Vp + Vs + Rho, padded (copied because of
@@ -157,7 +157,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
   int n_grid_file_mode    = 1;                                      // One grid for intermediate file storage
 
   int n_grids;
-  long long int grid_mem;
+  size_t grid_mem;
   if (model_settings->getForwardModeling() == true) {
     if (model_settings->getFileGrid())  // Use disk buffering
       n_grids = n_grid_file_mode;
@@ -193,7 +193,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
       int peak_1P = base_P + n_grid_seismic_data; //Need seismic data as well here.
       int peak_1U = base_U;
 
-      long long int peak_grid_mem = peak_1P*grid_size_pad + peak_1U*grid_size_base; //First peak must be currently largest.
+      size_t peak_grid_mem = peak_1P*grid_size_pad + peak_1U*grid_size_base; //First peak must be currently largest.
       int peak_n_grid = peak_1P;                                             //Also in number of padded grids
 
       if (model_settings->getNumberOfSimulations() > 0) { //Second possible peak when simulating.
@@ -211,7 +211,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
         if (peak_2P > peak_n_grid)
           peak_n_grid = peak_2P;
 
-        long long int peak_2_mem = peak_2P*grid_size_pad + peak_2U*grid_size_base;
+        size_t peak_2_mem = peak_2P*grid_size_pad + peak_2U*grid_size_base;
         if (peak_2_mem > peak_grid_mem)
           peak_grid_mem = peak_2_mem;
       }
@@ -222,7 +222,7 @@ ModelAVOStatic::CheckAvailableMemory(const Simbox     * time_simbox,
         if ((model_settings->getOtherOutputFlag() & IO::FACIES_LIKELIHOOD) > 0)
           peak_3U += 1; //Also needs to store seismic likelihood.
 
-        long long int peak_3_mem = peak_3P*grid_size_pad + peak_3U*grid_size_base + 2000000*n_grid_histograms; //These are 2MB when Vs is used.
+        size_t peak_3_mem = peak_3P*grid_size_pad + peak_3U*grid_size_base + 2000000*n_grid_histograms; //These are 2MB when Vs is used.
         if (peak_3_mem > peak_grid_mem)
           peak_grid_mem = peak_3_mem;
       }

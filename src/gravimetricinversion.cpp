@@ -899,7 +899,7 @@ GravimetricInversion::Divide(FFTGrid *& fftGrid_numerator, FFTGrid * fftGrid_den
     // \frac{(a + bi)(c - di)}{(c + di)(c - di)} =  // <- Multiply with conjugate denominator
     // \frac{(ac + bd)}{(c^2 + d^2)} + \frac{(bc - ad)}{(c^2 + d^2)}i
 
-    for(int i=0;i<fftGrid_numerator->getcsize();i++)
+    for(size_t i=0;i<fftGrid_numerator->getcsize();i++)
     {
       fftw_complex numerator   = fftGrid_numerator->getNextComplex();
       fftw_complex denominator = fftGrid_denominator->getNextComplex();;
@@ -925,7 +925,7 @@ GravimetricInversion::Divide(FFTGrid *& fftGrid_numerator, FFTGrid * fftGrid_den
 
    if(fftGrid_numerator->getIsTransformed()==false && fftGrid_denominator->getIsTransformed()==false)
    {
-    for(int i=0;i < fftGrid_numerator->getrsize();i++)
+    for(size_t i=0;i < fftGrid_numerator->getrsize();i++)
     {
       float numerator   = fftGrid_numerator  ->getNextReal();
       float denominator = fftGrid_denominator->getNextReal();
