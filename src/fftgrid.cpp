@@ -180,7 +180,7 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
 
           value = grid->GetValue(i, j, k);
-          //value = pOld->getRealValue(i, j, k);
+
         }
         else {
           if(i >= nxp_)       //In dummy area for real grid, but fill to avoid UMR.
@@ -213,8 +213,7 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
   }
   endAccess();
 }
-        float dz_data = RMISSING;
-        float dz_min  = RMISSING;
+
 
 FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
 {
@@ -274,7 +273,7 @@ FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
 
           value = grid->GetValue(i, j, k);
-          //value = pOld->getRealValue(i, j, k);
+
         }
         else {
           if(i >= nxp_)       //In dummy area for real grid, but fill to avoid UMR.
