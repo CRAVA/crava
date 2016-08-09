@@ -44,9 +44,11 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Parameter filter           ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
   reportOne("Facies probabilities       ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
   reportOne("Kriging                    ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
+  reportOne("Combining result grids     ", c_combine_results_  , w_combine_results_  , c_total_, w_total_,logLevel);
+  reportOne("Writing result grids       ", c_write_results_    , w_write_results_    , c_total_, w_total_,logLevel);
   reportOne("Miscellaneous              ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------\n");
-  reportOne("Total                    ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
+  reportOne("Total                      ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
 }
 
 void
@@ -89,7 +91,9 @@ Timings::calculateRest(void)
                         + c_inversion_
                         + c_simulation_
                         + c_filtering_
-                        + c_facies_);
+                        + c_facies_
+                        + c_combine_results_
+                        + c_write_results_);
   w_rest_ = w_total_ - (w_readseismic_
                         + w_wells_
                         + w_wavelets_
@@ -99,7 +103,9 @@ Timings::calculateRest(void)
                         + w_inversion_
                         + w_simulation_
                         + w_filtering_
-                        + w_facies_);
+                        + w_facies_
+                        + w_combine_results_
+                        + w_write_results_);
 }
 
 /*
@@ -253,6 +259,22 @@ Timings::addToTimeKrigingSim(double& wall, double& cpu)
   c_kriging_sim_ += cpu;
 }
 
+void
+Timings::setCombineResults(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_combine_results_ = wall;
+  c_combine_results_ = cpu;
+}
+
+void
+Timings::setWriteResults(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_write_results_ = wall;
+  c_write_results_ = cpu;
+}
+
 
 double Timings::w_total_             = 0.0;
 double Timings::c_total_             = 0.0;
@@ -298,3 +320,9 @@ double Timings::c_kriging_pred_      = 0.0;
 
 double Timings::w_kriging_sim_       = 0.0;
 double Timings::c_kriging_sim_       = 0.0;
+
+double Timings::w_combine_results_   = 0.0;
+double Timings::c_combine_results_   = 0.0;
+
+double Timings::w_write_results_     = 0.0;
+double Timings::c_write_results_     = 0.0;

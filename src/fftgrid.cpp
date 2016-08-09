@@ -212,9 +212,6 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
   endAccess();
 }
 
-        float dz_data = RMISSING;
-        float dz_min  = RMISSING;
-
 FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
 {
   cubetype_       = CTMISSING;
@@ -273,7 +270,7 @@ FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
 
           value = grid->GetValue(i, j, k);
-          //value = pOld->getRealValue(i, j, k);
+
         }
         else {
           if(i >= nxp_)       //In dummy area for real grid, but fill to avoid UMR.
@@ -2187,7 +2184,7 @@ void
 FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
-    LogKit::LogFormatted(LogKit::Low,"\nWriting CRAVA file "+fileName+"...");
+    LogKit::LogFormatted(LogKit::Low," Writing CRAVA file "+fileName+"...");
     std::ofstream binFile;
     std::string fName = fileName + IO::SuffixCrava();
     NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
@@ -2215,7 +2212,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
       NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();
-    LogKit::LogFormatted(LogKit::Low,"done.");
+    LogKit::LogFormatted(LogKit::Low,"done.\n");
   }
   catch (NRLib::Exception & e) {
     std::string message = "Error: "+std::string(e.what())+"\n";

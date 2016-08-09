@@ -27,6 +27,8 @@ public:
   static void    setTimeFiltering(double& wall, double& cpu);
   static void    setTimeFaciesProb(double& wall, double& cpu);
   static void    setTimeKrigingPred(double& wall, double& cpu);
+  static void    setCombineResults(double& wall, double& cpu);
+  static void    setWriteResults(double& wall, double& cpu);
   static void    addToTimeKrigingSim(double& wall, double& cpu);
 
 private:
@@ -78,6 +80,13 @@ private:
 
   static double  w_kriging_sim_;
   static double  c_kriging_sim_;
+
+  static double  w_combine_results_;
+  static double  c_combine_results_;
+
+  static double  w_write_results_;
+  static double  c_write_results_;
+
 };
 
 #endif
