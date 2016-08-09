@@ -144,6 +144,11 @@ public:
                         const TraceHeaderFormat & thf,
                         bool                      exp_transf = false);
 
+  void WriteSeismicData(ModelSettings * model_settings,
+                        CommonData    * common_data,
+                        const Simbox  & simbox,
+                        GridMapping   * time_depth_mapping);
+
   void ExpTransf(StormContGrid * grid);
 
   void LogTransf(StormContGrid * grid);
