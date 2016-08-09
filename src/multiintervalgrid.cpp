@@ -535,7 +535,9 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       interval_simboxes[i]->SetXPadFactor(estimation_simbox->GetXPadFactor());
       interval_simboxes[i]->SetYPadFactor(estimation_simbox->GetYPadFactor());
 
-      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad());
+      unsigned long long int grid_size = static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad())
+                                        *static_cast<unsigned long long int>(interval_simboxes[i]->GetNYpad())
+                                        *static_cast<unsigned long long int>(interval_simboxes[i]->GetNZpad());
 
       if (grid_size > std::numeric_limits<unsigned int>::max()) {
         float fsize = 4.0f*static_cast<float>(grid_size)/static_cast<float>(1024*1024*1024);
@@ -549,17 +551,21 @@ void   MultiIntervalGrid::SetupIntervalSimboxes(ModelSettings                   
       if (interval_names.size() == 1) {
         LogKit::LogFormatted(LogKit::Low,"\n Time simulation grids: \n");
 
-        LogKit::LogFormatted(LogKit::Low,"   Output grid        %4i * %4i * %4i   : %10llu\n",
-                              interval_simboxes[i]->getnx(),interval_simboxes[i]->getny(),interval_simboxes[i]->getnz(),
-                              static_cast<unsigned long long int>(interval_simboxes[i]->getnx()*interval_simboxes[i]->getny()*interval_simboxes[i]->getnz()));
+        long long idim1 = static_cast<long long>(interval_simboxes[i]->getnx())*static_cast<long long>(interval_simboxes[i]->getny())*static_cast<long long>(interval_simboxes[i]->getnz());
+        float     fdim1 = 4.0f*static_cast<float>(idim1)/static_cast<float>(1024*1024*1024);
+
+        LogKit::LogFormatted(LogKit::Low,"   Output grid        %4i * %4i * %4i   : %11llu   (%.2fGB)\n",
+                             interval_simboxes[i]->getnx(),interval_simboxes[i]->getny(),interval_simboxes[i]->getnz(),idim1,fdim1);
       }
       else {
         LogKit::LogFormatted(LogKit::Low,"\n Time simulation grids for interval \'"+interval_names[i]+"\':\n");
       }
 
-      LogKit::LogFormatted(LogKit::Low,"   FFT grid           %4i * %4i * %4i   :%11llu\n",
-                            interval_simboxes[i]->GetNXpad(),interval_simboxes[i]->GetNYpad(),interval_simboxes[i]->GetNZpad(),
-                            static_cast<unsigned long long int>(interval_simboxes[i]->GetNXpad()*interval_simboxes[i]->GetNYpad()*interval_simboxes[i]->GetNZpad()));
+      long long idim2 = static_cast<long long>(interval_simboxes[i]->GetNXpad())*static_cast<long long>(interval_simboxes[i]->GetNYpad())*static_cast<long long>(interval_simboxes[i]->GetNZpad());
+      float     fdim2 = 4.0f*static_cast<float>(idim2)/static_cast<float>(1024*1024*1024);
+
+      LogKit::LogFormatted(LogKit::Low,"   FFT grid           %4i * %4i * %4i   : %11llu   (%.2fGB)\n",
+                           interval_simboxes[i]->GetNXpad(),interval_simboxes[i]->GetNYpad(),interval_simboxes[i]->GetNZpad(),idim2,fdim2);
     }
 
     // Check consistency ------------------------------------------------------------------
