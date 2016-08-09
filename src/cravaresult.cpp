@@ -19,6 +19,8 @@
 #include "src/wavelet1D.h"
 #include "src/modelavodynamic.h"
 #include "src/modelgeneral.h"
+#include "src/timings.h"
+#include "lib/timekit.hpp"
 
 CravaResult::CravaResult():
 cov_vp_(NULL),
@@ -211,6 +213,9 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   //Final grids are stored as StormContGrids
   // Results in seismic_parameters are stored as fftgrid
   //CreateStormGrid() (inside CombineResult) creates a storm grid from fft grid, and deletes the fft_grid
+
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
 
   MultiIntervalGrid * multi_interval_grid     = common_data->GetMultipleIntervalGrid();
   Simbox & output_simbox                      = common_data->GetOutputSimbox();
@@ -645,6 +650,8 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     for (int i = 0; i < n_intervals_; i++)
       seismic_parameters_intervals[i].releaseExpGrids();
   }
+
+  Timings::setCombineResults(wall,cpu);
 }
 
 void CravaResult::CombineResult(StormContGrid                    *& final_grid,
@@ -1287,6 +1294,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //Wavelets are written out both in commonData and Wavelet1d/3d.cpp (and possibly modelavodynamic if match energies)
   //Estimation model: WriteEstimationResults
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   const Simbox & simbox            = common_data->GetOutputSimbox();
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
@@ -1375,113 +1385,11 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   if (model_settings->getForwardModeling() == false &&
       ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0
       || (model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0 )) {
-    LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data\n");
 
-    int n_timelapses = model_settings->getNumberOfTimeLapses();
+        WriteSeismicData(model_settings, common_data, simbox, time_depth_mapping);
 
-    for (int i = 0; i < n_timelapses; i ++) {
-
-      int n_angles              = model_settings->getNumberOfAngles(i);
-      std::vector<float> angles = model_settings->getAngle(i);
-      std::vector<float> offset = model_settings->getLocalSegyOffset(i);
-
-      for (int j = 0; j < n_angles; j++) {
-        std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
-        std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
-        std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-        if (offset.size() > 0 && offset[j] < 0)
-          offset[j] = model_settings->getSegyOffset(i);
-
-        int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
-
-        FFTGrid * fft_grid_resampled = NULL;
-        bool delete_fft_grid         = true;
-        if (seismic_type == 3) {
-          fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
-          delete_fft_grid = false;
-        }
-        else {
-          SegY * segy                           = NULL;
-          StormContGrid * storm                 = NULL;
-          NRLib::Grid<float> * nrlib_grid       = new NRLib::Grid<float>();
-          bool is_segy                          = false;
-          bool is_storm                         = false;
-          NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
-          if (seismic_type == 0) {//SEGY
-            segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
-            is_segy = true;
-          }
-          else if (seismic_type == 1 || seismic_type == 2) {//STORM/SGRI
-            storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
-            is_storm = true;
-          }
-          if (write_crava_)
-            fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
-          else
-            fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
-          fft_grid_resampled->createRealGrid();
-
-          int missing_traces_simbox  = 0;
-          int missing_traces_padding = 0;
-          int dead_traces_simbox     = 0;
-
-          common_data->FillInData(nrlib_grid,
-                                  fft_grid_resampled,
-                                  &simbox,
-                                  storm,
-                                  segy,
-                                  model_settings->getSmoothLength(),
-                                  missing_traces_simbox,
-                                  missing_traces_padding,
-                                  dead_traces_simbox,
-                                  dead_traces_map,
-                                  FFTGrid::DATA,
-                                  false,
-                                  is_segy,
-                                  is_storm,
-                                  true);
-
-          delete nrlib_grid;
-        }
-
-        if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
-          std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
-          fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
-        }
-
-        StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
-
-        //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
-        for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
-          for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
-            for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
-              (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
-            }
-          }
-        }
-
-        if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-          ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
-
-        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
-          StormContGrid residual(*(synt_seismic_data_[j]));
-          for (size_t k=0;k<seismic_storm->GetNK();k++) {
-            for (size_t j=0;j<seismic_storm->GetNJ();j++) {
-              for (size_t i=0;i<seismic_storm->GetNI();i++) {
-                residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
-              }
-            }
-          }
-
-          sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
-          std::string file_name  = IO::PrefixResiduals() + angle;
-
-          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
-        }
-      }
-    }
   }
-
+ 
   //Write Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
@@ -1710,12 +1618,17 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       ParameterOutput::WriteFile(model_settings, trend_cubes_[i], file_name, IO::PathToRockPhysics(), &simbox, false, "trend cube", time_depth_mapping);
     }
   }
+
+  Timings::setWriteResults(wall,cpu);
 }
 
 
 void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                                          CommonData    * common_data)
 {
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   //No CombineResults have been run, so much is unset, but we should be able to live with it.
   const Simbox & simbox            = common_data->GetOutputSimbox();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
@@ -1923,6 +1836,129 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                         true);
     }
   }
+
+  //Write original seismic data. Resample from CommonData to output_simbox. If CRAVA-format, we resample with padding.
+  if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) {
+    WriteSeismicData(model_settings, common_data, simbox, time_depth_mapping);
+  }
+
+  Timings::setWriteResults(wall,cpu);
+
+}
+
+void CravaResult::WriteSeismicData(ModelSettings * model_settings,
+                                   CommonData    * common_data,
+                                   const Simbox  & simbox,
+                                   GridMapping   * time_depth_mapping)
+{
+  //Separate functions, used both in inversion mode (WriteResults) and in estimation mode (WriteEstimationResults)
+  int n_timelapses = model_settings->getNumberOfTimeLapses();
+  LogKit::LogFormatted(LogKit::Low,"\nWrite Seismic Data\n");
+
+  for (int i = 0; i < n_timelapses; i ++) {
+
+    int n_angles              = model_settings->getNumberOfAngles(i);
+    std::vector<float> angles = model_settings->getAngle(i);
+    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
+
+    for (int j = 0; j < n_angles; j++) {
+      std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
+      std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
+      std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
+      if (offset.size() > 0 && offset[j] < 0)
+        offset[j] = model_settings->getSegyOffset(i);
+
+      int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
+
+      FFTGrid * fft_grid_resampled = NULL;
+      bool delete_fft_grid         = true;
+      if (seismic_type == 3) {
+        fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
+        delete_fft_grid = false;
+      }
+      else {
+        SegY * segy                           = NULL;
+        StormContGrid * storm                 = NULL;
+        NRLib::Grid<float> * nrlib_grid       = new NRLib::Grid<float>();
+        bool is_segy                          = false;
+        bool is_storm                         = false;
+        NRLib::Grid2D<bool> * dead_traces_map = new NRLib::Grid2D<bool>();
+        if (seismic_type == 0) {//SEGY
+          segy = common_data->GetSeismicDataTimeLapse(i)[j]->GetSegY();
+          is_segy = true;
+        }
+        else if (seismic_type == 1 || seismic_type == 2) {//STORM/SGRI
+          storm = common_data->GetSeismicDataTimeLapse(i)[j]->GetStorm();
+          is_storm = true;
+        }
+        if (write_crava_)
+          fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.GetNXpad(), simbox.GetNYpad(), simbox.GetNZpad());
+        else
+          fft_grid_resampled = new FFTGrid(simbox.getnx(), simbox.getny(), simbox.getnz(), simbox.getnx(), simbox.getny(), simbox.getnz());
+        fft_grid_resampled->createRealGrid();
+
+        int missing_traces_simbox  = 0;
+        int missing_traces_padding = 0;
+        int dead_traces_simbox     = 0;
+
+        common_data->FillInData(nrlib_grid,
+                                fft_grid_resampled,
+                                &simbox,
+                                storm,
+                                segy,
+                                model_settings->getSmoothLength(),
+                                missing_traces_simbox,
+                                missing_traces_padding,
+                                dead_traces_simbox,
+                                dead_traces_map,
+                                FFTGrid::DATA,
+                                false,
+                                is_segy,
+                                is_storm,
+                                true);
+
+        delete nrlib_grid;
+      }
+
+      if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
+        std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
+        fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
+      }
+
+      StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
+
+      //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
+      for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
+        for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
+          for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
+            (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
+          }
+        }
+      }
+
+      if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
+        ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+
+      if (model_settings->getEstimationMode() == false) {
+        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
+          StormContGrid residual(*(synt_seismic_data_[j]));
+          for (size_t k=0;k<seismic_storm->GetNK();k++) {
+            for (size_t j=0;j<seismic_storm->GetNJ();j++) {
+              for (size_t i=0;i<seismic_storm->GetNI();i++) {
+                residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+              }
+            }
+          }
+
+          sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
+          std::string file_name  = IO::PrefixResiduals() + angle;
+
+          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+        }
+      }
+    }
+  }
+
 }
 
 void CravaResult::WriteFilePriorCorrT(fftw_real   * prior_corr_T,
@@ -2547,3 +2583,4 @@ void CravaResult::SetMissingInGrid(StormContGrid       & grid,
     }
   }
 }
+
