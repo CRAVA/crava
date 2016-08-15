@@ -1227,7 +1227,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
       try {
         NRLib::Well * base_well = NRLib::Well::ReadWell(well_file_name, format);
         NRLib::Well & new_well  = *base_well; //Convenience-variable.
-        LogKit::LogFormatted(LogKit::Low, new_well.GetWellName()+" : \n");
+        LogKit::LogFormatted(LogKit::Low, "\n" + new_well.GetWellName()+" : \n");
 
         std::vector<int>         cur_facies_nr;
         std::vector<std::string> cur_facies_names;
@@ -2238,6 +2238,15 @@ void CommonData::ProcessLogsGeneralWell(NRLib::Well                     & new_we
     x_shift = new_well.GetXPos0();
     y_shift = new_well.GetYPos0();
   }
+
+  if (log_names[0] == "")
+    tmp_error_text += "<time> log not specified for " + new_well.GetWellName() + ", it needs to be specified under <well-data> <log-names>\n";
+  if (log_names[1] == "")
+    tmp_error_text += "<vp> or <dt> log not specified for " + new_well.GetWellName() + ", it needs to be specified under <well-data> <log-names>\n";
+  if (log_names[2] == "")
+    tmp_error_text += "<vs> or <dts> log not specified for " + new_well.GetWellName() + ", it needs to be specified under <well-data> <log-names>\n";
+  if (log_names[3] == "")
+    tmp_error_text += "<density> log not specified for " + new_well.GetWellName() + ", it needs to be specified under <well-data> <log-names>\n";
 
   if (tmp_error_text == "") {
     const std::vector<double> & x_log = new_well.GetContLog(x_log_name);
