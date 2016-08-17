@@ -1873,8 +1873,7 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
       FFTGrid * fft_grid_resampled = NULL;
       bool delete_fft_grid         = true;
       if (seismic_type == 3) {
-        fft_grid_resampled = common_data->GetSeismicDataTimeLapse(i)[j]->GetFFTGrid();
-        delete_fft_grid = false;
+        LogKit::LogFormatted(LogKit::Warning," Cannot write " + file_name_orig + ". Not allowed to write original seismic to file when input seismic is on CRAVA-format.\n");
       }
       else {
         SegY * segy                           = NULL;
@@ -1918,42 +1917,45 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
                                 true);
 
         delete nrlib_grid;
-      }
 
-      if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
-        std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
-        fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
-      }
-
-      StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
-
-      //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
-      for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
-        for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
-          for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
-            (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
-          }
+        if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 && write_crava_) {
+          std::string file_name_crava = IO::makeFullFileName(IO::PathToSeismicData(), IO::PrefixOriginalSeismicData() + angle);
+          fft_grid_resampled->writeCravaFile(file_name_crava, &simbox);
         }
-      }
 
-      if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-        ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+        //Setting up storm grid for writing
+        if (((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) || ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) {
+          StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
 
-      if (model_settings->getEstimationMode() == false) {
-        if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
-          StormContGrid residual(*(synt_seismic_data_[j]));
-          for (size_t k=0;k<seismic_storm->GetNK();k++) {
-            for (size_t j=0;j<seismic_storm->GetNJ();j++) {
-              for (size_t i=0;i<seismic_storm->GetNI();i++) {
-                residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+          //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
+          for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
+            for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
+              for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
+                (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
               }
             }
           }
 
-          sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
-          std::string file_name  = IO::PrefixResiduals() + angle;
+          if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
+            ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
 
-          ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+          if (model_settings->getEstimationMode() == false) {
+            if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
+              StormContGrid residual(*(synt_seismic_data_[j]));
+              for (size_t k=0;k<seismic_storm->GetNK();k++) {
+                for (size_t j=0;j<seismic_storm->GetNJ();j++) {
+                  for (size_t i=0;i<seismic_storm->GetNI();i++) {
+                    residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+                  }
+                }
+              }
+
+              sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
+              std::string file_name  = IO::PrefixResiduals() + angle;
+
+              ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+            }
+          }
         }
       }
     }

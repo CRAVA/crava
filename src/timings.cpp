@@ -45,8 +45,8 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Parameter filter                 ", c_filtering_         , w_filtering_         , c_total_, w_total_,logLevel);
   reportOne("Facies probabilities             ", c_facies_            , w_facies_            , c_total_, w_total_,logLevel);
   reportOne("Kriging                          ", c_kriging_tot        , w_kriging_tot        , c_total_, w_total_,logLevel);
-  reportOne("Combining result grids           ", c_combine_results_   , w_combine_results_   , c_total_, w_total_,logLevel);
-  reportOne("Writing result grids             ", c_write_results_     , w_write_results_     , c_total_, w_total_,logLevel);
+  reportOne("Combining result                 ", c_combine_results_   , w_combine_results_   , c_total_, w_total_,logLevel);
+  reportOne("Writing results                  ", c_write_results_     , w_write_results_     , c_total_, w_total_,logLevel);
   reportOne("Dummy                            ", c_dummy_             , w_dummy_             , c_total_, w_total_,logLevel);
   reportOne("Miscellaneous                    ", c_rest_              , w_rest_              , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------------\n");
