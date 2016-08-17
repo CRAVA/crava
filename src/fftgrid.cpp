@@ -2203,7 +2203,7 @@ void
 FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
 {
   try {
-    LogKit::LogFormatted(LogKit::Low," Writing CRAVA file "+fileName+"...");
+    LogKit::LogFormatted(LogKit::Low," Writing CRAVA file "+fileName+IO::SuffixCrava()+"...");
     std::ofstream binFile;
     std::string fName = fileName + IO::SuffixCrava();
     NRLib::OpenWrite(binFile, fName, std::ios::out | std::ios::binary);
