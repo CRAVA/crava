@@ -54,8 +54,8 @@ FFTGrid::FFTGrid(int nx, int ny, int nz, int nxp, int nyp, int nzp)
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);
 
-  csize_          = cnxp_*nyp_*nzp_;
-  rsize_          = rnxp_*nyp_*nzp_;
+  csize_          = static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+  rsize_          = static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
 
   counterForGet_  = 0;
   counterForSet_  = 0;
@@ -87,8 +87,8 @@ FFTGrid::FFTGrid(FFTGrid * fftGrid, bool expTrans)
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);
 
-  csize_          = cnxp_*nyp_*nzp_;
-  rsize_          = rnxp_*nyp_*nzp_;
+  csize_          = static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+  rsize_          = static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
 
   counterForGet_  = fftGrid->getCounterForGet();
   counterForSet_  = fftGrid->getCounterForSet();
@@ -139,8 +139,8 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);
 
-  csize_          = cnxp_*nyp_*nzp_;
-  rsize_          = rnxp_*nyp_*nzp_;
+  csize_          = static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+  rsize_          = static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
 
   counterForGet_  = 0;
   counterForSet_  = 0;
@@ -178,29 +178,27 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
 
         float value = RMISSING;
         if(i < nx_ && j < ny_ && k < nz_) { // Not in padding
-
           value = grid->GetValue(i, j, k);
-
         }
         else {
           if(i >= nxp_)       //In dummy area for real grid, but fill to avoid UMR.
             value = 0;
           else if(k >= nz_) { // In z-padding (x- and y- padding is filled in pNew)
-            float c1 = getRealValue(i, j, 0     , true);
+            float c1 = getRealValue(i, j, 0      , true);
             float c2 = getRealValue(i, j, nz_ - 1, true);
             float w1 = sum_c*static_cast<float>(k - nz_ + 1);
             float w2 = sum_c*static_cast<float>(nzp_ - k);
             value = c1*w1 + c2*w2;
           }
           else if(j >= ny_) { // In y-padding (x-padding is filled in pNew)
-            float b1 = getRealValue(i, 0     , k, true);
+            float b1 = getRealValue(i, 0      , k, true);
             float b2 = getRealValue(i, ny_ - 1, k, true);
             float w1 = sum_b*static_cast<float>(j - ny_ + 1);
             float w2 = sum_b*static_cast<float>(nyp_ - j);
             value = b1*w1 + b2*w2;
           }
           else if(i >= nx_) { // In x-padding
-            float a1 = getRealValue(     0, j, k, true);
+            float a1 = getRealValue(      0, j, k, true);
             float a2 = getRealValue(nx_ - 1, j, k, true);
             float w1 = sum_a*static_cast<float>(i - nx_ + 1);
             float w2 = sum_a*static_cast<float>(nxp_ - i);
@@ -213,7 +211,6 @@ FFTGrid::FFTGrid(const NRLib::Grid<float> * grid, int nxp, int nyp, int nzp)
   }
   endAccess();
 }
-
 
 FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
 {
@@ -232,8 +229,8 @@ FFTGrid::FFTGrid(const StormContGrid * grid, int nxp, int nyp, int nzp)
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);
 
-  csize_          = cnxp_*nyp_*nzp_;
-  rsize_          = rnxp_*nyp_*nzp_;
+  csize_          = static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+  rsize_          = static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
 
   counterForGet_  = 0;
   counterForSet_  = 0;
@@ -1001,13 +998,12 @@ FFTGrid::fillInComplexNoise(RandomGen * ranGen)
 {
   assert(ranGen);
   istransformed_ = true;
-  int i;
   cubetype_=PARAMETER;
   float std = float(1/sqrt(2.0));
-  for(i=0;i<csize_;i++)
+  for(size_t i=0;i<csize_;i++)
   {
     //if(xind == 0 || xind == nx-1 && nx is even)
-    if(((i % cnxp_) == 0) || (((i % cnxp_) == cnxp_-1) && ((i % 2) == 1)))
+    if(((i % static_cast<size_t>(cnxp_)) == 0) || (((i % static_cast<size_t>(cnxp_)) == static_cast<size_t>(cnxp_-1)) && ((i % 2) == 1)))
     {
       int xshift = i % cnxp_;
       int jkind  = (i-xshift)/cnxp_;
@@ -1071,7 +1067,6 @@ void FFTGrid::createGrid()
   rvalue_         = static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real))); //new fftw_real[rsize_]; //static_cast<fftw_real*>(fftw_malloc(rsize_ * sizeof(fftw_real)));
 
   cvalue_         = reinterpret_cast<fftw_complex*>(rvalue_); //
-
   counterForGet_  = 0;
   counterForSet_  = 0;
 
@@ -1256,7 +1251,7 @@ FFTGrid::getRealValue(int i, int j, int k, bool extSimbox) const
 
   if( inSimbox && notMissing )
   { // if index in simbox
-    int index=i+rnxp_*j+k*rnxp_*nyp_;
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(rnxp_)*static_cast<size_t>(j) + static_cast<size_t>(k)*static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_);
     value = static_cast<float>(rvalue_[index]);
   }
   else
@@ -1300,7 +1295,7 @@ FFTGrid::getRealValueCyclic(int i, int j, int k) const
 
   if(i<nxp_ && j<nyp_ && k<nzp_)
   {
-    int index=i+rnxp_*j+k*rnxp_*nyp_;
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(rnxp_)*static_cast<size_t>(j) + static_cast<size_t>(k)*static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_);
     value = static_cast<float>(rvalue_[index]);
   }
   else
@@ -1355,7 +1350,7 @@ FFTGrid::getComplexValue(int i, int j, int k, bool extSimbox) const
 
   if( inSimbox && notMissing )
   { // if index in simbox
-    int index=i + j*cnxp_ + k*cnxp_*nyp_;
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(j)*static_cast<size_t>(cnxp_) + static_cast<size_t>(k)*static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_);
     value = fftw_complex (cvalue_[index]);
   }
   else
@@ -1456,7 +1451,7 @@ FFTGrid::setRealValue(int i, int j ,int k, float  value, bool extSimbox)
 
   if( inSimbox && notMissing )
   { // if index in simbox
-    int index=i+rnxp_*j+k*rnxp_*nyp_;
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(rnxp_)*static_cast<size_t>(j) + static_cast<size_t>(k)*static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_);
     rvalue_[index] = value;
     return( 0 );
   }
@@ -1488,7 +1483,7 @@ FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox
 
   if( inSimbox && notMissing )
   { // if index in simbox
-    int index=i + j*cnxp_ + k*cnxp_*nyp_;
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(j)*static_cast<size_t>(cnxp_) + static_cast<size_t>(k)*static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_);
     cvalue_[index] = value;
     return( 0 );
   }
@@ -1499,11 +1494,9 @@ FFTGrid::setComplexValue(int i, int j ,int k, fftw_complex value, bool extSimbox
 int
 FFTGrid::square()
 {
-  int i;
-
   if(istransformed_==true)
   {
-    for(i = 0;i < csize_; i++)
+    for(size_t i = 0;i < csize_; i++)
     {
       if ( cvalue_[i].re == RMISSING || cvalue_[i].im == RMISSING)
       {
@@ -1519,7 +1512,7 @@ FFTGrid::square()
   }
   else
   {
-    for(i = 0;i < rsize_; i++)
+    for(size_t i = 0;i < rsize_; i++)
     {
       if( rvalue_[i]== RMISSING)
       {
@@ -1540,8 +1533,7 @@ int
 FFTGrid::expTransf()
 {
   assert(istransformed_==false);
-  int i;
-  for(i = 0;i < rsize_; i++)
+  for(size_t i = 0;i < rsize_; i++)
   {
     if( rvalue_[i]== RMISSING)
     {
@@ -1560,8 +1552,7 @@ int
 FFTGrid::logTransf()
 {
   assert(istransformed_==false);
-  int i;
-  for(i = 0;i < rsize_; i++)
+  for(size_t i = 0;i < rsize_; i++)
   {
     if( rvalue_[i]== RMISSING ||  rvalue_[i] <= 0.0 )
     {
@@ -1608,7 +1599,7 @@ FFTGrid::fftInPlace()
   assert(cubetype_!= CTMISSING);
 
   if( cubetype_!= COVARIANCE )
-    FFTGrid::multiplyByScalar(1.0f/sqrt(static_cast<float>(nxp_*nyp_*nzp_)));
+    FFTGrid::multiplyByScalar(1.0f/sqrt(static_cast<float>(static_cast<size_t>(nxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_))));
 
   int flag;
   rfftwnd_plan plan;
@@ -1639,9 +1630,9 @@ FFTGrid::invFFTInPlace()
   int flag;
   rfftwnd_plan plan;
   if(cubetype_==COVARIANCE)
-    scale=float( 1.0/(nxp_*nyp_*nzp_));
+    scale=float( 1.0/(static_cast<size_t>(nxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_)));
   else
-    scale=float( 1.0/sqrt(float(nxp_*nyp_*nzp_)));
+    scale=float( 1.0/sqrt(float(static_cast<size_t>(nxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_))));
 
   flag = FFTW_ESTIMATE | FFTW_IN_PLACE;
   plan= rfftw3d_create_plan(nzp_,nyp_,nxp_,FFTW_COMPLEX_TO_REAL,flag);
@@ -1658,8 +1649,7 @@ void
 FFTGrid::realAbs()
 {
   assert(istransformed_==true);
-  int i;
-  for(i=0;i<csize_;i++)
+  for(size_t i=0;i<csize_;i++)
   {
     cvalue_[i].re = float (  sqrt( cvalue_[i].re * cvalue_[i].re ) );
     cvalue_[i].im = 0.0;
@@ -1672,8 +1662,7 @@ FFTGrid::add(FFTGrid* fftGrid)
   assert(nxp_==fftGrid->getNxp());
   if(istransformed_==true)
   {
-    int i;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       cvalue_[i].re += fftGrid->cvalue_[i].re;
       cvalue_[i].im += fftGrid->cvalue_[i].im;
@@ -1682,8 +1671,7 @@ FFTGrid::add(FFTGrid* fftGrid)
 
   if(istransformed_==false)
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] += fftGrid->rvalue_[i];
     }
@@ -1695,8 +1683,7 @@ FFTGrid::addScalar(float scalar)
 {
   // Only addition of scalar in real domain
   assert(istransformed_==false);
-  int i;
-  for(i=0;i < rsize_;i++)
+  for(size_t i=0;i < rsize_;i++)
   {
     rvalue_[i] += scalar;
   }
@@ -1708,8 +1695,7 @@ FFTGrid::subtract(FFTGrid* fftGrid)
   assert(nxp_==fftGrid->getNxp());
   if(istransformed_==true)
   {
-    int i;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       cvalue_[i].re -= fftGrid->cvalue_[i].re;
       cvalue_[i].im -= fftGrid->cvalue_[i].im;
@@ -1718,8 +1704,7 @@ FFTGrid::subtract(FFTGrid* fftGrid)
 
   if(istransformed_==false)
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] -= fftGrid->rvalue_[i];
     }
@@ -1730,8 +1715,7 @@ FFTGrid::changeSign()
 {
   if(istransformed_==true)
   {
-    int i;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       cvalue_[i].re = -cvalue_[i].re;
       cvalue_[i].im = -cvalue_[i].im;
@@ -1740,8 +1724,7 @@ FFTGrid::changeSign()
 
   if(istransformed_==false)
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] = -rvalue_[i];
     }
@@ -1753,8 +1736,7 @@ FFTGrid::multiply(FFTGrid* fftGrid)
   assert(nxp_==fftGrid->getNxp());
   if(istransformed_==true)
   {
-    int i;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       fftw_complex tmp = cvalue_[i];
       cvalue_[i].re = fftGrid->cvalue_[i].re*tmp.re - fftGrid->cvalue_[i].im*tmp.im;
@@ -1764,8 +1746,7 @@ FFTGrid::multiply(FFTGrid* fftGrid)
 
   if(istransformed_==false)
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] *= fftGrid->rvalue_[i];
     }
@@ -1776,7 +1757,7 @@ void
 FFTGrid::conjugate()
 {
   assert(istransformed_==true);
-  for(int i=0;i<csize_;i++)
+  for(size_t i=0;i<csize_;i++)
   {
     cvalue_[i].im = -cvalue_[i].im;
   }
@@ -1786,7 +1767,7 @@ void
 FFTGrid::multiplyByScalar(float scalar)
 {
   assert(istransformed_==false);
-  for(int i=0;i<rsize_;i++)
+  for(size_t i=0;i<rsize_;i++)
   {
     rvalue_[i]*=scalar;
   }
@@ -2227,7 +2208,7 @@ FFTGrid::writeCravaFile(const std::string & fileName, const Simbox * simbox)
     NRLib::WriteBinaryInt(binFile, rnxp_);
     NRLib::WriteBinaryInt(binFile, nyp_);
     NRLib::WriteBinaryInt(binFile, nzp_);
-    for(int i=0;i<rsize_;i++)
+    for(size_t i=0;i<rsize_;i++)
       NRLib::WriteBinaryFloat(binFile, rvalue_[i]);
 
     binFile.close();
@@ -2279,8 +2260,7 @@ FFTGrid::readCravaFile(const std::string & fileName, std::string & errText, bool
     }
     createRealGrid(!nopadding);
     add_ = !nopadding;
-    int i;
-    for(i=0;i<rsize_;i++)
+    for(size_t i=0;i<rsize_;i++)
       rvalue_[i] = NRLib::ReadBinaryFloat(binFile);
 
     binFile.close();
@@ -2544,7 +2524,7 @@ FFTGrid::checkNaN()
 {
   /*
   #ifndef UNIX_ELLER_NOE_ANNET
-  int i;
+  int i; // Kan ikke bruke size_t her (utkommentert kode i checkNaN())
   if(istransformed_)
   {
   for(i=0;i<csize_;i++)

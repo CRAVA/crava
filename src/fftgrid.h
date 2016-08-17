@@ -130,8 +130,8 @@ public:
   virtual void         multiply(FFTGrid* fftGrid);              // pointwise multiplication!
   virtual void         conjugate();                             // No mode/randomaccess
   bool                 consistentSize(int nx,int ny, int nz, int nxp, int nyp, int nzp);
-  int                  getCounterForGet() const {return(counterForGet_);}
-  int                  getCounterForSet() const {return(counterForSet_);}
+  size_t               getCounterForGet() const {return(counterForGet_);}
+  size_t               getCounterForSet() const {return(counterForSet_);}
   int                  getNx()      const {return(nx_);}
   int                  getNy()      const {return(ny_);}
   int                  getNz()      const {return(nz_);}
@@ -140,8 +140,8 @@ public:
   int                  getNzp()     const {return(nzp_);}
   int                  getRNxp()    const {return(rnxp_);}
   int                  getCNxp()    const {return(cnxp_);}
-  int                  getcsize()   const {return(csize_);}
-  int                  getrsize()   const {return(rsize_);}
+  size_t               getcsize()   const {return(csize_);}
+  size_t               getrsize()   const {return(rsize_);}
   float                getTheta()   const {return(theta_);}
   float                getScale()   const {return(scale_);}
   float                getMinReal() const {return rValMin_;}
@@ -245,6 +245,7 @@ protected:
   int                  cubetype_;          // see enum gridtypes above
   float                theta_;             // angle in angle gather (case of data)
   float                scale_;             // To keep track of the scalings after fourier transforms
+
   int                  nx_;                // size of original grid in lateral x direction
   int                  ny_;                // size of original grid in lateral y direction
   int                  nz_;                // size of original grid in depth (time)
@@ -255,10 +256,10 @@ protected:
   int                  cnxp_;              // size in x direction for storage inplace algorithm (complex grid) nxp_/2+1
   int                  rnxp_;              // expansion in x direction for storage inplace algorithm (real grid) 2*(nxp_/2+1)
 
-  int                  csize_;             // size of complex grid, cnxp_*nyp_*nzp_
-  int                  rsize_;             // size of real grid rnxp_*nyp_*nzp_
-  int                  counterForGet_;     // active cell in grid
-  int                  counterForSet_;     // active cell in grid
+  size_t               csize_;             // size of complex grid, cnxp_*nyp_*nzp_
+  size_t               rsize_;             // size of real grid rnxp_*nyp_*nzp_
+  size_t               counterForGet_;     // active cell in grid
+  size_t               counterForSet_;     // active cell in grid
 
   bool                 istransformed_;     // true if the grid contain Fourier values (i.e complex variables)
 

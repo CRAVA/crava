@@ -181,7 +181,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       }
       delete dead_traces_map;
 
-      Timings::setTimeResamplingSeismic(wall,cpu); //Adds in the time for this interval
+      Timings::addTimeResamplingSeismic(wall,cpu); //Adds in the time for this interval
 
     }
 
