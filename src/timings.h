@@ -15,6 +15,7 @@ public:
   static void    reportTotal();
 
   static void    setTimeTotal(double& wall, double& cpu);
+  static void    setTimeOuterModellingGrid(double& wall, double& cpu);
   static void    setTimeReadSeismic(double& wall, double& cpu);
   static void    addTimeResamplingSeismic(double& wall, double& cpu);
   static void    setTimeWells(double& wall, double& cpu);
@@ -42,6 +43,9 @@ private:
 
   static double  w_rest_;
   static double  c_rest_;
+
+  static double  w_outerModellingGrid_;
+  static double  c_outerModellingGrid_;
 
   static double  w_readseismic_;
   static double  c_readseismic_;

@@ -30,33 +30,34 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
 
   calculateRest();
 
-  LogKit::LogFormatted(logLevel,"\nSection                              CPU time               Wall time");
-  LogKit::LogFormatted(logLevel,"\n-----------------------------------------------------------------------\n");
-  reportOne("Loading seismic data       ", c_readseismic_      , w_readseismic_      , c_total_, w_total_,logLevel);
-  reportOne("Resampling seismic data    ", c_resamplingSeismic_, w_resamplingSeismic_, c_total_, w_total_,logLevel);
-  reportOne("Wells                      ", c_wells_            , w_wells_            , c_total_, w_total_,logLevel);
-  reportOne("Wavelets                   ", c_wavelets_         , w_wavelets_         , c_total_, w_total_,logLevel);
-  reportOne("Prior expectation          ", c_priorExpectation_ , w_priorExpectation_ , c_total_, w_total_,logLevel);
-  reportOne("Prior correlation          ", c_priorCorrelation_ , w_priorCorrelation_ , c_total_, w_total_,logLevel);
-  reportOne("Building stochastic model  ", c_stochasticModel_  , w_stochasticModel_  , c_total_, w_total_,logLevel);
-  reportOne("Inversion                  ", c_prediction        , w_prediction        , c_total_, w_total_,logLevel);
-  reportOne("Simulation                 ", c_simulation        , w_simulation        , c_total_, w_total_,logLevel);
-  reportOne("Parameter filter           ", c_filtering_        , w_filtering_        , c_total_, w_total_,logLevel);
-  reportOne("Facies probabilities       ", c_facies_           , w_facies_           , c_total_, w_total_,logLevel);
-  reportOne("Kriging                    ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
-  reportOne("Combining result grids     ", c_combine_results_  , w_combine_results_  , c_total_, w_total_,logLevel);
-  reportOne("Writing result grids       ", c_write_results_    , w_write_results_    , c_total_, w_total_,logLevel);
-  reportOne("Dummy                      ", c_dummy_            , w_dummy_            , c_total_, w_total_,logLevel);
-  reportOne("Miscellaneous              ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
-  LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------\n");
-  reportOne("Total                      ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
+  LogKit::LogFormatted(logLevel,"\nSection                                    CPU time               Real time");
+  LogKit::LogFormatted(logLevel,"\n-----------------------------------------------------------------------------\n");
+  reportOne("Setting up outer modelling grid  ", c_outerModellingGrid_, w_outerModellingGrid_, c_total_, w_total_,logLevel);
+  reportOne("Loading seismic data             ", c_readseismic_       , w_readseismic_       , c_total_, w_total_,logLevel);
+  reportOne("Resampling seismic data          ", c_resamplingSeismic_ , w_resamplingSeismic_ , c_total_, w_total_,logLevel);
+  reportOne("Wells                            ", c_wells_             , w_wells_             , c_total_, w_total_,logLevel);
+  reportOne("Wavelets                         ", c_wavelets_          , w_wavelets_          , c_total_, w_total_,logLevel);
+  reportOne("Prior expectation                ", c_priorExpectation_  , w_priorExpectation_  , c_total_, w_total_,logLevel);
+  reportOne("Prior correlation                ", c_priorCorrelation_  , w_priorCorrelation_  , c_total_, w_total_,logLevel);
+  reportOne("Building stochastic model        ", c_stochasticModel_   , w_stochasticModel_   , c_total_, w_total_,logLevel);
+  reportOne("Inversion                        ", c_prediction         , w_prediction         , c_total_, w_total_,logLevel);
+  reportOne("Simulation                       ", c_simulation         , w_simulation         , c_total_, w_total_,logLevel);
+  reportOne("Parameter filter                 ", c_filtering_         , w_filtering_         , c_total_, w_total_,logLevel);
+  reportOne("Facies probabilities             ", c_facies_            , w_facies_            , c_total_, w_total_,logLevel);
+  reportOne("Kriging                          ", c_kriging_tot        , w_kriging_tot        , c_total_, w_total_,logLevel);
+  reportOne("Combining result grids           ", c_combine_results_   , w_combine_results_   , c_total_, w_total_,logLevel);
+  reportOne("Writing result grids             ", c_write_results_     , w_write_results_     , c_total_, w_total_,logLevel);
+  reportOne("Dummy                            ", c_dummy_             , w_dummy_             , c_total_, w_total_,logLevel);
+  reportOne("Miscellaneous                    ", c_rest_              , w_rest_              , c_total_, w_total_,logLevel);
+  LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------------\n");
+  reportOne("Total                            ", c_total_             , w_total_             , c_total_, w_total_,logLevel);
 }
 
 void
 Timings::reportTotal()
 {
   LogKit::LogFormatted(LogKit::Low,"\nTotal CPU  time used in CRAVA: %6d seconds",   static_cast<int>(c_total_));
-  LogKit::LogFormatted(LogKit::Low,"\nTotal Wall time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
+  LogKit::LogFormatted(LogKit::Low,"\nTotal real time used in CRAVA: %6d seconds\n", static_cast<int>(w_total_));
 }
 
 void
@@ -83,7 +84,8 @@ Timings::calculateRest(void)
   //
   // Note that kriging times are included in c_inversion_ and c_simulation_
   //
-  c_rest_ = c_total_ - (c_readseismic_
+  c_rest_ = c_total_ - (c_outerModellingGrid_
+                        + c_readseismic_
                         + c_wells_
                         + c_wavelets_
                         + c_priorExpectation_
@@ -96,7 +98,8 @@ Timings::calculateRest(void)
                         + c_combine_results_
                         + c_write_results_
                         + c_dummy_);
-  w_rest_ = w_total_ - (w_readseismic_
+  w_rest_ = w_total_ - (w_outerModellingGrid_
+                        + w_readseismic_
                         + w_wells_
                         + w_wavelets_
                         + w_priorExpectation_
@@ -117,6 +120,14 @@ Timings::setTimeTotal(double& wall, double& cpu)
   TimeKit::getTime(wall,cpu);
   w_total_ = wall;
   c_total_ = cpu;
+}
+
+void
+Timings::setTimeOuterModellingGrid(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_outerModellingGrid_ = wall;
+  c_outerModellingGrid_ = cpu;
 }
 
 void
@@ -248,56 +259,59 @@ Timings::setTimeDummy(double& wall, double& cpu)
 }
 
 
-double Timings::w_total_             = 0.0;
-double Timings::c_total_             = 0.0;
+double Timings::w_total_              = 0.0;
+double Timings::c_total_              = 0.0;
 
-double Timings::w_rest_              = 0.0;
-double Timings::c_rest_              = 0.0;
+double Timings::w_rest_               = 0.0;
+double Timings::c_rest_               = 0.0;
 
-double Timings::w_readseismic_       = 0.0;
-double Timings::c_readseismic_       = 0.0;
+double Timings::w_outerModellingGrid_ = 0.0;
+double Timings::c_outerModellingGrid_ = 0.0;
 
-double Timings::w_resamplingSeismic_ = 0.0;
-double Timings::c_resamplingSeismic_ = 0.0;
+double Timings::w_readseismic_        = 0.0;
+double Timings::c_readseismic_        = 0.0;
 
-double  Timings::w_wavelets_         = 0.0;
-double  Timings::c_wavelets_         = 0.0;
+double Timings::w_resamplingSeismic_  = 0.0;
+double Timings::c_resamplingSeismic_  = 0.0;
 
-double Timings::w_wells_             = 0.0;
-double Timings::c_wells_             = 0.0;
+double  Timings::w_wavelets_          = 0.0;
+double  Timings::c_wavelets_          = 0.0;
 
-double Timings::w_priorExpectation_  = 0.0;
-double Timings::c_priorExpectation_  = 0.0;
+double Timings::w_wells_              = 0.0;
+double Timings::c_wells_              = 0.0;
 
-double Timings::w_priorCorrelation_  = 0.0;
-double Timings::c_priorCorrelation_  = 0.0;
+double Timings::w_priorExpectation_   = 0.0;
+double Timings::c_priorExpectation_   = 0.0;
 
-double  Timings::w_stochasticModel_  = 0.0;
-double  Timings::c_stochasticModel_  = 0.0;
+double Timings::w_priorCorrelation_   = 0.0;
+double Timings::c_priorCorrelation_   = 0.0;
 
-double Timings::w_inversion_         = 0.0;
-double Timings::c_inversion_         = 0.0;
+double  Timings::w_stochasticModel_   = 0.0;
+double  Timings::c_stochasticModel_   = 0.0;
 
-double Timings::w_simulation_        = 0.0;
-double Timings::c_simulation_        = 0.0;
+double Timings::w_inversion_          = 0.0;
+double Timings::c_inversion_          = 0.0;
 
-double Timings::w_filtering_         = 0.0;
-double Timings::c_filtering_         = 0.0;
+double Timings::w_simulation_         = 0.0;
+double Timings::c_simulation_         = 0.0;
 
-double Timings::w_facies_            = 0.0;
-double Timings::c_facies_            = 0.0;
+double Timings::w_filtering_          = 0.0;
+double Timings::c_filtering_          = 0.0;
 
-double Timings::w_kriging_pred_      = 0.0;
-double Timings::c_kriging_pred_      = 0.0;
+double Timings::w_facies_             = 0.0;
+double Timings::c_facies_             = 0.0;
 
-double Timings::w_kriging_sim_       = 0.0;
-double Timings::c_kriging_sim_       = 0.0;
+double Timings::w_kriging_pred_       = 0.0;
+double Timings::c_kriging_pred_       = 0.0;
 
-double Timings::w_combine_results_   = 0.0;
-double Timings::c_combine_results_   = 0.0;
+double Timings::w_kriging_sim_        = 0.0;
+double Timings::c_kriging_sim_        = 0.0;
 
-double Timings::w_write_results_     = 0.0;
-double Timings::c_write_results_     = 0.0;
+double Timings::w_combine_results_    = 0.0;
+double Timings::c_combine_results_    = 0.0;
 
-double Timings::w_dummy_             = 0.0;
-double Timings::c_dummy_             = 0.0;
+double Timings::w_write_results_      = 0.0;
+double Timings::c_write_results_      = 0.0;
+
+double Timings::w_dummy_              = 0.0;
+double Timings::c_dummy_              = 0.0;

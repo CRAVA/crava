@@ -406,6 +406,9 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                             SegyGeometry   *& segy_geometry,
                                             std::string     & err_text_common) const {
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   // parameters
   std::string err_text = "";
   std::string grid_file("");
@@ -635,6 +638,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       }
     }
   }
+
+  Timings::setTimeOuterModellingGrid(wall,cpu);
 
   // CALCULATE XY PADDING -------------------------------------------------------------------------
   if (err_text == "") {
@@ -4076,13 +4081,7 @@ CommonData::GetGeometryFromGridOnFile(const std::string        & grid_file,
 
       try
       {
-        double wall=0.0, cpu=0.0;
-        TimeKit::getTime(wall,cpu);
-
         geometry = SegY::FindGridGeometry(grid_file, thf);
-
-        Timings::setTimeDummy(wall,cpu);
-
       }
       catch (NRLib::Exception & e)
       {
@@ -4765,8 +4764,8 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   }
 
   LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
-  LogKit::LogFormatted(LogKit::Low,"  ------------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,"Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+  LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::Low,buffer);
 
 
