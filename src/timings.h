@@ -16,7 +16,7 @@ public:
 
   static void    setTimeTotal(double& wall, double& cpu);
   static void    setTimeReadSeismic(double& wall, double& cpu);
-  static void    setTimeResamplingSeismic(double& wall, double& cpu);
+  static void    addTimeResamplingSeismic(double& wall, double& cpu);
   static void    setTimeWells(double& wall, double& cpu);
   static void    setTimeWavelets(double& wall, double& cpu);
   static void    setTimePriorExpectation(double& wall, double& cpu);
@@ -27,8 +27,9 @@ public:
   static void    setTimeFiltering(double& wall, double& cpu);
   static void    setTimeFaciesProb(double& wall, double& cpu);
   static void    setTimeKrigingPred(double& wall, double& cpu);
-  static void    setCombineResults(double& wall, double& cpu);
-  static void    setWriteResults(double& wall, double& cpu);
+  static void    setTimeCombineResults(double& wall, double& cpu);
+  static void    setTimeWriteResults(double& wall, double& cpu);
+  static void    setTimeDummy(double& wall, double& cpu);
   static void    addToTimeKrigingSim(double& wall, double& cpu);
 
 private:
@@ -86,6 +87,9 @@ private:
 
   static double  w_write_results_;
   static double  c_write_results_;
+
+  static double  w_dummy_;
+  static double  c_dummy_;
 
 };
 

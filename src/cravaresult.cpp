@@ -651,7 +651,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
       seismic_parameters_intervals[i].releaseExpGrids();
   }
 
-  Timings::setCombineResults(wall,cpu);
+  Timings::setTimeCombineResults(wall,cpu);
 }
 
 void CravaResult::CombineResult(StormContGrid                    *& final_grid,
@@ -1389,7 +1389,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         WriteSeismicData(model_settings, common_data, simbox, time_depth_mapping);
 
   }
- 
+
   //Write Background models
   if ((model_settings->getOutputGridsElastic() & IO::BACKGROUND) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Background Grids\n");
@@ -1619,7 +1619,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
     }
   }
 
-  Timings::setWriteResults(wall,cpu);
+  Timings::setTimeWriteResults(wall,cpu);
 }
 
 
@@ -1842,7 +1842,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
     WriteSeismicData(model_settings, common_data, simbox, time_depth_mapping);
   }
 
-  Timings::setWriteResults(wall,cpu);
+  Timings::setTimeWriteResults(wall,cpu);
 
 }
 

@@ -46,6 +46,7 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Kriging                    ", c_kriging_tot       , w_kriging_tot       , c_total_, w_total_,logLevel);
   reportOne("Combining result grids     ", c_combine_results_  , w_combine_results_  , c_total_, w_total_,logLevel);
   reportOne("Writing result grids       ", c_write_results_    , w_write_results_    , c_total_, w_total_,logLevel);
+  reportOne("Dummy                      ", c_dummy_            , w_dummy_            , c_total_, w_total_,logLevel);
   reportOne("Miscellaneous              ", c_rest_             , w_rest_             , c_total_, w_total_,logLevel);
   LogKit::LogFormatted(logLevel,  "-----------------------------------------------------------------------\n");
   reportOne("Total                      ", c_total_            , w_total_            , c_total_, w_total_,logLevel);
@@ -93,7 +94,8 @@ Timings::calculateRest(void)
                         + c_filtering_
                         + c_facies_
                         + c_combine_results_
-                        + c_write_results_);
+                        + c_write_results_
+                        + c_dummy_);
   w_rest_ = w_total_ - (w_readseismic_
                         + w_wells_
                         + w_wavelets_
@@ -105,47 +107,9 @@ Timings::calculateRest(void)
                         + w_filtering_
                         + w_facies_
                         + w_combine_results_
-                        + w_write_results_);
+                        + w_write_results_
+                        + w_dummy_);
 }
-
-/*
-      IF (TIMCPU.GE.D1     .OR.
-     &   (TIMEC.GE.DP01 .AND. TIMCPU.GE.DP01 ) .OR.
-     &   (TIMEC.GE.DP01 .AND. (REST.OR.TOTAL))      ) THEN
-         ICPUHR = INT(TIMCPU/D3600)
-         ICPUMN = INT((TIMCPU - D3600*ICPUHR)/D60)
-         ICPUSE = INT(TIMCPU - D3600*ICPUHR - D60*ICPUMN)
-      ELSE
-         ICPUHR = D0
-         ICPUMN = D0
-         ICPUSE = D0
-         TRESTC = TRESTC + TIMCPU
-      END IF
-C
-      IF (TIMWAL.GE.D1     .OR.
-     &    (TIMEW.GE.DP01 .AND. TIMWAL.GE.DP01 ) .OR.
-     &    (TIMEW.GE.DP01 .AND. (REST.OR.TOTAL))      ) THEN
-         IWALHR = INT(TIMWAL/D3600)
-         IWALMN = INT((TIMWAL - D3600*IWALHR)/D60)
-         IWALSE = INT(TIMWAL - D3600*IWALHR - D60*IWALMN)
-      ELSE
-         IWALHR = D0
-         IWALMN = D0
-         IWALSE = D0
-         TRESTW = TRESTW + TIMWAL
-      END IF
-C
-      IF (TIMCPU.GT.D1 .OR.
-     &    TIMWAL.GT.D1 .OR.
-     &    TIMEC.GT.DP01 .AND. TIMCPU.GT.DP01 .OR.
-     &    TIMEW.GT.DP01 .AND. TIMWAL.GT.DP01 .OR.
-     &    (REST.OR.TOTAL) .AND. (TIMEC.GT.DP01 .OR. TIMEW.GT.DP01)) THEN
-         WRITE(LUPRI,'(1X,A7,1X,2(5X,I4.4,2(A,I2.2),4X,F6.2,A))')
-     &        TEXT,ICPUHR,':',ICPUMN,':',ICPUSE,TIMEC,' %',
-     &             IWALHR,':',IWALMN,':',IWALSE,TIMEW,' %'
-      END IF
-*/
-
 
 void
 Timings::setTimeTotal(double& wall, double& cpu)
@@ -164,7 +128,7 @@ Timings::setTimeReadSeismic(double& wall, double& cpu)
 }
 
 void
-Timings::setTimeResamplingSeismic(double& wall, double& cpu)
+Timings::addTimeResamplingSeismic(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
   w_resamplingSeismic_ += wall; // Sum times used to resample each cube
@@ -260,7 +224,7 @@ Timings::addToTimeKrigingSim(double& wall, double& cpu)
 }
 
 void
-Timings::setCombineResults(double& wall, double& cpu)
+Timings::setTimeCombineResults(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
   w_combine_results_ = wall;
@@ -268,11 +232,19 @@ Timings::setCombineResults(double& wall, double& cpu)
 }
 
 void
-Timings::setWriteResults(double& wall, double& cpu)
+Timings::setTimeWriteResults(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
   w_write_results_ = wall;
   c_write_results_ = cpu;
+}
+
+void
+Timings::setTimeDummy(double& wall, double& cpu)
+{
+  TimeKit::getTime(wall,cpu);
+  w_dummy_ = wall;
+  c_dummy_ = cpu;
 }
 
 
@@ -326,3 +298,6 @@ double Timings::c_combine_results_   = 0.0;
 
 double Timings::w_write_results_     = 0.0;
 double Timings::c_write_results_     = 0.0;
+
+double Timings::w_dummy_             = 0.0;
+double Timings::c_dummy_             = 0.0;

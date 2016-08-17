@@ -172,9 +172,6 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     if (n > n_traces)
       n = n_traces;
 
-    trace_length.resize(n, 1);
-    trace_data.resize(n);
-
     for (int i = 0; i < n; i++) {
 
       int trace_index = i*(static_cast<int>(n_traces / n));
@@ -182,11 +179,17 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
       NRLib::SegYTrace * segy_tmp = segy_->getTrace(trace_index);
 
       if (segy_tmp != NULL) {
+
+        // NBNB-PAL: START-Legg inn i kall segytrace-klassen
         size_t start = segy_tmp->GetStart();
         size_t end = segy_tmp->GetEnd();
+        std::vector<float> values;
         for (size_t j = start; j < end; j++)
-          trace_data[i].push_back(segy_tmp->GetValue(j));
+          values.push_back(segy_tmp->GetValue(j));
+        //NBNB-PAL: SLUTT-Legg inn i kall segytrace-klassen
 
+        trace_data.push_back(values);
+        trace_length.push_back(1);
       }
     }
   }
@@ -201,6 +204,8 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
     int    trace_index = 0;
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));
+
+    trace_data.resize(n);
 
     for (int i = 0; i < n_elements; i++) {
 
@@ -236,6 +241,7 @@ SeismicStorage::GetSparseTraceData(std::vector<std::vector<float> > & trace_data
 
     int n_elements = static_cast<int>(std::sqrt(static_cast<double>(n)));
 
+    trace_data.resize(n);
     trace_length.resize(n, 1);
 
     for (int i = 0; i < n_elements; i++) {
