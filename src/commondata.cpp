@@ -406,6 +406,9 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                             SegyGeometry   *& segy_geometry,
                                             std::string     & err_text_common) const {
 
+  double wall=0.0, cpu=0.0;
+  TimeKit::getTime(wall,cpu);
+
   // parameters
   std::string err_text = "";
   std::string grid_file("");
@@ -635,6 +638,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       }
     }
   }
+
+  Timings::setTimeOuterModellingGrid(wall,cpu);
 
   // CALCULATE XY PADDING -------------------------------------------------------------------------
   if (err_text == "") {
@@ -895,6 +900,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 padding,
                                 only_volume,
                                 relative_padding);
+            segy->ReportSizeOfVolume();
           }
           catch (NRLib::Exception & e) {
             err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
@@ -2647,17 +2653,16 @@ bool CommonData::SetupTemporaryWavelet(ModelSettings                            
     std::vector<float> angles = model_settings->getAngle(this_timelapse);
 
     std::vector<float> frequency_peaks;
-    std::vector<std::vector<float> > trace_data(100);
+    std::vector<std::vector<float> > trace_data;
     std::vector<float> trace_length;
     seismic_data[this_timelapse][j]->GetSparseTraceData(trace_data, trace_length, 100);
 
     //FFT to find peak-frequency.
-    for (int k = 0; k < 100; k++) {
+    for (size_t k = 0; k < trace_data.size() ; k++) {
       int n_trace     = static_cast<int>(trace_data[k].size());
       int n_trace_fft = ((n_trace / 2) + 1)*2;
 
-      fftw_real * seis_r    = new fftw_real[n_trace_fft];
-
+      fftw_real    * seis_r = new fftw_real[n_trace_fft];
       fftw_complex * seis_c = reinterpret_cast<fftw_complex*>(seis_r);
 
       for (int kk=0; kk < n_trace; kk++)
@@ -4694,9 +4699,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
   std::vector<float> seismicAngle = model_settings->getAngle(0); //Use first time lapse as this not is allowed in 4D
 
   std::vector<float> angle_weight(n_angles);
-  LogKit::LogFormatted(LogKit::Low,"\n");
-  LogKit::LogFormatted(LogKit::Low,"  Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
-  LogKit::LogFormatted(LogKit::Low,"  ----------------------------------------------------------------------------------\n");
+  std::string buffer;
 
   for (int w = 0 ; w < static_cast<int>(n_wells) ; w++) {
     if (wells[w]->IsDeviated())
@@ -4753,9 +4756,27 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
       TaskList::addTask("Well "+ well_name +" does not pass through the inversion area after optimization of the well location. Either remove the well or expand the area.\n");
       return false;
     }
-    LogKit::LogFormatted(LogKit::Low,"  %-13s %11.2f %12d %11.2f %8d %11.2f \n",
-    wells[w]->GetWellName().c_str(), k_move, i_move, delta_X, j_move, delta_Y);
+    std::stringstream entry;
+      entry
+        << std::fixed
+        << std::left     << "  "
+        << std::setw(14) << wells[w]->GetWellName() << " "
+        << std::right
+        << std::setprecision(2)
+        << std::setw(11) << k_move  << " "
+        << std::setw(12) << i_move  << " "
+        << std::setw(11) << delta_X << " "
+        << std::setw(8)  << j_move  << " "
+        << std::setw(11) << delta_Y << " "
+        << "\n";
+    buffer += entry.str();
   }
+
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low,"Well             Shift[ms]       DeltaI   DeltaX[m]   DeltaJ   DeltaY[m] \n");
+  LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Low,buffer);
+
 
   for (int w = 0 ; w < static_cast<int>(n_wells) ; w++) {
     n_move_angles = model_settings->getNumberOfWellAngles(w);

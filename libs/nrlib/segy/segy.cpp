@@ -996,6 +996,33 @@ SegY::FindNumberOfSamplesInLongestTrace(void) const
 
 
 void
+SegY::ReportSizeOfVolume(void) const
+{
+  //
+  // For simplicity we only
+  //
+  int   mem_trace_header = 240*sizeof(char) + 2*sizeof(double) + 2*sizeof(float) + 5*sizeof(int) + 3*sizeof(short) + 1*sizeof(bool);
+  int   mem_segy_header  = 0; // Has not been implemented yet ...
+
+  float mem_headers      = static_cast<float>(mem_trace_header)*traces_.size() + static_cast<float>(mem_segy_header);
+  float mem_data         = 0.0f;
+
+  for (size_t i=0 ; i < traces_.size() ; i++) {
+    if (traces_[i] != NULL) {
+      float length_of_trace  = static_cast<float>(traces_[i]->GetEnd() - traces_[i]->GetStart() + 1);
+      mem_data += length_of_trace*sizeof(float);
+    }
+  }
+  float mem_total = mem_headers + mem_data;
+  float GB        = 1024.0f*1024.0f*1024.0f;
+
+  LogKit::LogFormatted(LogKit::High,"\nSize of volume: Headers: %.2fGB  Data: %.2fGB Total: %.2fGB\n",
+                       static_cast<float>(mem_headers)/GB,
+                       static_cast<float>(mem_data)/GB,
+                       static_cast<float>(mem_total)/GB);
+}
+
+void
 SegY::GetNearestTrace(std::vector<float> & trace_data,
                       bool               & missing,
                       float              & z0_data,

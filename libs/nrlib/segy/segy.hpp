@@ -101,6 +101,7 @@ public:
                                      int    outsideMode = segyIMISSING) const;
 
   size_t                    FindNumberOfSamplesInLongestTrace(void) const;
+  void                      ReportSizeOfVolume(void) const;
 
   void                      GetNearestTrace(std::vector<float> & trace_data,
                                             bool               & missing,
