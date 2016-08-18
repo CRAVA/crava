@@ -1393,12 +1393,12 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     // Write summary.
     //
     LogKit::LogFormatted(LogKit::Low,"\n");
-    LogKit::LogFormatted(LogKit::Low,"                                      Invalid                                    \n");
-    LogKit::LogFormatted(LogKit::Low,"Well                    Merges      Vp   Vs  Rho  synthVs/Corr    Deviated/Angle \n");
+    LogKit::LogFormatted(LogKit::Low,"                                   Number of invalids points:                                   \n");
+    LogKit::LogFormatted(LogKit::Low,"Well                    Merges           Vp   Vs  Rho            synthVs/Corr    Deviated/Angle \n");
     LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
     for (int i = 0; i < n_wells; i++) {
       if (valid_index[i])
-        LogKit::LogFormatted(LogKit::Low,"%-23s %6d    %4d %4d %4d     %3s / %5.3f      %3s / %4.1f\n",
+        LogKit::LogFormatted(LogKit::Low,"%-23s %6d         %4d %4d %4d             %3s / %5.3f      %3s / %4.1f\n",
         well_names[i].c_str(),
         n_merges[i],
         n_invalid_vp[i],
@@ -5967,7 +5967,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 {
   int fileType = IO::findGridType(file_name);
 
-  LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name);
+  LogKit::LogFormatted(LogKit::Low,"\nReading grid \'"+par_name+"\' from file "+file_name+"\n");
 
   if (fileType == IO::CRAVA) {
     if (model_settings->GetMultipleIntervalSetting() == false) {
