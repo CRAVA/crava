@@ -1926,7 +1926,7 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
         //Setting up storm grid for writing
         if (((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0) || ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) {
           StormContGrid * seismic_storm = CreateStormGrid(simbox, fft_grid_resampled, delete_fft_grid); // deletes fft_grid_resampled
-          
+
           //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
           for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
             for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
