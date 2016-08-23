@@ -255,7 +255,7 @@ bool FindMulticolumnAsciiLine(const std::string& filename, int & header_start_li
 
   //Find first line with five numbers
   bool found_mult_ascii_line = false;
-  while (found_mult_ascii_line == false && NRLib::CheckEndOfFile(file)==false) {
+  while (found_mult_ascii_line == false && NRLib::CheckEndOfFile(file)==false && line < 200) { //Only search the first lines
 
     //Read line
     std::string line_string;
@@ -292,7 +292,7 @@ bool FindXYZAsciiLine(const std::string& filename, int & header_start_line)
 
   //Find first line with three numbers
   bool found_xyz_ascii_line = false;
-  while (found_xyz_ascii_line == false && NRLib::CheckEndOfFile(file)==false) {
+  while (found_xyz_ascii_line == false && NRLib::CheckEndOfFile(file)==false && line < 200) { //Only search the first lines
 
     //Read line
     std::string line_string;

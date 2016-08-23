@@ -7355,16 +7355,58 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           bool top_conform = false;
           bool bot_conform = false;
 
-          if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end())
-            top_corr_surface = new Surface(input_files->getCorrDirTopSurfaceFile(interval_name));
+          if (input_files->getCorrDirTopSurfaceFiles().find(interval_name) != input_files->getCorrDirTopSurfaceFiles().end()) {
+
+            std::string file_name = input_files->getCorrDirTopSurfaceFiles().find(interval_name)->second;
+            if (segy_geometry != NULL) {
+              std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+              top_corr_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                              segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                              segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            }
+            else {
+              int surf_type = NRLib::FindSurfaceFileType(file_name);
+              if (surf_type == NRLib::SURF_MULT_ASCII)
+                err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
+              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+                err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
+              else
+                top_corr_surface = new Surface(file_name);
+            }
+
+          }
           else if(model_settings->getCorrDirTopConforms().find(interval_name) != model_settings->getCorrDirTopConforms().end() &&
                   model_settings->getCorrDirTopConform(interval_name) == true) {
             top_conform      = true;
             top_corr_surface = new Surface(multi_interval_grid->GetSurface(i));
           }
 
-          if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end())
-            bot_corr_surface = new Surface(input_files->getCorrDirBaseSurfaceFile(interval_name));
+          if (input_files->getCorrDirBaseSurfaceFiles().find(interval_name) != input_files->getCorrDirBaseSurfaceFiles().end()) {
+
+            std::string file_name = input_files->getCorrDirBaseSurfaceFiles().find(interval_name)->second;
+            if (segy_geometry != NULL) {
+              std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
+              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+              bot_corr_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
+                                              segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                              segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            }
+            else {
+              int surf_type = NRLib::FindSurfaceFileType(file_name);
+              if (surf_type == NRLib::SURF_MULT_ASCII)
+                err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
+              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+                err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
+              else
+                bot_corr_surface = new Surface(file_name);
+            }
+
+          }
           else if(model_settings->getCorrDirBaseConforms().find(interval_name) != model_settings->getCorrDirBaseConforms().end() &&
                   model_settings->getCorrDirBaseConform(interval_name) == true) {
             bot_conform      = true;
