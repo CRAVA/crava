@@ -120,6 +120,8 @@ Wavelet::Wavelet(const std::string   & fileName,
   }
   formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
+  //xxxxx  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
+  //waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(), modelSettings->getWaveletTaperingL());
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
@@ -170,6 +172,8 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
   }
   formats_       = modelSettings->getWaveletFormatFlag();
   waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
+  //xxxxxx  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
+  //waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(), modelSettings->getWaveletTaperingL());
   LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
 
   if(errCode == 0) {
