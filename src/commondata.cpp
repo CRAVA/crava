@@ -5959,7 +5959,7 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                              const SegyGeometry                *& geometry,
                              const TraceHeaderFormat            * format,
                              int                                  grid_type,
-                             const std::vector<Simbox *>          & interval_simboxes,
+                             const std::vector<Simbox *>        & interval_simboxes,
                              const Simbox                       * inversion_simbox,
                              const ModelSettings                * model_settings,
                              std::string                        & err_text,
@@ -5971,18 +5971,12 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
 
   if (fileType == IO::CRAVA) {
     if (model_settings->GetMultipleIntervalSetting() == false) {
-      int nx_pad = inversion_simbox->GetNXpad();
-      int ny_pad = inversion_simbox->GetNYpad();
-      int nz_pad = inversion_simbox->GetNZpad();
-
-      GetZPaddingFromCravaFile(file_name, err_text, nz_pad);
-
       FFTGrid *  crava_grid = CreateFFTGrid(inversion_simbox->getnx(),
                                             inversion_simbox->getny(),
                                             inversion_simbox->getnz(),
-                                            nx_pad,
-                                            ny_pad,
-                                            nz_pad,
+                                            inversion_simbox->GetNXpad(),
+                                            inversion_simbox->GetNYpad(),
+                                            inversion_simbox->GetNZpad(),
                                             model_settings->getFileGrid());
 
       crava_grid->createRealGrid(false);
