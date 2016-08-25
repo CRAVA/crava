@@ -6026,8 +6026,10 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   true,
                   nopadding);
   else { //Default Segy
-    LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
-                        +", will try to read it as segy.\n");
+
+    if (fileType != IO::SEGY)
+      LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
+                          +", will try to read it as segy.\n");
 
     ReadSegyFile(file_name,
                  interval_grids,
