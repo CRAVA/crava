@@ -22,9 +22,9 @@ public:
   static void    setTimeWavelets(double& wall, double& cpu);
   static void    setTimePriorExpectation(double& wall, double& cpu);
   static void    setTimePriorCorrelation(double& wall, double& cpu);
-  static void    setTimeStochasticModel(double& wall, double& cpu);
-  static void    setTimeInversion(double& wall, double& cpu);
-  static void    setTimeSimulation(double& wall, double& cpu);
+  static void    addTimeStochasticModel(double& wall, double& cpu);
+  static void    addTimeInversion(double& wall, double& cpu);
+  static void    addTimeSimulation(double& wall, double& cpu);
   static void    setTimeFiltering(double& wall, double& cpu);
   static void    setTimeFaciesProb(double& wall, double& cpu);
   static void    setTimeKrigingPred(double& wall, double& cpu);
