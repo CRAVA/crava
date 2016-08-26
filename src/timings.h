@@ -15,8 +15,9 @@ public:
   static void    reportTotal();
 
   static void    setTimeTotal(double& wall, double& cpu);
-  static void    setTimeSeismic(double& wall, double& cpu);
-  static void    setTimeResamplingSeismic(double& wall, double& cpu);
+  static void    setTimeOuterModellingGrid(double& wall, double& cpu);
+  static void    setTimeReadSeismic(double& wall, double& cpu);
+  static void    addTimeResamplingSeismic(double& wall, double& cpu);
   static void    setTimeWells(double& wall, double& cpu);
   static void    setTimeWavelets(double& wall, double& cpu);
   static void    setTimePriorExpectation(double& wall, double& cpu);
@@ -27,6 +28,9 @@ public:
   static void    setTimeFiltering(double& wall, double& cpu);
   static void    setTimeFaciesProb(double& wall, double& cpu);
   static void    setTimeKrigingPred(double& wall, double& cpu);
+  static void    setTimeCombineResults(double& wall, double& cpu);
+  static void    setTimeWriteResults(double& wall, double& cpu);
+  static void    setTimeDummy(double& wall, double& cpu);
   static void    addToTimeKrigingSim(double& wall, double& cpu);
 
 private:
@@ -40,8 +44,11 @@ private:
   static double  w_rest_;
   static double  c_rest_;
 
-  static double  w_seismic_;
-  static double  c_seismic_;
+  static double  w_outerModellingGrid_;
+  static double  c_outerModellingGrid_;
+
+  static double  w_readseismic_;
+  static double  c_readseismic_;
 
   static double  w_resamplingSeismic_;
   static double  c_resamplingSeismic_;
@@ -78,6 +85,16 @@ private:
 
   static double  w_kriging_sim_;
   static double  c_kriging_sim_;
+
+  static double  w_combine_results_;
+  static double  c_combine_results_;
+
+  static double  w_write_results_;
+  static double  c_write_results_;
+
+  static double  w_dummy_;
+  static double  c_dummy_;
+
 };
 
 #endif

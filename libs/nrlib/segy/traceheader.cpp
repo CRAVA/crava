@@ -413,12 +413,12 @@ void TraceHeader::Read(std::istream& inFile, int lineNo)
     }
     else if (i==(format_.GetUtmxLoc()-1))
     {
-      utmx_ = float(ReadBinaryInt(header));
+      utmx_ = static_cast<double>(ReadBinaryInt(header));
       i=i+4;
     }
     else if (i==(format_.GetUtmyLoc()-1))
     {
-      utmy_ = float(ReadBinaryInt(header));
+      utmy_ = static_cast<double>(ReadBinaryInt(header));
       i=i+4;
     }
     else if (i==(NS_LOC-1))

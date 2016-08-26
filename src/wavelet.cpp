@@ -122,9 +122,10 @@ Wavelet::Wavelet(const std::string   & fileName,
     WaveletReadNorsar(fileName, errCode, errText);
     break;
   }
+
   formats_       = modelSettings->getWaveletFormatFlag();
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
-  LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),
+                                     modelSettings->getWaveletTaperingL());
 
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++) {
@@ -174,8 +175,8 @@ Wavelet::Wavelet(const ModelSettings * modelSettings,
     rAmp_[i] = static_cast<fftw_real>(Ricker(t, peakFrequency));
   }
   formats_       = modelSettings->getWaveletFormatFlag();
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),0.0f);
-  LogKit::LogFormatted(LogKit::Low,"\n  Estimated wavelet length:  %.1fms.\n",waveletLength_);
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),
+                                     modelSettings->getWaveletTaperingL());
 
   if(errCode == 0) {
     for(int i=0; i < rnzp_ ;i++) {
@@ -646,7 +647,7 @@ Wavelet::writeWaveletToFile(const std::string & fileName,
     halfLength=wLength/2;
   }
 
-  float shift = -dznew*(halfLength + 1);
+  float shift = -dznew*halfLength;
 
   std::string fName;
   std::ofstream file;
@@ -815,10 +816,6 @@ Wavelet::findWaveletLength(float minRelativeAmp,
   bool  peak_at_end = absramp[0] > absramp[(nzp_+1)/2]; // Peak is at either end, not in the centre.
 
   if (peak_at_end) {
-    if (maxInd != 0 && maxInd != nzp_ - 1) {
-      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: The estimated wavelet does not have maximum amplitude at first or last sample.");
-      LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: Peak value is for sample %d. First sample is 0 and last sample is %d\n",maxInd,nzp_);
-    }
     int i1 = 0;
     for (int i=nzp_/2 ; i>0 ; i--) {
       if (absramp[i] > minAmp) {
@@ -852,21 +849,30 @@ Wavelet::findWaveletLength(float minRelativeAmp,
     }
     wLength = i2 - i1;
   }
-  int minLength = 2*(static_cast<int>(minimumWaveletLength/dz_ + 1)/2) + 1;
-  int maxLength = 2*((nzp_+1)/2) - 1;
-  if (wLength < minLength) {
-    LogKit::LogFormatted(LogKit::Warning,"\n  Estimated wavelet length:  %.1fms",dz_*static_cast<float>(wLength));
-    wLength = minLength;
-    LogKit::LogFormatted(LogKit::Warning,"\n  Enforced wavelet length :  %.1fms\n",dz_*static_cast<float>(wLength));
+
+  float waveletLength = dz_*static_cast<float>(wLength);
+  LogKit::LogFormatted(LogKit::Warning,"  Estimated wavelet length :  %.1fms",waveletLength);
+
+  if (waveletLength < 50.0f) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
+    TaskList::addTask("Check the estimated wavelet lengths. A small length of "+NRLib::ToString(waveletLength, 2)+" has been found.");
   }
-  if (wLength > maxLength) {
-    LogKit::LogFormatted(LogKit::Warning,"\n  Estimated wavelet length:  %.1fms",dz_*static_cast<float>(wLength));
-    wLength = maxLength;
-    LogKit::LogFormatted(LogKit::Warning,"\n  Enforced wavelet length :  %.1fms\n",dz_*static_cast<float>(wLength));
+  if (waveletLength > 400.0f) {
+    LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually large.\n");
+    TaskList::addTask("Check the estimated wavelet lengths. A large length of "+NRLib::ToString(waveletLength, 2)+" has been found.");
   }
+
+  if (waveletLength < minimumWaveletLength) {
+    int minLength = 2*(static_cast<int>(minimumWaveletLength/dz_ + 1)/2) + 1;
+    int maxLength = nzp_; // Length as read from file if read from file
+    wLength       = std::min(minLength, maxLength);
+    waveletLength = dz_*static_cast<float>(wLength);
+    LogKit::LogFormatted(LogKit::Warning,"\n  Tapered wavelet length   :  %.1fms\n",waveletLength);
+  }
+
   if(trans==true)
     fft1DInPlace();
-  return (dz_*static_cast<float>(wLength));
+  return (waveletLength);
 }
 
 float
@@ -1343,6 +1349,7 @@ Wavelet::WaveletReadJason(const std::string & fileName,
   int cz_file = static_cast<int>(floor((fabs(shift/dz_))+0.5));
   cz          = nz_ - cz_file; //Wavelets are flipped
 
+  rAmp[0] = 0.0f;
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
@@ -1350,11 +1357,15 @@ Wavelet::WaveletReadJason(const std::string & fileName,
       return;
     }
     NRLib::ReadNextToken(file,dummyStr,line);
-
-    rAmp[nz_-i-1] = NRLib::ParseType<float>(dummyStr); //Flip wavelet
+    //
+    // The wavelet fill in starts at i=1 and rAmp[0] is set to zero.
+    //
+    // If the fill in starts at 0, a wavelet read from file gets an incorrect
+    // shift of one sample. This is particular evident if a Ricker wavelet
+    // read from file is compared the the wavelet given as output.
+    //
+    rAmp[nz_ - i] = NRLib::ParseType<float>(dummyStr); //Flip wavelet
   }
-
-
   file.close();
 }
 
@@ -1452,6 +1463,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   cz_         = nz_ - cz_file; //Wavelets are flipped
 
   // Pulse samples
+  rAmp_[0] = 0.0f;
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
@@ -1460,7 +1472,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[nz_-i-1] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr)); //Flip wavelet
+    rAmp_[nz_ - i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr)); //Flip wavelet
   }
   file.close();
 }

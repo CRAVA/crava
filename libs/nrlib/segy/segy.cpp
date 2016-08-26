@@ -55,9 +55,10 @@ SegY::SegY(const std::string       & fileName,
            const TraceHeaderFormat & traceHeaderFormat)
   : trace_header_format_(traceHeaderFormat)
 {
-  rmissing_    = segyRMISSING;
-  file_name_    = fileName;
-  single_trace_ = true;
+  rmissing_               = segyRMISSING;
+  file_name_              = fileName;
+  single_trace_           = true;
+  sampling_inconsistency_ = false;
 
   /// \todo Replace with safe open function.
  // file_.open(fileName.c_str(), std::ios::in | std::ios::binary);
@@ -99,9 +100,10 @@ SegY::SegY(const std::string               & fileName,
            std::vector<TraceHeaderFormat*>   thf,
            bool                              searchStandardFormats)
 {
-  rmissing_     = segyRMISSING;
-  file_name_    = fileName;
-  single_trace_ = true;
+  rmissing_               = segyRMISSING;
+  file_name_              = fileName;
+  single_trace_           = true;
+  sampling_inconsistency_ = false;
 
   /// \todo Replace with safe open function.
  // file_.open(fileName.c_str(), std::ios::in | std::ios::binary);
@@ -296,9 +298,10 @@ SegY::SegY(const std::string       & fileName,
            const TraceHeaderFormat & traceHeaderFormat)
   : trace_header_format_(traceHeaderFormat)
 {
-  rmissing_ = segyRMISSING;
-  geometry_ = NULL;
-  binary_header_ = NULL;
+  rmissing_               = segyRMISSING;
+  geometry_               = NULL;
+  binary_header_          = NULL;
+  sampling_inconsistency_ = false;
 
   /// \todo Replace with safe open function.
   //file_.open(fileName.c_str(), std::ios::out | std::ios::binary);
@@ -324,9 +327,10 @@ SegY::SegY(const StormContGrid     * storm_grid,
            const TraceHeaderFormat & trace_header_format,
            bool                      is_seismic)
 {
-  rmissing_      = segyRMISSING;
-  geometry_      = NULL;
-  binary_header_ = NULL;
+  rmissing_               = segyRMISSING;
+  geometry_               = NULL;
+  binary_header_          = NULL;
+  sampling_inconsistency_ = false;
 
   int i,k,j;
   TextualHeader header = TextualHeader::standardHeader();
@@ -454,8 +458,8 @@ SegY::GetTraceData(int IL, int XL, std::vector<float> & result, const Volume * v
   double xd ,yd;
   geometry_->FindXYFromILXL(IL, XL, xd, yd);
 
-  float xf = static_cast<double>(xd);
-  float yf = static_cast<double>(yd);
+  float xf = static_cast<float>(xd);
+  float yf = static_cast<float>(yd);
   GetTraceData(xf, yf, result, volume);
 }
 
@@ -899,15 +903,35 @@ SegY::ReadHeader(TraceHeader & header)
     if(dz_ == 0)
       dz_ = static_cast<float>(header.GetDt()/1000.0);
     else if(header.GetDt() > 0) {
-      std::string error = "Different sampling densities given.";
-      if (binary_header_ != NULL && static_cast<float>(binary_header_->GetHdt()/1000) != 0.0) //dz_ taken from binary header
-        error += " Initial sampling density of "+ToString(dz_)+" ms given in BinaryHeader changed to ";
-      else
-        error += " Initial sampling density of "+ToString(dz_)+" ms changed to ";
-      error += ToString(header.GetDt()/1000.0) + " ms for TraceHeader in trace with XL " +
-               ToString(header.GetCrossline()) + " and inline " +
-               ToString(header.GetInline()) + ".\n";
-      throw(Exception(error));
+
+      if (binary_header_ != NULL) {
+        //Allow different sampling as long as BinaryHeader has sampling of 1.0, 2.0 or 4.0
+        float binary_header_dz = static_cast<float>(binary_header_->GetHdt()/1000);
+        if (binary_header_dz == 1.0 || binary_header_dz == 2.0 || binary_header_dz == 4.0) {
+          dz_ = static_cast<float>(binary_header_->GetHdt()/1000);
+          if (sampling_inconsistency_ == false) {
+            LogKit::LogFormatted(LogKit::Warning,"\n\nWarning: Different sampling densities given:\n");
+            LogKit::LogFormatted(LogKit::Warning," Initial sampling density of "+ToString(dz_)+"ms given in BinaryHeader changed to " + ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL ");
+            LogKit::LogFormatted(LogKit::Warning," " + ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n");
+            LogKit::LogFormatted(LogKit::Warning," " + ToString(dz_) + "ms sampling from BinaryHeader will be used when reading this SegY file.");
+            sampling_inconsistency_ = true;
+          }
+        }
+        else {
+          std::string error =  "Different sampling densities given.";
+          error += " Initial sampling density of "+ToString(dz_)+"ms given in BinaryHeader changed to ";
+          error += ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL " + ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n";
+          error += "When inconsistencies are found Crava uses the sampling density from BinaryHeader if it is either 1ms, 2ms or 4ms. Here it is the unaccepted rate of "+ToString(dz_)+"ms.\n";
+          throw(Exception(error));
+        }
+      }
+      else {
+        std::string error = "Different sampling densities given.";
+        error += " Initial sampling density of "+ToString(dz_)+"ms changed to ";
+        error += ToString(header.GetDt()/1000.0) + "ms for TraceHeader in trace with XL " +
+                 ToString(header.GetCrossline()) + " and inline " + ToString(header.GetInline()) + ".\n";
+        throw(Exception(error));
+      }
     }
   }
   return duplicateHeader;
@@ -970,6 +994,33 @@ SegY::FindNumberOfSamplesInLongestTrace(void) const
   return max_length;
 }
 
+
+void
+SegY::ReportSizeOfVolume(void) const
+{
+  //
+  // For simplicity we only
+  //
+  int   mem_trace_header = 240*sizeof(char) + 2*sizeof(double) + 2*sizeof(float) + 5*sizeof(int) + 3*sizeof(short) + 1*sizeof(bool);
+  int   mem_segy_header  = 0; // Has not been implemented yet ...
+
+  float mem_headers      = static_cast<float>(mem_trace_header)*traces_.size() + static_cast<float>(mem_segy_header);
+  float mem_data         = 0.0f;
+
+  for (size_t i=0 ; i < traces_.size() ; i++) {
+    if (traces_[i] != NULL) {
+      float length_of_trace  = static_cast<float>(traces_[i]->GetEnd() - traces_[i]->GetStart() + 1);
+      mem_data += length_of_trace*sizeof(float);
+    }
+  }
+  float mem_total = mem_headers + mem_data;
+  float GB        = 1024.0f*1024.0f*1024.0f;
+
+  LogKit::LogFormatted(LogKit::High,"\nSize of volume: Headers: %.2fGB  Data: %.2fGB Total: %.2fGB\n",
+                       static_cast<float>(mem_headers)/GB,
+                       static_cast<float>(mem_data)/GB,
+                       static_cast<float>(mem_total)/GB);
+}
 
 void
 SegY::GetNearestTrace(std::vector<float> & trace_data,

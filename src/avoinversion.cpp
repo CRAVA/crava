@@ -954,7 +954,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       lib_matrProdScalVecCpx(kD, kW, ntheta_);
 
       // Copy matrix A to float**
-      float ** A = new float * [3];
+      float ** A = new float * [ntheta_];
       for (int i = 0; i < ntheta_; i++)
         A[i] = new float[3];
       for (int i = 0; i < ntheta_; i++){
@@ -1141,7 +1141,6 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
     }
   }
 
-  //Seismic data may be used in CravaResult. If seis_data are on crava/fft format these are a reference to commondata and cannot be deleted.
   //for (l=0;l<ntheta_;l++)
   //  delete seisData_[l];
   //LogKit::LogFormatted(LogKit::DebugLow,"\nDEALLOCATING: Seismic data\n");
@@ -1761,8 +1760,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
       }
     }
 
-    std::string baseName = IO::PrefixFaciesProbability();
-
     FFTGrid * likelihood = NULL;
     if ((modelSettings->getOutputGridsOther() & IO::FACIES_LIKELIHOOD) > 0) {
       int nx = postVp_->getNx();
@@ -1783,8 +1780,6 @@ AVOInversion::computeFaciesProb(SpatialRealWellFilter             * filteredReal
       meanVs2_->changeSign();
       meanRho2_->subtract(postRho_);
       meanRho2_->changeSign();
-      if(modelSettings->getFaciesProbFromRockPhysics())
-        baseName += "Rock_Physics_";
 
       std::vector<double> trend_min;
       std::vector<double> trend_max;

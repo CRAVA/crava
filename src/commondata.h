@@ -516,6 +516,10 @@ private:
                                                        int                  & count_vs,
                                                        int                  & count_rho) const;
 
+  void               FindILXLAtStartPosition(const SegyGeometry * full_geometry,
+                                             double               xpos0,
+                                             double               ypos0) const;
+
   void               LookForSyntheticVsLog(NRLib::Well          & well,
                                            const ModelSettings  * model_settings,
                                            float                & rank_correlation) const;
@@ -548,8 +552,10 @@ private:
                                             bool                              porosity_log_given,
                                             int                               format,
                                             std::string                     & error_text) const;
-  int                CheckWellAgainstSimbox(const Simbox      * simbox,
-                                            const NRLib::Well & well) const;
+
+  int                CheckWellAgainstSimbox(const Simbox       * simbox,
+                                            const NRLib::Well  & well,
+                                            const SegyGeometry * full_geometry) const;
 
   bool               SetupReflectionMatrix(ModelSettings                    * model_settings,
                                            InputFiles                       * input_files,

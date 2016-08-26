@@ -300,19 +300,8 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
     shiftAndScale(shiftAvg, scaleOpt);//shifts wavelet average from wells
     invFFT1DInPlace();
-    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-
-    if (writing)
-      LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
-
-    if (waveletLength_ < 50.0) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually small.\n");
-      TaskList::addTask("Check the estimated wavelet lengths. A small length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
-    }
-    if (waveletLength_ > 400.0) {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The estimated wavelet length is unusually large.\n");
-      TaskList::addTask("Check the estimated wavelet lengths. A large length of "+NRLib::ToString(waveletLength_,2)+" has been found.");
-    }
+    waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),
+                                       modelSettings->getWaveletTaperingL());
 
     if( ModelSettings::getDebugLevel() > 0 ){
       writeWaveletToFile("estimated_wavelet_adjusted_", 1.0f,true);

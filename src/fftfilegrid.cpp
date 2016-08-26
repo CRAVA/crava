@@ -47,8 +47,9 @@ FFTGrid()
   cnxp_           = nxp_/2+1;
   rnxp_           = 2*(cnxp_);
 
-  csize_          = cnxp_*nyp_*nzp_;
-  rsize_          = rnxp_*nyp_*nzp_;
+  csize_          = static_cast<size_t>(cnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+  rsize_          = static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_)*static_cast<size_t>(nzp_);
+
   counterForGet_  = 0;
   counterForSet_  = 0;
   istransformed_  = fftGrid->istransformed_;
@@ -201,15 +202,14 @@ FFTFileGrid::getRealValue(int i, int j, int k, bool extSimbox)
   assert(istransformed_==false);
   assert(accMode_ == RANDOMACCESS);
 
- bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)):
-    ((i < nx_) && (j < ny_) && (k < nz_)));
+ bool  inSimbox   = (extSimbox ? ( (i < nxp_) && (j < nyp_) && (k < nzp_)): ((i < nx_) && (j < ny_) && (k < nz_)));
   bool  notMissing = ( (i > -1) && (j > -1) && (k > -1));
 
   float value;
  if( inSimbox && notMissing )
   { // if index in simbox
-  int index=i+rnxp_*j+k*rnxp_*nyp_;
-  value = static_cast<float>(rvalue_[index]);
+    size_t index = static_cast<size_t>(i) + static_cast<size_t>(rnxp_)*static_cast<size_t>(j) + static_cast<size_t>(k)*static_cast<size_t>(rnxp_)*static_cast<size_t>(nyp_);
+    value = static_cast<float>(rvalue_[index]);
   }
   else
   {
@@ -409,9 +409,8 @@ FFTFileGrid::add(FFTGrid * fftGrid)
 
   if(istransformed_==true)
   {
-    int i;
     fftw_complex value;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re += value.re;
@@ -420,8 +419,7 @@ FFTFileGrid::add(FFTGrid * fftGrid)
   }
   else
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] += fftGrid->getNextReal();
     }
@@ -458,9 +456,8 @@ FFTFileGrid::subtract(FFTGrid * fftGrid)
 
   if(istransformed_==true)
   {
-    int i;
     fftw_complex value;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re -= value.re;
@@ -469,8 +466,7 @@ FFTFileGrid::subtract(FFTGrid * fftGrid)
   }
   else
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] -= fftGrid->getNextReal();
     }
@@ -492,8 +488,7 @@ FFTFileGrid::changeSign()
 
   if(istransformed_==true)
   {
-    int i;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
 
       cvalue_[i].re = -cvalue_[i].re;
@@ -502,8 +497,7 @@ FFTFileGrid::changeSign()
   }
   else
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] = -rvalue_[i];
     }
@@ -527,9 +521,8 @@ FFTFileGrid::multiply(FFTGrid * fftGrid)
 
   if(istransformed_==true)
   {
-    int i;
     fftw_complex value;
-    for(i=0;i<csize_;i++)
+    for(size_t i=0;i<csize_;i++)
     {
       value = fftGrid->getNextComplex();
       cvalue_[i].re *= value.re;
@@ -538,8 +531,7 @@ FFTFileGrid::multiply(FFTGrid * fftGrid)
   }
   else
   {
-    int i;
-    for(i=0;i < rsize_;i++)
+    for(size_t i=0;i < rsize_;i++)
     {
       rvalue_[i] *= fftGrid->getNextReal();
     }
@@ -560,8 +552,7 @@ FFTFileGrid::conjugate()
   else
     modified_ = 1;
 
-  int i;
-  for(i=0;i<csize_;i++)
+  for(size_t i=0;i<csize_;i++)
   {
     cvalue_[i].im = -cvalue_[i].im;
   }
@@ -677,10 +668,10 @@ FFTFileGrid::load()
     FFTGrid::createComplexGrid();
   if(fNameIn_ != "") //Something has been saved.
   {
-    int i, nRead = 1;
+    int nRead = 1;
     NRLib::OpenRead(inFile_,fNameIn_,std::ios::in | std::ios::binary);
     //Real/complex does not matter in next line, since same meory is used.
-    for(i=0;((i<rsize_) && (nRead == 1));i++)
+    for(size_t i=0;((i<rsize_) && (nRead == 1));i++)
     {
       char * buffer = reinterpret_cast<char *>(&(rvalue_[i]));
       inFile_.read(buffer,sizeof(float));
@@ -695,8 +686,8 @@ FFTFileGrid::save()
   assert(accMode_ == NONE || accMode_ == RANDOMACCESS);
   NRLib::OpenWrite(outFile_,fNameOut_,std::ios::out | std::ios::binary);
   //Real/complex does not matter in next line, since same meory is used.
-  int i, nWritten = 1;
-  for(i=0;((i<rsize_) && (nWritten == 1));i++)
+  int nWritten = 1;
+  for(size_t i=0;((i<rsize_) && (nWritten == 1));i++)
   {
     char * buffer = reinterpret_cast<char *>(&(rvalue_[i]));
     outFile_.write(buffer,sizeof(float));

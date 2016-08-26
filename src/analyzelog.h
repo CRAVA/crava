@@ -19,15 +19,6 @@ class Analyzelog {
 
 public:
 
-
-  /*Analyzelog(const std::vector<NRLib::Well>                          & wells,
-             const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs_for_correlation,
-             const std::vector<NRLib::Grid<float> *>                 & background,
-             //const std::vector<NRLib::Grid<float> >                  & background_max_Hz,
-             const Simbox                                            * simbox,
-             const ModelSettings                                     * model_settings,
-             std::string                                             & err_txt);*/
-
   Analyzelog(const std::vector<NRLib::Well *>                        & wells,
              const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs,
              const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
@@ -37,24 +28,14 @@ public:
              bool                                                      multi_zone_available,
              std::string                                             & err_txt);
 
-  /*
-  Analyzelog(std::vector<WellData *>  & wells,
-             Background               * background,
-             const Simbox             * simbox,
-             const ModelSettings      * modelSettings,
-             std::string              & errTxt);
-  */
 
   ~Analyzelog(void);
 
-  //NRLib::Grid2D<double> & GetVar0()     const { return Var0_         ;}
-  const NRLib::Matrix                    & GetVar0(void)          const { return var_0_                           ;}
-  //const NRLib::Matrix       & GetPointVar0(void)    const { return point_var_0_                               ;}
-  //const std::vector<float>               & GetCorrT(void)         const { return corr_T_                          ;}
-  int                                      GetNumberOfLags(void)  const { return n_lags_                          ;}
-  int                                      GetMaxLagWithNonZeroAutoCovData() const {return max_lag_with_data_                ;}
-  bool                                     GetEnoughData()        const { return enough_data_for_corr_estimation_ ;}
-  const std::vector<NRLib::Matrix>       & GetAutoCovariance()    const {return        auto_cov_                  ;}
+  const NRLib::Matrix                    & GetVar0(void)                     const { return var_0_                           ;}
+  int                                      GetNumberOfLags(void)             const { return n_lags_                          ;}
+  int                                      GetMaxLagWithNonZeroAutoCovData() const { return max_lag_with_data_               ;}
+  bool                                     GetEnoughData()                   const { return enough_data_for_corr_estimation_ ;}
+  const std::vector<NRLib::Matrix>       & GetAutoCovariance()               const { return auto_cov_                        ;}
 
 private:
 
@@ -65,18 +46,6 @@ private:
                                  const std::vector<Simbox *>                            & interval_simboxes,
                                  const std::string                                      & log_name,
                                  std::string                                            & err_txt);
-
-  /*
-  void            EstimateCorrelation(const ModelSettings                                      * model_settings,
-                                      const std::vector<NRLib::Well>                           & wells,
-                                      const std::vector<std::string>                           & well_names,
-                                      const std::map<std::string, BlockedLogsCommon *>         & mapped_blocked_logs_for_correlation,
-                                      std::string                                              & interval_name,
-                                      const Simbox                                             * interval_simbox,
-                                      bool                                                     & enough_data_for_corr_estimation,
-                                      const std::vector<NRLib::Grid<float> *>                  & background,
-                                      std::string                                              & errTxt);
-  */
 
     void          EstimateCorrelation(const ModelSettings                                      * model_settings,
                                       const std::vector<std::string>                           & well_names,
@@ -117,13 +86,6 @@ private:
                            Background           * background,
                            std::string          & errTxt);
 
-  /*
-  void            estimateLnData(float      **& lnData,
-                                 FFTGrid      * background,
-                                 int            logNr,
-                                 std::string  & errTxt);
-  */
-
   void            estimatePointVar0(float       ** Var0,
                                     float       ** lnDataAlpha,
                                     float       ** lnDataBeta,
@@ -149,14 +111,6 @@ private:
                                         const std::vector<double>                             & dz_rel,
                                         const std::vector<Simbox *>                           & simboxes);
 
-  /*
-  void            CalculateNumberOfLags(int                                                   & n_lags,
-                                        const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs_for_correlation,
-                                        int                                                   & max_nd,
-                                        const std::vector<Simbox *>                           & simboxes,
-                                        std::string                                           & err_txt);
-  */
-
   void            findConstructedVsLogs(void);
 
   void            CheckVariances(const ModelSettings    * model_settings,
@@ -176,26 +130,16 @@ private:
 
   int                                                   min_blocks_with_data_for_corr_estim_;
   bool                                                  enough_data_for_corr_estimation_;       ///< Vector with size == n_intervals
-  //std::map<std::string, BlockedLogsCommon *>            mapped_blocked_logs_for_correlation_;
-  //const Simbox                                        * simbox_;
-  //std::vector<WellData *>                               wells_;
   std::vector<std::string>                              well_names_;
   int                                                   n_wells_;             // Number of wells
   NRLib::Vector                                         regression_coef_vs_;  // Regression coefficients for Vs ~ Vp + Rho in case of mixture of synthetic and non-synt wells (CRA-257)
   std::vector<double>                                   residual_variance_vs_;
-  //double                                                var_vs_resid_;        // Variance of residuals for the Vs regression
 
   std::string                                           interval_name_;
   std::vector<NRLib::Matrix >                           auto_cov_;
   NRLib::Matrix                                         var_0_;
-  //NRLib::Matrix                                       point_var_0_;
-  //std::vector<float>                                    corr_T_;
   int                                                   n_lags_;
   int                                                   max_lag_with_data_;
 
-  //float        ** Var0_;
-  //float        ** pointVar0_;
-  //float         * CorrT_;
-  //int             numberOfLags_;
 };
 #endif
