@@ -101,6 +101,9 @@ public:
   /// Get location of the crossline field. (-1 if non-existant)
   int GetCrosslineLoc() const {return crossline_loc_;}
 
+  /// Get location of the offset. (-1 if non-existant)
+  int GetOffsetLoc() const {return offset_loc_;}
+
   /// Get location of the scaling cooefficient field. (-1 if non-existant)
   int GetScalCoLoc() const {return scal_co_loc_;}
 
@@ -118,6 +121,7 @@ public:
   void SetUtmyLoc(int loc)      {utmy_loc_      = loc; standard_type_ = false;}
   void SetInlineLoc(int loc)    {inline_loc_    = loc; standard_type_ = false;}
   void SetCrosslineLoc(int loc) {crossline_loc_ = loc; standard_type_ = false;}
+  void SetOffsetLoc(int loc)    {offset_loc_    = loc; standard_type_ = false;}
   void SetCoordSys(coordSys_t type) {coord_sys_ = type;}
 
   /// Check that no two values point to the same byte. Throws if error.
@@ -149,6 +153,8 @@ private:
   int inline_loc_;
   /// Location of crossline coordinate field. (-1 if non-existant)
   int crossline_loc_;
+  /// Location of offset. (-1 if non-existant)
+  int offset_loc_;
   /// Coordinate system to use.
   coordSys_t coord_sys_;
   /// Standard type
@@ -213,6 +219,14 @@ public:
   /// Does nothing if crossline location is not set in the format.
   void SetCrossline(int crossLine);
 
+  /// Get offset.
+  /// returns #IMISSING if offset is not set in the format.
+  int GetOffset() const;
+
+  /// Set offset.
+  /// Does nothing if offset is not set in the format.
+  void SetOffset(int offset);
+
   /// Get current first coordinate (either UTM x or IL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
   double GetCoord1() const;
@@ -256,6 +270,7 @@ private:
   double utmy_;
   int inline_;
   int crossline_;
+  int offset_;
   short ns_;
   short dt_;
   int imissing_;

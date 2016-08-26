@@ -1397,6 +1397,8 @@ SegY::WriteAllTracesToFile(short scalcoinitial)
 
   std::sort(traces_.begin(), traces_.end(), SortILXL);
 
+  LogKit::LogFormatted(LogKit::Warning,"\n" +NRLib::ToString(z0_) + "\n"); //H-REMOVE
+
   for (i = 0; i < traces_.size(); i++)
   {
     if (traces_[i] != NULL)
@@ -1415,6 +1417,7 @@ SegY::WriteAllTracesToFile(short scalcoinitial)
       header.SetUtmy(static_cast<double>(y));
       header.SetInline(traces_[i]->GetInline());
       header.SetCrossline(traces_[i]->GetCrossline());
+      header.SetOffset(static_cast<int>(z0_));
       header.Write(file_);
       WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
     }

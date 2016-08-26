@@ -901,6 +901,17 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 only_volume,
                                 relative_padding);
             segy->ReportSizeOfVolume();
+
+            //H-REMOVE
+            if (segy->getTrace(0)->GetTraceHeader().GetOffset() > 0 && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
+              LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) 
+                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                 + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
+
+              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
+            }
+
           }
           catch (NRLib::Exception & e) {
             err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
@@ -908,7 +919,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
           if (err_text_tmp == "") {
-
             bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
             bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
             bool regularize_if_needed = area_from_segy && storm_output;
@@ -6141,6 +6151,19 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       err_text += "Error reading SegY-file: " + file_name + ":\n";
       err_text += NRLib::ToString(e.what());
     }
+
+    //H-REMOVE
+    if (segy->getTrace(0)->GetTraceHeader().GetOffset() > 0 && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset)) {
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) 
+                         + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                         + "). The offset from modelfile is used.\n");
+
+      TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                        + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+    }
+
+
+
     bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
     bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
     bool regularize_if_needed =  area_from_segy && storm_output;

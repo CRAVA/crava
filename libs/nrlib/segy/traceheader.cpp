@@ -112,6 +112,7 @@ TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
     utmy_loc_(utmyLoc),
     inline_loc_(inlineLoc),
     crossline_loc_(crosslineLoc),
+    offset_loc_(),
     coord_sys_(coordSys),
     standard_type_(true)
 {}
@@ -123,11 +124,12 @@ TraceHeaderFormat::TraceHeaderFormat()
 
 TraceHeaderFormat::TraceHeaderFormat(const TraceHeaderFormat & thf)
  : format_name_  (thf.GetFormatName()),
-   scal_co_loc_   (thf.GetScalCoLoc()),
+   scal_co_loc_  (thf.GetScalCoLoc()),
    utmx_loc_     (thf.GetUtmxLoc()),
    utmy_loc_     (thf.GetUtmyLoc()),
    inline_loc_   (thf.GetInlineLoc()),
    crossline_loc_(thf.GetCrosslineLoc()),
+   offset_loc_   (thf.GetOffsetLoc()),
    coord_sys_    (thf.GetCoordSys()),
    standard_type_(thf.GetStandardType())
 {
@@ -146,6 +148,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = SY_LOC;
     inline_loc_    = INLINE_LOC;
     crossline_loc_ = CROSSLINE_LOC;
+    offset_loc_    = 109;
     coord_sys_     = UTM;
   }
   else if (headerformat==IESX)
@@ -156,6 +159,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = SY_LOC;
     inline_loc_    = 221;
     crossline_loc_ = CROSSLINE_LOC;
+    offset_loc_    = 109; //Not tested
     coord_sys_     = UTM;
   }
   else if (headerformat==SIP)
@@ -166,6 +170,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = 185;
     inline_loc_    = 189;
     crossline_loc_ = 193;
+    offset_loc_    = 37;
     coord_sys_     = UTM;
   }
   else if (headerformat == CHARISMA)
@@ -176,6 +181,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = SY_LOC;
     inline_loc_    = 5;
     crossline_loc_ = CROSSLINE_LOC;
+    offset_loc_    = 109;
     coord_sys_     = UTM;
   }
   else if (headerformat == SIPX) // Sebn: SIP probably messed up when they made volumes with this header specification.
@@ -186,6 +192,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = SY_LOC;
     inline_loc_    = 181;
     crossline_loc_ = 185;
+    offset_loc_    = 109; //Not tested
     coord_sys_     = UTM;
   }
   else
@@ -441,6 +448,10 @@ void TraceHeader::Read(std::istream& inFile, int lineNo)
       crossline_ = ReadBinaryInt(header);
       i=i+4;
     }
+    else if (i ==(format_.GetOffsetLoc()-1)) {
+      offset_ = ReadBinaryInt(header);
+      i = i+4;
+    }
     else
     {
       ReadBinaryShort(header);
@@ -521,6 +532,11 @@ int TraceHeader::Write(std::ostream& outFile)
     else if (i==(format_.GetCrosslineLoc()-1))
     {
       WriteBinaryInt(outFile, crossline_);
+      i=i+4;
+    }
+    else if (i==(format_.GetOffsetLoc()-1))
+    {
+      WriteBinaryInt(outFile, offset_);
       i=i+4;
     }
     else
@@ -636,6 +652,23 @@ void TraceHeader::SetCrossline(int crossLine)
   int loc = format_.GetCrosslineLoc();
   if (loc > 0) {
     crossline_ = crossLine;
+  }
+}
+
+int TraceHeader::GetOffset() const
+{
+  int loc = format_.GetOffsetLoc();
+  if (loc < 0) {
+    return imissing_;
+  }
+  return offset_;
+}
+
+void TraceHeader::SetOffset(int offset)
+{
+  int loc = format_.GetOffsetLoc();
+  if (loc > 0) {
+    offset_ = offset;
   }
 }
 
