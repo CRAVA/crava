@@ -262,8 +262,8 @@ Wavelet3D::Wavelet3D(const std::string                          & filterFile,
 
   rAmp_ = averageWavelets(wellWavelets, nWells, nzp_, wellWeight, dzWell, dz_);
   cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
-  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),modelSettings->getWaveletTaperingL());
-  LogKit::LogFormatted(LogKit::Low,"  Estimated wavelet length:  %.1fms\n",waveletLength_);
+  waveletLength_ = findWaveletLength(modelSettings->getMinRelWaveletAmp(),
+                                     modelSettings->getWaveletTaperingL());
 
   if( ModelSettings::getDebugLevel() > 0 )
     writeWaveletToFile("estimated_wavelet_", 1.0f,false);
