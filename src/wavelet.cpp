@@ -1458,6 +1458,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
   cz_         = nz_ - cz_file; //Wavelets are flipped
 
   // Pulse samples
+  rAmp_[0] = 0.0f;
   for(int i=0; i<nz_;i++) {
     if (NRLib::CheckEndOfFile(file)) {
       errText += "Error: End of file "+fileName+" premature.\n";
@@ -1466,7 +1467,7 @@ Wavelet::WaveletReadNorsar(const std::string & fileName,
     }
     NRLib::ReadNextToken(file,dummyStr,line);
 
-    rAmp_[nz_-i-1] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr)); //Flip wavelet
+    rAmp_[nz_ - i] = static_cast<fftw_real>(NRLib::ParseType<float>(dummyStr)); //Flip wavelet
   }
   file.close();
 }
