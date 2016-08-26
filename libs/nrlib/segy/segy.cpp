@@ -332,7 +332,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(storm_grid->GetNI());
   int ny = static_cast<int>(storm_grid->GetNJ());
-  float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
+  float dz = floor((storm_grid->GetZMax() - z0)/static_cast<float>(nz)+0.5);
   //float z0 = 0.0;
   //int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
