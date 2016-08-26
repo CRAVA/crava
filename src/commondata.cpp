@@ -3397,6 +3397,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                 err_text);
       }
     }
+
     // Calculate a preliminary scale factor to see if wavelet is in the same size order as the data. A large or small value might cause problems.
     if (seismic_data != NULL) { // If forward modeling, we have no seismic, can not prescale wavelet.
       std::string tmp_err_text;
@@ -3438,17 +3439,14 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       delete wavelet_pre_resampling;
       wavelet_pre_resampling = new Wavelet1D(wavelet);
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
-
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
-
     }
   }
 
   if (error == 0) {
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
-
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
 
       std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
@@ -3482,6 +3480,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                                                                    model_settings->getEstimateLocalShift(i_timelapse, j_angle),
                                                                    model_settings->getEstimateLocalScale(i_timelapse, j_angle),
                                                                    estimate_wavelet);
+
       if (model_settings->getEstimateSNRatio(i_timelapse,j_angle))
         sn_ratio = SNRatio_tmp;
     }
@@ -3565,9 +3564,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     else if (wavelet->getInFFTOrder()) { //Wavlet estimated
       wavelet->shiftFromFFTOrder(); //Shift wavelets so they are not on fft order
     }
-
     if (wavelet->getIsReal() == false)
       wavelet->invFFT1DInPlace();
+
   }
   return error;
 }
