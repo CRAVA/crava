@@ -666,12 +666,12 @@ void NRLib::WriteBinaryFloatArray(std::ostream& stream,
 
   switch (number_representation) {
   case END_BIG_ENDIAN:
-    for (int i = 0; begin != end; ++begin, ++i) {
+    for (long long i = 0; begin != end; ++begin, ++i) {
       WriteIEEEFloatBE(&buffer[4*i], *begin);
     }
     break;
   case END_LITTLE_ENDIAN:
-    for (int i = 0; begin != end; ++begin, ++i) {
+    for (long long i = 0; begin != end; ++begin, ++i) {
       WriteIEEEFloatLE(&buffer[4*i], *begin);
     }
     break;
