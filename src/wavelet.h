@@ -109,6 +109,9 @@ public:
   int           getNzp()      const {return nzp_;}
   float         getDz()       const {return dz_;}
   float         getScale()    const {return scale_;}
+
+  void          setPreScale(float pre_scale) {pre_scale_ = pre_scale;}
+
   virtual float getLocalStretch(int /*i*/,
                                 int /*j*/) {return 1.0f;} // note Not robust towards padding
 
@@ -250,6 +253,7 @@ protected:
 
 //NBNB The following parameters are NOT copied in copy constructor.
   float          scale_;
+  float          pre_scale_;
   Grid2D       * shiftGrid_;             // 2D grid of shift
   Grid2D       * gainGrid_;              // 2D grid of gain factors.
 
