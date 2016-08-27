@@ -902,6 +902,14 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 relative_padding);
             segy->ReportSizeOfVolume();
 
+          }
+          catch (NRLib::Exception & e) {
+            err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
+            err_text_tmp += NRLib::ToString(e.what());
+          }
+
+          if (err_text_tmp == "") {
+
             //H-REMOVE
             if (segy->getTrace(0)->GetTraceHeader().GetOffset() > 0 && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
               LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) 
@@ -912,13 +920,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
             }
 
-          }
-          catch (NRLib::Exception & e) {
-            err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
-            err_text_tmp += NRLib::ToString(e.what());
-          }
-
-          if (err_text_tmp == "") {
             bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
             bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
             bool regularize_if_needed = area_from_segy && storm_output;
