@@ -98,8 +98,6 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
 
   for (int i = 0; i < number_of_angles_; i++) {
 
-    LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data for angle %4.1f ", theta_deg_[i]);
-
     int seismic_type      = common_data->GetSeismicDataTimeLapse(this_timelapse_)[i]->GetSeismicType();
     bool is_segy          = false;
     bool is_storm         = false;
@@ -126,6 +124,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       seis_cubes_[i]->setType(FFTGrid::DATA);
     }
     else { //Resample storm or segy to seis_cube
+
+      LogKit::LogFormatted(LogKit::Low,"\nResampling seismic data for angle %4.1f ", theta_deg_[i]);
 
       double wall=0.0, cpu=0.0;
       TimeKit::getTime(wall,cpu);
