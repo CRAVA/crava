@@ -449,8 +449,8 @@ void TraceHeader::Read(std::istream& inFile, int lineNo)
       i=i+4;
     }
     else if (i ==(format_.GetOffsetLoc()-1)) {
-      offset_ = ReadBinaryInt(header);
-      i = i+4;
+      offset_ = ReadBinaryShort(header);
+      i = i+2;
     }
     else
     {
@@ -536,8 +536,8 @@ int TraceHeader::Write(std::ostream& outFile)
     }
     else if (i==(format_.GetOffsetLoc()-1))
     {
-      WriteBinaryInt(outFile, offset_);
-      i=i+4;
+      WriteBinaryShort(outFile, offset_);
+      i=i+2;
     }
     else
     {
@@ -655,7 +655,7 @@ void TraceHeader::SetCrossline(int crossLine)
   }
 }
 
-int TraceHeader::GetOffset() const
+short TraceHeader::GetOffset() const
 {
   int loc = format_.GetOffsetLoc();
   if (loc < 0) {
@@ -664,7 +664,7 @@ int TraceHeader::GetOffset() const
   return offset_;
 }
 
-void TraceHeader::SetOffset(int offset)
+void TraceHeader::SetOffset(short offset)
 {
   int loc = format_.GetOffsetLoc();
   if (loc > 0) {

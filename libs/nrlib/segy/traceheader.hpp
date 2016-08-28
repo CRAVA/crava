@@ -221,11 +221,11 @@ public:
 
   /// Get offset.
   /// returns #IMISSING if offset is not set in the format.
-  int GetOffset() const;
+  short GetOffset() const;
 
   /// Set offset.
   /// Does nothing if offset is not set in the format.
-  void SetOffset(int offset);
+  void SetOffset(short offset);
 
   /// Get current first coordinate (either UTM x or IL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
@@ -270,7 +270,7 @@ private:
   double utmy_;
   int inline_;
   int crossline_;
-  int offset_;
+  short offset_;
   short ns_;
   short dt_;
   int imissing_;
