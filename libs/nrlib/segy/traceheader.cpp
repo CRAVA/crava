@@ -201,14 +201,15 @@ TraceHeaderFormat::Init(int headerformat)
     std::stringstream format;
     error += "\n\nERROR: Undefined trace header format encountered. The recognized";
     error += "\nformat names and their associated trace header locations are:\n\n";
-    error += "Name             X     Y      IL    XL  CoorScal   CoorSys\n";
-    error += "----------------------------------------------------------\n";
+    error += "Name             X     Y      IL    XL  Offset CoorScal   CoorSys\n";
+    error += "-----------------------------------------------------------------\n";
     format << "SeisWorks   "
            << std::right
            << std::setw(6)  << SX_LOC
            << std::setw(6)  << SY_LOC
            << std::setw(8)  << INLINE_LOC
            << std::setw(6)  << CROSSLINE_LOC
+           << std::setw(6)  << 109
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();
@@ -220,6 +221,7 @@ TraceHeaderFormat::Init(int headerformat)
            << std::setw(6)  << SY_LOC
            << std::setw(8)  << 5
            << std::setw(6)  << CROSSLINE_LOC
+           << std::setw(6)  << 109
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();
@@ -231,6 +233,7 @@ TraceHeaderFormat::Init(int headerformat)
            << std::setw(6)  << SY_LOC
            << std::setw(8)  << 221
            << std::setw(6)  << CROSSLINE_LOC
+           << std::setw(6)  << 109
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();
@@ -242,6 +245,7 @@ TraceHeaderFormat::Init(int headerformat)
            << std::setw(6)  << 185
            << std::setw(8)  << 189
            << std::setw(6)  << 193
+           << std::setw(6)  << 37
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();
@@ -253,6 +257,7 @@ TraceHeaderFormat::Init(int headerformat)
            << std::setw(6)  << SY_LOC
            << std::setw(8)  << 181
            << std::setw(6)  << 185
+           << std::setw(6)  << 109
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();

@@ -3307,8 +3307,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     for (std::map<int,std::string>::const_iterator it = facies_map_.begin(); it != facies_map_.end(); it++) {
       facies_numbers.push_back(it->first);
     }
-  }    
-
+  }
 
   //
   // Write LOGS
