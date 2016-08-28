@@ -1339,7 +1339,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //  WriteWells(common_data->GetWells(), model_settings);
   //}
 
-  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
+  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode() && output_grids_elastic > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids\n");
 
     //From computePostMeanResidAndFFTCov()
@@ -1608,7 +1608,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Trend Cubes
-  if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+  if ((model_settings->getOutputGridsOther() & IO::TREND_CUBES) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Trend Cubes\n");
 
     const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
