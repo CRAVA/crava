@@ -1483,8 +1483,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     for (std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++) {
       facies_numbers.push_back(it->first);
     }
-    //facies_numbers_ = facies_numbers;
-    //n_facies_ = n_facies;
+
     blocked_log.resize(n_blocks_);
     for (unsigned int m = 0 ; m < n_blocks_ ; m++)
       blocked_log[m] = IMISSING;
@@ -3303,6 +3302,14 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << "WellOptimizedSyntSeis" << i << " UNK lin\n";
   }
 
+  std::vector<int> facies_numbers;
+  if (got_facies) {
+    for (std::map<int,std::string>::const_iterator it = facies_map_.begin(); it != facies_map_.end(); it++) {
+      facies_numbers.push_back(it->first);
+    }
+  }    
+
+
   //
   // Write LOGS
   //
@@ -3364,7 +3371,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     if (got_interval_log == true)
       file << std::setw(7) << (interval_log[i]==IMISSING  ? WELLMISSING : interval_log[i])  << "  ";
     if (got_facies)
-      file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
+      file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_numbers[facies_blocked_[i]])      << "  ";
     file << std::scientific;
     if (got_facies_prob) {
       for (int a = 0; a < n_facies; a++)
