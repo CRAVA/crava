@@ -36,18 +36,11 @@ public:
   ~ModelAVOStatic();
 
   const std::vector<Surface*>      & GetFaciesEstimInterval()       const { return facies_estim_interval_  ;}
-
-  /*const*/ std::vector<Surface *> & GetWaveletEstimInterval()  /*const*/ { return wavelet_estim_interval_ ;}
   /*const*/ std::vector<Surface *> & GetFaciesEstimInterval()   /*const*/ { return facies_estim_interval_  ;}
-  /*const*/ std::vector<Surface *> & GetWellMoveInterval()      /*const*/ { return well_move_interval_     ;}
 
   FFTGrid                          * GetErrCorr()                         { return err_corr_               ;}
 
   bool                               GetForwardModeling()                 { return forward_modeling_       ;}
-
-  //void             AddSeismicLogs(std::map<std::string, BlockedLogsCommon *> blocked_wells,
-  //                                std::vector<FFTGrid *>                     seis_cube,
-  //                                int                                        n_angles);                              // Changes wells
 
   static FFTGrid *        CreateFFTGrid(int nx,  int ny,  int nz,
                                         int nxp, int nyp, int nzp,
@@ -61,9 +54,7 @@ private:
 
   bool                      forward_modeling_;
 
-  std::vector<Surface *>    wavelet_estim_interval_;  ///< Grids giving the wavelet estimation interval.
   std::vector<Surface *>    facies_estim_interval_;   ///< Grids giving the facies estimation intervals.
-  std::vector<Surface *>    well_move_interval_;      ///< Grids giving the facies estimation intervals.
 
   FFTGrid                 * err_corr_;
 

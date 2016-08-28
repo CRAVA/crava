@@ -304,15 +304,19 @@ CommonData::~CommonData() {
 
   // facies_estim_interval_
   for (size_t i = 0; i < facies_estim_interval_.size(); i++) {
-    delete facies_estim_interval_[i];
-    facies_estim_interval_[i] = NULL;
+    if (facies_estim_interval_[i] != NULL) {
+      delete facies_estim_interval_[i];
+      facies_estim_interval_[i] = NULL;
+    }
   }
 
   // prior_facies_prob_cubes_
   for (size_t i = 0; i < prior_facies_prob_cubes_.size(); i++) {
     for (size_t j = 0; j < prior_facies_prob_cubes_[i].size(); j++) {
-      delete prior_facies_prob_cubes_[i][j];
-      prior_facies_prob_cubes_[i][j] = NULL;
+      if (prior_facies_prob_cubes_[i][j] != NULL) {
+        delete prior_facies_prob_cubes_[i][j];
+        prior_facies_prob_cubes_[i][j] = NULL;
+      }
     }
   }
 
@@ -331,8 +335,10 @@ CommonData::~CommonData() {
 
   // temporary_wavelets_
   for (size_t i = 0; i < temporary_wavelets_.size(); i++) {
-    delete temporary_wavelets_[i];
-    temporary_wavelets_[i] = NULL;
+    if (temporary_wavelets_[i] != NULL) {
+      delete temporary_wavelets_[i];
+      temporary_wavelets_[i] = NULL;
+    }
   }
 
   // wavelets_
