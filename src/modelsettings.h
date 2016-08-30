@@ -152,6 +152,7 @@ public:
   bool                             getEstimateXYPadding(void)           const { return estimateXYPadding_                         ;}
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
+  float                            getOutputOffset(void)                const { return output_offset_                             ;}
   const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
@@ -398,6 +399,7 @@ public:
   void setEstimateZPadding(bool estimateZPadding)         { estimateZPadding_         = estimateZPadding         ;}
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
+  void setOutputOffset(float output_offset)               { output_offset_            = output_offset            ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
@@ -466,7 +468,6 @@ public:
 
   void addDefaultVintage(void);
   void addDefaultTimeGradientSettings(void);
-  void addDefaultSegyOffset(void)                         { segyOffset_.push_back(0.0f)                          ;}
   void addDefaultAngularCorr(void)                        { angularCorr_.push_back(new GenExpVario(1, 10*static_cast<float>(NRLib::Pi/180.0)));} // Power=1 range=10deg
   void setDefaultUseLocalNoise(void)                      { useLocalNoise_ = false                               ;}
   double getDefaultCorrelationVpVs()                      { double corr = 1/std::sqrt(2.0f); return(corr)        ;}
@@ -584,6 +585,7 @@ private:
   SegyGeometry                    * geometry_;                   // area parameters
   std::vector<float>                segyOffset_;                 // Starttime for SegY cubes, time lapse
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
+  float                             output_offset_;              // Offset used for writing segy cubes, from model file or from first seismic cube
   TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   std::vector<TraceHeaderFormat*>   traceHeaderFormatBackground_;// traceheader per background

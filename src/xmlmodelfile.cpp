@@ -756,7 +756,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
     modelSettings_->addSegyOffset(value);
   else
-    modelSettings_->addDefaultSegyOffset();
+    modelSettings_->addSegyOffset(RMISSING); //Use offset in segy-cube
 
   modelSettings_->clearTimeLapse();
   inputFiles_->clearTimeLapse();

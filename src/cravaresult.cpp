@@ -1401,7 +1401,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1435,7 +1434,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                        time_depth_mapping,
                        prefix,
                        IO::PathToBackground(),
-                       *model_settings->getTraceHeaderFormatOutput(),
                        true);
     }
   }
@@ -1802,7 +1800,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1832,7 +1829,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                         time_depth_mapping,
                         prefix,
                         IO::PathToBackground(),
-                        *model_settings->getTraceHeaderFormatOutput(),
                         true);
     }
   }
@@ -1859,14 +1855,11 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
 
     int n_angles              = model_settings->getNumberOfAngles(i);
     std::vector<float> angles = model_settings->getAngle(i);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
     for (int j = 0; j < n_angles; j++) {
       std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
       std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
       std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-      if (offset.size() > 0 && offset[j] < 0)
-        offset[j] = model_settings->getSegyOffset(i);
 
       int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
 
@@ -2131,37 +2124,6 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
 
 }
 
-//StormContGrid *
-//CravaResult::CreateStormGrid(const Simbox       & simbox,
-//                             NRLib::Grid<float> * grid)
-//{
-//  if (grid != NULL) {
-//    int nx = grid->GetNI();
-//    int ny = grid->GetNJ();
-//    int nz = grid->GetNK();
-//
-//    StormContGrid * storm = new StormContGrid(simbox, nx, ny, nz);
-//
-//    for (int i = 0; i < nx; i++) {
-//      for (int j = 0; j < ny; j++) {
-//        for (int k = 0; k < nz; k++) {
-//          float value = grid->GetValue(i, j, k);
-//          storm->SetValue(i, j, k, value);
-//        }
-//      }
-//    }
-//
-//    //Not needed anymore
-//    delete grid;
-//
-//    return(storm);
-//  }
-//
-//  StormContGrid * storm = new StormContGrid();
-//  return(storm);
-//
-//}
-
 void CravaResult::CreateStormGrid(StormContGrid & grid_new,
                                   FFTGrid       * fft_grid,
                                   bool            allow_delete)
@@ -2191,7 +2153,6 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    GridMapping             * depth_mapping,
                                    const std::string       & prefix,
                                    const std::string       & path,
-                                   const TraceHeaderFormat & thf,
                                    bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {

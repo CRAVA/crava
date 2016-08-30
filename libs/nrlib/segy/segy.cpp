@@ -223,6 +223,7 @@ SegY::SegY(const std::string               & fileName,
   unsigned long long fSize = FindFileSize(file_name_);
   n_traces_     = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
                                           static_cast<double>(datasize_*nz_+240.0)) );
+
 }
 
 
@@ -337,10 +338,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   int nx = static_cast<int>(storm_grid->GetNI());
   int ny = static_cast<int>(storm_grid->GetNJ());
   float dz = floor((storm_grid->GetZMax() - z0)/static_cast<float>(nz)+0.5);
-  //float z0 = 0.0;
-  //int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
-  //SegY segyout(file_name,0,nz,dz,header);
   trace_header_format_ = trace_header_format;
   z0_ = z0;
   nz_ = nz;
@@ -757,6 +755,12 @@ SegY::ReadTrace(const Volume * volume,
   duplicateHeader = ReadHeader(traceHeader);
   if (writevalues == 1)
     traceHeader.WriteValues();
+
+  //Set offset from traceheader if it is not set
+  if (z0_ == segyRMISSING) {
+    z0_ = static_cast<float>(traceHeader.GetOffset());
+    LogKit::LogMessage(LogKit::Low, "\nUsing offset " + NRLib::ToString(z0_) + " taken from trace header.\n");
+  }
 
   if (outsideTopBot != NULL) {
     outsideTopBot[0] = 0; // > 0 indicates top error

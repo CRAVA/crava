@@ -779,15 +779,20 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
   //Skip if forward-modeling
   if (forward_modeling_ == true) {
     estimation_simbox = full_inversion_simbox;
+    model_settings->setOutputOffset(0.0);
     return(true);
   }
 
-  if (timelapse_seismic_files == 0)
+  if (timelapse_seismic_files == 0) {
+    model_settings->setOutputOffset(0.0);
     return(true);
+  }
 
   //Skip if estimation mode and wavelet/noise is not set for estimation.
-  if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
+  if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false) {
+    model_settings->setOutputOffset(0.0);
     return(true);
+  }
 
   int n_timelapses = model_settings->getNumberOfTimeLapses();
   seismic_data.resize(n_timelapses);
@@ -808,12 +813,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
         seismic_data[this_timelapse].resize(n_angles);
 
-        if (offset[i] < 0)
-          offset[i] = model_settings->getSegyOffset(this_timelapse);
-
         std::string file_name = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(file_name);
-
 
         if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
@@ -868,8 +869,13 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           grid->endAccess();
 
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
+
         }
         else { //Try to read as segy
+
+          //If offset is not set in modelfile (=RMISSING), it will be read from the segy file in ReadAllTraces
+          if (offset[i] < 0)
+            offset[i] = model_settings->getSegyOffset(this_timelapse);
 
           std::string err_text_tmp = "";
 
@@ -930,14 +936,18 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
               model_settings->setSegyDz(segy->GetDz());
             }
 
-            if (segy->getTrace(0) != NULL && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0 && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
+            //Check and report if offset is different from segy file and model file
+            if (segy->getTrace(0) != NULL && offset[i] > -1 && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
               LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i])
                                  + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
                                  + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
-
               TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
                                 + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
             }
+
+            //Set offset for writing segy files
+            if (i == 0)
+              model_settings->setOutputOffset(segy->GetTop());
 
           }
           else {
@@ -990,6 +1000,9 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
   } //n_timeLapses
 
+  if (model_settings->getOutputOffset() == RMISSING) //No segy-cubes
+    model_settings->setOutputOffset(0.0);
+
   Timings::setTimeReadSeismic(wall,cpu);
 
   if (err_text != "") {
@@ -1032,7 +1045,7 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
     int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
     std::vector<float> angles = model_settings->getAngle(this_timelapse);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
+
 
     for (int i = 0; i < n_angles; i++) {
 
@@ -1041,13 +1054,11 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
       if (seismic_data_angle->GetSeismicType() == SeismicStorage::SEGY) {
 
-        if (offset[i] < 0)
-          offset[i] = model_settings->getSegyOffset(this_timelapse);
-
-        SegY * segy = seismic_data_angle->GetSegY();
+        SegY * segy  = seismic_data_angle->GetSegY();
+        float offset = segy->GetTop();
 
         CheckThatDataCoverGrid(segy,
-                               offset[i],
+                               offset,
                                top_grid,
                                bot_grid,
                                guard_zone,
@@ -1411,7 +1422,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                   Number of invalids points:                                   \n");
     LogKit::LogFormatted(LogKit::Low,"Well                    Merges           Vp   Vs  Rho            synthVs/Corr    Deviated/Angle \n");
-    LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------------------------------------------------\n");
     for (int i = 0; i < n_wells; i++) {
       if (valid_index[i])
         LogKit::LogFormatted(LogKit::Low,"%-23s %6d         %4d %4d %4d             %3s / %5.3f      %3s / %4.1f\n",
@@ -6134,7 +6145,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
         traceHeaderFormats.push_back(model_settings->getTraceHeaderFormat());
       }
       segy = new SegY(file_name,
-                      offset,
+                      offset, //If offset is not set in modelfile (-1), it will be read from the file in ReadAllTraces
                       traceHeaderFormats,
                       true); // Add standard formats to format search
     }
@@ -7200,10 +7211,11 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                           failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
       time_depth_mapping->makeTimeDepthMapping(velocity, &simbox);
 
-      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp.
+      //H-TODO This should be moved to cravaresults
+      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string base_name  = IO::FileTimeToDepthVelocity();
         std::string sgri_label = std::string("Time-to-depth velocity");
-        float       offset     = model_settings->getSegyOffset(0); //Only allow one segy offset for time lapse data
+        float offset           = model_settings->getOutputOffset();
 
         int nx = static_cast<int>(velocity->GetNI());
         int ny = static_cast<int>(velocity->GetNJ());
@@ -7600,7 +7612,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         if (back_file.size() > 0) {
           const SegyGeometry      * dummy1 = NULL;
           const TraceHeaderFormat * thf    = model_settings->getTraceHeaderFormatBackground(j);
-          const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used.
+          const float               offset = model_settings->getSegyOffset(0);
           std::string err_text_tmp = "";
 
           //ReadGridFromFile uses parameter vector(intervals)
