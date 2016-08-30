@@ -4758,7 +4758,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     std::stringstream entry;
       entry
         << std::fixed
-        << std::left     << "  "
+        << std::left
         << std::setw(14) << wells[w]->GetWellName() << " "
         << std::right
         << std::setprecision(2)
