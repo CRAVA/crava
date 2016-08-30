@@ -76,7 +76,7 @@ TraceHeaderFormat::TraceHeaderFormat(int headerformat,
   if (utmyLoc != IMISSING)
   {
     utmy_loc_ = utmyLoc;
-  standard_type_ = false;
+    standard_type_ = false;
   }
   if (inlineLoc != IMISSING)
   {
@@ -375,10 +375,10 @@ TraceHeaderFormat::IsDifferent(TraceHeaderFormat inFormat)
 void TraceHeaderFormat::WriteValues() const
 {
   LogKit::LogFormatted(LogKit::Medium,"This traceheader format has the following values:\n");
-  LogKit::LogFormatted(LogKit::Medium," utmxLoc utmyLoc inlineLoc crosslineLoc scalcoLoc \n");
-  LogKit::LogFormatted(LogKit::Medium,"--------------------------------------------------\n");
-  LogKit::LogFormatted(LogKit::Medium,"%5d  %5d   %5d         %5d     %5d    \n",
-                                       utmx_loc_, utmy_loc_, inline_loc_, crossline_loc_, scal_co_loc_);
+  LogKit::LogFormatted(LogKit::Medium," utmxLoc utmyLoc inlineLoc crosslineLoc offsetLoc scalcoLoc \n");
+  LogKit::LogFormatted(LogKit::Medium,"------------------------------------------------------------\n");
+  LogKit::LogFormatted(LogKit::Medium,"%5d   %5d    %5d        %5d      %5d     %5d      \n",
+                                       utmx_loc_, utmy_loc_, inline_loc_, crossline_loc_, offset_loc_, scal_co_loc_);
 }
 
 
@@ -574,17 +574,17 @@ void TraceHeader::WriteValues()
   float lms  = static_cast<float>(ns_-1)*dtms;
   if (format_.GetScalCoLoc() == -1) {
     LogKit::LogFormatted(LogKit::High,"\n\nThe following header information was extracted from the first trace:\n\n");
-    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy        IL    XL      Samples   dt(ms)  Length(ms)\n");
-    LogKit::LogFormatted(LogKit::High,"-------------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %5d %5d       %6d     %4.2f     %7.2f\n",
-                         utmx_, utmy_, inline_, crossline_, ns_, dtms, lms);
+    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy        IL    XL   Offset   Samples   dt(ms)  Length(ms)\n");
+    LogKit::LogFormatted(LogKit::High,"------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %5d %5d    %5d    %6d     %4.2f     %7.2f\n",
+                         utmx_, utmy_, inline_, crossline_, offset_, ns_, dtms, lms);
   }
   else {
     LogKit::LogFormatted(LogKit::High,"\n\nThe following header information was extracted from the first trace:\n\n");
-    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy     CoScal        IL    XL      Samples   dt(ms)  Length(ms)\n");
-    LogKit::LogFormatted(LogKit::High,"------------------------------------------------------------------------------------\n");
-    LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %6.1f     %5d %5d       %6d     %4.2f     %7.2f\n",
-                         utmx_, utmy_, scal_co_, inline_, crossline_, ns_, dtms, lms);
+    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy     CoScal        IL    XL   Offset   Samples   dt(ms)  Length(ms)\n");
+    LogKit::LogFormatted(LogKit::High,"-----------------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %6.1f     %5d %5d    %5d    %6d     %4.2f     %7.2f\n",
+                         utmx_, utmy_, scal_co_, inline_, crossline_, offset_, ns_, dtms, lms);
   }
 }
 
@@ -660,20 +660,20 @@ void TraceHeader::SetCrossline(int crossLine)
   }
 }
 
-short TraceHeader::GetOffset() const
+float TraceHeader::GetOffset() const
 {
   int loc = format_.GetOffsetLoc();
   if (loc < 0) {
-    return imissing_;
+    return rmissing_;
   }
-  return offset_;
+  return static_cast<float>(offset_);
 }
 
-void TraceHeader::SetOffset(short offset)
+void TraceHeader::SetOffset(float offset)
 {
   int loc = format_.GetOffsetLoc();
   if (loc > 0) {
-    offset_ = offset;
+    offset_ = static_cast<short>(offset);
   }
 }
 

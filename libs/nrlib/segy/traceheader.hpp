@@ -221,11 +221,11 @@ public:
 
   /// Get offset.
   /// returns #IMISSING if offset is not set in the format.
-  short GetOffset() const;
+  float GetOffset() const;
 
   /// Set offset.
   /// Does nothing if offset is not set in the format.
-  void SetOffset(short offset);
+  void SetOffset(float offset);
 
   /// Get current first coordinate (either UTM x or IL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
