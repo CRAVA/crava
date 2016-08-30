@@ -5756,8 +5756,22 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setMinSamplingDensity(value);
   if(parseValue(root, "minimum-horizontal-resolution", value, errTxt) == true)
     modelSettings_->setMinHorizontalRes(value);
-  if(parseValue(root, "white-noise-component", value, errTxt) == true)
+  if(parseValue(root, "white-noise-component", value, errTxt) == true) {
+    if(value <= 0.0) {
+      std::string err_msg = "Error in <white-noise-component>: Value must be greater than 0, found "+NRLib::ToString(value)+".\n";
+      errTxt += err_msg;
+    }
+    else if (value >= 1.0) {
+      std::string err_msg = "Error in <white-noise-component>: Value must be smaller than 1, found "+NRLib::ToString(value)+".\n";
+      errTxt += err_msg;
+    }
+    else if (value > 0.2)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The value set in <white-noise-component>, "+NRLib::ToString(value)+" is larger than 0.2. This is an extreme choice, so be sure that you mean it.\n");
+    else if (value < 0.01)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The value set in <white-noise-component>, "+NRLib::ToString(value)+" is less than 0.01. This is an extreme choice, so be sure that you mean it.\n");
+
     modelSettings_->setWNC(value);
+  }
   std::string filename;
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
