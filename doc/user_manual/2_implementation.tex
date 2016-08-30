@@ -167,7 +167,7 @@ omitted as it often give parameter over- and undershooting away
 from wells.
 
 \subsubsection{Multizone background model}
-Multizone background model is achieved by doing a \kw{multiple-intervals} inversion and with estimating background models activated. The surfaces are set under \kw{output-volume}. When estimating the multizone background model the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local backround model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The settings for interval uncertainty and erosion priority are set under \kw{multiple-intervals}. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
+Multizone background model is achieved by doing a \kw{multiple-intervals} inversion and with estimating background models activated. The surfaces are set under \kw{output-volume}. When estimating the multizone background model the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local background model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The settings for interval uncertainty and erosion priority are set under \kw{multiple-intervals}. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
 
 \subsubsection{Background model from rock physics}
 When rock physics models are used, the background model is generated using these. Each facies is defined as a \kw{rock} possibly containing trends using the rock physics template model described in \autoref{sec:rockPhysics}. The resulting background model is generated as a weighted average of the rock models, where the weights are the corresponding facies \kw{prior-probabilities}. 
@@ -228,7 +228,7 @@ grid, and then do standard correlation estimation using
 \end{equation}
 
 The parameter covariance matrix is simply estimated by using the
-covariances at time lag 0. When rock physics models are used, the parameter covariance matrix is calculated from the expectation vector and parameter covariance matrix for each rock model weighted with the corresponding prior facies probability using standard statistical models. If trends are included in the rock physics models, the parameter covariance matrix is calculated in each reservoir position. The resulting parameter covariance matrix is then calculated as the average over these coveraince matrices. 
+covariances at time lag 0. When rock physics models are used, the parameter covariance matrix is calculated from the expectation vector and parameter covariance matrix for each rock model weighted with the corresponding prior facies probability using standard statistical models. If trends are included in the rock physics models, the parameter covariance matrix is calculated in each reservoir position. The resulting parameter covariance matrix is then calculated as the average over these covariance matrices. 
 
 In \autoref{fig:parameter-correlation}, we
 show cross plots of the parameter residuals ($x_i - \bar{x}$) for a
@@ -338,7 +338,7 @@ d(\omega)\bar{c}(\omega) = w(\omega)|c(\omega)|^2
 Note that the convolution has disappeared, and the equation can be
 solved for each frequency $\omega$. We recognise the left hand side as the 
 spectre of the cross-correlation between data
-and reflection coefficients. And the left hand side as the wavelet multiplied with 
+and reflection coefficients. And the right hand side as the wavelet multiplied with 
 spectre of the auto-correlation of the reflection coefficients. 
 This can be obtained by dividing the spectre of the cross-correlation with the 
 spectre of the auto-correlation. 
@@ -405,7 +405,7 @@ but whereas this matrix had dimension $(n\cdot n_\theta)^2$ before the
 Fourier-transform, the matrix we must invert here is reduced to
 dimension $n_\theta^2$, where $n_\theta$ is the number of angle
 stacks. Since the time for a matrix inversion is almost cubic in size,
-it is much faster to invert $n$ of these small matrixes than the one
+it is much faster to invert $n$ of these small matrices than the one
 large. After solving for $\vect{\tilde{m}}(\omega,\vect{k})$, we do
 the inverse transform of this to obtain the distribution for
 $\vect{m}$. The same does of course hold when we are using local
@@ -563,7 +563,7 @@ The rock physics template model is very flexible, and requires an equally flexib
 \end{enumerate}
 We handle these by a dual set of corresponding classes, the distribution classes and the sample classes. We have the set of DistributionFluid, DistributionSolid etc. base classes. These describe the prior distribution for different elements. From these, we can generate samples of the element. These samples are of base classes Fluid, Solid etc., and correspond directly to the Distribution-classes.
 
-Under the base classes, we have a set of derived classes, based on different rock physics models for mixing. These aoos exist on both distribution and sample version. Thus, the tree-like structure of a rock physics template model is mirrored here, with each prior distribution being built as a tree of Distribution... objects, and capable of generating a sample that is a similar tree of sample objects. The sample tree computes it properties as it is built, so the top level knows the resulting elastic parameters.
+Under the base classes, we have a set of derived classes, based on different rock physics models for mixing. These also exist on both distribution and sample version. Thus, the tree-like structure of a rock physics template model is mirrored here, with each prior distribution being built as a tree of Distribution... objects, and capable of generating a sample that is a similar tree of sample objects. The sample tree computes it properties as it is built, so the top level knows the resulting elastic parameters.
 
 A feature of the rock physics implementation is that we can update a sample to generate a new sample. This new sample will be highly correlated with the initial sample. This is utilised to generate synthetic well data (for filtering), and when doing 4D modelling. In order to do this updating, each sample stores all the quantiles for the randomly drawn parameters in the sample. When updating a sample, each quantile $u$ is perturbated to a quantile $u_p$ as follows:
 \begin{eqnarray}
@@ -571,7 +571,7 @@ x = \Phi^{-1}(u) \\
 x_p = x + \epsilon \\
 u_p = \Phi(x_p).
 \end{eqnarray}
-Here, $\epsilon$ is normally distributed with expectation 0, and a variance based on the desired correlation. This sampling models the realtion between the existing and new value as a Gaussian pair copula, with a given correlation parameter.
+Here, $\epsilon$ is normally distributed with expectation 0, and a variance based on the desired correlation. This sampling models the relation between the existing and new value as a Gaussian pair copula, with a given correlation parameter.
 
 The correlation parameter is controlled in different ways, depending on whether we are generating synthetic wells or setting up a 4D model. In the former case, we use a constant correlation for all random parameters in the sample-tree. This correlation is tuned to obtain the desired correlation between neighbouring samples. In the 4D setting, each random parameter is assigned a yearly correlation (on the distribution level). From this, the correlation for the relevant time step is computed and used for updating. By setting most parameters perfectly correlated, this allows us to update only parameters that are changing in a 4D setting, such as saturation.
 
