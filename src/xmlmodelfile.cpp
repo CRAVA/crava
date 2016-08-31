@@ -756,7 +756,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
     modelSettings_->addSegyOffset(value);
   else
-    modelSettings_->addSegyOffset(RMISSING); //Use offset in segy-cube
+    modelSettings_->addSegyOffset(RMISSING); //Take offset from segy-cube
 
   modelSettings_->clearTimeLapse();
   inputFiles_->clearTimeLapse();
@@ -947,7 +947,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "start-time", fVal, errTxt) == true)
     modelSettings_->addLocalSegyOffset(fVal);
   else
-    modelSettings_->addLocalSegyOffset(-1);
+    modelSettings_->addLocalSegyOffset(RMISSING);
 
   TraceHeaderFormat * thf = NULL;
   if(parseTraceHeaderFormat(root, "segy-format", thf, errTxt) == true) {
@@ -5304,6 +5304,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("segy-format");
   legalCommands.push_back("segy");
+  legalCommands.push_back("segy-start-time");
   legalCommands.push_back("storm");
   legalCommands.push_back("ascii");
   legalCommands.push_back("sgri");
@@ -5328,6 +5329,12 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
     formatFlag += IO::SGRI;
   if(parseBool(root, "crava", useFormat, errTxt) == true && useFormat == true)
     formatFlag += IO::CRAVA;
+
+  float value = RMISSING;
+  if(parseValue(root,"segy-start-time", value, errTxt) == true) {
+    modelSettings_->setOutputOffset(value);
+    modelSettings_->setMatchOutputInputSegy(false);
+  }
 
   if(formatFlag > 0 || stormSpecified == true)
     modelSettings_->setOutputGridFormat(formatFlag);

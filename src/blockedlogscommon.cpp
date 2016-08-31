@@ -3067,7 +3067,7 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
     n_angles_ = n_angles;
 
   if (type == "SEISMIC_DATA") {
-    //Real seismic data is shfited up by half a cell to match inversion. Shift back
+    //Real seismic data is shifted up by half a cell to match inversion. Shift back
     Utils::ShiftTrace(blocked_log,false);
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }

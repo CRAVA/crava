@@ -683,11 +683,14 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
   float dz_output_r = float(floor((outgrid->GetLZ()/outgrid->GetNK())*10)/10);
   float dz_input    = floor(model_settings->getSegyDz()*10)/10;
   int nz_output;
-  if (dz_output_r == dz_input) {
+
+  //We do not use nz from input segy if output offset is specified seperately in the model file
+  if (dz_output_r == dz_input && model_settings->getMatchOutputInputSegy() == true) {
     nz_output = model_settings->getSegyNz();
   }
   else {
     float dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
+
     if (dz_output < 1.0)
       dz_output = 1.0;
     nz_output       = int(ceil((outgrid->GetZMax() - z0)/dz_output));

@@ -650,6 +650,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument 'yes' or 'no'
    \item \Default
  \elist
+ 
+\subparagraph{\hbracket{segy-start-time}}\rnewkw{segy-start-time}{segy-start-time2}
+ \slist
+   \item \Description Offset value used for the writing segy cubes
+   \item \Argument value
+   \item \Default Taken from input segy cubes, either from \kw{segy-start-time} under \kw{survey} or read from first segy cube. Mostly relevant if forward mode or estimation mode without segy seismic.
+ \elist
 
 \subparagraph{\hbracket{storm}}\newkw{storm}
  \slist
@@ -1370,7 +1377,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description Global start time for segy cubes. This is used if no individual time is given for a segy-cube. Output segy cubes will be written with this offset value.
    \item \Argument Value
-   \item \Default Taken from the segy cube of the first angle. If there are no segy cubes, the default will be 0.
+   \item \Default Taken from the segy cube of the first angle. If there are no segy cubes, the offset value will be taken from the top of the inversion/estimation interval.
  \elist
 
 \subsection{\hbracket{angle-gather}\necessary}\newkw{angle-gather}

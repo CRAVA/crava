@@ -153,6 +153,7 @@ public:
   bool                             getEstimateZPadding(void)            const { return estimateZPadding_                          ;}
   float                            getSegyOffset(int i)                 const { return segyOffset_[i]                             ;}
   float                            getOutputOffset(void)                const { return output_offset_                             ;}
+  bool                             getMatchOutputInputSegy(void)        const { return match_output_input_segy_                   ;}
   const std::vector<float>       & getLocalSegyOffset(int i)            const { return timeLapseLocalSegyOffset_[i]               ;}
   float                            getPundef(void)                      const { return p_undef_                                   ;}
   double                           getLzLimit(void)                     const { return lzLimit_                                   ;}
@@ -400,6 +401,7 @@ public:
   void addSegyOffset(float segyOffset)                    { segyOffset_.push_back(segyOffset)                    ;}
   void addLocalSegyOffset(float segyOffset)               { localSegyOffset_.push_back(segyOffset)               ;}
   void setOutputOffset(float output_offset)               { output_offset_            = output_offset            ;}
+  void setMatchOutputInputSegy(bool match_output_input)   { match_output_input_segy_  = match_output_input       ;}
   void setPundef(float p_undef)                           { p_undef_                  = p_undef                  ;}
   void setLzLimit(double lzLimit)                         { lzLimit_                  = lzLimit                  ;}
   void setTimeDTop(double time_dTop)                      { time_dTop_                = time_dTop                ;}
@@ -586,6 +588,7 @@ private:
   std::vector<float>                segyOffset_;                 // Starttime for SegY cubes, time lapse
   std::vector<float>                localSegyOffset_;            // Starttime for SegY cubes per angle.
   float                             output_offset_;              // Offset used for writing segy cubes, from model file or from first seismic cube
+  bool                              match_output_input_segy_;    // If dz of output and input are equal, we match the output segy with input segy
   TraceHeaderFormat               * traceHeaderFormat_;          // traceheader of input
   std::vector<TraceHeaderFormat*>   localTHF_;                   // traceheader per angle
   std::vector<TraceHeaderFormat*>   traceHeaderFormatBackground_;// traceheader per background
