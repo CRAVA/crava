@@ -1320,7 +1320,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
     }
     //No segy cubes and offset not given in modelfile. Take offset from topsurface.
-    else if (model_settings->getOutputOffset() == RMISSING) { 
+    else if (model_settings->getOutputOffset() == RMISSING) {
       float offset = static_cast<float>(floor(simbox.getTopZMin()));
       model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
       LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");

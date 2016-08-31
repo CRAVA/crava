@@ -819,6 +819,10 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
         std::string file_name = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(file_name);
 
+        //If offset is not set in modelfile (=RMISSING), it will be read from the segy file in ReadAllTraces
+        if (offset[i] == RMISSING)
+          offset[i] = model_settings->getSegyOffset(this_timelapse);
+
         if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
           std::string err_text_tmp = "";
@@ -875,10 +879,6 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
         }
         else { //Try to read as segy
-
-          //If offset is not set in modelfile (=RMISSING), it will be read from the segy file in ReadAllTraces
-          if (offset[i] == RMISSING)
-            offset[i] = model_settings->getSegyOffset(this_timelapse);
 
           std::string err_text_tmp = "";
 
@@ -964,6 +964,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
         } //SEGY
+
+        //Situation if segy-start time is given, without seismic data on segy format
+        if (model_settings->getOutputOffset() == RMISSING && offset[i] != RMISSING)
+          model_settings->setOutputOffset(offset[i]);
+
       } //n_angles
 
       //Logging if seismic data is on segy format
