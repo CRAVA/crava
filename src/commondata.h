@@ -1060,6 +1060,10 @@ private:
   void               PrintSettings(const ModelSettings    * model_settings,
                                    const InputFiles       * input_files) const;
 
+  void               ReportBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_common,
+                                       const std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                       const std::vector<std::string>                   & discrete_logs_to_be_blocked) const;
+
   void               WriteOutputSurfaces(ModelSettings * model_settings,
                                          Simbox        & simbox) const;
 
