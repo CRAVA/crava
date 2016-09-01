@@ -45,7 +45,7 @@ Timings::reportAll(LogKit::MessageLevels logLevel)
   reportOne("Parameter filter                 ", c_filtering_         , w_filtering_         , c_total_, w_total_,logLevel);
   reportOne("Facies probabilities             ", c_facies_            , w_facies_            , c_total_, w_total_,logLevel);
   reportOne("Kriging                          ", c_kriging_tot        , w_kriging_tot        , c_total_, w_total_,logLevel);
-  reportOne("Combining result                 ", c_combine_results_   , w_combine_results_   , c_total_, w_total_,logLevel);
+  reportOne("Combining results                ", c_combine_results_   , w_combine_results_   , c_total_, w_total_,logLevel);
   reportOne("Writing results                  ", c_write_results_     , w_write_results_     , c_total_, w_total_,logLevel);
   reportOne("Dummy                            ", c_dummy_             , w_dummy_             , c_total_, w_total_,logLevel);
   reportOne("Miscellaneous                    ", c_rest_              , w_rest_              , c_total_, w_total_,logLevel);
@@ -179,27 +179,27 @@ Timings::setTimePriorCorrelation(double& wall, double& cpu)
 }
 
 void
-Timings::setTimeStochasticModel(double& wall, double& cpu)
+Timings::addTimeStochasticModel(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
-  w_stochasticModel_ = wall;
-  c_stochasticModel_ = cpu;
+  w_stochasticModel_ += wall;
+  c_stochasticModel_ += cpu;
 }
 
 void
-Timings::setTimeInversion(double& wall, double& cpu)
+Timings::addTimeInversion(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
-  w_inversion_ = wall;
-  c_inversion_ = cpu;
+  w_inversion_ += wall;
+  c_inversion_ += cpu;
 }
 
 void
-Timings::setTimeSimulation(double& wall, double& cpu)
+Timings::addTimeSimulation(double& wall, double& cpu)
 {
   TimeKit::getTime(wall,cpu);
-  w_simulation_ = wall;
-  c_simulation_ = cpu;
+  w_simulation_ += wall;
+  c_simulation_ += cpu;
 }
 
 void

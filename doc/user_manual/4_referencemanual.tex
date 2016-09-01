@@ -157,7 +157,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subparagraph{\hbracket{time-value}} \newkw{time-value}
  \slist
    \item \Description Value giving the top time for the inversion interval. This or \kw{time-file} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist
 
@@ -185,7 +185,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value2}
 \slist
    \item \Description Value giving the base time for the inversion interval. This or \rkw{time-file}{time-file2} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
 \elist
 
@@ -277,7 +277,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value3}
  \slist
    \item \Description Value giving the top time for the inversion interval. This or \rkw{time-file}{time-file3} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist
 
@@ -320,7 +320,7 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
 \subsubparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value3}
  \slist
    \item \Description Value giving the top time for the inversion interval. This or \rkw{time-file}{time-file3} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist
 
@@ -649,6 +649,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Description Should grid output come as segy?
    \item \Argument 'yes' or 'no'
    \item \Default
+ \elist
+ 
+\subparagraph{\hbracket{segy-start-time}}\rnewkw{segy-start-time}{segy-start-time2}
+ \slist
+   \item \Description Offset value used for the writing segy cubes
+   \item \Argument value
+   \item \Default Taken from input segy cubes, either from \kw{segy-start-time} under \kw{survey} or read from first segy cube. Mostly relevant if forward mode or estimation mode without segy seismic.
  \elist
 
 \subparagraph{\hbracket{storm}}\newkw{storm}
@@ -1368,9 +1375,9 @@ the vertical sampling interval we find the the number of parameters that is esti
 
  \subsection{\hbracket{segy-start-time}}\newkw{segy-start-time}
  \slist
-   \item \Description Global start time for segy cubes. This is used if no individual time is given for a segy-cube.
+   \item \Description Global start time for segy cubes. This is used if no individual time is given for a segy-cube. Output segy cubes will be written with this offset value.
    \item \Argument Value
-   \item \Default 0
+   \item \Default Taken from the segy cube of the first angle. If there are no segy cubes, the offset value will be taken from the top of the inversion/estimation interval.
  \elist
 
 \subsection{\hbracket{angle-gather}\necessary}\newkw{angle-gather}
@@ -1643,7 +1650,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \paragraph{\hbracket{time-value}}\rnewkw{time-value}{time-value3}
  \slist
    \item \Description Value giving the top time used the wavelet estimation. This or \rkw{time-file}{time-file3} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist 
 
@@ -1664,7 +1671,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \paragraph{\hbracket{time-value}} \rnewkw{time-value}{time-value4}
  \slist
    \item \Description Value giving the base time used the wavelet estimation. This or \rkw{time-file}{time-file3} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist
   
@@ -2769,7 +2776,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subparagraph{\hbracket{time-value}}\rnewkw{time-value}{time-value4}
  \slist
    \item \Description Value giving the top time used the facies estimation. This or \rkw{time-file}{time-file4} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist 
 
@@ -2790,7 +2797,7 @@ the vertical sampling interval we find the the number of parameters that is esti
 \subparagraph{\hbracket{time-value}} \rnewkw{time-value}{time-value5}
  \slist
    \item \Description Value giving the base time used the facies estimation. This or \rkw{time-file}{time-file5} must be given.
-   \item \Argument Value
+   \item \Argument Value (ms)
    \item \Default
  \elist  
  

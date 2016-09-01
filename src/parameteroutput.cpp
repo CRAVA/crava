@@ -374,50 +374,6 @@ ParameterOutput::ComputeMuRho(const Simbox        * simbox,
   delete mu_rho;
 }
 
-//FFTGrid*
-//ParameterOutput::createFFTGrid(FFTGrid * referenceGrid, bool file_grid)
-//{
-//  int nx  = referenceGrid->getNx();
-//  int ny  = referenceGrid->getNy();
-//  int nz  = referenceGrid->getNz();
-//  int nxp = referenceGrid->getNxp();
-//  int nyp = referenceGrid->getNyp();
-//  int nzp = referenceGrid->getNzp();
-//
-//  FFTGrid * fftGrid;
-//
-//  if(file_grid)
-//    fftGrid = new FFTFileGrid(nx,ny,nz,nxp,nyp,nzp);
-//  else
-//    fftGrid = new FFTGrid(nx,ny,nz,nxp,nyp,nzp);
-//
-//  return(fftGrid);
-//}
-
-//void
-//ParameterOutput::WriteToFile(const Simbox        * simbox,
-//                             GridMapping         * time_depth_mapping,
-//                             const ModelSettings * model_settings,
-//                             FFTGrid             * grid,
-//                             const std::string   & file_name,
-//                             const std::string   & sgri_label,
-//                             bool                  padding)
-//{
-//  //GridMapping * timeDepthMapping = modelGeneral->GetTimeDepthMapping();
-//  //GridMapping * timeCutMapping;//   = modelGeneral->getTimeCutMapping(); //Included in the new simbox format.
-//  float seismic_start_time  = 0.0; //Hack for Sebastian, was: model->getModelSettings()->getSegyOffset();
-//  TraceHeaderFormat *format = model_settings->getTraceHeaderFormatOutput();
-//
-//  grid->writeFile(file_name,
-//                  IO::PathToInversionResults(),
-//                  simbox,
-//                  sgri_label,
-//                  seismic_start_time,
-//                  time_depth_mapping,
-//                  *format,
-//                  padding);
-//}
-
 void
 ParameterOutput::WriteToFile(const Simbox        * simbox,
                              GridMapping         * time_depth_mapping,
@@ -509,7 +465,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
       //SEGY, SGRI CRAVA are never resampled in time.
       if ((format_flag & IO::SEGY) > 0) {
         const TraceHeaderFormat * thf = model_settings->getTraceHeaderFormatOutput();
-        float z0 = model_settings->getSegyOffset(0);
+        float z0 = model_settings->getOutputOffset();
         std::string file_name_segy = file_name + IO::SuffixSegy();
         LogKit::LogFormatted(LogKit::Low," Writing SEGY file "+file_name_segy+"...");
 
@@ -612,7 +568,7 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
           return;
         }
         // Writes also segy in depth if required
-        float z0 = model_settings->getSegyOffset(0);
+        float z0 = model_settings->getOutputOffset();
         WriteResampledStormCube(output, depth_map, model_settings, depth_name, simbox, format_flag, z0, true);
       }
     }
@@ -727,11 +683,14 @@ ParameterOutput::FindOutputSegyNz(const StormContGrid * outgrid,
   float dz_output_r = float(floor((outgrid->GetLZ()/outgrid->GetNK())*10)/10);
   float dz_input    = floor(model_settings->getSegyDz()*10)/10;
   int nz_output;
-  if (dz_output_r == dz_input) {
+
+  //We do not use nz from input segy if output offset is specified seperately in the model file
+  if (dz_output_r == dz_input && model_settings->getMatchOutputInputSegy() == true) {
     nz_output = model_settings->getSegyNz();
   }
   else {
     float dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
+
     if (dz_output < 1.0)
       dz_output = 1.0;
     nz_output       = int(ceil((outgrid->GetZMax() - z0)/dz_output));

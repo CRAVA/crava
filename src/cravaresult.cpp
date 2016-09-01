@@ -1301,14 +1301,33 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
-  double simbox_dz = floor(simbox.getdz()*10)/10;
-  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
+  //Logging different options for writing segy grids
   if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
-      if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING)
-        LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
-                              + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+
+    //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
+    double simbox_dz = floor(simbox.getdz()*10)/10;
+    double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
+
+    if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
+      LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes.\n");
+    }
+    else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
+      LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
+                           + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+    }
+    //Offset given in modelfile under grid-output, we then override the matching of segy grid
+    else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
+      LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
+    }
+    //No segy cubes and offset not given in modelfile. Take offset from topsurface.
+    else if (model_settings->getOutputOffset() == RMISSING) {
+      float offset = static_cast<float>(floor(simbox.getTopZMin()));
+      model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
+      LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
+      model_settings->setOutputOffset(offset);
+    }
   }
+
 
   //Update depth_mapping with resampled post_vp
   if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
@@ -1339,7 +1358,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //  WriteWells(common_data->GetWells(), model_settings);
   //}
 
-  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
+  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode() && output_grids_elastic > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids\n");
 
     //From computePostMeanResidAndFFTCov()
@@ -1401,7 +1420,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1435,7 +1453,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                        time_depth_mapping,
                        prefix,
                        IO::PathToBackground(),
-                       *model_settings->getTraceHeaderFormatOutput(),
                        true);
     }
   }
@@ -1608,7 +1625,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Trend Cubes
-  if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+  if ((model_settings->getOutputGridsOther() & IO::TREND_CUBES) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Trend Cubes\n");
 
     const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
@@ -1802,7 +1819,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1832,7 +1848,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                         time_depth_mapping,
                         prefix,
                         IO::PathToBackground(),
-                        *model_settings->getTraceHeaderFormatOutput(),
                         true);
     }
   }
@@ -1859,14 +1874,11 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
 
     int n_angles              = model_settings->getNumberOfAngles(i);
     std::vector<float> angles = model_settings->getAngle(i);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
     for (int j = 0; j < n_angles; j++) {
       std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
       std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
       std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-      if (offset.size() > 0 && offset[j] < 0)
-        offset[j] = model_settings->getSegyOffset(i);
 
       int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
 
@@ -2131,37 +2143,6 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
 
 }
 
-//StormContGrid *
-//CravaResult::CreateStormGrid(const Simbox       & simbox,
-//                             NRLib::Grid<float> * grid)
-//{
-//  if (grid != NULL) {
-//    int nx = grid->GetNI();
-//    int ny = grid->GetNJ();
-//    int nz = grid->GetNK();
-//
-//    StormContGrid * storm = new StormContGrid(simbox, nx, ny, nz);
-//
-//    for (int i = 0; i < nx; i++) {
-//      for (int j = 0; j < ny; j++) {
-//        for (int k = 0; k < nz; k++) {
-//          float value = grid->GetValue(i, j, k);
-//          storm->SetValue(i, j, k, value);
-//        }
-//      }
-//    }
-//
-//    //Not needed anymore
-//    delete grid;
-//
-//    return(storm);
-//  }
-//
-//  StormContGrid * storm = new StormContGrid();
-//  return(storm);
-//
-//}
-
 void CravaResult::CreateStormGrid(StormContGrid & grid_new,
                                   FFTGrid       * fft_grid,
                                   bool            allow_delete)
@@ -2191,7 +2172,6 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    GridMapping             * depth_mapping,
                                    const std::string       & prefix,
                                    const std::string       & path,
-                                   const TraceHeaderFormat & thf,
                                    bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {

@@ -10,8 +10,6 @@
 #include "src/definitions.h"
 #include "libs/fft/include/fftw.h"
 
-//class FFTFileGrid;
-//class FFTGrid;
 class Simbox;
 class ModelSettings;
 class GridMapping;
@@ -39,14 +37,6 @@ public:
                                const std::string   & file_name,
                                const std::string   & sgri_label,
                                bool                  padding = false);
-
-  //static void      WriteToFile(const Simbox        * simbox,
-  //                             GridMapping         * time_depth_mapping,
-  //                             const ModelSettings * model_settings,
-  //                             FFTGrid             * grid,
-  //                             const std::string   & file_name,
-  //                             const std::string   & sgri_label,
-  //                             bool                  padding = false);
 
   static void     WriteFile(const ModelSettings     * model_settings,
                             StormContGrid           * storm_grid,
@@ -120,8 +110,6 @@ private:
                                     StormContGrid       * vs,
                                     StormContGrid       * rho,
                                     const std::string   & file_name);
-
-  //static FFTGrid * createFFTGrid(FFTGrid * referenceGrid, bool fileGrid);
 
   static void      ExpTransf(StormContGrid * grid);
 

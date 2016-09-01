@@ -126,9 +126,6 @@ public:
                                   FFTGrid      * fft_grid,
                                   bool           delete_fft = true); //If true, delete FFT-grid
 
-  //StormContGrid * CreateStormGrid(const Simbox       & simbox,
-  //                                NRLib::Grid<float> * grid);
-
   void CreateStormGrid(StormContGrid & grid_new,
                        FFTGrid       * fft_grid,
                        bool            allow_delete = true); //If false, we are sure the fft-grid survives.
@@ -141,7 +138,6 @@ public:
                         GridMapping             * depth_mapping,
                         const std::string       & prefix,
                         const std::string       & path,
-                        const TraceHeaderFormat & thf,
                         bool                      exp_transf = false);
 
   void WriteSeismicData(ModelSettings * model_settings,
