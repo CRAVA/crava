@@ -1301,33 +1301,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //Logging different options for writing segy grids
-  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
-
-    //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
-    double simbox_dz = floor(simbox.getdz()*10)/10;
-    double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
-
-    if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes.\n");
-    }
-    else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
-                           + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
-    }
-    //Offset given in modelfile under grid-output, we then override the matching of segy grid
-    else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
-    }
-    //No segy cubes and offset not given in modelfile. Take offset from topsurface.
-    else if (model_settings->getOutputOffset() == RMISSING) {
-      float offset = static_cast<float>(floor(simbox.getTopZMin()));
-      model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
-      LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
-      model_settings->setOutputOffset(offset);
-    }
-  }
-
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
 
   //Update depth_mapping with resampled post_vp
   if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
@@ -1658,6 +1634,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
 
   //Create missing map
   NRLib::Grid2D<bool> * missing_map = CreateMissingGrid(simbox);
+
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
 
   //Estimation model: All estimated parameters are written to file, regardless of output settings
   if (((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
@@ -2565,3 +2545,31 @@ void CravaResult::SetMissingInGrid(StormContGrid       & grid,
   }
 }
 
+
+void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
+                                              const Simbox  & simbox)
+{
+  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
+  double simbox_dz = floor(simbox.getdz()*10)/10;
+  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
+
+  if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes.\n");
+  }
+  else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
+                          + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+  }
+  //Offset given in modelfile under grid-output, we then override the matching of segy grid
+  else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
+  }
+  //No segy cubes and offset not given in modelfile. Take offset from topsurface.
+  else if (model_settings->getOutputOffset() == RMISSING) {
+    float offset = static_cast<float>(floor(simbox.getTopZMin()));
+    model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
+    LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
+    model_settings->setOutputOffset(offset);
+  }
+
+}
