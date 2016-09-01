@@ -5316,8 +5316,11 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   bool useFormat = false;
   int formatFlag = 0;
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
-  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true)
+  bool segySpecified = false;
+  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true) {
     formatFlag += IO::SEGY;
+    segySpecified = true;
+  }
   if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
     if(useFormat == true)
@@ -5334,6 +5337,9 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root,"segy-start-time", value, errTxt) == true) {
     modelSettings_->setOutputOffset(value);
     modelSettings_->setMatchOutputInputSegy(false);
+
+    if (segySpecified == false)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: <segy-start-time> is specified under <grid-output>, but <segy> is not specified as one of the output grids.\n");
   }
 
   if(formatFlag > 0 || stormSpecified == true)
@@ -6025,6 +6031,8 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     thf->SetInlineLoc(value);
   if(parseValue(root,"location-xl",value, errTxt) == true)
     thf->SetCrosslineLoc(value);
+  if(parseValue(root,"location-offset",value, errTxt) == true)
+    thf->SetOffsetLoc(value);
   if(parseValue(root,"location-scaling-coefficient",value, errTxt) == true)
     thf->SetScaleCoLoc(value);
 
@@ -6854,6 +6862,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
           errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
           errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetOffsetLoc() != thf2->GetOffsetLoc())
+          errTxt += "When <location-offset> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
           errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetFormatName() != thf2->GetFormatName())

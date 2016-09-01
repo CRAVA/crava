@@ -10328,6 +10328,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
+        LogKit::LogFormatted(LogKit::Low,"  Start pos offset index                   : %10d\n",thf_old->GetOffsetLoc());
         LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
       }
     }
@@ -10562,6 +10563,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
               LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos offset index                 : %10d\n",thf->GetCrosslineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
             }
           }

@@ -367,6 +367,8 @@ TraceHeaderFormat::IsDifferent(TraceHeaderFormat inFormat)
     ok = 2;
   if ( crossline_loc_ != inFormat.GetCrosslineLoc())
     ok = 2;
+  if ( offset_loc_ != inFormat.GetOffsetLoc())
+    ok = 2;
 
   return ok;
 
