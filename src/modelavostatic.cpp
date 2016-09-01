@@ -59,11 +59,10 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
     //Maybe load in from modelSettings here, things that are needed in doAVOInversion
 
-
     //Set up errCorr here
-    int nx  = simbox->getnx(); // common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNI();
-    int ny  = simbox->getny(); //common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNJ();
-    int nz  = simbox->getnz(); //common_data->GetBackgroundParametersInterval(i_interval)[0]->GetNK();
+    int nx  = simbox->getnx();
+    int ny  = simbox->getny();
+    int nz  = simbox->getnz();
     int nxp = simbox->GetNXpad();
     int nyp = simbox->GetNYpad();
     int nzp = simbox->GetNZpad();
@@ -86,27 +85,12 @@ ModelAVOStatic::ModelAVOStatic(ModelSettings        *& model_settings,
 
 ModelAVOStatic::~ModelAVOStatic(void)
 {
-
-  if (wavelet_estim_interval_.size() == 2) {
-    if (wavelet_estim_interval_[0] != NULL)
-      delete wavelet_estim_interval_[0];
-    if (wavelet_estim_interval_[1] != NULL)
-      delete wavelet_estim_interval_[1];
-  }
-
-  if (facies_estim_interval_.size() == 2) {
-    if (facies_estim_interval_[0] != NULL)
-      delete facies_estim_interval_[0];
-    if (facies_estim_interval_[1] != NULL)
-      delete facies_estim_interval_[1];
-  }
-
-  if (well_move_interval_.size() == 2) {
-    if (well_move_interval_[0] != NULL)
-      delete well_move_interval_[0];
-    if (well_move_interval_[1] != NULL)
-      delete well_move_interval_[1];
-  }
+  //if (facies_estim_interval_.size() == 2) {
+  //  if (facies_estim_interval_[0] != NULL)
+  //    delete facies_estim_interval_[0];
+  //  if (facies_estim_interval_[1] != NULL)
+  //    delete facies_estim_interval_[1];
+  //}
 }
 
 void

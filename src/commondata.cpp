@@ -304,15 +304,19 @@ CommonData::~CommonData() {
 
   // facies_estim_interval_
   for (size_t i = 0; i < facies_estim_interval_.size(); i++) {
-    delete facies_estim_interval_[i];
-    facies_estim_interval_[i] = NULL;
+    if (facies_estim_interval_[i] != NULL) {
+      delete facies_estim_interval_[i];
+      facies_estim_interval_[i] = NULL;
+    }
   }
 
   // prior_facies_prob_cubes_
   for (size_t i = 0; i < prior_facies_prob_cubes_.size(); i++) {
     for (size_t j = 0; j < prior_facies_prob_cubes_[i].size(); j++) {
-      delete prior_facies_prob_cubes_[i][j];
-      prior_facies_prob_cubes_[i][j] = NULL;
+      if (prior_facies_prob_cubes_[i][j] != NULL) {
+        delete prior_facies_prob_cubes_[i][j];
+        prior_facies_prob_cubes_[i][j] = NULL;
+      }
     }
   }
 
@@ -331,8 +335,10 @@ CommonData::~CommonData() {
 
   // temporary_wavelets_
   for (size_t i = 0; i < temporary_wavelets_.size(); i++) {
-    delete temporary_wavelets_[i];
-    temporary_wavelets_[i] = NULL;
+    if (temporary_wavelets_[i] != NULL) {
+      delete temporary_wavelets_[i];
+      temporary_wavelets_[i] = NULL;
+    }
   }
 
   // wavelets_
@@ -770,18 +776,26 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
     }
   }
 
+  //Output offset for segy is read from cube if it is not set in the model file. Need to check that value set in model file is ok.
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) && model_settings->getOutputOffset() != RMISSING && model_settings->getOutputOffset() > static_cast<float>(floor(output_simbox_.getTopZMin()))) {
+    err_text_common += "The specified offset for output segy (" + NRLib::ToString(model_settings->getOutputOffset())  + ", given with <segy-start-time> under <grid-output>)\n";
+    err_text_common +=  "cannot start lower than the top of the top surface (" + NRLib::ToString(static_cast<float>(floor(output_simbox_.getTopZMin())))+ ").\n";
+  }
+
   //Skip if forward-modeling
   if (forward_modeling_ == true) {
     estimation_simbox = full_inversion_simbox;
     return(true);
   }
 
-  if (timelapse_seismic_files == 0)
+  if (timelapse_seismic_files == 0) {
     return(true);
+  }
 
   //Skip if estimation mode and wavelet/noise is not set for estimation.
-  if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false)
+  if (model_settings->getEstimationMode() == true && model_settings->getEstimateWaveletNoise() == false) {
     return(true);
+  }
 
   int n_timelapses = model_settings->getNumberOfTimeLapses();
   seismic_data.resize(n_timelapses);
@@ -802,12 +816,12 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
 
         seismic_data[this_timelapse].resize(n_angles);
 
-        if (offset[i] < 0)
-          offset[i] = model_settings->getSegyOffset(this_timelapse);
-
         std::string file_name = input_files->getSeismicFile(this_timelapse, i);
         int file_type = IO::findGridType(file_name);
 
+        //If offset is not set in modelfile (=RMISSING), it will be read from the segy file in ReadAllTraces
+        if (offset[i] == RMISSING)
+          offset[i] = model_settings->getSegyOffset(this_timelapse);
 
         if (file_type == IO::STORM || file_type == IO::SGRI) {
           StormContGrid * stormgrid = NULL;
@@ -862,6 +876,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           grid->endAccess();
 
           seismic_data[this_timelapse][i] = new SeismicStorage(file_name, SeismicStorage::FFTGRID, angles[i], grid);
+
         }
         else { //Try to read as segy
 
@@ -901,6 +916,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
                                 only_volume,
                                 relative_padding);
             segy->ReportSizeOfVolume();
+
           }
           catch (NRLib::Exception & e) {
             err_text_tmp += "Error reading SegY-file " + file_name + ":\n";
@@ -923,6 +939,19 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
               model_settings->setSegyDz(segy->GetDz());
             }
 
+            //Check and report if offset is different from segy file and model file
+            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
+              LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i])
+                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                 + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
+              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
+            }
+
+            //Set offset for writing segy files
+            if (model_settings->getOutputOffset() == RMISSING)
+              model_settings->setOutputOffset(segy->GetTop());
+
           }
           else {
             err_text_timelapse += "Failed to read SEGY-file " + file_name + ": \n";
@@ -935,6 +964,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           }
 
         } //SEGY
+
+        //Situation if segy-start time is given, without seismic data on segy format
+        if (model_settings->getOutputOffset() == RMISSING && offset[i] != RMISSING)
+          model_settings->setOutputOffset(offset[i]);
+
       } //n_angles
 
       //Logging if seismic data is on segy format
@@ -1016,7 +1050,7 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
     int n_angles              = model_settings->getNumberOfAngles(this_timelapse);
     std::vector<float> angles = model_settings->getAngle(this_timelapse);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(this_timelapse);
+
 
     for (int i = 0; i < n_angles; i++) {
 
@@ -1025,13 +1059,11 @@ void CommonData::CheckThatDataCoverGrid(ModelSettings                           
 
       if (seismic_data_angle->GetSeismicType() == SeismicStorage::SEGY) {
 
-        if (offset[i] < 0)
-          offset[i] = model_settings->getSegyOffset(this_timelapse);
-
-        SegY * segy = seismic_data_angle->GetSegY();
+        SegY * segy  = seismic_data_angle->GetSegY();
+        float offset = segy->GetTop();
 
         CheckThatDataCoverGrid(segy,
-                               offset[i],
+                               offset,
                                top_grid,
                                bot_grid,
                                guard_zone,
@@ -1395,7 +1427,7 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                   Number of invalids points:                                   \n");
     LogKit::LogFormatted(LogKit::Low,"Well                    Merges           Vp   Vs  Rho            synthVs/Corr    Deviated/Angle \n");
-    LogKit::LogFormatted(LogKit::Low,"---------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::Low,"------------------------------------------------------------------------------------------------\n");
     for (int i = 0; i < n_wells; i++) {
       if (valid_index[i])
         LogKit::LogFormatted(LogKit::Low,"%-23s %6d         %4d %4d %4d             %3s / %5.3f      %3s / %4.1f\n",
@@ -6026,8 +6058,10 @@ CommonData::ReadGridFromFile(const std::string                  & file_name,
                   true,
                   nopadding);
   else { //Default Segy
-    LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
-                        +", will try to read it as segy.\n");
+
+    if (fileType != IO::SEGY)
+      LogKit::LogMessage(LogKit::Warning, "Did not recognize file type of "+NRLib::ToString(file_name)
+                          +", will try to read it as segy.\n");
 
     ReadSegyFile(file_name,
                  interval_grids,
@@ -6094,7 +6128,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
                          const SegyGeometry               *& geometry,
                          int                                 grid_type,
                          const std::string                 & par_name,
-                         float                               offset,
+                         float                               offset, //If offset is not set in modelfile (=RMISSING), it will be read from the file in ReadAllTraces
                          const TraceHeaderFormat           * format,
                          std::string                       & err_text,
                          bool                                nopadding) const
@@ -6139,10 +6173,21 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       err_text += "Error reading SegY-file: " + file_name + ":\n";
       err_text += NRLib::ToString(e.what());
     }
+
     bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
     bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
     bool regularize_if_needed =  area_from_segy && storm_output;
     segy->CreateRegularGrid(regularize_if_needed);
+
+    if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset)) {
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
+                         + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                         + "). The offset from modelfile is used.\n");
+
+      TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                        + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+    }
+
   }
   catch (NRLib::Exception & e) {
     err_text += e.what();
@@ -7171,10 +7216,13 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
                                           failed_dummy, err_text);            // NBNB-PAL: Er dettet riktig nz (timeCut vs time)?
       time_depth_mapping->makeTimeDepthMapping(velocity, &simbox);
 
-      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) { //H Currently create a temporary fft_grid and use the writing in fftgrid.cpp.
+      //H-TODO This should be moved to cravaresults
+      if ((model_settings->getOutputGridsOther() & IO::TIME_TO_DEPTH_VELOCITY) > 0) {
         std::string base_name  = IO::FileTimeToDepthVelocity();
         std::string sgri_label = std::string("Time-to-depth velocity");
-        float       offset     = model_settings->getSegyOffset(0); //Only allow one segy offset for time lapse data
+        float offset           = model_settings->getOutputOffset();
+        if (offset == RMISSING)
+          offset = static_cast<float>(floor(simbox.getTopZMin()));
 
         int nx = static_cast<int>(velocity->GetNI());
         int ny = static_cast<int>(velocity->GetNJ());
@@ -7199,7 +7247,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
       time_depth_mapping->setDepthSimbox(&simbox,
                                          simbox.getnz(),
-                                         output_format, //model_settings->getOutputGridFormat(),
+                                         output_format,
                                          failed_dummy,
                                          err_text);
     }
@@ -7571,7 +7619,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
         if (back_file.size() > 0) {
           const SegyGeometry      * dummy1 = NULL;
           const TraceHeaderFormat * thf    = model_settings->getTraceHeaderFormatBackground(j);
-          const float               offset = model_settings->getSegyOffset(0); //H Currently set to 0. In ModelAVODynamic getSegyOffset(thisTimeLapse) was used.
+          const float               offset = model_settings->getSegyOffset(0);
           std::string err_text_tmp = "";
 
           //ReadGridFromFile uses parameter vector(intervals)
@@ -9735,6 +9783,9 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
     if (grid_format & IO::SEGY) {
       const std::string & format_name = model_settings->getTraceHeaderFormatOutput()->GetFormatName();
       LogKit::LogFormatted(LogKit::Medium,"  Segy - %-10s                        :        yes\n",format_name.c_str());
+
+      if (model_settings->getOutputOffset() != RMISSING)
+        LogKit::LogFormatted(LogKit::Medium,"  Segy start time                          : %10.2f\n", model_settings->getOutputOffset());
     }
     if (grid_format & IO::STORM)
       LogKit::LogFormatted(LogKit::Medium,"  Storm                                    :        yes\n");
@@ -10477,7 +10528,10 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         {
           LogKit::LogFormatted(LogKit::Low,"\nSettings for AVO stack %d:\n",j+1);
           LogKit::LogFormatted(LogKit::Low,"  Angle                                    : %10.1f\n",(angle[j]*180/M_PI));
-          LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",model_settings->getSegyOffset(i));
+          if (model_settings->getSegyOffset(i) == RMISSING)
+            LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : Read from segy file\n");
+          else
+            LogKit::LogFormatted(LogKit::Low,"  SegY start time                          : %10.1f\n",model_settings->getSegyOffset(i));
           TraceHeaderFormat * thf = model_settings->getTraceHeaderFormat(i,j);
           if (thf != NULL)
           {

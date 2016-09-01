@@ -247,7 +247,7 @@ AVOInversion::AVOInversion(ModelSettings           * modelSettings,
     modelAVOdynamic_->ReleaseGrids();
   }
 
-  Timings::setTimeStochasticModel(wall,cpu);
+  Timings::addTimeStochasticModel(wall,cpu);
 
   if(!modelSettings->getForwardModeling()){
     if(scaleWarning_ != 0){
@@ -1227,7 +1227,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
   delete[] parVar;
   delete[] reduceVar;
 
-  Timings::setTimeInversion(wall,cpu);
+  Timings::addTimeInversion(wall,cpu);
   return(0);
 }
 
@@ -1536,7 +1536,7 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
     delete [] ijkSeed;
 
   }
-  Timings::setTimeSimulation(wall,cpu);
+  Timings::addTimeSimulation(wall,cpu);
   return(0);
 }
 
