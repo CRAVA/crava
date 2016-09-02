@@ -170,7 +170,7 @@ TraceHeaderFormat::Init(int headerformat)
     utmy_loc_      = 185;
     inline_loc_    = 189;
     crossline_loc_ = 193;
-    offset_loc_    = 37;
+    offset_loc_    = 109;
     coord_sys_     = UTM;
   }
   else if (headerformat == CHARISMA)
@@ -245,7 +245,7 @@ TraceHeaderFormat::Init(int headerformat)
            << std::setw(6)  << 185
            << std::setw(8)  << 189
            << std::setw(6)  << 193
-           << std::setw(6)  << 37
+           << std::setw(6)  << 109
            << std::setw(10) << SCALCO_LOC
            << std::setw(10) << "UTM";
     error += format.str();
