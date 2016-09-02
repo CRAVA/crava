@@ -212,6 +212,9 @@ public:
 
   void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
 
+  void LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
+                                   const Simbox  & simbox);
+
 private:
   void CombineVerticalTrends(MultiIntervalGrid                         * multiple_interval_grid,
                              CommonData                                * common_data,

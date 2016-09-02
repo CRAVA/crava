@@ -75,25 +75,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_,
               n_blocks_with_data_tot_, facies_log_defined_, interpolate, restrict_to_visible, dz_, failed, is_inside, err_text_tmp);
 
-  if (err_text_tmp == "" && is_inside == true) {
-    LogKit::LogFormatted(LogKit::Low,"-The following continuous logs from well \'"+well_name_+"\' were blocked into the simbox: ");
-    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
-      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
-    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
-    if (disc_logs_to_be_blocked.size() > 0) {
-    LogKit::LogFormatted(LogKit::Low,"-The following discrete logs from well \'"+well_name_+"\' were blocked into the simbox: ");
-      for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
-        LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
-      if (disc_logs_to_be_blocked.size() > 1)
-        LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
-      else
-        LogKit::LogFormatted(LogKit::Low,"\n");
-    }
-    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
-                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
-    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
-  }
-
   if (err_text_tmp != "") {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in simbox failed:\n");
     LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
@@ -242,30 +223,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
     }
   }
 
-
-  if (err_text_tmp == "") {
-    if (interval_simboxes.size() == 1) {
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
-    }
-    else
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
-    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
-      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
-    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
-    if (disc_logs_to_be_blocked.size() > 0) {
-      if (interval_simboxes.size() == 1)
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
-      else
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
-      for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
-        LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
-      LogKit::LogFormatted(LogKit::Low,"\n");
-    }
-    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
-                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
-    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
-  }
-  else {
+  if (err_text_tmp != "") {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in the outer estimation simbox failed:\n");
     LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
 

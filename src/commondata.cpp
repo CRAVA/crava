@@ -940,7 +940,7 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             }
 
             //Check and report if offset is different from segy file and model file
-            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
+            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i]) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
               LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i])
                                  + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
                                  + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
@@ -4546,6 +4546,8 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
     err_text += e.what();
   }
 
+  ReportBlockedLogs(mapped_blocked_logs_common, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
+
   //Need to set angles in blocked_logs_common before wavelet estimation
   if (model_settings->getNumberOfVintages() > 0) {
     for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs_common.begin(); it != mapped_blocked_logs_common.end(); it++) {
@@ -4598,6 +4600,8 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
     }
   }
 
+  ReportBlockedLogs(mapped_blocked_logs_for_correlation, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
+
   if (err_text != "") {
     err_text_common += err_text;
     return(false);
@@ -4633,7 +4637,7 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
 
       std::string interval_name = multiple_interval_grid->GetIntervalName(i);
       if (interval_name != "")
-        LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
+        LogKit::LogFormatted(LogKit::Low,"\n\nFor interval " + interval_name + " :\n");
 
 
 
@@ -4677,6 +4681,8 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
+
+      ReportBlockedLogs(blocked_log_interval, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
     }
   }
   catch (NRLib::Exception & e) {
@@ -4937,6 +4943,12 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
       if (new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
         new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
+      else if (new_well.GetUseForWaveletEstimation() == ModelSettings::YES) {
+        LogKit::LogFormatted(LogKit::Warning," \nWarning: The well is treated as deviated, the deviation (" + NRLib::ToString(dev_angle) + ") is above the allowed limit " + NRLib::ToString(thr_deviation)
+                             +".\n However, in the modelfile it is specified to use this well for wavelet estimation.");
+        TaskList::addTask("Consider setting <use-for-wavelet-estimation> to no for " + new_well.GetWellName() + " as it is treated as deviated.\n");
+      }
+
       new_well.SetDeviated(true);
       LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
@@ -6179,7 +6191,7 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
     bool regularize_if_needed =  area_from_segy && storm_output;
     segy->CreateRegularGrid(regularize_if_needed);
 
-    if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset)) {
+    if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
       LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
                          + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
                          + "). The offset from modelfile is used.\n");
@@ -7315,7 +7327,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         std::string interval_text = "";
         if (n_intervals > 1) {
-          LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + ":\n\n");
+          LogKit::LogFormatted(LogKit::Low, "\n\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + ":\n");
           interval_text = " for interval " + model_settings->getIntervalName(i);
         }
 
@@ -7492,7 +7504,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             err_text += "Could not make the grid for background model" + interval_text + ".\n";
             err_text += err_text_tmp;
           }
-          else{
+          else {
             int n_intervals_inside = 0;
             for (size_t j = 0; j < wells.size(); j++) {
               bg_blocked_log = NULL;
@@ -7530,6 +7542,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += "No wells was inside interval simbox for interval " + interval_name + " when estimating the background model. "
                            + " To estimate the background model the interval must be visible in atleast one well.\n";
               blocking_failed = true;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::Low,"\nBlocked wells:\n ");
+              ReportBlockedLogs(bg_blocked_logs_tmp, cont_logs_to_be_blocked, disc_logs_to_be_blocked);
             }
           }
         }
@@ -10312,6 +10328,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
+        LogKit::LogFormatted(LogKit::Low,"  Start pos offset index                   : %10d\n",thf_old->GetOffsetLoc());
         LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
       }
     }
@@ -10546,6 +10563,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
               LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos offset index                 : %10d\n",thf->GetCrosslineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
             }
           }
@@ -10664,6 +10682,39 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
         //                                      IO::PathToVelocity(), output_format);
       }
     }
+  }
+
+}
+
+
+void CommonData::ReportBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                   const std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                   const std::vector<std::string>                   & discrete_logs_to_be_blocked) const {
+
+  //Logging of blocked wells
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low, "                                 Number of blocks:                      \n");
+  LogKit::LogFormatted(LogKit::Low, "Well name                  dz    Total    With data    Blocked logs \n");
+  LogKit::LogFormatted(LogKit::Low, "------------------------------------------------------------------------\n");
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    BlockedLogsCommon * blocked_log = it->second;
+    LogKit::LogFormatted(LogKit::Low, " %-20s    %4.1f    %4.1d       %4.1d       ",blocked_log->GetWellName().c_str(), blocked_log->GetDz(), blocked_log->GetNumberOfBlocks(), blocked_log->GetNBlocksWithDataTot());
+
+    int n_cont_logs = static_cast<int>(continuous_logs_to_be_blocked.size());
+    for (int i = 0; i < static_cast<int>(continuous_logs_to_be_blocked.size()); i++) {
+      LogKit::LogFormatted(LogKit::Low, continuous_logs_to_be_blocked[i]);
+      if (i != n_cont_logs -1)
+        LogKit::LogFormatted(LogKit::Low, ", ");
+    }
+    int n_disc_logs = static_cast<int>(discrete_logs_to_be_blocked.size());
+    if (n_disc_logs > 0)
+      LogKit::LogFormatted(LogKit::Low, ", ");
+    for (int i = 0; i < static_cast<int>(discrete_logs_to_be_blocked.size()); i++) {
+      LogKit::LogFormatted(LogKit::Low, discrete_logs_to_be_blocked[i]);
+      if (i != n_disc_logs -1)
+        LogKit::LogFormatted(LogKit::Low, ", ");
+    }
+    LogKit::LogFormatted(LogKit::Low, "\n");
   }
 
 }
