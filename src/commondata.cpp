@@ -6186,19 +6186,24 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       err_text += NRLib::ToString(e.what());
     }
 
-    bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
-    bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
-    bool regularize_if_needed =  area_from_segy && storm_output;
-    segy->CreateRegularGrid(regularize_if_needed);
+    if (err_text == "") {
 
-    if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
-      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
-                         + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
-                         + "). The offset from modelfile is used.\n");
+      bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
+      bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
+      bool regularize_if_needed =  area_from_segy && storm_output;
+      segy->CreateRegularGrid(regularize_if_needed);
 
-      TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
-                        + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+      if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
+        LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
+                           + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                           + "). The offset from modelfile is used.\n");
+
+        TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                          + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+      }
     }
+    else
+      failed = true;
 
   }
   catch (NRLib::Exception & e) {
