@@ -6000,6 +6000,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
   legalCommands.push_back("location-y");
   legalCommands.push_back("location-il");
   legalCommands.push_back("location-xl");
+  legalCommands.push_back("location-offset");
   legalCommands.push_back("location-scaling-coefficient");
   legalCommands.push_back("bypass-coordinate-scaling");
 
