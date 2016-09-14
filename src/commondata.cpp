@@ -956,7 +956,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           else {
             err_text_timelapse += "Failed to read SEGY-file " + file_name + ": \n";
             err_text_timelapse += err_text_tmp + "\n";
-            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed.\n");
+            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed:\n");
+            LogKit::LogFormatted(LogKit::Error,"  " + err_text_tmp + "\n");
           }
 
           if (segy->GetSamplingInconsistency() == true) {
