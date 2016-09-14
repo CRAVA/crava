@@ -57,6 +57,7 @@ TraceHeaderFormat::TraceHeaderFormat(int headerformat,
                                      int utmyLoc,
                                      int inlineLoc,
                                      int crosslineLoc,
+                                     int startTimeLoc,
                                      int coordSys)
 {
   Init(headerformat);
@@ -88,6 +89,11 @@ TraceHeaderFormat::TraceHeaderFormat(int headerformat,
     crossline_loc_ = crosslineLoc;
     standard_type_ = false;
   }
+  if (startTimeLoc != IMISSING)
+  {
+    start_time_loc_ = startTimeLoc;
+    standard_type_ = false;
+  }
   if (coordSys != IMISSING)
   {
     coord_sys_ = static_cast<coordSys_t>(coordSys);
@@ -105,6 +111,7 @@ TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
                                      int utmyLoc,
                                      int inlineLoc,
                                      int crosslineLoc,
+                                     int startTimeLoc,
                                      coordSys_t coordSys)
   : format_name_("unnamed"),
     scal_co_loc_(scalCoLoc),
@@ -112,7 +119,7 @@ TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
     utmy_loc_(utmyLoc),
     inline_loc_(inlineLoc),
     crossline_loc_(crosslineLoc),
-    offset_loc_(),
+    start_time_loc_(startTimeLoc),
     coord_sys_(coordSys),
     standard_type_(true)
 {}
@@ -123,15 +130,15 @@ TraceHeaderFormat::TraceHeaderFormat()
 }
 
 TraceHeaderFormat::TraceHeaderFormat(const TraceHeaderFormat & thf)
- : format_name_  (thf.GetFormatName()),
-   scal_co_loc_  (thf.GetScalCoLoc()),
-   utmx_loc_     (thf.GetUtmxLoc()),
-   utmy_loc_     (thf.GetUtmyLoc()),
-   inline_loc_   (thf.GetInlineLoc()),
-   crossline_loc_(thf.GetCrosslineLoc()),
-   offset_loc_   (thf.GetOffsetLoc()),
-   coord_sys_    (thf.GetCoordSys()),
-   standard_type_(thf.GetStandardType())
+ : format_name_   (thf.GetFormatName()),
+   scal_co_loc_   (thf.GetScalCoLoc()),
+   utmx_loc_      (thf.GetUtmxLoc()),
+   utmy_loc_      (thf.GetUtmyLoc()),
+   inline_loc_    (thf.GetInlineLoc()),
+   crossline_loc_ (thf.GetCrosslineLoc()),
+   start_time_loc_(thf.GetStartTimeLoc()),
+   coord_sys_     (thf.GetCoordSys()),
+   standard_type_ (thf.GetStandardType())
 {
   CheckFormat();
 }
@@ -142,58 +149,58 @@ TraceHeaderFormat::Init(int headerformat)
   standard_type_ = true;
   if (headerformat==SEISWORKS)
   {
-    format_name_   = std::string("SeisWorks");
-    scal_co_loc_   = SCALCO_LOC;
-    utmx_loc_      = SX_LOC;
-    utmy_loc_      = SY_LOC;
-    inline_loc_    = INLINE_LOC;
-    crossline_loc_ = CROSSLINE_LOC;
-    offset_loc_    = 109;
-    coord_sys_     = UTM;
+    format_name_    = std::string("SeisWorks");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = SX_LOC;
+    utmy_loc_       = SY_LOC;
+    inline_loc_     = INLINE_LOC;
+    crossline_loc_  = CROSSLINE_LOC;
+    start_time_loc_ = 109;
+    coord_sys_      = UTM;
   }
   else if (headerformat==IESX)
   {
-    format_name_   = std::string("IESX");
-    scal_co_loc_   = SCALCO_LOC;
-    utmx_loc_      = SX_LOC;
-    utmy_loc_      = SY_LOC;
-    inline_loc_    = 221;
-    crossline_loc_ = CROSSLINE_LOC;
-    offset_loc_    = 109; //Not tested
-    coord_sys_     = UTM;
+    format_name_    = std::string("IESX");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = SX_LOC;
+    utmy_loc_       = SY_LOC;
+    inline_loc_     = 221;
+    crossline_loc_  = CROSSLINE_LOC;
+    start_time_loc_ = 109; //Not tested
+    coord_sys_      = UTM;
   }
   else if (headerformat==SIP)
   {
-    format_name_   = std::string("SIP");
-    scal_co_loc_   = SCALCO_LOC;
-    utmx_loc_      = 181;
-    utmy_loc_      = 185;
-    inline_loc_    = 189;
-    crossline_loc_ = 193;
-    offset_loc_    = 109;
-    coord_sys_     = UTM;
+    format_name_    = std::string("SIP");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = 181;
+    utmy_loc_       = 185;
+    inline_loc_     = 189;
+    crossline_loc_  = 193;
+    start_time_loc_ = 109;
+    coord_sys_      = UTM;
   }
   else if (headerformat == CHARISMA)
   {
-    format_name_   = std::string("Charisma");
-    scal_co_loc_   = SCALCO_LOC;
-    utmx_loc_      = SX_LOC;
-    utmy_loc_      = SY_LOC;
-    inline_loc_    = 5;
-    crossline_loc_ = CROSSLINE_LOC;
-    offset_loc_    = 109;
-    coord_sys_     = UTM;
+    format_name_    = std::string("Charisma");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = SX_LOC;
+    utmy_loc_       = SY_LOC;
+    inline_loc_     = 5;
+    crossline_loc_  = CROSSLINE_LOC;
+    start_time_loc_ = 109;
+    coord_sys_      = UTM;
   }
   else if (headerformat == SIPX) // Sebn: SIP probably messed up when they made volumes with this header specification.
   {
-    format_name_   = std::string("SIPX");
-    scal_co_loc_   = SCALCO_LOC;
-    utmx_loc_      = SX_LOC;
-    utmy_loc_      = SY_LOC;
-    inline_loc_    = 181;
-    crossline_loc_ = 185;
-    offset_loc_    = 109; //Not tested
-    coord_sys_     = UTM;
+    format_name_    = std::string("SIPX");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = SX_LOC;
+    utmy_loc_       = SY_LOC;
+    inline_loc_     = 181;
+    crossline_loc_  = 185;
+    start_time_loc_ = 109; //Not tested
+    coord_sys_      = UTM;
   }
   else
   {
@@ -201,8 +208,8 @@ TraceHeaderFormat::Init(int headerformat)
     std::stringstream format;
     error += "\n\nERROR: Undefined trace header format encountered. The recognized";
     error += "\nformat names and their associated trace header locations are:\n\n";
-    error += "Name             X     Y      IL    XL  Offset CoorScal   CoorSys\n";
-    error += "-----------------------------------------------------------------\n";
+    error += "Name             X     Y      IL    XL  StartTime CoorScal   CoorSys\n";
+    error += "--------------------------------------------------------------------\n";
     format << "SeisWorks   "
            << std::right
            << std::setw(6)  << SX_LOC
@@ -343,7 +350,7 @@ TraceHeaderFormat::GetListOfStandardHeaders()
     // With coordinate scaling
     thf[i+0] = new TraceHeaderFormat(j);
     // Without coordinate scaling
-    thf[i+1] = new TraceHeaderFormat(j, 1, IMISSING, IMISSING, IMISSING, IMISSING, IMISSING, IMISSING);
+    thf[i+1] = new TraceHeaderFormat(j, 1, IMISSING, IMISSING, IMISSING, IMISSING, IMISSING, IMISSING, IMISSING);
     j++;
   }
   return thf;
@@ -365,9 +372,9 @@ TraceHeaderFormat::IsDifferent(TraceHeaderFormat inFormat)
     ok = 2;
   if (inline_loc_ != inFormat.GetInlineLoc())
     ok = 2;
-  if ( crossline_loc_ != inFormat.GetCrosslineLoc())
+  if (crossline_loc_ != inFormat.GetCrosslineLoc())
     ok = 2;
-  if ( offset_loc_ != inFormat.GetOffsetLoc())
+  if (start_time_loc_ != inFormat.GetStartTimeLoc())
     ok = 2;
 
   return ok;
@@ -377,10 +384,10 @@ TraceHeaderFormat::IsDifferent(TraceHeaderFormat inFormat)
 void TraceHeaderFormat::WriteValues() const
 {
   LogKit::LogFormatted(LogKit::Medium,"This traceheader format has the following values:\n");
-  LogKit::LogFormatted(LogKit::Medium," utmxLoc utmyLoc inlineLoc crosslineLoc offsetLoc scalcoLoc \n");
+  LogKit::LogFormatted(LogKit::Medium," utmxLoc utmyLoc inlineLoc crosslineLoc startTimeLoc scalcoLoc \n");
   LogKit::LogFormatted(LogKit::Medium,"------------------------------------------------------------\n");
   LogKit::LogFormatted(LogKit::Medium,"%5d   %5d    %5d        %5d      %5d     %5d      \n",
-                                       utmx_loc_, utmy_loc_, inline_loc_, crossline_loc_, offset_loc_, scal_co_loc_);
+                                       utmx_loc_, utmy_loc_, inline_loc_, crossline_loc_, start_time_loc_, scal_co_loc_);
 }
 
 
@@ -455,8 +462,8 @@ void TraceHeader::Read(std::istream& inFile, int lineNo)
       crossline_ = ReadBinaryInt(header);
       i=i+4;
     }
-    else if (i ==(format_.GetOffsetLoc()-1)) {
-      offset_ = ReadBinaryShort(header);
+    else if (i ==(format_.GetStartTimeLoc()-1)) {
+      start_time_ = ReadBinaryShort(header);
       i = i+2;
     }
     else
@@ -541,9 +548,9 @@ int TraceHeader::Write(std::ostream& outFile)
       WriteBinaryInt(outFile, crossline_);
       i=i+4;
     }
-    else if (i==(format_.GetOffsetLoc()-1))
+    else if (i==(format_.GetStartTimeLoc()-1))
     {
-      WriteBinaryShort(outFile, offset_);
+      WriteBinaryShort(outFile, start_time_);
       i=i+2;
     }
     else
@@ -576,17 +583,17 @@ void TraceHeader::WriteValues()
   float lms  = static_cast<float>(ns_-1)*dtms;
   if (format_.GetScalCoLoc() == -1) {
     LogKit::LogFormatted(LogKit::High,"\n\nThe following header information was extracted from the first trace:\n\n");
-    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy        IL    XL   Offset   Samples   dt(ms)  Length(ms)\n");
-    LogKit::LogFormatted(LogKit::High,"------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy        IL    XL   StartTime   Samples   dt(ms)  Length(ms)\n");
+    LogKit::LogFormatted(LogKit::High,"---------------------------------------------------------------------------------\n");
     LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %5d %5d    %5d    %6d     %4.2f     %7.2f\n",
-                         utmx_, utmy_, inline_, crossline_, offset_, ns_, dtms, lms);
+                         utmx_, utmy_, inline_, crossline_, start_time_, ns_, dtms, lms);
   }
   else {
     LogKit::LogFormatted(LogKit::High,"\n\nThe following header information was extracted from the first trace:\n\n");
-    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy     CoScal        IL    XL   Offset   Samples   dt(ms)  Length(ms)\n");
-    LogKit::LogFormatted(LogKit::High,"-----------------------------------------------------------------------------------------\n");
+    LogKit::LogFormatted(LogKit::High,"     UTMx         UTMy     CoScal        IL    XL   StartTime   Samples   dt(ms)  Length(ms)\n");
+    LogKit::LogFormatted(LogKit::High,"--------------------------------------------------------------------------------------------\n");
     LogKit::LogFormatted(LogKit::High,"%9.2f  %11.2f     %6.1f     %5d %5d    %5d    %6d     %4.2f     %7.2f\n",
-                         utmx_, utmy_, scal_co_, inline_, crossline_, offset_, ns_, dtms, lms);
+                         utmx_, utmy_, scal_co_, inline_, crossline_, start_time_, ns_, dtms, lms);
   }
 }
 
@@ -662,20 +669,20 @@ void TraceHeader::SetCrossline(int crossLine)
   }
 }
 
-float TraceHeader::GetOffset() const
+float TraceHeader::GetStartTime() const
 {
-  int loc = format_.GetOffsetLoc();
+  int loc = format_.GetStartTimeLoc();
   if (loc < 0) {
     return rmissing_;
   }
-  return static_cast<float>(offset_);
+  return static_cast<float>(start_time_);
 }
 
-void TraceHeader::SetOffset(float offset)
+void TraceHeader::SetStartTime(float start_time)
 {
-  int loc = format_.GetOffsetLoc();
+  int loc = format_.GetStartTimeLoc();
   if (loc > 0) {
-    offset_ = static_cast<short>(offset);
+    start_time_ = static_cast<short>(start_time);
   }
 }
 

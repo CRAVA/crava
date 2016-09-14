@@ -758,8 +758,8 @@ SegY::ReadTrace(const Volume * volume,
 
   //Set offset from traceheader if it is not set
   if (z0_ == segyRMISSING) {
-    z0_ = static_cast<float>(traceHeader.GetOffset());
-    LogKit::LogMessage(LogKit::Low, "\nUsing offset " + NRLib::ToString(z0_) + " taken from trace header.\n");
+    z0_ = static_cast<float>(traceHeader.GetStartTime());
+    LogKit::LogMessage(LogKit::Low, "\nUsing start-time " + NRLib::ToString(z0_) + " taken from trace header.\n");
   }
 
   if (outsideTopBot != NULL) {
@@ -1419,7 +1419,7 @@ SegY::WriteAllTracesToFile(short scalcoinitial)
       header.SetUtmy(static_cast<double>(y));
       header.SetInline(traces_[i]->GetInline());
       header.SetCrossline(traces_[i]->GetCrossline());
-      header.SetOffset(static_cast<short>(z0_));
+      header.SetStartTime(static_cast<short>(z0_));
       header.Write(file_);
       WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
     }

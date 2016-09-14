@@ -940,11 +940,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             }
 
             //Check and report if offset is different from segy file and model file
-            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i]) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
+            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetStartTime() != offset[i]) && segy->getTrace(0)->GetTraceHeader().GetStartTime() > 0) {
               LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i])
-                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                                  + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
-              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                                 + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
             }
 
@@ -956,7 +956,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           else {
             err_text_timelapse += "Failed to read SEGY-file " + file_name + ": \n";
             err_text_timelapse += err_text_tmp + "\n";
-            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed.\n");
+            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed:\n");
+            LogKit::LogFormatted(LogKit::Error,"  " + err_text_tmp + "\n");
           }
 
           if (segy->GetSamplingInconsistency() == true) {
@@ -4940,17 +4941,18 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
 
     if (max_deviation > thr_deviation)
     {
+
+      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
       if (new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
         new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
       else if (new_well.GetUseForWaveletEstimation() == ModelSettings::YES) {
         LogKit::LogFormatted(LogKit::Warning," \nWarning: The well is treated as deviated, the deviation (" + NRLib::ToString(dev_angle) + ") is above the allowed limit " + NRLib::ToString(thr_deviation)
-                             +".\n However, in the modelfile it is specified to use this well for wavelet estimation.");
-        TaskList::addTask("Consider setting <use-for-wavelet-estimation> to no for " + new_well.GetWellName() + " as it is treated as deviated.\n");
+                             +".\n         However, in the modelfile it is specified to use this well for wavelet estimation.\n");
+        TaskList::addTask("Consider setting <use-for-wavelet-estimation> to no for well " + new_well.GetWellName() + " as it is treated as deviated.\n");
       }
 
       new_well.SetDeviated(true);
-      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
     else
     {
@@ -6193,12 +6195,12 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       bool regularize_if_needed =  area_from_segy && storm_output;
       segy->CreateRegularGrid(regularize_if_needed);
 
-      if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset) && segy->getTrace(0)->GetTraceHeader().GetOffset() > 0) {
+      if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetStartTime() != offset) && segy->getTrace(0)->GetTraceHeader().GetStartTime() > 0) {
         LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
-                           + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                           + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                            + "). The offset from modelfile is used.\n");
 
-        TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+        TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                           + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
       }
     }
@@ -10333,7 +10335,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
-        LogKit::LogFormatted(LogKit::Low,"  Start pos offset index                   : %10d\n",thf_old->GetOffsetLoc());
+        LogKit::LogFormatted(LogKit::Low,"  Start pos start time index               : %10d\n",thf_old->GetStartTimeLoc());
         LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
       }
     }

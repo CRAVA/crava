@@ -6000,7 +6000,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
   legalCommands.push_back("location-y");
   legalCommands.push_back("location-il");
   legalCommands.push_back("location-xl");
-  legalCommands.push_back("location-offset");
+  legalCommands.push_back("location-start-time");
   legalCommands.push_back("location-scaling-coefficient");
   legalCommands.push_back("bypass-coordinate-scaling");
 
@@ -6032,8 +6032,8 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     thf->SetInlineLoc(value);
   if(parseValue(root,"location-xl",value, errTxt) == true)
     thf->SetCrosslineLoc(value);
-  if(parseValue(root,"location-offset",value, errTxt) == true)
-    thf->SetOffsetLoc(value);
+  if(parseValue(root,"location-start-time",value, errTxt) == true)
+    thf->SetStartTimeLoc(value);
   if(parseValue(root,"location-scaling-coefficient",value, errTxt) == true)
     thf->SetScaleCoLoc(value);
 
@@ -6863,8 +6863,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
           errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
           errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
-        if(thf1->GetOffsetLoc() != thf2->GetOffsetLoc())
-          errTxt += "When <location-offset> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetStartTimeLoc() != thf2->GetStartTimeLoc())
+          errTxt += "When <location-start-time> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
           errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetFormatName() != thf2->GetFormatName())
