@@ -4347,7 +4347,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         if (model_settings->getParallelTimeSurfaces() == true) { //Only one reference surface
           double d_top = model_settings->getTimeDTop();
           double lz    = model_settings->getTimeLz();
-          top_surface->Add(d_top);
+          if (d_top != RMISSING)
+            top_surface->Add(d_top);
           base_surface = new Surface(*top_surface);
           base_surface->Add(lz);
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
@@ -4532,8 +4533,13 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), false, is_inside, err_text);
 
-      if (is_inside == false)
-        err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
+      if (is_inside == false) {
+        LogKit::LogFormatted(LogKit::Low,"\n Well "+wells[i]->GetWellName()+" was not found within the simbox.\n");
+        if (est_simbox)
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox.\n";
+        else
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the output simbox.\n";
+      }
 
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
 
@@ -10122,7 +10128,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   if (model_settings->getParallelTimeSurfaces())
   {
     LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfTopFile()+"\n");
-    LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
+    if (model_settings->getTimeDTop() != RMISSING)
+      LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
     LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
     LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
     LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n",   int(model_settings->getTimeLz()/model_settings->getTimeDz()+0.5));
