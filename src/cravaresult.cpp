@@ -381,7 +381,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     }
   }
   //Covariance grids
-  if (!model_settings->getForwardModeling()) {
+  if (!model_settings->getForwardModeling() && (model_settings->getOutputGridsOther() & IO::CORRELATION)) {
     LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -1434,41 +1434,42 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Write correlations and post variances. Write per interval.
-  for (int i = 0; i < n_intervals_; i++) {
+  if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
 
-    std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-    //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
-
-    //delete corr_T_[i];
-    //fftw_free(corr_T_[i]);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-    //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-    //  //delete [] corr_T_filtered_[i];
-    //}
-
-    if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
+    for (int i = 0; i < n_intervals_; i++) {
+      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
       WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
-      WriteFilePostCovGrids(model_settings, simbox, interval_name);
+    }
 
-      if (write_crava_) {
-        std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
-        std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
-        std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
-        std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
-        std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
-        std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+    std::string file_name_vp    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+    std::string file_name_vs    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+    std::string file_name_rho   = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+    std::string file_name_vpvs  = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+    std::string file_name_vprho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+    std::string file_name_vsrho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
 
-        seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
-        seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
-        seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
-        seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
-        seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
-        seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
-      }
+    ParameterOutput::WriteFile(model_settings, cov_vp_,        file_name_vp,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
+    ParameterOutput::WriteFile(model_settings, cov_vs_,        file_name_vs,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
+    ParameterOutput::WriteFile(model_settings, cov_rho_,       file_name_rho,   IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_,  file_name_vpvs,  IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name_vprho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name_vsrho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
+
+    if (write_crava_) {
+      std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
+      std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
+      std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
+      std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
+      std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
+      std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+
+      seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
+      seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
+      seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
+      seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
+      seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
+      seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
     }
   }
 
@@ -2030,33 +2031,6 @@ void CravaResult::WriteFilePostCorrT(const std::vector<float> & post_cov,
   file.close();
 }
 
-void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
-                                        const Simbox        & simbox,
-                                        std::string           interval_name) const
-{
-  if (interval_name != "")
-    interval_name = "_" + interval_name;
-
-  std::string file_name;
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
-}
-
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                     const ModelSettings                              * model_settings,
                                     std::vector<std::string>                           facies_name,
@@ -2554,7 +2528,7 @@ void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
   double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
 
   if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
-    LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes.\n");
+    LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes (dz = " + NRLib::ToString(floor(segy_dz)) + ").\n");
   }
   else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
     LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
