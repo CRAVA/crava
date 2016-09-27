@@ -163,11 +163,6 @@ public:
                                           const NRLib::Matrix & reflection_matrix,
                                           int                   angle) const;
 
-  void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                    std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const NRLib::Matrix                        & reflection_matrix,
-                                    const Simbox                               & simbox);
-
   void GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                CommonData                                 * common_data,
                                std::map<std::string, BlockedLogsCommon *> & blocked_wells,

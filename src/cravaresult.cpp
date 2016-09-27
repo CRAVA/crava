@@ -605,7 +605,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //From CommonData::WaveletHandling
   LogKit::LogFormatted(LogKit::Low,"\nGenerate Synthetic Seismic Logs...");
-  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
+  CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &output_simbox);
 
   //We need synt_seis from well wavelets, but it needs to be based on output simbox
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -1664,7 +1664,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
           wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       }
 
-      GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox);
+      CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox);
 
       //We need synt_seis from well wavelets, but it needs to be based on output simbox
       //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -2347,23 +2347,6 @@ void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *
   blocked_logs_intervals_.push_back(new_blocked_logs);
 }
 
-void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                               const NRLib::Matrix                        & reflection_matrix,
-                                               const Simbox                               & simbox)
-{
-  int nzp = simbox.GetNZpad();
-  int nz  = simbox.getnz();
-
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    if (blocked_log->GetIsDeviated() == false)
-      blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, &simbox);
-  }
-}
-
 void CravaResult::GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                           CommonData                                 * common_data,
                                           std::map<std::string, BlockedLogsCommon *> & blocked_wells,
@@ -2523,9 +2506,9 @@ void CravaResult::SetMissingInGrid(StormContGrid       & grid,
 void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
                                               const Simbox  & simbox)
 {
-  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
-  double simbox_dz = floor(simbox.getdz()*10)/10;
-  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
+
+  double simbox_dz = floor(simbox.getdz());
+  double segy_dz   = floor(model_settings->getSegyDz());
 
   if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
     LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes (dz = " + NRLib::ToString(floor(segy_dz)) + ").\n");
