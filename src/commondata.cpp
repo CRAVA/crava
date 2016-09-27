@@ -3443,14 +3443,16 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+        // prescale, then we have correct size order, and later scale estimation will be ok.
+        // Estimate scale as default for Ricker wavelets, if scale is not given in the model file
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle) || (use_ricker_wavelet && model_settings->getWaveletScale(i_timelapse,j_angle) == 1.0)) {
           LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
           wavelet->multiplyRAmpByConstant(prescale);
           wavelet->setPreScale(prescale);
         }
         else {
+
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-            //H-TODO Should the first one be ==1.0 (no scale-value given)? Should we report on the difference between scale given in model file and estimated prescale?
             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
                                 +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
@@ -3459,7 +3461,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
             }
             else {
               LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale.");
             }
           }
         }
@@ -3481,6 +3483,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   if (error == 0) {
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
+
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
 
       std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
@@ -3970,10 +3973,10 @@ CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                 
   int nz  = simbox->getnz();
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
+    BlockedLogsCommon * blocked_log = it->second;
 
-    if (blocked_log->GetIsDeviated() == false)
+    //We also generate synt seismic log for deviated wells if the user has activated use-for-waveletestimation for these wells
+    if (blocked_log->GetIsDeviated() == false || blocked_log->GetUseForWaveletEstimation())
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, simbox);
   }
 }
