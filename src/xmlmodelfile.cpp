@@ -981,6 +981,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   std::string value;
   bool        estimate = false;
   float       peakFrequency;
+  bool        use_ricker = false;
 
   if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
@@ -993,6 +994,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
     modelSettings_->addRickerPeakFrequency(peakFrequency);
+    use_ricker = true;
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
@@ -1019,8 +1021,15 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
    if(scaleGiven==false) // no commands given
    {
-    modelSettings_->addWaveletScale(1);
-    modelSettings_->addEstimateGlobalWaveletScale(false);
+     //Estimate scale default true for Ricker
+     if (use_ricker == true) {
+       modelSettings_->addEstimateGlobalWaveletScale(true);
+       modelSettings_->addWaveletScale(1);
+     }
+     else {
+       modelSettings_->addWaveletScale(1);
+       modelSettings_->addEstimateGlobalWaveletScale(false);
+     }
    }
     errTxt += tmpErr;
   }
@@ -1039,6 +1048,10 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     {
       modelSettings_->addWaveletScale(1);
       modelSettings_->addEstimateGlobalWaveletScale(false);
+
+      if (use_ricker == true)
+        LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Scale should be given or estimated with Ricker wavelets, but estimate-scale is set to \'no\'.\n\n");
+
     }
 
 

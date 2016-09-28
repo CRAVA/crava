@@ -3444,13 +3444,17 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_low   = 0.33f;
 
         // prescale, then we have correct size order, and later scale estimation will be ok.
-        // Estimate scale as default for Ricker wavelets, if scale is not given in the model file
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle) || (use_ricker_wavelet && model_settings->getWaveletScale(i_timelapse,j_angle) == 1.0)) {
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) {
           LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
           wavelet->multiplyRAmpByConstant(prescale);
           wavelet->setPreScale(prescale);
         }
         else {
+
+          if  (use_ricker_wavelet && model_settings->getWaveletScale(i_timelapse,j_angle) == 1.0) {
+            LogKit::LogFormatted(LogKit::Warning,"\n Warning: Ricker wavelet is used without scale given in modelfile or scale estiamted with Crava.\n");
+            TaskList::addTask("Consider having Crava estimate scale for Ricker wavelet for angle no " + NRLib::ToString(j_angle) + ".\n");
+          }
 
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
