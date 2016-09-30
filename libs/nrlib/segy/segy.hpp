@@ -82,6 +82,7 @@ public:
  SegY(const StormContGrid     * storm_grid,
       const SegyGeometry      * geometry, //May be set to 0.
       float                     z0,
+      float                     dz,
       int                       nz,
       const std::string       & file_name = "",
       bool                      write_to_file = true,

@@ -110,10 +110,6 @@ public:
                           const std::string        & sub_dir,
                           const std::string        & base_name) const;
 
-  void WriteFilePostCovGrids(const ModelSettings * model_settings,
-                             const Simbox        & simbox,
-                             std::string           interval_name = "") const;
-
   void WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                          const ModelSettings                              * model_settings,
                          std::vector<std::string>                           facies_name,
@@ -166,11 +162,6 @@ public:
                                           StormContGrid       * rho,
                                           const NRLib::Matrix & reflection_matrix,
                                           int                   angle) const;
-
-  void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                    std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const NRLib::Matrix                        & reflection_matrix,
-                                    const Simbox                               & simbox);
 
   void GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                CommonData                                 * common_data,

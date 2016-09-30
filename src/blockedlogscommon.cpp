@@ -2916,7 +2916,6 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
                                                  std::string                                    type,
                                                  int                                            i_angle) const
 {
-  //n_angles_ = n_angles;
 
   if (type != "WELL_SYNTHETIC_SEISMIC")
   {
@@ -3617,7 +3616,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
   fftw_real    * synt_seis_r = new fftw_real[rnzp];
   fftw_complex * synt_seis_c = reinterpret_cast<fftw_complex*>(synt_seis_r);
 
-  GetVerticalTrend(GetVpBlocked(), vp_vert); //alpha_
+  GetVerticalTrend(GetVpBlocked(), vp_vert);
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 

@@ -3443,14 +3443,20 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+        // prescale, then we have correct size order, and later scale estimation will be ok.
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) {
           LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
           wavelet->multiplyRAmpByConstant(prescale);
           wavelet->setPreScale(prescale);
         }
         else {
+
+          if  (use_ricker_wavelet && model_settings->getWaveletScale(i_timelapse,j_angle) == 1.0) {
+            LogKit::LogFormatted(LogKit::Warning,"\n Warning: Ricker wavelet is used without scale given in modelfile or scale estiamted with Crava.\n");
+            TaskList::addTask("Consider having Crava estimate scale for Ricker wavelet for angle no " + NRLib::ToString(j_angle) + ".\n");
+          }
+
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-            //H-TODO Should the first one be ==1.0 (no scale-value given)? Should we report on the difference between scale given in model file and estimated prescale?
             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
                                 +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
@@ -3459,7 +3465,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
             }
             else {
               LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale.");
             }
           }
         }
@@ -3481,6 +3487,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   if (error == 0) {
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
+
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
 
       std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
@@ -3970,10 +3977,10 @@ CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                 
   int nz  = simbox->getnz();
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
+    BlockedLogsCommon * blocked_log = it->second;
 
-    if (blocked_log->GetIsDeviated() == false)
+    //We also generate synt seismic log for deviated wells if the user has activated use-for-waveletestimation for these wells
+    if (blocked_log->GetIsDeviated() == false || blocked_log->GetUseForWaveletEstimation())
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, simbox);
   }
 }
@@ -4347,7 +4354,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         if (model_settings->getParallelTimeSurfaces() == true) { //Only one reference surface
           double d_top = model_settings->getTimeDTop();
           double lz    = model_settings->getTimeLz();
-          top_surface->Add(d_top);
+          if (d_top != RMISSING)
+            top_surface->Add(d_top);
           base_surface = new Surface(*top_surface);
           base_surface->Add(lz);
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
@@ -4532,8 +4540,13 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), false, is_inside, err_text);
 
-      if (is_inside == false)
-        err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
+      if (is_inside == false) {
+        LogKit::LogFormatted(LogKit::Low,"\n Well "+wells[i]->GetWellName()+" was not found within the simbox.\n");
+        if (est_simbox)
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox.\n";
+        else
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the output simbox.\n";
+      }
 
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
 
@@ -10122,7 +10135,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   if (model_settings->getParallelTimeSurfaces())
   {
     LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfTopFile()+"\n");
-    LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
+    if (model_settings->getTimeDTop() != RMISSING)
+      LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
     LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
     LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
     LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n",   int(model_settings->getTimeLz()/model_settings->getTimeDz()+0.5));
