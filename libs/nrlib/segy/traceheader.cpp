@@ -201,6 +201,17 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = 185;
     start_time_loc_ = 109; //Not tested
     coord_sys_      = UTM;
+    }
+  else if (headerformat == HESS) // Sebn: SIP probably messed up when they made volumes with this header specification.
+  {
+    format_name_ = std::string("HESS");
+    scal_co_loc_ = SCALCO_LOC;
+    utmx_loc_ = SX_LOC;
+    utmy_loc_ = SY_LOC;
+    inline_loc_ = 185;
+    crossline_loc_ = 189;
+    start_time_loc_ = 109; //Not tested
+    coord_sys_ = UTM;
   }
   else
   {

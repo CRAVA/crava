@@ -50,6 +50,7 @@ public:
     SIP       = 2,
     CHARISMA  = 3,
     SIPX      = 4, // Sebn: SIP probably messed up when they made volumes with this header specification.
+    HESS      = 5,
     numberOfFormats_
   };
 
