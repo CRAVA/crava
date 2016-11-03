@@ -166,6 +166,18 @@ obvious choice. This model is too smooth, however, and should be
 omitted as it often give parameter over- and undershooting away
 from wells.
 
+If the user wants detailed control of the variogram used in the kriging here, the command \kw{lateral-correlation} can be used under \kw{background} in \kw{prior-model}. This variogram will then be used when kriging wells, and allows the user to control the well influence radius and anisotropy. If the ranges given are not equal, the well will have different influence range along and across the azimuth direction. The azimuth range is typically largest, giving a larger well influence in this direction. This can make sense in depositional environments, where the well influence in the depositional direction generally will be larger than across. The value for the range is how far away a point should be from a well before it is no longer influenced by the well.  Examples of the effect of using this keyword is shown in \ref{fig:bgvario}.
+
+\begin{figure}
+\vspace{1em}
+\centering
+\fbox{\includegraphics[width=.480\linewidth]{images/implementation/bgvario1}}
+\fbox{\includegraphics[width=.480\linewidth]{images/implementation/bgvario2}}
+\caption{Lateral cross sections of two different background models, where only the \kw{lateral-correlation} variogram has changed between them.}
+\label{fig:bgvario}
+\end{figure}
+
+
 \subsubsection{Multizone background model}
 Multizone background model is achieved by doing a \kw{multiple-intervals} inversion and with estimating background models activated. The surfaces are set under \kw{output-volume}. When estimating the multizone background model the reservoir is divided into several horizontal zones defined by surfaces in the inversion volume. In each zone, a local background model is made by estimating a depth trend for the zone volume, then kriging well logs to the depth trend. The settings for interval uncertainty and erosion priority are set under \kw{multiple-intervals}. The background model in each zone contains frequencies up to 6Hz, but the frequency content is higher in the transitions between the zones. These higher frequencies will, however, contain information about the locations of the zones; hence they contain important prior information. Higher uncertainty gives smoother background models with lower frequency.
 
@@ -236,7 +248,10 @@ sample field. The depicted distributions look similar to bivariate
 normal distributions, which supports the normal distribution
 assumptions made in \autoref{mdist}. If there are no \vs logs
 available, the prior \vs variance will be set equal to twice the \vp
-variance, and their covariance will be set equal to zero.
+variance, and their covariance will be set equal to zero. This is 
+unrealistically low, but will result in a more uncertain \vp than 
+otherwise, which we feel is correct given that we are unable to
+estimate its relationship with \vs and its variance in this case.
 
 The temporal correlation is estimated from the remaining lags in the
 well logs as depicted in \autoref{fig:temporal-correlation}. The

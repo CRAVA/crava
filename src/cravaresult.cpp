@@ -381,7 +381,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     }
   }
   //Covariance grids
-  if (!model_settings->getForwardModeling()) {
+  if (!model_settings->getForwardModeling() && (model_settings->getOutputGridsOther() & IO::CORRELATION)) {
     LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -605,7 +605,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //From CommonData::WaveletHandling
   LogKit::LogFormatted(LogKit::Low,"\nGenerate Synthetic Seismic Logs...");
-  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
+  CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &output_simbox);
 
   //We need synt_seis from well wavelets, but it needs to be based on output simbox
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -1301,33 +1301,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //Logging different options for writing segy grids
-  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
-
-    //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
-    double simbox_dz = floor(simbox.getdz()*10)/10;
-    double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
-
-    if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes.\n");
-    }
-    else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
-                           + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
-    }
-    //Offset given in modelfile under grid-output, we then override the matching of segy grid
-    else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
-      LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
-    }
-    //No segy cubes and offset not given in modelfile. Take offset from topsurface.
-    else if (model_settings->getOutputOffset() == RMISSING) {
-      float offset = static_cast<float>(floor(simbox.getTopZMin()));
-      model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
-      LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
-      model_settings->setOutputOffset(offset);
-    }
-  }
-
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
 
   //Update depth_mapping with resampled post_vp
   if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
@@ -1458,41 +1434,42 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Write correlations and post variances. Write per interval.
-  for (int i = 0; i < n_intervals_; i++) {
+  if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
 
-    std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-    //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
-
-    //delete corr_T_[i];
-    //fftw_free(corr_T_[i]);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-    //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-    //  //delete [] corr_T_filtered_[i];
-    //}
-
-    if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
+    for (int i = 0; i < n_intervals_; i++) {
+      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
       WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
-      WriteFilePostCovGrids(model_settings, simbox, interval_name);
+    }
 
-      if (write_crava_) {
-        std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
-        std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
-        std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
-        std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
-        std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
-        std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+    std::string file_name_vp    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+    std::string file_name_vs    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+    std::string file_name_rho   = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+    std::string file_name_vpvs  = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+    std::string file_name_vprho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+    std::string file_name_vsrho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
 
-        seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
-        seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
-        seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
-        seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
-        seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
-        seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
-      }
+    ParameterOutput::WriteFile(model_settings, cov_vp_,        file_name_vp,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
+    ParameterOutput::WriteFile(model_settings, cov_vs_,        file_name_vs,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
+    ParameterOutput::WriteFile(model_settings, cov_rho_,       file_name_rho,   IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_,  file_name_vpvs,  IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name_vprho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name_vsrho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
+
+    if (write_crava_) {
+      std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
+      std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
+      std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
+      std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
+      std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
+      std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+
+      seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
+      seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
+      seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
+      seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
+      seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
+      seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
     }
   }
 
@@ -1659,6 +1636,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
   //Create missing map
   NRLib::Grid2D<bool> * missing_map = CreateMissingGrid(simbox);
 
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
+
   //Estimation model: All estimated parameters are written to file, regardless of output settings
   if (((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
      (model_settings->getEstimateBackground() || model_settings->getEstimateWaveletNoise())) {
@@ -1683,7 +1664,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
           wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       }
 
-      GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox);
+      CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox);
 
       //We need synt_seis from well wavelets, but it needs to be based on output simbox
       //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -2050,33 +2031,6 @@ void CravaResult::WriteFilePostCorrT(const std::vector<float> & post_cov,
   file.close();
 }
 
-void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
-                                        const Simbox        & simbox,
-                                        std::string           interval_name) const
-{
-  if (interval_name != "")
-    interval_name = "_" + interval_name;
-
-  std::string file_name;
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
-}
-
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                     const ModelSettings                              * model_settings,
                                     std::vector<std::string>                           facies_name,
@@ -2393,23 +2347,6 @@ void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *
   blocked_logs_intervals_.push_back(new_blocked_logs);
 }
 
-void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                               const NRLib::Matrix                        & reflection_matrix,
-                                               const Simbox                               & simbox)
-{
-  int nzp = simbox.GetNZpad();
-  int nz  = simbox.getnz();
-
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    if (blocked_log->GetIsDeviated() == false)
-      blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, &simbox);
-  }
-}
-
 void CravaResult::GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                           CommonData                                 * common_data,
                                           std::map<std::string, BlockedLogsCommon *> & blocked_wells,
@@ -2565,3 +2502,31 @@ void CravaResult::SetMissingInGrid(StormContGrid       & grid,
   }
 }
 
+
+void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
+                                              const Simbox  & simbox)
+{
+
+  double simbox_dz = floor(simbox.getdz());
+  double segy_dz   = floor(model_settings->getSegyDz());
+
+  if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes (dz = " + NRLib::ToString(floor(segy_dz)) + ").\n");
+  }
+  else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
+                          + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+  }
+  //Offset given in modelfile under grid-output, we then override the matching of segy grid
+  else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
+  }
+  //No segy cubes and offset not given in modelfile. Take offset from topsurface.
+  else if (model_settings->getOutputOffset() == RMISSING) {
+    float offset = static_cast<float>(floor(simbox.getTopZMin()));
+    model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
+    LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
+    model_settings->setOutputOffset(offset);
+  }
+
+}

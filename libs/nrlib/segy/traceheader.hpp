@@ -65,6 +65,7 @@ public:
                     int utmyLoc,
                     int inlineLoc,
                     int crosslineLoc,
+                    int startTimeLoc,
                     int coordSys);
 
 
@@ -80,6 +81,7 @@ public:
                     int utmyLoc,
                     int inlineLoc,
                     int crosslineLoc,
+                    int startTimeLoc,
                     coordSys_t coordSys);
 
   TraceHeaderFormat();
@@ -101,8 +103,8 @@ public:
   /// Get location of the crossline field. (-1 if non-existant)
   int GetCrosslineLoc() const {return crossline_loc_;}
 
-  /// Get location of the offset. (-1 if non-existant)
-  int GetOffsetLoc() const {return offset_loc_;}
+  /// Get location of the start time. (-1 if non-existant)
+  int GetStartTimeLoc() const {return start_time_loc_;}
 
   /// Get location of the scaling cooefficient field. (-1 if non-existant)
   int GetScalCoLoc() const {return scal_co_loc_;}
@@ -116,13 +118,13 @@ public:
   /// Get is this a standard type
   bool GetStandardType() const {return standard_type_;}
 
-  void SetScaleCoLoc(int loc)   {scal_co_loc_   = loc; standard_type_ = false;}
-  void SetUtmxLoc(int loc)      {utmx_loc_      = loc; standard_type_ = false;}
-  void SetUtmyLoc(int loc)      {utmy_loc_      = loc; standard_type_ = false;}
-  void SetInlineLoc(int loc)    {inline_loc_    = loc; standard_type_ = false;}
-  void SetCrosslineLoc(int loc) {crossline_loc_ = loc; standard_type_ = false;}
-  void SetOffsetLoc(int loc)    {offset_loc_    = loc; standard_type_ = false;}
-  void SetCoordSys(coordSys_t type) {coord_sys_ = type;}
+  void SetScaleCoLoc(int loc)       {scal_co_loc_    = loc; standard_type_ = false;}
+  void SetUtmxLoc(int loc)          {utmx_loc_       = loc; standard_type_ = false;}
+  void SetUtmyLoc(int loc)          {utmy_loc_       = loc; standard_type_ = false;}
+  void SetInlineLoc(int loc)        {inline_loc_     = loc; standard_type_ = false;}
+  void SetCrosslineLoc(int loc)     {crossline_loc_  = loc; standard_type_ = false;}
+  void SetStartTimeLoc(int loc)     {start_time_loc_ = loc; standard_type_ = false;}
+  void SetCoordSys(coordSys_t type) {coord_sys_      = type;}
 
   /// Check that no two values point to the same byte. Throws if error.
   void CheckFormat();
@@ -153,8 +155,8 @@ private:
   int inline_loc_;
   /// Location of crossline coordinate field. (-1 if non-existant)
   int crossline_loc_;
-  /// Location of offset. (-1 if non-existant)
-  int offset_loc_;
+  /// Location of start time. (-1 if non-existant)
+  int start_time_loc_;
   /// Coordinate system to use.
   coordSys_t coord_sys_;
   /// Standard type
@@ -219,13 +221,13 @@ public:
   /// Does nothing if crossline location is not set in the format.
   void SetCrossline(int crossLine);
 
-  /// Get offset.
-  /// returns #IMISSING if offset is not set in the format.
-  float GetOffset() const;
+  /// Get start time.
+  /// returns #IMISSING if start time is not set in the format.
+  float GetStartTime() const;
 
-  /// Set offset.
-  /// Does nothing if offset is not set in the format.
-  void SetOffset(float offset);
+  /// Set start time.
+  /// Does nothing if start time is not set in the format.
+  void SetStartTime(float start_time);
 
   /// Get current first coordinate (either UTM x or IL depending on coordsys).
   /// returns #RMISSING if value is not set in the format.
@@ -270,7 +272,7 @@ private:
   double utmy_;
   int inline_;
   int crossline_;
-  short offset_;
+  short start_time_;
   short ns_;
   short dt_;
   int imissing_;

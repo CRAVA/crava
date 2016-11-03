@@ -981,6 +981,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   std::string value;
   bool        estimate = false;
   float       peakFrequency;
+  bool        use_ricker = false;
 
   if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
@@ -993,6 +994,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
     modelSettings_->addRickerPeakFrequency(peakFrequency);
+    use_ricker = true;
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
@@ -1019,8 +1021,15 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
    if(scaleGiven==false) // no commands given
    {
-    modelSettings_->addWaveletScale(1);
-    modelSettings_->addEstimateGlobalWaveletScale(false);
+     //Estimate scale default true for Ricker
+     if (use_ricker == true) {
+       modelSettings_->addEstimateGlobalWaveletScale(true);
+       modelSettings_->addWaveletScale(1);
+     }
+     else {
+       modelSettings_->addWaveletScale(1);
+       modelSettings_->addEstimateGlobalWaveletScale(false);
+     }
    }
     errTxt += tmpErr;
   }
@@ -1039,6 +1048,10 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     {
       modelSettings_->addWaveletScale(1);
       modelSettings_->addEstimateGlobalWaveletScale(false);
+
+      if (use_ricker == true)
+        LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Scale should be given or estimated with Ricker wavelets, but estimate-scale is set to \'no\'.\n\n");
+
     }
 
 
@@ -5316,8 +5329,11 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   bool useFormat = false;
   int formatFlag = 0;
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
-  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true)
+  bool segySpecified = false;
+  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true) {
     formatFlag += IO::SEGY;
+    segySpecified = true;
+  }
   if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
     if(useFormat == true)
@@ -5334,6 +5350,9 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root,"segy-start-time", value, errTxt) == true) {
     modelSettings_->setOutputOffset(value);
     modelSettings_->setMatchOutputInputSegy(false);
+
+    if (segySpecified == false)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: <segy-start-time> is specified under <grid-output>, but <segy> is not specified as one of the output grids.\n");
   }
 
   if(formatFlag > 0 || stormSpecified == true)
@@ -5994,6 +6013,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
   legalCommands.push_back("location-y");
   legalCommands.push_back("location-il");
   legalCommands.push_back("location-xl");
+  legalCommands.push_back("location-start-time");
   legalCommands.push_back("location-scaling-coefficient");
   legalCommands.push_back("bypass-coordinate-scaling");
 
@@ -6025,6 +6045,8 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     thf->SetInlineLoc(value);
   if(parseValue(root,"location-xl",value, errTxt) == true)
     thf->SetCrosslineLoc(value);
+  if(parseValue(root,"location-start-time",value, errTxt) == true)
+    thf->SetStartTimeLoc(value);
   if(parseValue(root,"location-scaling-coefficient",value, errTxt) == true)
     thf->SetScaleCoLoc(value);
 
@@ -6854,6 +6876,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
           errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
           errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetStartTimeLoc() != thf2->GetStartTimeLoc())
+          errTxt += "When <location-start-time> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
           errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetFormatName() != thf2->GetFormatName())

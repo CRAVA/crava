@@ -629,6 +629,13 @@ Estimation:\index{estimation!mode} Checks input data and performs estimation of 
    \item \Argument Integer
    \item \Default
  \elist
+ 
+ \subsubparagraph{\hbracket{location-start-time}}\newkw{location-start-time}
+ \slist
+   \item \Description The byte location for the segy start time in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
 
 \subsubparagraph{\hbracket{bypass-coordinate-scaling}}\newkw{bypass-coordinate-scaling}
  \slist
@@ -1457,6 +1464,13 @@ the vertical sampling interval we find the the number of parameters that is esti
    \item \Argument Integer
    \item \Default
  \elist
+ 
+\subparagraph{\hbracket{location-start-time}}\rnewkw{location-start-time}{location-start-time2}
+ \slist
+   \item \Description The byte location for the segy start time in the trace header.
+   \item \Argument Integer
+   \item \Default
+ \elist
 
 \subparagraph{\hbracket{bypass-coordinate-scaling}}\rnewkw{bypass-coordinate-scaling}{bypass-coordinate-scaling2}
  \slist
@@ -1511,7 +1525,7 @@ the vertical sampling interval we find the the number of parameters that is esti
  \slist
    \item \Description Should global scale be estimated?
    \item \Argument 'yes' or 'no'
-   \item \Default
+   \item \Default 'yes' Ricker wavelets, and 'no' for wavelets read from file.
  \elist
 
 \paragraph{\hbracket{local-wavelet}}\newkw{local-wavelet}

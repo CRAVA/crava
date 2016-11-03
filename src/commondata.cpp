@@ -940,11 +940,11 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
             }
 
             //Check and report if offset is different from segy file and model file
-            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset[i])) {
+            if (segy->getTrace(0) != NULL && offset[i] != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetStartTime() != offset[i]) && segy->getTrace(0)->GetTraceHeader().GetStartTime() > 0) {
               LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i])
-                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+                                 + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                                  + ") for angle " + NRLib::ToString(i) + ". The offset from modelfile is used.\n");
-              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
+              TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
                                 + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset[i]) + ").");
             }
 
@@ -956,7 +956,8 @@ bool CommonData::ReadSeismicData(ModelSettings                               * m
           else {
             err_text_timelapse += "Failed to read SEGY-file " + file_name + ": \n";
             err_text_timelapse += err_text_tmp + "\n";
-            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed.\n");
+            LogKit::LogFormatted(LogKit::Error,"Reading SEGY-file " + file_name + " failed:\n");
+            LogKit::LogFormatted(LogKit::Error,"  " + err_text_tmp + "\n");
           }
 
           if (segy->GetSamplingInconsistency() == true) {
@@ -3442,14 +3443,20 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         const float lim_high  = 3.0f;
         const float lim_low   = 0.33f;
 
-        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) { // prescale, then we have correct size order, and later scale estimation will be ok.
+        // prescale, then we have correct size order, and later scale estimation will be ok.
+        if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) {
           LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
           wavelet->multiplyRAmpByConstant(prescale);
           wavelet->setPreScale(prescale);
         }
         else {
+
+          if  (use_ricker_wavelet && model_settings->getWaveletScale(i_timelapse,j_angle) == 1.0) {
+            LogKit::LogFormatted(LogKit::Warning,"\n Warning: Ricker wavelet is used without scale given in modelfile or scale estiamted with Crava.\n");
+            TaskList::addTask("Consider having Crava estimate scale for Ricker wavelet for angle no " + NRLib::ToString(j_angle) + ".\n");
+          }
+
           if (model_settings->getWaveletScale(i_timelapse,j_angle)!= 1.0f && (prescale>lim_high || prescale<lim_low)) {
-            //H-TODO Should the first one be ==1.0 (no scale-value given)? Should we report on the difference between scale given in model file and estimated prescale?
             std::string text = "The wavelet given for angle no "+NRLib::ToString(j_angle)+" is badly scaled. Ask Crava to estimate global wavelet scale."
                                 +" Estimation will give global scale equal to " + NRLib::ToString(prescale) + ".\n";
             if (model_settings->getEstimateLocalScale(i_timelapse,j_angle)) {
@@ -3458,7 +3465,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
             }
             else {
               LogKit::LogFormatted(LogKit::Warning,"\nWARNING: "+text);
-              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale");
+              TaskList::addTask("The wavelet is badly scaled. Consider having CRAVA estimate global wavelet scale.");
             }
           }
         }
@@ -3480,6 +3487,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   if (error == 0) {
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
+
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
 
       std::vector<std::vector<double> > seis_logs(mapped_blocked_logs.size());
@@ -3969,10 +3977,10 @@ CommonData::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                 
   int nz  = simbox->getnz();
 
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
+    BlockedLogsCommon * blocked_log = it->second;
 
-    if (blocked_log->GetIsDeviated() == false)
+    //We also generate synt seismic log for deviated wells if the user has activated use-for-waveletestimation for these wells
+    if (blocked_log->GetIsDeviated() == false || blocked_log->GetUseForWaveletEstimation())
       blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, simbox);
   }
 }
@@ -4346,7 +4354,8 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
         if (model_settings->getParallelTimeSurfaces() == true) { //Only one reference surface
           double d_top = model_settings->getTimeDTop();
           double lz    = model_settings->getTimeLz();
-          top_surface->Add(d_top);
+          if (d_top != RMISSING)
+            top_surface->Add(d_top);
           base_surface = new Surface(*top_surface);
           base_surface->Add(lz);
           LogKit::LogFormatted(LogKit::Low,"Base surface: parallel to the top surface, shifted %11.2f down.\n", lz);
@@ -4531,8 +4540,13 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
       BlockedLogsCommon * blocked_log = new BlockedLogsCommon(wells[i], continuous_logs_to_be_blocked, discrete_logs_to_be_blocked,
                                                               &estimation_simbox, model_settings->getRunFromPanel(), false, is_inside, err_text);
 
-      if (is_inside == false)
-        err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox surrounding the inversion intervals.\n";
+      if (is_inside == false) {
+        LogKit::LogFormatted(LogKit::Low,"\n Well "+wells[i]->GetWellName()+" was not found within the simbox.\n");
+        if (est_simbox)
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the estimation simbox.\n";
+        else
+          err_text += "Well "+wells[i]->GetWellName()+" was not found within the output simbox.\n";
+      }
 
       mapped_blocked_logs_common.insert(std::pair<std::string, BlockedLogsCommon *>(wells[i]->GetWellName(), blocked_log));
 
@@ -4545,6 +4559,8 @@ bool CommonData::BlockWellsForEstimation(const ModelSettings                    
       err_text += "Error blocking wells for output simbox:\n";
     err_text += e.what();
   }
+
+  ReportBlockedLogs(mapped_blocked_logs_common, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
 
   //Need to set angles in blocked_logs_common before wavelet estimation
   if (model_settings->getNumberOfVintages() > 0) {
@@ -4598,6 +4614,8 @@ CommonData::BlockLogsForCorrelation(const ModelSettings                         
     }
   }
 
+  ReportBlockedLogs(mapped_blocked_logs_for_correlation, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
+
   if (err_text != "") {
     err_text_common += err_text;
     return(false);
@@ -4633,7 +4651,7 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
 
       std::string interval_name = multiple_interval_grid->GetIntervalName(i);
       if (interval_name != "")
-        LogKit::LogFormatted(LogKit::Low,"\nFor interval " + interval_name + " :\n");
+        LogKit::LogFormatted(LogKit::Low,"\n\nFor interval " + interval_name + " :\n");
 
 
 
@@ -4677,6 +4695,8 @@ CommonData::BlockLogsForInversion(const ModelSettings                           
       }
 
       mapped_blocked_logs_intervals.insert(std::pair<int, std::map<std::string, BlockedLogsCommon *> >(i, blocked_log_interval));
+
+      ReportBlockedLogs(blocked_log_interval, continuous_logs_to_be_blocked, discrete_logs_to_be_blocked);
     }
   }
   catch (NRLib::Exception & e) {
@@ -4934,11 +4954,18 @@ void  CommonData::CalculateDeviation(NRLib::Well            & new_well,
 
     if (max_deviation > thr_deviation)
     {
+
+      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
       if (new_well.GetUseForWaveletEstimation() == ModelSettings::NOTSET) {
         new_well.SetUseForWaveletEstimation(ModelSettings::NO);
       }
+      else if (new_well.GetUseForWaveletEstimation() == ModelSettings::YES) {
+        LogKit::LogFormatted(LogKit::Warning," \nWarning: The well is treated as deviated, the deviation (" + NRLib::ToString(dev_angle) + ") is above the allowed limit " + NRLib::ToString(thr_deviation)
+                             +".\n         However, in the modelfile it is specified to use this well for wavelet estimation.\n");
+        TaskList::addTask("Consider setting <use-for-wavelet-estimation> to no for well " + new_well.GetWellName() + " as it is treated as deviated.\n");
+      }
+
       new_well.SetDeviated(true);
-      LogKit::LogFormatted(LogKit::Low," Well is treated as deviated.\n");
     }
     else
     {
@@ -6174,19 +6201,24 @@ CommonData::ReadSegyFile(const std::string                 & file_name,
       err_text += NRLib::ToString(e.what());
     }
 
-    bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
-    bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
-    bool regularize_if_needed =  area_from_segy && storm_output;
-    segy->CreateRegularGrid(regularize_if_needed);
+    if (err_text == "") {
 
-    if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetOffset() != offset)) {
-      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
-                         + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
-                         + "). The offset from modelfile is used.\n");
+      bool area_from_segy       = model_settings->getAreaSpecification() == ModelSettings::AREA_FROM_GRID_DATA;
+      bool storm_output         = (model_settings->getOutputGridFormat() & IO::STORM) == 0;
+      bool regularize_if_needed =  area_from_segy && storm_output;
+      segy->CreateRegularGrid(regularize_if_needed);
 
-      TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetOffset())
-                        + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+      if (segy->getTrace(0) != NULL && offset != RMISSING && (segy->getTrace(0)->GetTraceHeader().GetStartTime() != offset) && segy->getTrace(0)->GetTraceHeader().GetStartTime() > 0) {
+        LogKit::LogMessage(LogKit::Warning, "\nWARNING: The offset given in modelfile under <segy-start-time> (" + NRLib::ToString(offset)
+                           + ") is different from the offset\n found in file " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
+                           + "). The offset from modelfile is used.\n");
+
+        TaskList::addTask("Check consistency between offset in " + file_name + " (" + NRLib::ToString(segy->getTrace(0)->GetTraceHeader().GetStartTime())
+                          + ") and the one given in modelfile under <segy-start-time> (" + NRLib::ToString(offset) + ").");
+      }
     }
+    else
+      failed = true;
 
   }
   catch (NRLib::Exception & e) {
@@ -7315,7 +7347,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         std::string interval_text = "";
         if (n_intervals > 1) {
-          LogKit::LogFormatted(LogKit::Low, "\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + ":\n\n");
+          LogKit::LogFormatted(LogKit::Low, "\n\nGenerating background model for interval " + multi_interval_grid->GetIntervalName(i) + ":\n");
           interval_text = " for interval " + model_settings->getIntervalName(i);
         }
 
@@ -7492,7 +7524,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             err_text += "Could not make the grid for background model" + interval_text + ".\n";
             err_text += err_text_tmp;
           }
-          else{
+          else {
             int n_intervals_inside = 0;
             for (size_t j = 0; j < wells.size(); j++) {
               bg_blocked_log = NULL;
@@ -7530,6 +7562,10 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               err_text += "No wells was inside interval simbox for interval " + interval_name + " when estimating the background model. "
                            + " To estimate the background model the interval must be visible in atleast one well.\n";
               blocking_failed = true;
+            }
+            else {
+              LogKit::LogFormatted(LogKit::Low,"\nBlocked wells:\n ");
+              ReportBlockedLogs(bg_blocked_logs_tmp, cont_logs_to_be_blocked, disc_logs_to_be_blocked);
             }
           }
         }
@@ -10099,7 +10135,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
   if (model_settings->getParallelTimeSurfaces())
   {
     LogKit::LogFormatted(LogKit::Low,"  Reference surface                        : "+input_files->getTimeSurfTopFile()+"\n");
-    LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
+    if (model_settings->getTimeDTop() != RMISSING)
+      LogKit::LogFormatted(LogKit::Low,"  Shift to top surface                     : %10.1f\n", model_settings->getTimeDTop());
     LogKit::LogFormatted(LogKit::Low,"  Time slice                               : %10.1f\n", model_settings->getTimeLz());
     LogKit::LogFormatted(LogKit::Low,"  Sampling density                         : %10.1f\n", model_settings->getTimeDz());
     LogKit::LogFormatted(LogKit::Low,"  Number of layers                         : %10d\n",   int(model_settings->getTimeLz()/model_settings->getTimeDz()+0.5));
@@ -10312,6 +10349,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
         LogKit::LogFormatted(LogKit::Low,"  Start pos trace y coordinate             : %10d\n",thf_old->GetUtmyLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos inline index                   : %10d\n",thf_old->GetInlineLoc());
         LogKit::LogFormatted(LogKit::Low,"  Start pos crossline index                : %10d\n",thf_old->GetCrosslineLoc());
+        LogKit::LogFormatted(LogKit::Low,"  Start pos start time index               : %10d\n",thf_old->GetStartTimeLoc());
         LogKit::LogFormatted(LogKit::Low,"  Coordinate system                        : %10s\n",thf_old->GetCoordSys()==0 ? "UTM" : "ILXL" );
       }
     }
@@ -10546,6 +10584,7 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
               LogKit::LogFormatted(LogKit::Low,"    Start pos trace y coordinate           : %10d\n",thf->GetUtmyLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos inline index                 : %10d\n",thf->GetInlineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Start pos crossline index              : %10d\n",thf->GetCrosslineLoc());
+              LogKit::LogFormatted(LogKit::Low,"    Start pos offset index                 : %10d\n",thf->GetCrosslineLoc());
               LogKit::LogFormatted(LogKit::Low,"    Coordinate system                      : %10s\n",thf->GetCoordSys()==0 ? "UTM" : "ILXL" );
             }
           }
@@ -10664,6 +10703,39 @@ void CommonData::WriteOutputSurfaces(ModelSettings * model_settings,
         //                                      IO::PathToVelocity(), output_format);
       }
     }
+  }
+
+}
+
+
+void CommonData::ReportBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs,
+                                   const std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                   const std::vector<std::string>                   & discrete_logs_to_be_blocked) const {
+
+  //Logging of blocked wells
+  LogKit::LogFormatted(LogKit::Low,"\n");
+  LogKit::LogFormatted(LogKit::Low, "                                 Number of blocks:                      \n");
+  LogKit::LogFormatted(LogKit::Low, "Well name                  dz    Total    With data    Blocked logs \n");
+  LogKit::LogFormatted(LogKit::Low, "------------------------------------------------------------------------\n");
+  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
+    BlockedLogsCommon * blocked_log = it->second;
+    LogKit::LogFormatted(LogKit::Low, " %-20s    %4.1f    %4.1d       %4.1d       ",blocked_log->GetWellName().c_str(), blocked_log->GetDz(), blocked_log->GetNumberOfBlocks(), blocked_log->GetNBlocksWithDataTot());
+
+    int n_cont_logs = static_cast<int>(continuous_logs_to_be_blocked.size());
+    for (int i = 0; i < static_cast<int>(continuous_logs_to_be_blocked.size()); i++) {
+      LogKit::LogFormatted(LogKit::Low, continuous_logs_to_be_blocked[i]);
+      if (i != n_cont_logs -1)
+        LogKit::LogFormatted(LogKit::Low, ", ");
+    }
+    int n_disc_logs = static_cast<int>(discrete_logs_to_be_blocked.size());
+    if (n_disc_logs > 0)
+      LogKit::LogFormatted(LogKit::Low, ", ");
+    for (int i = 0; i < static_cast<int>(discrete_logs_to_be_blocked.size()); i++) {
+      LogKit::LogFormatted(LogKit::Low, discrete_logs_to_be_blocked[i]);
+      if (i != n_disc_logs -1)
+        LogKit::LogFormatted(LogKit::Low, ", ");
+    }
+    LogKit::LogFormatted(LogKit::Low, "\n");
   }
 
 }

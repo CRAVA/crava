@@ -124,8 +124,10 @@ private:
 
   static void     SeismicShift(NRLib::Grid<float> * grid);
 
-  static int FindOutputSegyNz(const StormContGrid * outgrid,
-                       const ModelSettings * model_settings,
-                       const double          z0);
+  static void FindOutputSegyDzNz(const StormContGrid * outgrid,
+                                 const ModelSettings * model_settings,
+                                 const double          z0,
+                                 float               & dz_output,
+                                 int               & nz_output);
 };
 #endif
