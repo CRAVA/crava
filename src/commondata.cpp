@@ -431,6 +431,36 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                                 (model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0 ||
                                 (model_settings->getOutputGridFormat() & IO::SEGY) > 0);
 
+  //Rotated surfaces uses segy-geometry for reading. Need to check if we must read in the segy-cube before reading surfaces.
+  if (model_settings->getEstimationMode() == true) {
+
+    std::string top_surface_file = input_files->getTimeSurfTopFile();
+    if (!NRLib::IsNumber(top_surface_file) && top_surface_file != "") {
+      NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(top_surface_file);
+      if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
+        estimation_mode_need_ILXL = true;
+    }
+
+    std::vector<std::string> interval_names = model_settings->getIntervalNames();
+    for (int i = 0; i < static_cast<int>(interval_names.size()); i++) {
+      std::string base_surface_file = input_files->getBaseTimeSurface(interval_names[i]);
+
+      if (!NRLib::IsNumber(base_surface_file) && base_surface_file != "") {
+        NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(base_surface_file);
+        if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
+          estimation_mode_need_ILXL = true;
+          i = static_cast<int>(interval_names.size()) - 1;
+      }
+    }
+
+    std::string area_surface_file = input_files->getAreaSurfaceFile();
+    if (!NRLib::IsNumber(area_surface_file) && area_surface_file != "") {
+        NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(area_surface_file);
+        if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
+          estimation_mode_need_ILXL = true;
+    }
+  }
+
   if (forward_modeling_)
     grid_file = input_files->getBackFile(0);    // Get geometry from earth model (Vp)
   else {
@@ -441,6 +471,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       else {
         err_text += "Seismic data are needed for the inversion area, but there are no surveys present.\n";
         err_text += "Are you running in estimation mode and asking for SegY output?\n";
+        err_text += "Or are you using rotated ascii surfaces (multicolumn or xyz) without input seismic data?\n";
       }
     }
   }
@@ -460,11 +491,41 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
     else if (area_specification == ModelSettings::AREA_FROM_SURFACE) {
       LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
       area_type = "Surface";
-      Surface surf(input_files->getAreaSurfaceFile());
-      SegyGeometry geometry(surf);
-      model_settings->setAreaParameters(&geometry);
-    }
 
+      NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(input_files->getAreaSurfaceFile());
+      if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII) {
+        //Get area from surface. However, we need the segy-geometry to read the rotated ascii-surfaces.
+        SegyGeometry * geometry_tmp;
+        TraceHeaderFormat * thf = NULL;
+        if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
+          thf = model_settings->getTraceHeaderFormat(0,0);
+
+        std::string tmp_err_text = "";
+        GetGeometryFromGridOnFile(grid_file,
+                                  thf,
+                                  geometry_tmp,
+                                  tmp_err_text);
+
+        ILXL_geometry = geometry_tmp;
+
+        std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, geometry_tmp);
+        double lx = geometry_tmp->GetDx() * geometry_tmp->GetNx();
+        double ly = geometry_tmp->GetDy() * geometry_tmp->GetNy();
+
+        Surface surf(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp->GetAngle(), geometry_tmp->GetX0(),
+                     geometry_tmp->GetY0(), lx, ly, &ilxl_area[0], geometry_tmp->GetInLine0(), geometry_tmp->GetCrossLine0(),
+                     geometry_tmp->GetILStepX(), geometry_tmp->GetILStepY(), geometry_tmp->GetXLStepX(), geometry_tmp->GetXLStepY());
+
+        SegyGeometry geometry(surf);
+        model_settings->setAreaParameters(&geometry);
+      }
+      else {
+        Surface surf(input_files->getAreaSurfaceFile());
+        SegyGeometry geometry(surf);
+        model_settings->setAreaParameters(&geometry);
+      }
+
+    }
     else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA || // tilfelle iii
              area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_UTM || // tilfelle i med snap to seismic
              area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) { // tilfelle ii med snap to seismic
@@ -498,8 +559,37 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
               template_geometry = model_settings->getAreaParameters();
             }
             else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
-              Surface surf(input_files->getAreaSurfaceFile());
-              template_geometry = new SegyGeometry(surf);
+
+              NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(input_files->getAreaSurfaceFile());
+              if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII) {
+                //Get area from surface. However, we need the segy-geometry to read the rotated ascii-surfaces.
+                SegyGeometry * geometry_tmp;
+                TraceHeaderFormat * thf = NULL;
+                if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
+                  thf = model_settings->getTraceHeaderFormat(0,0);
+
+                std::string tmp_err_text = "";
+                GetGeometryFromGridOnFile(grid_file,
+                                          thf,
+                                          geometry_tmp,
+                                          tmp_err_text);
+
+                ILXL_geometry = geometry_tmp;
+
+                std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, geometry_tmp);
+                double lx = geometry_tmp->GetDx() * geometry_tmp->GetNx();
+                double ly = geometry_tmp->GetDy() * geometry_tmp->GetNy();
+
+                Surface surf(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp->GetAngle(), geometry_tmp->GetX0(),
+                             geometry_tmp->GetY0(), lx, ly, &ilxl_area[0], geometry_tmp->GetInLine0(), geometry_tmp->GetCrossLine0(),
+                             geometry_tmp->GetILStepX(), geometry_tmp->GetILStepY(), geometry_tmp->GetXLStepX(), geometry_tmp->GetXLStepY());
+
+                template_geometry = new SegyGeometry(surf);
+              }
+              else {
+                Surface surf(input_files->getAreaSurfaceFile());
+                template_geometry = new SegyGeometry(surf);
+              }
             }
             else {
               err_text += "CRAVA has been asked to identify a proper ILXL inversion area based\n";
