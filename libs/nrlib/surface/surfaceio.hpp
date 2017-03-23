@@ -725,6 +725,15 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   int d_il_file = static_cast<int>((il_max_file - il_min_file) / (ni_file - 1));
   int d_xl_file = static_cast<int>((xl_max_file - xl_min_file) / (nj_file - 1));
 
+  //We require the surfaces to have even sampling
+  for (int i = 1; i < static_cast<int>(il_vec_sorted.size()); i++)
+    if ((il_vec_sorted[i] - il_vec_sorted[i-1]) != d_il_file)
+        throw Exception("Found inconsistencies in the surface sampling. Has the surface even sampling?\n");
+
+  for (int i = 1; i < static_cast<int>(xl_vec_sorted.size()); i++)
+    if ((xl_vec_sorted[i] - xl_vec_sorted[i-1]) != d_xl_file)
+        throw Exception("Found inconsistencies in the surface sampling. Has the surface even sampling?\n");
+
   for (int k = 0; k < n; k++) {
     //Local IL/XL
     int il_loc = (static_cast<int>(il_vec[k]) - il_min_file)/d_il_file;
