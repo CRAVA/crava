@@ -420,7 +420,7 @@ private:
                                        MultiIntervalGrid  * multi_interval_grid,
                                        std::string        & err_text);
 
-  double             FindDzMin(MultiIntervalGrid * multi_interval_grid);
+  double             FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSettings * model_settings);
 
   void               WriteAreas(const SegyGeometry  * area_params,
                                 Simbox              * time_simbox,
