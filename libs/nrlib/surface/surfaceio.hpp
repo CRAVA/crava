@@ -728,11 +728,11 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   //We require the surfaces to have even sampling
   for (int i = 1; i < static_cast<int>(il_vec_sorted.size()); i++)
     if ((il_vec_sorted[i] - il_vec_sorted[i-1]) != d_il_file)
-        throw Exception("Found inconsistencies in the surface sampling. Has the surface even sampling?\n");
+        throw Exception("Found inconsistencies in the surface sampling. Does the surface have uneven/irregular sampling? Crava requires regular XYZ/Multicolumn Ascii-surfaces\n");
 
   for (int i = 1; i < static_cast<int>(xl_vec_sorted.size()); i++)
     if ((xl_vec_sorted[i] - xl_vec_sorted[i-1]) != d_xl_file)
-        throw Exception("Found inconsistencies in the surface sampling. Has the surface even sampling?\n");
+        throw Exception("Found inconsistencies in the surface sampling. Does the surface have uneven/irregular sampling? Crava requires regular XYZ/Multicolumn Ascii-surfaces\n");
 
   for (int k = 0; k < n; k++) {
     //Local IL/XL
