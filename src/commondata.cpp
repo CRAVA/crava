@@ -777,7 +777,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
   }
   else {
     //Multiinterval, use minimum dz from all intervals
-    double dz_min = FindDzMin(multi_interval_grid);
+    double dz_min = FindDzMin(multi_interval_grid, model_settings);
     nz_new        = static_cast<int>(output_simbox.getlz() / dz_min);
   }
 
@@ -805,7 +805,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
 
 }
 
-double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid)
+double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSettings * model_settings)
 {
   double min_dz   = std::numeric_limits<double>::infinity();
   int nx          = multi_interval_grid->GetIntervalSimbox(0)->getnx();
@@ -826,12 +826,26 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid)
         double bot_value = interval_simbox->getBot(i,j);
         int nz           = interval_simbox->getnz();
 
-        if (top_value != RMISSING && bot_value != RMISSING) {
-          double min_dz_interval = (bot_value - top_value) / nz;
+        std::string interval_name = multi_interval_grid->GetIntervalName(i_interval);
+        if (model_settings->getTimeNz(interval_name) > 0) {
 
-          if (min_dz_interval < min_dz_trace)
-            min_dz_trace = min_dz_interval;
+          if (top_value != RMISSING && bot_value != RMISSING) {
+            double min_dz_interval = (bot_value - top_value) / nz;
+
+            if (min_dz_interval < min_dz_trace)
+              min_dz_trace = min_dz_interval;
+          }
         }
+        else {
+          //We use the segy dz here directly instead of calculating from dz to nz and back to dz again (as nz is calculated from segy dz if it is not given)
+          //Recalculating dz may give a different result for non-flat surfaces as nz is based on GetLZ (max height) and we here calculate min dz per trace
+          //Narrow sections will then give a smaller dz which results in min_dz less less than the input segy dz
+          double min_dz_interval = model_settings->getTimeDz();
+
+            if (min_dz_interval < min_dz_trace)
+              min_dz_trace = min_dz_interval;
+        }
+
       }
 
       if (min_dz_trace < min_dz)
