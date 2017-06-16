@@ -79,8 +79,11 @@ namespace NRLib {
                         double              lx,
                         double              ly,
                         int               * ilxl_area,
-                        double              il0_ref,
-                        double              xl0_ref,
+                        int                 il0,
+                        int                 xl0,
+                        bool                first_axis_il,
+                        double              in_line0,
+                        double              cross_line0,
                         double              il_step_x,
                         double              il_step_y,
                         double              xl_step_x,
@@ -94,8 +97,9 @@ namespace NRLib {
                                 double              lx,
                                 double              ly,
                                 int               * ilxl_area,
-                                double              il0_ref,
-                                double              xl0_ref);
+                                int                 il0,
+                                int                 xl0,
+                                bool                first_axis_il);
 
   template <class A>
   void CreateSurfaceFromILXL(RegularSurface<A>   & surface,
@@ -103,12 +107,13 @@ namespace NRLib {
                              std::vector<int>    & xl_vec,
                              std::vector<double> & z_vec,
                              int                 * ilxl_area,
-                             double              & il0_ref,
-                             double              & xl0_ref,
+                             int                 & il0,
+                             int                 & xl0,
                              double              & x_ref,
                              double              & y_ref,
                              double              & lx,
-                             double              & ly);
+                             double              & ly,
+                             bool                  first_axis_il);
 
   template <class A>
   void WriteIrapClassicAsciiSurf(const RegularSurface<A> & surf,
@@ -441,8 +446,11 @@ void NRLib::ReadXYZAsciiSurf(std::string         filename,
                              double              lx,
                              double              ly,
                              int               * ilxl_area,
-                             double              il0_ref,
-                             double              xl0_ref,
+                             int                 il0,
+                             int                 xl0,
+                             bool                first_axis_il,
+                             double              in_line0,
+                             double              cross_line0,
                              double              il_step_x,
                              double              il_step_y,
                              double              xl_step_x,
@@ -541,11 +549,11 @@ void NRLib::ReadXYZAsciiSurf(std::string         filename,
     std::vector<int> il_vec = std::vector<int>(x_vec.size());
     std::vector<int> xl_vec = std::vector<int>(x_vec.size());
     for (int i = 0; i < static_cast<int>(x_vec.size()); i++) {
-      il_vec[i] = static_cast<int>(0.5+il0_ref+(x_vec[i]-x_ref)*il_step_x+(y_vec[i]-y_ref)*il_step_y);
-      xl_vec[i] = static_cast<int>(0.5+xl0_ref+(x_vec[i]-x_ref)*xl_step_x+(y_vec[i]-y_ref)*xl_step_y);
+      il_vec[i] = static_cast<int>(0.5+in_line0    + (x_vec[i]-x_ref)*il_step_x + (y_vec[i]-y_ref)*il_step_y);
+      xl_vec[i] = static_cast<int>(0.5+cross_line0 + (x_vec[i]-x_ref)*xl_step_x + (y_vec[i]-y_ref)*xl_step_y);
     }
 
-    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0_ref, xl0_ref, x_ref, y_ref, lx, ly);
+    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0, xl0, x_ref, y_ref, lx, ly, first_axis_il);
 
     surface.SetMissingValue(static_cast<A>(MULT_IRAP_MISSING));
     surface.SetName(GetStem(filename));
@@ -566,8 +574,9 @@ void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
                                      double              lx,
                                      double              ly,
                                      int               * ilxl_area,
-                                     double              il0_ref,
-                                     double              xl0_ref)
+                                     int                 il0,
+                                     int                 xl0,
+                                     bool                first_axis_il)
 {
 
   try {
@@ -670,7 +679,7 @@ void NRLib::ReadMulticolumnAsciiSurf(std::string         filename,
       xl_vec[i] = static_cast<int>(data[xl_index][i]);
     }
 
-    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0_ref, xl0_ref, x_ref, y_ref, lx, ly);
+    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0, xl0, x_ref, y_ref, lx, ly, first_axis_il);
 
     surface.SetMissingValue(static_cast<A>(MULT_IRAP_MISSING));
     surface.SetName(GetStem(filename));
@@ -688,12 +697,13 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
                                   std::vector<int>    & xl_vec,
                                   std::vector<double> & z_vec,
                                   int                 * ilxl_area,
-                                  double              & il0_ref,
-                                  double              & xl0_ref,
+                                  int                 & il0,
+                                  int                 & xl0,
                                   double              & x_ref,
                                   double              & y_ref,
                                   double              & lx,
-                                  double              & ly)
+                                  double              & ly,
+                                  bool                  first_axis_il)
 
 {
 
@@ -784,8 +794,8 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   int n_xl = (xl_max_segy - xl_min_segy)/d_xl_file + 1;
 
   //Find IL/XL of rotation corner
-  int il0_segy = static_cast<int>(il0_ref+0.5);
-  int xl0_segy = static_cast<int>(xl0_ref+0.5);
+  int il0_segy = static_cast<int>(il0+0.5); //H-TODO Do we need to the next steps as we are now using il0 /xl0 (int) as input?
+  int xl0_segy = static_cast<int>(xl0+0.5);
 
   // To ensure that the IL XL we find are existing traces
   if (il0_segy < il_min_segy)
@@ -798,7 +808,14 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   else if (xl0_segy > xl_max_segy)
     xl0_segy += (xl_max_segy - xl0_segy) % xl_step_segy;
 
-  NRLib::Grid2D<A> surface_grid(n_il, n_xl, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+  //In addition to the four cases below (under Fill in correct corner) IL and XL can go either direction
+  //If the first axis is XL we must transpose the surface
+  NRLib::Grid2D<A> surface_grid;
+  if (first_axis_il == true)
+    surface_grid.Resize(n_il, n_xl, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+  else
+    surface_grid.Resize(n_xl, n_il, static_cast<A>(NRLib::MULT_IRAP_MISSING));
+
   int grid_i, grid_j;
   for (int i = 0; i < n_il; i++) {
     for (int j = 0; j < n_xl; j++) {
@@ -836,7 +853,10 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
         grid_j = j;
       }
 
-      surface_grid(grid_i, grid_j) = z;
+      if (first_axis_il == true)
+        surface_grid(grid_i, grid_j) = z;
+      else
+        surface_grid(grid_j, grid_i) = z;
     }
   }
 
