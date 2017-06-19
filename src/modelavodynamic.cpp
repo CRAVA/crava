@@ -247,10 +247,10 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //Update with new Vp/Vs (new reflection matrix set above) before reestimating SNRatio and WaveletScale
       wavelets_[i]->SetReflectionCoeffs(reflection_matrix_, i);
 
-      LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + " and angle number " + NRLib::ToString(i) + ".\n");
+      LogKit::LogFormatted(LogKit::Low,"\nReestimating wavelet scale and noise " + interval_text + "and angle number " + NRLib::ToString(i) + ".\n");
 
       if (model_settings->getWaveletDim(i) == Wavelet::ONE_D) { //Reestimate scale and noise with vp/vs for this interval.
-        //This is where it gets hairy. All estimation is done on estmation simbox scale, so create a local wavelet and resample.
+        //This is where it gets hairy. All estimation is done on estimation simbox scale, so create a local wavelet and resample.
         //Find the scaling of this wavelet, and apply it to the non-resampled wavelet.
         Wavelet * est_wavelet = new Wavelet1D(wavelets_[i]);
         const Simbox & estimation_simbox = common_data->GetEstimationSimbox();
@@ -310,11 +310,27 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
                                                                     false);           // doEstimateWavelet
 
         if ((adjust_scale == true || adjust_noise == true) && common_data->GetMultipleIntervalGrid()->GetNIntervals() > 1) {
-          sn_ratio_[i] = sn_ratio_new;
 
-          //Compute scaling and scale original wavelet
-          float gain = est_wavelet->getScale();
-          wavelets_[i]->scale(gain);
+          if (err_text == "" && sn_ratio_new != RMISSING) {
+            sn_ratio_[i] = sn_ratio_new;
+
+            //Compute scaling and scale original wavelet
+            float scale = est_wavelet->getScale();
+            wavelets_[i]->scale(scale);
+
+
+          } else {
+            float global_sn_ratio = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
+
+            LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Reestimation of wavelet scale and noise for interval " + model_settings->getIntervalName(i_interval) + " failed: \n");
+            LogKit::LogFormatted(LogKit::Warning,"   " + err_text);
+            LogKit::LogFormatted(LogKit::Warning,"\nThe global SN-ratio of " + NRLib::ToString(global_sn_ratio) + " will be used for interval " + model_settings->getIntervalName(i_interval) + "\n");
+            if (common_data->GetWavelet(this_timelapse_)[i]->getScale() != 1.0 && common_data->GetWavelet(this_timelapse_)[i]->getScale() != RMISSING)
+              LogKit::LogFormatted(LogKit::Warning,"\n together with the scaling " + NRLib::ToString(common_data->GetWavelet(this_timelapse_)[i]->getScale()) + ".\n");
+
+            sn_ratio_[i] = global_sn_ratio;
+          }
+
         }
         else
           sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
@@ -328,12 +344,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       if (gain_grid_tmp != NULL)
         delete gain_grid_tmp;
 
-      if (err_text != "")
-        LogKit::LogFormatted(LogKit::Error, "Error when calculating S-N-Ratio for interval " + NRLib::ToString(i_interval) + ": \n" + err_text +"\n");
-
     }
     else {
-      //wavelets_[i] = common_data->GetWavelet(this_timelapse_)[i];
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
     }
 
