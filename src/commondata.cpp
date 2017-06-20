@@ -8690,14 +8690,10 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               else {
 
                 // If dz for interval i is not equal to the minimum resolution min_dz, resample auto_cov
-                if (dz_min != interval_simboxes[i]->getdz()) {
+                if (dz_min != interval_simboxes[i]->getdz())
                   ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i]->getdz());
-                }
-                else {
-                  LogKit::LogFormatted(LogKit::High, "\n Only BBB");
+                else
                   prior_auto_cov_temp   = analyze_all->GetAutoCovariance();
-
-                }
                 n_est_nonzero = analyze_all->GetMaxLagWithNonZeroAutoCovData();
               }
 

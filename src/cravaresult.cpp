@@ -240,6 +240,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
 
   //Add seismic data to blocked logs
+  
   if ((n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) && common_data->HasSeismicData()) {
     std::vector<SeismicStorage *> seismic_data = common_data->GetSeismicDataTimeLapse(0);
     int n_angles = static_cast<int>(seismic_data.size());
