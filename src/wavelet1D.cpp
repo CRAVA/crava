@@ -867,7 +867,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
       }
       else {
         LogKit::LogFormatted(LogKit::Low, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
-                             blocked_log->GetWellName().c_str(), length*dz_, waveletLength_);
+                             blocked_log->GetWellName().c_str(), length*dz_, waveletLength_+1);
       }
     }
     w++;
@@ -957,13 +957,13 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     }
   }
   else {
+    LogKit::LogFormatted(LogKit::Warning,"\n\n WARNING: Could not estimate empirical SN ratio. No legal data available.\n");
     if (doEstimateSNRatio) {
       errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
       error   += 1;
     }
     else {
       // Something is very bad, but not we do not necessarily need to stop. Anyway, there is nothing more for us to do here.
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: Could not estimate empirical SN ratio. No legal data available.\n");
       TaskList::addTask("Check the wavelet section. Empirical signal-to-noise ratio could not be estimated.");
       return RMISSING;
     }
@@ -972,7 +972,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   std::vector<float> SNOptimalGlobal(nWells, 0.0);
   std::vector<float> SNOptimalLocal(nWells, 0.0);
 
-  if (nWells > 0) {
+  if (nWells > 0 && nData > 0) {
     LogKit::LogFormatted(LogKit::Medium,"\n  Reporting  estimated errors (as standard deviations) in different ways:\n");
     LogKit::LogFormatted(LogKit::Low,"\n");
     LogKit::LogFormatted(LogKit::Low,"                                     SeisData       OptimalGlobal      OptimalLocal\n");
@@ -1061,47 +1061,56 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     }
   }
 
-  float empSNRatio = dataVar/(errStd*errStd);
-  if (doEstimateSNRatio==true)
-    LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
-  else
-  {
-    if(nWells > 0) {
-      LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
-      LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
-      float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
-      float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
-      if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
-        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
-      if (SNRatio < minSN)
-        TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
-      else
-        TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(maxSN,1)+"\n");
+  //If nData is zero, errStd is also zero and we return missing
+  if (nData > 0) {
+    float empSNRatio = dataVar/(errStd*errStd);
+    if (doEstimateSNRatio==true)
+      LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio used for this angle stack is: %6.2f\n", empSNRatio);
+    else
+    {
+      if(nWells > 0) {
+        LogKit::LogFormatted(LogKit::Low,"\n  The signal to noise ratio given in the model file and used for this angle stack is : %6.2f\n", SNRatio);
+        LogKit::LogFormatted(LogKit::Low,"  For comparison, the signal-to-noise ratio calculated from the available wells is   : %6.2f\n", empSNRatio);
+        float minSN = 1.0f + (empSNRatio - 1.0f)/2.0f;
+        float maxSN = 1.0f + (empSNRatio - 1.0f)*2.0f;
+        if ((SNRatio<minSN || SNRatio>maxSN) && doEstimateWavelet) {
+          LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The difference between the SN ratio given in the model file and the calculated SN ratio is too large.\n");
+        if (SNRatio < minSN)
+          TaskList::addTask("Consider increasing the SN ratio for angle stack "+NRLib::ToString(number)+" to minimum "+NRLib::ToString(minSN,1)+"\n");
+        else
+          TaskList::addTask("Consider decreasing the SN ratio for angle stack "+NRLib::ToString(number)+" to maximum "+NRLib::ToString(maxSN,1)+"\n");
+        }
       }
     }
+
+    if (empSNRatio < minSNRatio) {
+      if (doEstimateSNRatio) {
+        LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+        LogKit::LogFormatted(LogKit::Warning,"\n       than %.2f are not acceptable. The signal-to-noise ratio was not reliably estimated",minSNRatio);
+        LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
+        LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
+        LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
+
+        errText += "Invalid signal-to-noise ratio obtained (" + NRLib::ToString(empSNRatio) + ") for the angle-gather of "+angle+" degrees. It should be larger than " + NRLib::ToString(minSNRatio) + ".\n";
+        error += 1;
+      }
+      else {
+        LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
+        LogKit::LogFormatted(LogKit::Warning,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
+        LogKit::LogFormatted(LogKit::Warning,"\n         wells, these wells should not have been included in the wavelet estimation. If");
+        LogKit::LogFormatted(LogKit::Warning,"\n         they indeed were omitted, you can avoid this warning by specifying");
+        LogKit::LogFormatted(LogKit::Warning,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");
+        TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
+      }
+    }
+
+    return empSNRatio;
+  }
+  else {
+    return RMISSING;
   }
 
-  if (empSNRatio < minSNRatio) {
-    if (doEstimateSNRatio) {
-      LogKit::LogFormatted(LogKit::Warning,"\nERROR: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::Warning,"\n       than %.2f are not acceptable. The signal-to-noise ratio was not reliably estimated",minSNRatio);
-      LogKit::LogFormatted(LogKit::Warning,"\n       and you must give it as input in the model file.\n");
-      LogKit::LogFormatted(LogKit::Warning,"\n       If the wavelet was estimated by CRAVA the solution may be to remove one or more wells");
-      LogKit::LogFormatted(LogKit::Warning,"\n       from the wavelet estimation (compare shifts and SN-ratios for different wells).\n");
-
-      errText += "Invalid signal-to-noise ratio obtained (" + NRLib::ToString(empSNRatio) + ") for the angle-gather of "+angle+" degrees. It should be larger than " + NRLib::ToString(minSNRatio) + ".\n";
-      error += 1;
-    }
-    else {
-      LogKit::LogFormatted(LogKit::Warning,"\nWARNING: The empirical signal-to-noise ratio Var(data)/Var(noise) is %.2f. Ratios smaller",empSNRatio);
-      LogKit::LogFormatted(LogKit::Warning,"\n         than 1.1 are not acceptable. If the low ratio is caused by one or more specific");
-      LogKit::LogFormatted(LogKit::Warning,"\n         wells, these wells should not have been included in the wavelet estimation. If");
-      LogKit::LogFormatted(LogKit::Warning,"\n         they indeed were omitted, you can avoid this warning by specifying");
-      LogKit::LogFormatted(LogKit::Warning,"\n         <use-for-wavelet-estimation> no </use-...> for these wells in the model file.\n");
-      TaskList::addTask("Check the signal-to-noise ratio given for angle stack "+NRLib::ToString(number)+" against that calculated by CRAVA.");
-    }
-  }
-  return empSNRatio;
+ 
 }
 
 

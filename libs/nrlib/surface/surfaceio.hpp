@@ -794,8 +794,8 @@ void NRLib::CreateSurfaceFromILXL(RegularSurface<A>   & surface,
   int n_xl = (xl_max_segy - xl_min_segy)/d_xl_file + 1;
 
   //Find IL/XL of rotation corner
-  int il0_segy = static_cast<int>(il0+0.5); //H-TODO Do we need to the next steps as we are now using il0 /xl0 (int) as input?
-  int xl0_segy = static_cast<int>(xl0+0.5);
+  int il0_segy = il0;
+  int xl0_segy = xl0;
 
   // To ensure that the IL XL we find are existing traces
   if (il0_segy < il_min_segy)
