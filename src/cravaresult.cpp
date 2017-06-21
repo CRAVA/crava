@@ -241,7 +241,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
 
   //Add seismic data to blocked logs
-  
+
   if ((n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) && common_data->HasSeismicData()) {
     std::vector<SeismicStorage *> seismic_data = common_data->GetSeismicDataTimeLapse(0);
     int n_angles = static_cast<int>(seismic_data.size());
@@ -1021,7 +1021,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
         }
       }
     }
-    
+
     bool got_filtered_logs = false;
     for (int i = 0; i < n_intervals_; i++) {
       if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
@@ -1034,7 +1034,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
       LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
     }
-
 
     //H-TODO Some of wells do not hit all intervals and the following routine fails (CRA-866)
     //We should only resample from intervals that the current well hits
@@ -2361,7 +2360,7 @@ void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *
     BlockedLogsCommon * new_blocked_log = new BlockedLogsCommon(*blocked_log); //copy
 
     std::string name = blocked_log->GetWellName();
-    
+
     new_blocked_logs.insert(std::pair<std::string, BlockedLogsCommon *>(name, new_blocked_log));
   }
 
