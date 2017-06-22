@@ -8679,7 +8679,8 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
                 }
               }
 
-              std::vector<NRLib::Matrix> prior_auto_cov_temp(interval_simboxes[i]->getnz());
+
+              std::vector<NRLib::Matrix> prior_auto_cov_temp(n_corr_T);
               int n_est_nonzero = 0;
               if (analyze->GetEnoughData() == true) {
                 prior_auto_cov_temp   = analyze->GetAutoCovariance();
@@ -8687,12 +8688,13 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
               }
               // If interval i does not have enough data for estimation, use the estimation over all intervals
               else {
+
                 // If dz for interval i is not equal to the minimum resolution min_dz, resample auto_cov
                 if (dz_min != interval_simboxes[i]->getdz())
                   ResampleAutoCovToCorrectDz(analyze_all->GetAutoCovariance(), dz_min, prior_auto_cov_temp, interval_simboxes[i]->getdz());
                 else
                   prior_auto_cov_temp   = analyze_all->GetAutoCovariance();
-                n_est_nonzero         = analyze_all->GetMaxLagWithNonZeroAutoCovData();
+                n_est_nonzero = analyze_all->GetMaxLagWithNonZeroAutoCovData();
               }
 
               int n_est = std::min(n_est_nonzero, n_corr_T);
@@ -9658,10 +9660,10 @@ void  CommonData::EstimateXYPaddingSizes(Simbox          * simbox,
   //LogKit::LogFormatted(logLevel,"\nPadding sizes"+text2+":\n");
 }
 
-void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix>                      & prior_auto_cov_dz_min,
-                                             double                                                  dz_min,
-                                             std::vector<NRLib::Matrix>                            & prior_auto_cov,
-                                             double                                                  dz) const
+void  CommonData::ResampleAutoCovToCorrectDz(const std::vector<NRLib::Matrix> & prior_auto_cov_dz_min,
+                                             double                             dz_min,
+                                             std::vector<NRLib::Matrix>       & prior_auto_cov,
+                                             double                             dz) const
 {
   // prior_auto_cov_dz_min has been estimated over all intervals, so its size must be >= the size of prior_auto_cov
   double    fraction_1            = 0;

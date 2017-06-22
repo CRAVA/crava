@@ -1110,7 +1110,6 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     return RMISSING;
   }
 
- 
 }
 
 

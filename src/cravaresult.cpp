@@ -237,9 +237,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int nz_output    = output_simbox.getnz();
 
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
+
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
 
   //Add seismic data to blocked logs
+
   if ((n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) && common_data->HasSeismicData()) {
     std::vector<SeismicStorage *> seismic_data = common_data->GetSeismicDataTimeLapse(0);
     int n_angles = static_cast<int>(seismic_data.size());
@@ -1008,15 +1010,33 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     BlockedLogsCommon * blocked_log_final = iter->second;
 
     std::string well_name = blocked_log_final->GetWellName();
-    int n_blocks          = blocked_log_final->GetNumberOfBlocks();
 
-    bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpFaciesFiltered().size() > 0;
-    bool got_filtered_logs  = blocked_logs_intervals[0].find(well_name)->second->GetContLogsSeismicRes().size() > 0;
+    int n_blocks = blocked_log_final->GetNumberOfBlocks();
+
+    bool got_vp_rho_fac_log = false;
+    for (int i = 0; i < n_intervals_; i++) {
+      if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+        if (blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered().size() > 0) {
+          got_vp_rho_fac_log = true;
+        }
+      }
+    }
+
+    bool got_filtered_logs = false;
+    for (int i = 0; i < n_intervals_; i++) {
+      if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+        if (blocked_logs_intervals[i].find(well_name)->second->GetContLogsSeismicRes().size() > 0)
+          got_filtered_logs = true;
+      }
+    }
 
     if (got_vp_rho_fac_log || got_filtered_logs) {
       LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
       LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
     }
+
+    //H-TODO Some of wells do not hit all intervals and the following routine fails (CRA-866)
+    //We should only resample from intervals that the current well hits
 
     //ForFacies logs (vp, rho)
     if (got_vp_rho_fac_log) {
@@ -1030,6 +1050,7 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       for (int i = 0; i < n_intervals_; i++) {
         CopyWellLog(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
         CopyWellLog(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
+
       }
 
       std::vector<int> interval_log(n_blocks);
@@ -1093,7 +1114,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 void CravaResult::CopyWellLog(std::vector<double>       & log_new,
                               const std::vector<double> & log_old)
 {
-  //for (int i = start; i <= end; i++) {
   for (size_t i = 0; i < log_old.size(); i++) {
     log_new.push_back(log_old[i]);
   }
