@@ -178,7 +178,7 @@ CommonData::CommonData(ModelSettings * model_settings,
     // 8. Wavelet Handling, moved here so that background is ready first. May then use correct Vp/Vs in singlezone. Changes reflection matrix to the one that will be used for single zone.
     if ((block_wells_ == true || model_settings->getEstimateWaveletNoise() == true || model_settings->getForwardModeling() == true) && optimize_well_location_ && read_wells_)
       wavelet_handling_ = WaveletHandling(model_settings, input_files, estimation_simbox_, full_inversion_simbox_, mapped_blocked_logs_, seismic_data_, wavelets_, well_wavelets_,
-                                          local_noise_scales_, global_noise_estimates_, sn_ratios_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
+                                          local_noise_scales_, global_noise_estimates_, sn_ratios_, global_wavelet_scales_, t_grad_x_, t_grad_y_, ref_time_grad_x_, ref_time_grad_y_,
                                           reflection_matrix_, wavelet_est_int_top_, wavelet_est_int_bot_, shift_grids_, gain_grids_, segy_geometry, err_text);
 
     delete segy_geometry; //Not needed anymore.
@@ -3097,6 +3097,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                  std::map<int, std::vector<Grid2D *> >       & local_noise_scales,
                                  std::map<int, std::vector<float> >          & global_noise_estimates,
                                  std::map<int, std::vector<float> >          & sn_ratios,
+                                 std::map<int, std::vector<float> >          & global_wavelet_scales,
                                  std::vector<std::vector<double> >           & t_grad_x,
                                  std::vector<std::vector<double> >           & t_grad_y,
                                  NRLib::Grid2D<float>                        & ref_time_grad_x,
@@ -3144,6 +3145,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
 
       std::vector<float> sn_ratio = model_settings->getSNRatio(i);
       std::vector<float> angles   = model_settings->getAngle(i);
+      std::vector<float> global_wavelet_scale(n_angles);
 
       //Fra ModelAvoDynamic::processSeismic:
       std::vector<bool> estimate_wavelets = model_settings->getEstimateWavelet(i);
@@ -3297,6 +3299,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
                                     j, //Angle
                                     angles[j],
                                     sn_ratio[j],
+                                    global_wavelet_scale[j],
                                     estimate_wavelets[j],
                                     use_ricker_wavelet[j]);
         else
@@ -3337,6 +3340,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
       local_noise_scales[i]     = local_noise_scale;
       global_noise_estimates[i] = sn_ratio;
       sn_ratios[i]              = sn_ratio;
+      global_wavelet_scales[i]  = global_wavelet_scale;
 
     } //timelapse
 
@@ -3468,6 +3472,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
                              unsigned int                                 j_angle,
                              const float                                  angle,
                              float                                      & sn_ratio,
+                             float                                      & global_wavelet_scale, //We store the estimated scale, used in multiinterval inversion if one interval fails to reestimate scale
                              bool                                         estimate_wavelet,
                              bool                                         use_ricker_wavelet) const
 {
@@ -3495,6 +3500,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   }
 
   Wavelet * wavelet_pre_resampling = NULL;
+  global_wavelet_scale = 1.0;
 
   if (estimate_wavelet) {
     wavelet = new Wavelet1D(&estimation_simbox,
@@ -3554,6 +3560,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
         // prescale, then we have correct size order, and later scale estimation will be ok.
         if (model_settings->getEstimateGlobalWaveletScale(i_timelapse,j_angle)) {
           LogKit::LogFormatted(LogKit::Low,"  Wavelet is prescaled with estimated global scale (" + NRLib::ToString(prescale) + ").\n");
+
           wavelet->multiplyRAmpByConstant(prescale);
           wavelet->setPreScale(prescale);
         }
@@ -3586,7 +3593,9 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
     if (error == 0) {
       delete wavelet_pre_resampling;
       wavelet_pre_resampling = new Wavelet1D(wavelet);
+
       wavelet_pre_resampling->scale(wavelet->getScale()); //Not copied in copy-constructor
+
       wavelet->resample(static_cast<float>(estimation_simbox.getdz()),
                         estimation_simbox.getnz(),
                         estimation_simbox.GetNZpad());
@@ -3594,6 +3603,7 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
   }
 
   if (error == 0) {
+
     wavelet->scale(model_settings->getWaveletScale(i_timelapse,j_angle));
 
     if (forward_modeling_ == false && model_settings->getNumberOfWells() > 0) {
@@ -3704,10 +3714,15 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
 
   delete [] reflection_coefs;
 
+  //We store the scale of the global (seismic domain) wavelet
+  //We use it for wavelets for intervals that fails to reestimate scale per interval
+  global_wavelet_scale = wavelet->getScale();
+
   if (error == 0) {
     //All wavelets from commondata should not be stored on fftorder.
     if (wavelet_pre_resampling != NULL) {
       delete wavelet;
+
       wavelet = wavelet_pre_resampling;
     }
     else if (wavelet->getInFFTOrder()) { //Wavlet estimated
@@ -3717,7 +3732,10 @@ CommonData::Process1DWavelet(const ModelSettings                        * model_
       wavelet->invFFT1DInPlace();
 
   }
+
+
   return error;
+
 }
 
 int

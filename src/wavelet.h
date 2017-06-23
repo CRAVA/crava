@@ -109,6 +109,7 @@ public:
   int           getNzp()      const {return nzp_;}
   float         getDz()       const {return dz_;}
   float         getScale()    const {return scale_;}
+  float         getPreScale() const {return pre_scale_;}
 
   void          setPreScale(float pre_scale) {pre_scale_ = pre_scale;}
 
