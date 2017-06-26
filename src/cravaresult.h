@@ -67,7 +67,7 @@ public:
   void ResampleLog(std::vector<double>                                            & final_log,
                    std::vector<std::vector<double> >                              & old_log_interval, //vector interval
                    const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
-                   std::vector<int> & interval_used,
+                   std::vector<int>                                               & interval_used,
                    MultiIntervalGrid                                              * multi_interval_grid,
                    const BlockedLogsCommon                                        * blocked_log_final,
                    std::string                                                      well_name,

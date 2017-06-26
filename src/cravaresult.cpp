@@ -994,7 +994,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //blocked_logs_output are blocked to output_simbox in commondata
   //Need to resample blocked logs that are added after commondata, and cannot be added directly to blocked_logs_output
 
-  //int n_intervals = static_cast<int>(blocked_logs_intervals.size());
   float res_fac   = 10.0; //Degree of refinement, must be integer.
 
   //Do not resample if there is only one interval, and if output_simbox and has the same resolution as the interval_simbox
@@ -1077,9 +1076,9 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       std::vector<double> vp_filtered_final(n_blocks);
       std::vector<double> vs_filtered_final(n_blocks);
       std::vector<double> rho_filtered_final(n_blocks);
-      std::vector<std::vector<double> > vp_filtered_intervals; //(n_intervals);
-      std::vector<std::vector<double> > vs_filtered_intervals; //(n_intervals);
-      std::vector<std::vector<double> > rho_filtered_intervals; //(n_intervals);
+      std::vector<std::vector<double> > vp_filtered_intervals;
+      std::vector<std::vector<double> > vs_filtered_intervals;
+      std::vector<std::vector<double> > rho_filtered_intervals;
 
       //Get well logs, missing values are interpolated
       std::vector<int> intervals_used;
