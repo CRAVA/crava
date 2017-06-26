@@ -994,7 +994,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //blocked_logs_output are blocked to output_simbox in commondata
   //Need to resample blocked logs that are added after commondata, and cannot be added directly to blocked_logs_output
 
-  int n_intervals = static_cast<int>(blocked_logs_intervals.size());
   float res_fac   = 10.0; //Degree of refinement, must be integer.
 
   //Do not resample if there is only one interval, and if output_simbox and has the same resolution as the interval_simbox
@@ -1003,7 +1002,8 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     return;
   }
 
-  //Loop over wells
+
+  //Loop over wells and combine
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_output.begin(); it != blocked_logs_output.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_output.find(it->first);
 
@@ -1031,32 +1031,37 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     }
 
     if (got_vp_rho_fac_log || got_filtered_logs) {
-      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
-      LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
+      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs for well " + well_name + "...");
     }
-
-    //H-TODO Some of wells do not hit all intervals and the following routine fails (CRA-866)
-    //We should only resample from intervals that the current well hits
 
     //ForFacies logs (vp, rho)
     if (got_vp_rho_fac_log) {
       LogKit::LogFormatted(LogKit::Low,"\n    vp rho fac log... ");
       std::vector<double> vp_for_facies_final(n_blocks);
       std::vector<double> rho_for_facies_final(n_blocks);
-      std::vector<std::vector<double> > vp_for_facies_intervals(n_intervals_);
-      std::vector<std::vector<double> > rho_for_facies_intervals(n_intervals_);
+      std::vector<std::vector<double> > vp_for_facies_intervals;
+      std::vector<std::vector<double> > rho_for_facies_intervals;
 
       //Get well logs, missing values are interpolated
+      std::vector<int> intervals_used; //Keep track of which intervals contain this well
       for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
-        CopyWellLog(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
 
+        if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+          std::vector<double> tmp_log_vp;
+          CopyWellLog(tmp_log_vp,  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
+          vp_for_facies_intervals.push_back(tmp_log_vp);
+
+          std::vector<double> tmp_log_rho;
+          CopyWellLog(tmp_log_rho, blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
+          rho_for_facies_intervals.push_back(tmp_log_rho);
+
+          intervals_used.push_back(i);
+        }
       }
 
       std::vector<int> interval_log(n_blocks);
-
-      ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(rho_for_facies_final, rho_for_facies_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(rho_for_facies_final, rho_for_facies_intervals, blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
 
       blocked_log_final->SetVpFaciesFiltered(vp_for_facies_final);
       blocked_log_final->SetRhoFaciesFiltered(rho_for_facies_final);
@@ -1071,22 +1076,35 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       std::vector<double> vp_filtered_final(n_blocks);
       std::vector<double> vs_filtered_final(n_blocks);
       std::vector<double> rho_filtered_final(n_blocks);
-      std::vector<std::vector<double> > vp_filtered_intervals(n_intervals);
-      std::vector<std::vector<double> > vs_filtered_intervals(n_intervals);
-      std::vector<std::vector<double> > rho_filtered_intervals(n_intervals);
+      std::vector<std::vector<double> > vp_filtered_intervals;
+      std::vector<std::vector<double> > vs_filtered_intervals;
+      std::vector<std::vector<double> > rho_filtered_intervals;
 
       //Get well logs, missing values are interpolated
+      std::vector<int> intervals_used;
       for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_filtered_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpSeismicResolution());
-        CopyWellLog(vs_filtered_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVsSeismicResolution());
-        CopyWellLog(rho_filtered_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoSeismicResolution());
+
+        if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+          std::vector<double> tmp_log_vp;
+          CopyWellLog(tmp_log_vp,  blocked_logs_intervals[i].find(well_name)->second->GetVpSeismicResolution());
+          vp_filtered_intervals.push_back(tmp_log_vp);
+
+          std::vector<double> tmp_log_vs;
+          CopyWellLog(tmp_log_vs,  blocked_logs_intervals[i].find(well_name)->second->GetVsSeismicResolution());
+          vs_filtered_intervals.push_back(tmp_log_vs);
+
+          std::vector<double> tmp_log_rho;
+          CopyWellLog(tmp_log_rho,  blocked_logs_intervals[i].find(well_name)->second->GetRhoSeismicResolution());
+          rho_filtered_intervals.push_back(tmp_log_rho);
+
+          intervals_used.push_back(i);
+        }
       }
 
       std::vector<int> interval_log(n_blocks);
-
-      ResampleLog(vp_filtered_final,  vp_filtered_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(vs_filtered_final,  vs_filtered_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(rho_filtered_final, rho_filtered_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vp_filtered_final,  vp_filtered_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vs_filtered_final,  vs_filtered_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(rho_filtered_final, rho_filtered_intervals, blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
 
       //If we vp and vp_bg are missing, seismic_resolution should also be missing. But missing values are interpolated over during the resampling, so we reset them as missing.
       for (int i = 0; i < n_blocks; i++) {
@@ -1169,32 +1187,37 @@ void CravaResult::ExtrapolateLog(std::vector<double> & well_log)
 }
 
 void CravaResult::ResampleLog(std::vector<double>                                            & final_log,
-                              std::vector<std::vector<double> >                              & old_log_interval, //vector interval
-                              const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                              std::vector<std::vector<double> >                              & old_log_interval, //vector intervals used
+                              const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals, //vector over all intervals
+                              std::vector<int>                                               & intervals_used,
                               MultiIntervalGrid                                              * multi_interval_grid,
                               const BlockedLogsCommon                                        * blocked_log_final,
                               std::string                                                      well_name,
                               float                                                            res_fac,
                               std::vector<int>                                               & interval_log)
 {
-  std::vector<std::vector<double> > interval_logs_fine(n_intervals_); //resample to, per interval
-  std::vector<std::vector<double> > z_pos_resampled_fine(n_intervals_); //Resample z-blocked log, it is used when we combine traces.
+
+  //We only resample from the intervals used, i.e. intervals that contains this well.
+  int n_intervals_used = static_cast<int>(intervals_used.size());
+
+  std::vector<std::vector<double> > interval_logs_fine(n_intervals_used); //resample to, per interval used
+  std::vector<std::vector<double> > z_pos_resampled_fine(n_intervals_used); //Resample z-blocked log, it is used when we combine traces.
 
   //Get logs per interval and resample to a fine resolution
-  for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
+  for (int i = 0; i < n_intervals_used; i++) {
+    int i_interval_global = intervals_used[i];
 
-    int nz_interval           = static_cast<int>(old_log_interval[i_interval].size() * res_fac);
-    std::vector<double> z_pos = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked();
+    int nz_interval           = static_cast<int>(old_log_interval[i].size() * res_fac);
+    std::vector<double> z_pos = blocked_logs_intervals[i_interval_global].find(well_name)->second->GetZposBlocked();
 
-    interval_logs_fine[i_interval].resize(nz_interval);
-    z_pos_resampled_fine[i_interval].resize(nz_interval);
+    interval_logs_fine[i].resize(nz_interval);
+    z_pos_resampled_fine[i].resize(nz_interval);
 
-    ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval], res_fac); //Interpolate missing
-    ResampleTrace(z_pos, z_pos_resampled_fine[i_interval], res_fac);
-
+    ResampleTrace(old_log_interval[i], interval_logs_fine[i], res_fac); //Interpolate missing
+    ResampleTrace(z_pos, z_pos_resampled_fine[i], res_fac);
   }
 
-  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine, interval_log);
+  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine, interval_log, intervals_used);
 }
 
 void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it is changed
@@ -1255,12 +1278,13 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
 void CravaResult::CombineTraces(std::vector<double>                     & final_log,
                                 const BlockedLogsCommon                 * blocked_log_final,
                                 MultiIntervalGrid                       * multi_interval_grid,
-                                const std::vector<std::vector<double> > & interval_logs_fine,
+                                const std::vector<std::vector<double> > & interval_logs_fine, //Vector over intervals used
                                 const std::vector<std::vector<double> > & z_pos_resampled,
-                                std::vector<int>                        & interval_log)
+                                std::vector<int>                        & interval_log,
+                                std::vector<int>                        & intervals_used)
 {
   int nz          = static_cast<int>(final_log.size());
-  int n_intervals = static_cast<int>(interval_logs_fine.size());
+  int n_intervals_used = static_cast<int>(interval_logs_fine.size());
 
   const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
 
@@ -1272,15 +1296,21 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
     double global_y = blocked_log_final->GetYposBlocked()[k];
     double global_z = blocked_log_final->GetZposBlocked()[k];
 
+    //We only send in and resample the intervals that contain this well
+    //i_interval is the index over all used intervals, and i_interval_global is the corresponding index of all intervals
     int i_interval = 0;
-    for (i_interval = 0; i_interval < n_intervals; i_interval++) {
-      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+    int i_interval_global = 0;
+    for (int i = 0; i < n_intervals_used; i++) {
+      i_interval = i;
+      i_interval_global = intervals_used[i];
+
+      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval_global);
 
       if (interval_simbox->IsInside(global_x, global_y, global_z))
         break;
     }
-    if (i_interval < (n_intervals-1)) { //Also check if it hits the next interval, unless it is the last one.
-      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval+1);
+    if (i_interval < (n_intervals_used-1)) { //Also check if it hits the next interval, unless it is the last one.
+      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval_global+1);
 
       if (interval_simbox->IsInside(global_x, global_y, global_z))
         two_intervals = true;
@@ -1288,20 +1318,26 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
 
     double value        = 0.0;
     int interval_index  = i_interval;
+    int interval_index_global = i_interval_global;
 
     if (two_intervals == true) {
-      //Use erorsion priorities to select between the two intervals
-      if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
+      //Use erosion priorities to select between the two intervals
+      if (erosion_priorities[i_interval_global] < erosion_priorities[i_interval_global+1]) {
         interval_index = i_interval;
-      else
-        interval_index = i_interval+1;
+        interval_index_global = i_interval_global;
+      }
+      else {
+        interval_index = i_interval + 1;
+        interval_index_global = i_interval_global + 1;
+
+      }
     }
 
     value = GetResampledTraceValue(interval_logs_fine[interval_index], z_pos_resampled[interval_index], global_z);
 
     final_log[k] = value;
 
-    interval_log[k] = interval_index;
+    interval_log[k] = interval_index_global;
   }
 }
 

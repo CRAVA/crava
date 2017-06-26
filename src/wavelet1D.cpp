@@ -888,6 +888,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     if (!doEstimateGlobalScale)
       optScale = globalScale;
     else {
+
       scale(optScale);
       for (int i=0 ; i < nWells ; i++)
         scaleOptWell[i] /= optScale;
@@ -906,8 +907,8 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
 
   if (optScale == RMISSING) {
     error = 1;
-    LogKit::LogFormatted(LogKit::Error,"\nERROR Could not estimate global wavelet scale\n");
-    errText += "Could not estimate global wavelet scale for stack "+NRLib::ToString(number)+".\n";
+    LogKit::LogFormatted(LogKit::Error,"\n  ERROR Could not estimate global wavelet scale\n");
+    errText += " Could not estimate global wavelet scale for stack "+NRLib::ToString(number)+".\n";
   }
 
   for(int w=0; w<nWells; w++) {
@@ -957,9 +958,9 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     }
   }
   else {
-    LogKit::LogFormatted(LogKit::Warning,"\n\n WARNING: Could not estimate empirical SN ratio. No legal data available.\n");
+    LogKit::LogFormatted(LogKit::Warning,"\n  WARNING: Could not estimate empirical SN ratio. No legal data available.\n");
     if (doEstimateSNRatio) {
-      errText += "Cannot estimate signal-to-noise ratio. No legal well data available.\n";
+      errText += " Cannot estimate signal-to-noise ratio. No legal well data available.\n";
       error   += 1;
     }
     else {

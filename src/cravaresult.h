@@ -67,6 +67,7 @@ public:
   void ResampleLog(std::vector<double>                                            & final_log,
                    std::vector<std::vector<double> >                              & old_log_interval, //vector interval
                    const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                   std::vector<int>                                               & interval_used,
                    MultiIntervalGrid                                              * multi_interval_grid,
                    const BlockedLogsCommon                                        * blocked_log_final,
                    std::string                                                      well_name,
@@ -86,7 +87,8 @@ public:
                      MultiIntervalGrid                       * multiple_interval_grid,
                      const std::vector<std::vector<double> > & resampled_logs,
                      const std::vector<std::vector<double> > & z_pos_resampled,
-                     std::vector<int>                        & interval_log);
+                     std::vector<int>                        & interval_log,
+                     std::vector<int> & interval_used);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,
