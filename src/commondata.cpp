@@ -775,6 +775,7 @@ bool CommonData::SetupOutputSimbox(Simbox             & output_simbox,
     else {
       //Use dz from seismic
       nz_new = static_cast<int>(output_simbox.getlz() / model_settings->getTimeDz());
+      model_settings->setUseInputSegyDzForOutputSegy(true);
     }
   }
   else {
@@ -814,6 +815,7 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSetti
   int ny          = multi_interval_grid->GetIntervalSimbox(0)->getny();
   int n_intervals = multi_interval_grid->GetNIntervals();
 
+  int n_interval_estimated = 0;
   for (int i = 0; i < nx; i++) {
     for (int j = 0; j < ny; j++) {
 
@@ -837,6 +839,7 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSetti
             if (min_dz_interval < min_dz_trace)
               min_dz_trace = min_dz_interval;
           }
+          n_interval_estimated += 1;
         }
         else {
           //We use the segy dz here directly instead of calculating from dz to nz and back to dz again (as nz is calculated from segy dz if it is not given)
@@ -855,6 +858,9 @@ double CommonData::FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSetti
 
     }
   }
+
+  if (n_interval_estimated == 0)
+    model_settings->setUseInputSegyDzForOutputSegy(true);
 
   return(min_dz);
 }

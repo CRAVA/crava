@@ -2566,7 +2566,9 @@ void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
   double simbox_dz = floor(simbox.getdz());
   double segy_dz   = floor(model_settings->getSegyDz());
 
-  if (simbox_dz == segy_dz && model_settings->getMatchOutputInputSegy() == true) {
+  //If simbox dz and segy dz match we write output segy matching input segy. This check can be unstable (?) as we go from dz to nz back to dz
+  // so if we know that they should match we have set getUseInputSegyDzForOutputSegy variable
+  if ((simbox_dz == segy_dz || model_settings->getUseInputSegyDzForOutputSegy() == true) && model_settings->getMatchOutputInputSegy() == true) {
     LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes (dz = " + NRLib::ToString(floor(segy_dz)) + ").\n");
   }
   else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
