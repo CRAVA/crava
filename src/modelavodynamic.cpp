@@ -355,8 +355,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //We must therefore re-add the global scaling here
       float global_scale = common_data->GetGlobalWaveletScale(this_timelapse_)[i];
 
+      LogKit::LogFormatted(LogKit::Low,"\nSetting up wavelet for angle number " + NRLib::ToString(i));
       if (global_scale != 1.0) {
-        LogKit::LogFormatted(LogKit::Low,"\nSetting up wavelet for angle number " + NRLib::ToString(i) + ":");
         wavelets_[i]->scale(global_scale);
       }
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
