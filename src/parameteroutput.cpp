@@ -700,7 +700,7 @@ ParameterOutput::FindOutputSegyDzNz(const StormContGrid * outgrid,
   }
   else {
 
-    float dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
+    dz_output = float(floor(outgrid->GetLZ()/outgrid->GetNK()));
 
     if (dz_output < 1.0)
       dz_output = 1.0;
