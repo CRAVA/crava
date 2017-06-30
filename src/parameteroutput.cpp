@@ -690,8 +690,11 @@ ParameterOutput::FindOutputSegyDzNz(const StormContGrid * outgrid,
   float dz_output_r = static_cast<float>(floor(outgrid->GetLZ()/outgrid->GetNK()));
   float dz_input    = floor(model_settings->getSegyDz());
 
+  //If simbox dz and segy dz match we write output segy matching input segy. This check can be unstable (?) as we go from dz to nz back to dz
+  // so if we know that they should match we have set getUseInputSegyDzForOutputSegy variable
+
   //We do not use nz from input segy if output offset is specified seperately in the model file
-  if (dz_output_r == dz_input && model_settings->getMatchOutputInputSegy() == true) {
+  if ((dz_output_r == dz_input || model_settings->getUseInputSegyDzForOutputSegy() == true) && model_settings->getMatchOutputInputSegy() == true) {
     dz_output = floor(model_settings->getSegyDz());
     nz_output = model_settings->getSegyNz();
   }
