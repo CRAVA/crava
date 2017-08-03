@@ -223,6 +223,7 @@ SegY::SegY(const std::string               & fileName,
   unsigned long long fSize = FindFileSize(file_name_);
   n_traces_     = static_cast<int>(ceil( (static_cast<double>(fSize)-3600.0)/
                                           static_cast<double>(datasize_*nz_+240.0)) );
+
 }
 
 
@@ -321,6 +322,7 @@ SegY::SegY(const std::string       & fileName,
 SegY::SegY(const StormContGrid     * storm_grid,
            const SegyGeometry      * geometry,
            float                     z0,
+           float                     dz,
            int                       nz,
            const std::string       & file_name,
            bool                      write_to_file,
@@ -336,11 +338,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   TextualHeader header = TextualHeader::standardHeader();
   int nx = static_cast<int>(storm_grid->GetNI());
   int ny = static_cast<int>(storm_grid->GetNJ());
-  float dz = float(floor((storm_grid->GetLZ()/storm_grid->GetNK())));
-  //float z0 = 0.0;
-  //int nz   = int(ceil((storm_grid->GetZMax())/dz));
 
-  //SegY segyout(file_name,0,nz,dz,header);
   trace_header_format_ = trace_header_format;
   z0_ = z0;
   nz_ = nz;
@@ -725,17 +723,17 @@ SegY::CheckTopBotError(const double * tE, const double * bE)
 {
   std::string text = "";
   if (tE[0] > 0.0) {
-    text+= "There is a region between the top surface of the inversion interval and the seismic data volume \n";
-    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(tE[2],0)+","+ToString(tE[3],0)+") \n";
-    text+= "where the surface z-value = "+ToString(tE[4],2)+" while the seismic start time = "+ToString(z0_,2)+". Please reduce \n";
-    text+= "the start time of your seismic data or lower the top surface "+ToString(tE[0],2)+"ms.\n";
+    text+= "There is a region between the top surface of the inversion interval and the input data volume \n";
+    text+= "with no data. The largest gap is for the trace at position ("+ToString(tE[2],0)+","+ToString(tE[3],0)+") \n";
+    text+= "where the surface z-value = "+ToString(tE[4],2)+" while the data start time = "+ToString(z0_,2)+". Please reduce \n";
+    text+= "the start time of your input data or lower the top surface "+ToString(tE[0],2)+"ms.\n";
   }
   if (bE[1] > 0.0) {
     double sMax = bE[5] - bE[1];
-    text+= "There is a region between the base surface of the inversion interval and the seismic data volume \n";
-    text+= "with no seismic data. The largest gap is for the seismic trace at position ("+ToString(bE[2], 0)+","+ToString(bE[3], 0)+") \n";
-    text+= "where the surface z-value = "+ToString(bE[5], 2)+" while the seismic end time = "+ToString(sMax, 2)+". Please include \n";
-    text+= "more seismic data or heighten the base surface "+ToString(bE[1], 2)+"ms.\n";
+    text+= "There is a region between the base surface of the inversion interval and the input data volume \n";
+    text+= "with no data. The largest gap is for the trace at position ("+ToString(bE[2], 0)+","+ToString(bE[3], 0)+") \n";
+    text+= "where the surface z-value = "+ToString(bE[5], 2)+" while the data end time = "+ToString(sMax, 2)+". Please include \n";
+    text+= "more data or heighten the base surface "+ToString(bE[1], 2)+"ms.\n";
   }
   if (text != "")
     throw Exception(text);
@@ -757,6 +755,12 @@ SegY::ReadTrace(const Volume * volume,
   duplicateHeader = ReadHeader(traceHeader);
   if (writevalues == 1)
     traceHeader.WriteValues();
+
+  //Set offset from traceheader if it is not set
+  if (z0_ == segyRMISSING) {
+    z0_ = static_cast<float>(traceHeader.GetStartTime());
+    LogKit::LogMessage(LogKit::Low, "\nUsing start-time " + NRLib::ToString(z0_) + " taken from trace header.\n");
+  }
 
   if (outsideTopBot != NULL) {
     outsideTopBot[0] = 0; // > 0 indicates top error
@@ -1415,6 +1419,7 @@ SegY::WriteAllTracesToFile(short scalcoinitial)
       header.SetUtmy(static_cast<double>(y));
       header.SetInline(traces_[i]->GetInline());
       header.SetCrossline(traces_[i]->GetCrossline());
+      header.SetStartTime(static_cast<short>(z0_));
       header.Write(file_);
       WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
     }

@@ -98,6 +98,10 @@ public:
   int    GetMinXL()        const { return minXL_      ;}
   int    GetMaxXL()        const { return maxXL_      ;}
   int    GetXLStep()       const { return XLStep_     ;}
+  int    GetIL0()          const { return IL0_        ;}
+  int    GetXL0()          const { return XL0_        ;}
+
+  bool   GetFirstAxisIL()  const { return firstAxisIL_ ;}
 
   void   WriteGeometry() const;
   void   WriteILXL(bool errorMode = false) const;

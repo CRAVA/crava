@@ -237,9 +237,11 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
   int nz_output    = output_simbox.getnz();
 
   blocked_logs_ = common_data->GetBlockedLogsOutput(); //Logs blocked to output_simbox
+
   CombineBlockedLogs(blocked_logs_, blocked_logs_intervals_, multi_interval_grid, &output_simbox); //Combine and resample logs that cannot be created directly to blocked_logs_output
 
   //Add seismic data to blocked logs
+
   if ((n_intervals_ > 1 || output_simbox.getnz() != multi_interval_grid->GetIntervalSimbox(0)->getnz()) && common_data->HasSeismicData()) {
     std::vector<SeismicStorage *> seismic_data = common_data->GetSeismicDataTimeLapse(0);
     int n_angles = static_cast<int>(seismic_data.size());
@@ -381,7 +383,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
     }
   }
   //Covariance grids
-  if (!model_settings->getForwardModeling()) {
+  if (!model_settings->getForwardModeling() && (model_settings->getOutputGridsOther() & IO::CORRELATION)) {
     LogKit::LogFormatted(LogKit::Low,"\nCombine Covariance grids");
     cov_vp_        = new StormContGrid(output_simbox, nx, ny, nz_output);
     cov_vs_        = new StormContGrid(output_simbox, nx, ny, nz_output);
@@ -605,7 +607,7 @@ void CravaResult::CombineResults(ModelSettings                        * model_se
 
   //From CommonData::WaveletHandling
   LogKit::LogFormatted(LogKit::Low,"\nGenerate Synthetic Seismic Logs...");
-  GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, output_simbox);
+  CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &output_simbox);
 
   //We need synt_seis from well wavelets, but it needs to be based on output simbox
   //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -992,7 +994,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
   //blocked_logs_output are blocked to output_simbox in commondata
   //Need to resample blocked logs that are added after commondata, and cannot be added directly to blocked_logs_output
 
-  int n_intervals = static_cast<int>(blocked_logs_intervals.size());
   float res_fac   = 10.0; //Degree of refinement, must be integer.
 
   //Do not resample if there is only one interval, and if output_simbox and has the same resolution as the interval_simbox
@@ -1001,21 +1002,36 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
     return;
   }
 
-  //Loop over wells
+
+  //Loop over wells and combine
   for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_logs_output.begin(); it != blocked_logs_output.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_logs_output.find(it->first);
 
     BlockedLogsCommon * blocked_log_final = iter->second;
 
     std::string well_name = blocked_log_final->GetWellName();
-    int n_blocks          = blocked_log_final->GetNumberOfBlocks();
 
-    bool got_vp_rho_fac_log = blocked_logs_intervals[0].find(well_name)->second->GetVpFaciesFiltered().size() > 0;
-    bool got_filtered_logs  = blocked_logs_intervals[0].find(well_name)->second->GetContLogsSeismicRes().size() > 0;
+    int n_blocks = blocked_log_final->GetNumberOfBlocks();
+
+    bool got_vp_rho_fac_log = false;
+    for (int i = 0; i < n_intervals_; i++) {
+      if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+        if (blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered().size() > 0) {
+          got_vp_rho_fac_log = true;
+        }
+      }
+    }
+
+    bool got_filtered_logs = false;
+    for (int i = 0; i < n_intervals_; i++) {
+      if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+        if (blocked_logs_intervals[i].find(well_name)->second->GetContLogsSeismicRes().size() > 0)
+          got_filtered_logs = true;
+      }
+    }
 
     if (got_vp_rho_fac_log || got_filtered_logs) {
-      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs...");
-      LogKit::LogFormatted(LogKit::Low,"\n  "+well_name);
+      LogKit::LogFormatted(LogKit::Low,"\nCombine Blocked Logs for well " + well_name + "...");
     }
 
     //ForFacies logs (vp, rho)
@@ -1023,19 +1039,29 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       LogKit::LogFormatted(LogKit::Low,"\n    vp rho fac log... ");
       std::vector<double> vp_for_facies_final(n_blocks);
       std::vector<double> rho_for_facies_final(n_blocks);
-      std::vector<std::vector<double> > vp_for_facies_intervals(n_intervals_);
-      std::vector<std::vector<double> > rho_for_facies_intervals(n_intervals_);
+      std::vector<std::vector<double> > vp_for_facies_intervals;
+      std::vector<std::vector<double> > rho_for_facies_intervals;
 
       //Get well logs, missing values are interpolated
+      std::vector<int> intervals_used; //Keep track of which intervals contain this well
       for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_for_facies_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
-        CopyWellLog(rho_for_facies_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
+
+        if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+          std::vector<double> tmp_log_vp;
+          CopyWellLog(tmp_log_vp,  blocked_logs_intervals[i].find(well_name)->second->GetVpFaciesFiltered());
+          vp_for_facies_intervals.push_back(tmp_log_vp);
+
+          std::vector<double> tmp_log_rho;
+          CopyWellLog(tmp_log_rho, blocked_logs_intervals[i].find(well_name)->second->GetRhoFaciesFiltered());
+          rho_for_facies_intervals.push_back(tmp_log_rho);
+
+          intervals_used.push_back(i);
+        }
       }
 
       std::vector<int> interval_log(n_blocks);
-
-      ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(rho_for_facies_final, rho_for_facies_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vp_for_facies_final,  vp_for_facies_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(rho_for_facies_final, rho_for_facies_intervals, blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
 
       blocked_log_final->SetVpFaciesFiltered(vp_for_facies_final);
       blocked_log_final->SetRhoFaciesFiltered(rho_for_facies_final);
@@ -1050,22 +1076,35 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
       std::vector<double> vp_filtered_final(n_blocks);
       std::vector<double> vs_filtered_final(n_blocks);
       std::vector<double> rho_filtered_final(n_blocks);
-      std::vector<std::vector<double> > vp_filtered_intervals(n_intervals);
-      std::vector<std::vector<double> > vs_filtered_intervals(n_intervals);
-      std::vector<std::vector<double> > rho_filtered_intervals(n_intervals);
+      std::vector<std::vector<double> > vp_filtered_intervals;
+      std::vector<std::vector<double> > vs_filtered_intervals;
+      std::vector<std::vector<double> > rho_filtered_intervals;
 
       //Get well logs, missing values are interpolated
+      std::vector<int> intervals_used;
       for (int i = 0; i < n_intervals_; i++) {
-        CopyWellLog(vp_filtered_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVpSeismicResolution());
-        CopyWellLog(vs_filtered_intervals[i],  blocked_logs_intervals[i].find(well_name)->second->GetVsSeismicResolution());
-        CopyWellLog(rho_filtered_intervals[i], blocked_logs_intervals[i].find(well_name)->second->GetRhoSeismicResolution());
+
+        if (blocked_logs_intervals[i].find(well_name) != blocked_logs_intervals[i].end()) {
+          std::vector<double> tmp_log_vp;
+          CopyWellLog(tmp_log_vp,  blocked_logs_intervals[i].find(well_name)->second->GetVpSeismicResolution());
+          vp_filtered_intervals.push_back(tmp_log_vp);
+
+          std::vector<double> tmp_log_vs;
+          CopyWellLog(tmp_log_vs,  blocked_logs_intervals[i].find(well_name)->second->GetVsSeismicResolution());
+          vs_filtered_intervals.push_back(tmp_log_vs);
+
+          std::vector<double> tmp_log_rho;
+          CopyWellLog(tmp_log_rho,  blocked_logs_intervals[i].find(well_name)->second->GetRhoSeismicResolution());
+          rho_filtered_intervals.push_back(tmp_log_rho);
+
+          intervals_used.push_back(i);
+        }
       }
 
       std::vector<int> interval_log(n_blocks);
-
-      ResampleLog(vp_filtered_final,  vp_filtered_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(vs_filtered_final,  vs_filtered_intervals,  blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
-      ResampleLog(rho_filtered_final, rho_filtered_intervals, blocked_logs_intervals, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vp_filtered_final,  vp_filtered_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(vs_filtered_final,  vs_filtered_intervals,  blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
+      ResampleLog(rho_filtered_final, rho_filtered_intervals, blocked_logs_intervals, intervals_used, multi_interval_grid, blocked_log_final, well_name, res_fac, interval_log);
 
       //If we vp and vp_bg are missing, seismic_resolution should also be missing. But missing values are interpolated over during the resampling, so we reset them as missing.
       for (int i = 0; i < n_blocks; i++) {
@@ -1093,7 +1132,6 @@ void CravaResult::CombineBlockedLogs(std::map<std::string, BlockedLogsCommon *> 
 void CravaResult::CopyWellLog(std::vector<double>       & log_new,
                               const std::vector<double> & log_old)
 {
-  //for (int i = start; i <= end; i++) {
   for (size_t i = 0; i < log_old.size(); i++) {
     log_new.push_back(log_old[i]);
   }
@@ -1149,32 +1187,37 @@ void CravaResult::ExtrapolateLog(std::vector<double> & well_log)
 }
 
 void CravaResult::ResampleLog(std::vector<double>                                            & final_log,
-                              std::vector<std::vector<double> >                              & old_log_interval, //vector interval
-                              const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                              std::vector<std::vector<double> >                              & old_log_interval, //vector intervals used
+                              const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals, //vector over all intervals
+                              std::vector<int>                                               & intervals_used,
                               MultiIntervalGrid                                              * multi_interval_grid,
                               const BlockedLogsCommon                                        * blocked_log_final,
                               std::string                                                      well_name,
                               float                                                            res_fac,
                               std::vector<int>                                               & interval_log)
 {
-  std::vector<std::vector<double> > interval_logs_fine(n_intervals_); //resample to, per interval
-  std::vector<std::vector<double> > z_pos_resampled_fine(n_intervals_); //Resample z-blocked log, it is used when we combine traces.
+
+  //We only resample from the intervals used, i.e. intervals that contains this well.
+  int n_intervals_used = static_cast<int>(intervals_used.size());
+
+  std::vector<std::vector<double> > interval_logs_fine(n_intervals_used); //resample to, per interval used
+  std::vector<std::vector<double> > z_pos_resampled_fine(n_intervals_used); //Resample z-blocked log, it is used when we combine traces.
 
   //Get logs per interval and resample to a fine resolution
-  for (int i_interval = 0; i_interval < n_intervals_; i_interval++) {
+  for (int i = 0; i < n_intervals_used; i++) {
+    int i_interval_global = intervals_used[i];
 
-    int nz_interval           = static_cast<int>(old_log_interval[i_interval].size() * res_fac);
-    std::vector<double> z_pos = blocked_logs_intervals[i_interval].find(well_name)->second->GetZposBlocked();
+    int nz_interval           = static_cast<int>(old_log_interval[i].size() * res_fac);
+    std::vector<double> z_pos = blocked_logs_intervals[i_interval_global].find(well_name)->second->GetZposBlocked();
 
-    interval_logs_fine[i_interval].resize(nz_interval);
-    z_pos_resampled_fine[i_interval].resize(nz_interval);
+    interval_logs_fine[i].resize(nz_interval);
+    z_pos_resampled_fine[i].resize(nz_interval);
 
-    ResampleTrace(old_log_interval[i_interval], interval_logs_fine[i_interval], res_fac); //Interpolate missing
-    ResampleTrace(z_pos, z_pos_resampled_fine[i_interval], res_fac);
-
+    ResampleTrace(old_log_interval[i], interval_logs_fine[i], res_fac); //Interpolate missing
+    ResampleTrace(z_pos, z_pos_resampled_fine[i], res_fac);
   }
 
-  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine, interval_log);
+  CombineTraces(final_log, blocked_log_final, multi_interval_grid, interval_logs_fine, z_pos_resampled_fine, interval_log, intervals_used);
 }
 
 void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it is changed
@@ -1235,12 +1278,13 @@ void CravaResult::ResampleTrace(std::vector<double> & old_trace, //not const, it
 void CravaResult::CombineTraces(std::vector<double>                     & final_log,
                                 const BlockedLogsCommon                 * blocked_log_final,
                                 MultiIntervalGrid                       * multi_interval_grid,
-                                const std::vector<std::vector<double> > & interval_logs_fine,
+                                const std::vector<std::vector<double> > & interval_logs_fine, //Vector over intervals used
                                 const std::vector<std::vector<double> > & z_pos_resampled,
-                                std::vector<int>                        & interval_log)
+                                std::vector<int>                        & interval_log,
+                                std::vector<int>                        & intervals_used)
 {
   int nz          = static_cast<int>(final_log.size());
-  int n_intervals = static_cast<int>(interval_logs_fine.size());
+  int n_intervals_used = static_cast<int>(interval_logs_fine.size());
 
   const std::vector<int> & erosion_priorities = multi_interval_grid->GetErosionPriorities();
 
@@ -1252,15 +1296,21 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
     double global_y = blocked_log_final->GetYposBlocked()[k];
     double global_z = blocked_log_final->GetZposBlocked()[k];
 
+    //We only send in and resample the intervals that contain this well
+    //i_interval is the index over all used intervals, and i_interval_global is the corresponding index of all intervals
     int i_interval = 0;
-    for (i_interval = 0; i_interval < n_intervals; i_interval++) {
-      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval);
+    int i_interval_global = 0;
+    for (int i = 0; i < n_intervals_used; i++) {
+      i_interval = i;
+      i_interval_global = intervals_used[i];
+
+      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval_global);
 
       if (interval_simbox->IsInside(global_x, global_y, global_z))
         break;
     }
-    if (i_interval < (n_intervals-1)) { //Also check if it hits the next interval, unless it is the last one.
-      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval+1);
+    if (i_interval < (n_intervals_used-1)) { //Also check if it hits the next interval, unless it is the last one.
+      Simbox * interval_simbox = multi_interval_grid->GetIntervalSimbox(i_interval_global+1);
 
       if (interval_simbox->IsInside(global_x, global_y, global_z))
         two_intervals = true;
@@ -1268,20 +1318,26 @@ void CravaResult::CombineTraces(std::vector<double>                     & final_
 
     double value        = 0.0;
     int interval_index  = i_interval;
+    int interval_index_global = i_interval_global;
 
     if (two_intervals == true) {
-      //Use erorsion priorities to select between the two intervals
-      if (erosion_priorities[i_interval] < erosion_priorities[i_interval+1])
+      //Use erosion priorities to select between the two intervals
+      if (erosion_priorities[i_interval_global] < erosion_priorities[i_interval_global+1]) {
         interval_index = i_interval;
-      else
-        interval_index = i_interval+1;
+        interval_index_global = i_interval_global;
+      }
+      else {
+        interval_index = i_interval + 1;
+        interval_index_global = i_interval_global + 1;
+
+      }
     }
 
     value = GetResampledTraceValue(interval_logs_fine[interval_index], z_pos_resampled[interval_index], global_z);
 
     final_log[k] = value;
 
-    interval_log[k] = interval_index;
+    interval_log[k] = interval_index_global;
   }
 }
 
@@ -1301,14 +1357,9 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   int output_grids_elastic         = model_settings->getOutputGridsElastic();
   GridMapping * time_depth_mapping = common_data->GetTimeDepthMapping();
 
-  //If simbox is set up with dz from segy it may result in an difference, as it it first turned to number of layers (int) and back to dz. We check only first decimal.
-  double simbox_dz = floor(simbox.getdz()*10)/10;
-  double segy_dz   = floor(model_settings->getSegyDz()*10)/10;
-  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0) {
-      if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING)
-        LogKit::LogFormatted(LogKit::Low, "\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
-                              + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
-  }
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
 
   //Update depth_mapping with resampled post_vp
   if ((time_depth_mapping != NULL && time_depth_mapping->getSimbox() == NULL) || (common_data->GetVelocityFromInversion() && time_depth_mapping->getSimbox()->getnz() != simbox.getnz())) {
@@ -1339,7 +1390,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   //  WriteWells(common_data->GetWells(), model_settings);
   //}
 
-  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode()) {
+  if (model_settings->getWritePrediction() && !model_settings->getForwardModeling() && !model_settings->getEstimationMode() && output_grids_elastic > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Prediction Grids\n");
 
     //From computePostMeanResidAndFFTCov()
@@ -1401,7 +1452,6 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1435,47 +1485,47 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
                        time_depth_mapping,
                        prefix,
                        IO::PathToBackground(),
-                       *model_settings->getTraceHeaderFormatOutput(),
                        true);
     }
   }
 
   //Write correlations and post variances. Write per interval.
-  for (int i = 0; i < n_intervals_; i++) {
+  if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
+    LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
 
-    std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0)
-    //  WriteFilePriorCorrT(corr_T_[i], simbox.GetNZpad(), dt, interval_name);
-
-    //delete corr_T_[i];
-    //fftw_free(corr_T_[i]);
-
-    //if ((model_settings->getOtherOutputFlag() & IO::PRIORCORRELATIONS) > 0) {
-    //  WriteFilePriorCorrT(corr_T_filtered_[i], simbox.GetNZpad(), dt, interval_name); // No zeros in the middle
-    //  //delete [] corr_T_filtered_[i];
-    //}
-
-    if (model_settings->getOutputGridsOther() & IO::CORRELATION) {
-      LogKit::LogFormatted(LogKit::Low,"\nWrite Correlations\n");
+    for (int i = 0; i < n_intervals_; i++) {
+      std::string interval_name = common_data->GetMultipleIntervalGrid()->GetIntervalName(i);
       WriteFilePostVariances(post_var0_[i], post_cov_vp00_[i], post_cov_vs00_[i], post_cov_rho00_[i], interval_name);
-      WriteFilePostCovGrids(model_settings, simbox, interval_name);
+    }
 
-      if (write_crava_) {
-        std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
-        std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
-        std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
-        std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
-        std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
-        std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+    std::string file_name_vp    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp";
+    std::string file_name_vs    = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs";
+    std::string file_name_rho   = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho";
+    std::string file_name_vpvs  = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs";
+    std::string file_name_vprho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho";
+    std::string file_name_vsrho = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho";
 
-        seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
-        seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
-        seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
-        seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
-        seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
-        seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
-      }
+    ParameterOutput::WriteFile(model_settings, cov_vp_,        file_name_vp,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
+    ParameterOutput::WriteFile(model_settings, cov_vs_,        file_name_vs,    IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
+    ParameterOutput::WriteFile(model_settings, cov_rho_,       file_name_rho,   IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_,  file_name_vpvs,  IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name_vprho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
+    ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name_vsrho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
+
+    if (write_crava_) {
+      std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
+      std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
+      std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
+      std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
+      std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
+      std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+
+      seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
+      seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
+      seismic_parameters.GetCovRho()->writeCravaFile(file_name_rho,       &simbox);
+      seismic_parameters.GetCrCovVpVs()->writeCravaFile(file_name_vpvs,   &simbox);
+      seismic_parameters.GetCrCovVpRho()->writeCravaFile(file_name_vprho, &simbox);
+      seismic_parameters.GetCrCovVsRho()->writeCravaFile(file_name_vsrho, &simbox);
     }
   }
 
@@ -1608,7 +1658,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
   }
 
   //Trend Cubes
-  if (model_settings->getOutputGridsOther() && IO::TREND_CUBES > 0) {
+  if ((model_settings->getOutputGridsOther() & IO::TREND_CUBES) > 0) {
     LogKit::LogFormatted(LogKit::Low,"\nWrite Trend Cubes\n");
 
     const std::vector<std::string>  & trend_cube_parameters = model_settings->getTrendCubeParameters();
@@ -1642,6 +1692,10 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
   //Create missing map
   NRLib::Grid2D<bool> * missing_map = CreateMissingGrid(simbox);
 
+  //Logging different options for writing segy grids. Sets offset from topsurface if it is missing
+  if ((model_settings->getOutputGridFormat() & IO::SEGY) > 0)
+    LogAndSetSegyOffsetIfNeeded(model_settings, simbox);
+
   //Estimation model: All estimated parameters are written to file, regardless of output settings
   if (((model_settings->getWellOutputFlag() & IO::BLOCKED_WELLS) > 0) &&
      (model_settings->getEstimateBackground() || model_settings->getEstimateWaveletNoise())) {
@@ -1666,7 +1720,7 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
           wavelets_[i]->setGainGrid(new Grid2D(*common_data->GetGainGrid(0, i)));
       }
 
-      GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, simbox);
+      CommonData::GenerateSyntheticSeismicLogs(wavelets_, blocked_logs_, reflection_matrix_, &simbox);
 
       //We need synt_seis from well wavelets, but it needs to be based on output simbox
       //Estimate a temp wavelet, which adds well_synt_seismic_data to blocked logs
@@ -1802,7 +1856,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                      time_depth_mapping,
                      IO::PrefixBackground(),
                      IO::PathToBackground(),
-                     *model_settings->getTraceHeaderFormatOutput(),
                      true);
 
     if (write_crava_) {
@@ -1832,7 +1885,6 @@ void CravaResult::WriteEstimationResults(ModelSettings * model_settings,
                         time_depth_mapping,
                         prefix,
                         IO::PathToBackground(),
-                        *model_settings->getTraceHeaderFormatOutput(),
                         true);
     }
   }
@@ -1859,14 +1911,11 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
 
     int n_angles              = model_settings->getNumberOfAngles(i);
     std::vector<float> angles = model_settings->getAngle(i);
-    std::vector<float> offset = model_settings->getLocalSegyOffset(i);
 
     for (int j = 0; j < n_angles; j++) {
       std::string angle           = NRLib::ToString(angles[j]*(180/M_PI), 1);
       std::string file_name_orig  = IO::PrefixOriginalSeismicData() + angle;
       std::string sgri_label      = std::string("Original seismic data for angle stack ") + angle;
-      if (offset.size() > 0 && offset[j] < 0)
-        offset[j] = model_settings->getSegyOffset(i);
 
       int seismic_type = common_data->GetSeismicDataTimeLapse(i)[j]->GetSeismicType();
 
@@ -2038,33 +2087,6 @@ void CravaResult::WriteFilePostCorrT(const std::vector<float> & post_cov,
   file.close();
 }
 
-void CravaResult::WriteFilePostCovGrids(const ModelSettings * model_settings,
-                                        const Simbox        & simbox,
-                                        std::string           interval_name) const
-{
-  if (interval_name != "")
-    interval_name = "_" + interval_name;
-
-  std::string file_name;
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vp_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vp");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for Vs");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cov_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior covariance for density");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_vs_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,Vs)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vp_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vp,density)");
-
-  file_name = IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho" + interval_name;
-  ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
-}
-
 void CravaResult::WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                                     const ModelSettings                              * model_settings,
                                     std::vector<std::string>                           facies_name,
@@ -2131,37 +2153,6 @@ CravaResult::CreateStormGrid(const Simbox & simbox,
 
 }
 
-//StormContGrid *
-//CravaResult::CreateStormGrid(const Simbox       & simbox,
-//                             NRLib::Grid<float> * grid)
-//{
-//  if (grid != NULL) {
-//    int nx = grid->GetNI();
-//    int ny = grid->GetNJ();
-//    int nz = grid->GetNK();
-//
-//    StormContGrid * storm = new StormContGrid(simbox, nx, ny, nz);
-//
-//    for (int i = 0; i < nx; i++) {
-//      for (int j = 0; j < ny; j++) {
-//        for (int k = 0; k < nz; k++) {
-//          float value = grid->GetValue(i, j, k);
-//          storm->SetValue(i, j, k, value);
-//        }
-//      }
-//    }
-//
-//    //Not needed anymore
-//    delete grid;
-//
-//    return(storm);
-//  }
-//
-//  StormContGrid * storm = new StormContGrid();
-//  return(storm);
-//
-//}
-
 void CravaResult::CreateStormGrid(StormContGrid & grid_new,
                                   FFTGrid       * fft_grid,
                                   bool            allow_delete)
@@ -2191,7 +2182,6 @@ void CravaResult::WriteGridPackage(const ModelSettings     * model_settings,
                                    GridMapping             * depth_mapping,
                                    const std::string       & prefix,
                                    const std::string       & path,
-                                   const TraceHeaderFormat & thf,
                                    bool                      exp_transf)
 {
   if (depth_mapping != NULL && depth_mapping->getSimbox() == NULL) {
@@ -2413,23 +2403,6 @@ void CravaResult::AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *
   blocked_logs_intervals_.push_back(new_blocked_logs);
 }
 
-void CravaResult::GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                               std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                               const NRLib::Matrix                        & reflection_matrix,
-                                               const Simbox                               & simbox)
-{
-  int nzp = simbox.GetNZpad();
-  int nz  = simbox.getnz();
-
-  for (std::map<std::string, BlockedLogsCommon *>::const_iterator it = blocked_wells.begin(); it != blocked_wells.end(); it++) {
-    std::map<std::string, BlockedLogsCommon *>::const_iterator iter = blocked_wells.find(it->first);
-    BlockedLogsCommon * blocked_log = iter->second;
-
-    if (blocked_log->GetIsDeviated() == false)
-      blocked_log->GenerateSyntheticSeismic(reflection_matrix, wavelet, nz, nzp, &simbox);
-  }
-}
-
 void CravaResult::GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                           CommonData                                 * common_data,
                                           std::map<std::string, BlockedLogsCommon *> & blocked_wells,
@@ -2585,3 +2558,33 @@ void CravaResult::SetMissingInGrid(StormContGrid       & grid,
   }
 }
 
+
+void CravaResult::LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
+                                              const Simbox  & simbox)
+{
+
+  double simbox_dz = floor(simbox.getdz());
+  double segy_dz   = floor(model_settings->getSegyDz());
+
+  //If simbox dz and segy dz match we write output segy matching input segy. This check can be unstable (?) as we go from dz to nz back to dz
+  // so if we know that they should match we have set getUseInputSegyDzForOutputSegy variable
+  if ((simbox_dz == segy_dz || model_settings->getUseInputSegyDzForOutputSegy() == true) && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nThe output segy grid will be written out matching the input seismic segy cubes (dz = " + NRLib::ToString(floor(segy_dz)) + ").\n");
+  }
+  else if (simbox_dz != segy_dz && model_settings->getSegyDz() != RMISSING && model_settings->getMatchOutputInputSegy() == true) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nWarning: The input segy dz (" + NRLib::ToString(model_settings->getSegyDz()) + ") does not match the output dz ("
+                          + NRLib::ToString(simbox.getdz()) +"). The output segy grid can therefore not be matched with input segy grid. The output dz will be used.\n");
+  }
+  //Offset given in modelfile under grid-output, we then override the matching of segy grid
+  else if (model_settings->getMatchOutputInputSegy() == false && model_settings->getOutputOffset() != RMISSING) {
+    LogKit::LogFormatted(LogKit::Low, "\n\nSegy grids will be written out with offset " + NRLib::ToString(model_settings->getOutputOffset()) + ".\n");
+  }
+  //No segy cubes and offset not given in modelfile. Take offset from topsurface.
+  else if (model_settings->getOutputOffset() == RMISSING) {
+    float offset = static_cast<float>(floor(simbox.getTopZMin()));
+    model_settings->setOutputOffset(static_cast<float>(floor(simbox.getTopZMin())));
+    LogKit::LogFormatted(LogKit::High, "\n\nSegy grids will be written out with offset " + NRLib::ToString(offset) + ", taken from the top of the top surface.\n");
+    model_settings->setOutputOffset(offset);
+  }
+
+}

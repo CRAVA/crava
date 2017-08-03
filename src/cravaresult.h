@@ -67,6 +67,7 @@ public:
   void ResampleLog(std::vector<double>                                            & final_log,
                    std::vector<std::vector<double> >                              & old_log_interval, //vector interval
                    const std::vector<std::map<std::string, BlockedLogsCommon *> > & blocked_logs_intervals,
+                   std::vector<int>                                               & interval_used,
                    MultiIntervalGrid                                              * multi_interval_grid,
                    const BlockedLogsCommon                                        * blocked_log_final,
                    std::string                                                      well_name,
@@ -86,7 +87,8 @@ public:
                      MultiIntervalGrid                       * multiple_interval_grid,
                      const std::vector<std::vector<double> > & resampled_logs,
                      const std::vector<std::vector<double> > & z_pos_resampled,
-                     std::vector<int>                        & interval_log);
+                     std::vector<int>                        & interval_log,
+                     std::vector<int> & interval_used);
 
   void WriteResults(ModelSettings           * model_settings,
                     CommonData              * common_data,
@@ -110,10 +112,6 @@ public:
                           const std::string        & sub_dir,
                           const std::string        & base_name) const;
 
-  void WriteFilePostCovGrids(const ModelSettings * model_settings,
-                             const Simbox        & simbox,
-                             std::string           interval_name = "") const;
-
   void WriteBlockedWells(const std::map<std::string, BlockedLogsCommon *> & blocked_wells,
                          const ModelSettings                              * model_settings,
                          std::vector<std::string>                           facies_name,
@@ -125,9 +123,6 @@ public:
   StormContGrid * CreateStormGrid(const Simbox & simbox,
                                   FFTGrid      * fft_grid,
                                   bool           delete_fft = true); //If true, delete FFT-grid
-
-  //StormContGrid * CreateStormGrid(const Simbox       & simbox,
-  //                                NRLib::Grid<float> * grid);
 
   void CreateStormGrid(StormContGrid & grid_new,
                        FFTGrid       * fft_grid,
@@ -141,7 +136,6 @@ public:
                         GridMapping             * depth_mapping,
                         const std::string       & prefix,
                         const std::string       & path,
-                        const TraceHeaderFormat & thf,
                         bool                      exp_transf = false);
 
   void WriteSeismicData(ModelSettings * model_settings,
@@ -170,11 +164,6 @@ public:
                                           StormContGrid       * rho,
                                           const NRLib::Matrix & reflection_matrix,
                                           int                   angle) const;
-
-  void GenerateSyntheticSeismicLogs(std::vector<Wavelet *>                     & wavelet,
-                                    std::map<std::string, BlockedLogsCommon *> & blocked_wells,
-                                    const NRLib::Matrix                        & reflection_matrix,
-                                    const Simbox                               & simbox);
 
   void GenerateWellOptSyntSeis(ModelSettings                              * model_settings,
                                CommonData                                 * common_data,
@@ -215,6 +204,9 @@ public:
   void AddBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & blocked_logs);
 
   void SetBgBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & bg_blocked_logs) { bg_blocked_logs_ = bg_blocked_logs ;}
+
+  void LogAndSetSegyOffsetIfNeeded(ModelSettings * model_settings,
+                                   const Simbox  & simbox);
 
 private:
   void CombineVerticalTrends(MultiIntervalGrid                         * multiple_interval_grid,

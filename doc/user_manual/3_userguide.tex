@@ -75,17 +75,17 @@ By default, \crava recognises four SegY formats; Seisworks, Charisma, SIP and IE
 \centering
 \caption{SegY formats recognised by Crava}
 \label{tab:segyformats}
-\begin{tabular}{|l|r|r|r|r|r|c|}
+\begin{tabular}{|l|r|r|r|r|r|r|c|}
 \hline
-Name & X & Y & IL & XL & CoordScal & CoordSys \\ \hline \hline
-SeisWorks & 73 & 77 & 9 & 21 & 71 & UTM \\ \hline
-Charisma & 73 & 77 & 5 & 21 & 71 & UTM \\ \hline
-IESX & 73 & 77 & 221 & 21 & 71 & UTM \\ \hline
-SIP & 181 & 185 & 189 & 193 & 71 & UTM  \\ \hline
+Name & X & Y & IL & XL & Offset & CoordScal & CoordSys \\ \hline \hline
+SeisWorks & 73 & 77 & 9 & 21 & 109 & 71 & UTM \\ \hline
+Charisma & 73 & 77 & 5 & 21 & 109 & 71 & UTM \\ \hline
+IESX & 73 & 77 & 221 & 21 & 109 & 71 & UTM \\ \hline
+SIP & 181 & 185 & 189 & 193 & 37 & 71 & UTM  \\ \hline
 \end{tabular}
 \end{table}
 
-You are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. A standard format is given by \kw{standard-format}. Possible arguments are 'seisworks', 'iesx', 'charisma' or 'SIP'. Modifications to the chosen standard format can be given by the following commands: \kw{location-x}, \kw{location-y}, \kw{location-il}, \kw{location-xl} and \kw{bypass-coordinate-scaling}. For more information on how to use this, see \kw{segy-format} in the reference manual chapter.
+You are also allowed to define your own format using the \kw{segy-format}\kwindex{segy-format} command. A standard format is given by \kw{standard-format}. Possible arguments are 'seisworks', 'iesx', 'charisma' or 'SIP'. Modifications to the chosen standard format can be given by the following commands: \kw{location-x}, \kw{location-y}, \kw{location-il}, \kw{location-xl}, \kw{location-offset} and \kw{bypass-coordinate-scaling}. For more information on how to use this, see \kw{segy-format} in the reference manual chapter.
  
 Other file formats recognised by \crava are storm, Sgri and crava.
 
@@ -284,8 +284,8 @@ this is done, there are no restrictions on the differences in interval
 thickness.
 
 The more flexible approach where a compactional correlation structure
-is specified independent of the interval of interest (see part D of
-\autoref{fig:inversion-interval-types})  is currently not implemented. 
+is specified independent of the interval of interest is shown in part D of
+\autoref{fig:inversion-interval-types}. 
 
 If only one surface is known, the command \kw{interval-one-surface}
 can be used to invert an interval with top and base parallel to this

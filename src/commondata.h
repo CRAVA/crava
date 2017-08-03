@@ -81,6 +81,8 @@ public:
   std::vector<SeismicStorage *>                                      & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
+  std::map<int, std::vector<float> >                                 & GetGlobalWaveletScales()                               { return global_wavelet_scales_                         ;}
+  std::vector<float>                                                 & GetGlobalWaveletScale(int time_lapse)                  { return global_wavelet_scales_.find(time_lapse)->second;}
 
   bool                                                                 HasSeismicData()                                       { return seismic_data_.size() > 0                       ;}
 
@@ -420,7 +422,7 @@ private:
                                        MultiIntervalGrid  * multi_interval_grid,
                                        std::string        & err_text);
 
-  double             FindDzMin(MultiIntervalGrid * multi_interval_grid);
+  double             FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSettings * model_settings);
 
   void               WriteAreas(const SegyGeometry  * area_params,
                                 Simbox              * time_simbox,
@@ -592,6 +594,7 @@ private:
                                      std::map<int, std::vector<Grid2D *> >       & local_noise_scale,
                                      std::map<int, std::vector<float> >          & global_noise_estimate,
                                      std::map<int, std::vector<float> >          & sn_ratio,
+                                     std::map<int, std::vector<float> >          & global_wavelet_scales,
                                      std::vector<std::vector<double> >           & t_grad_x,
                                      std::vector<std::vector<double> >           & t_grad_y,
                                      NRLib::Grid2D<float>                        & ref_time_grad_x,
@@ -668,6 +671,7 @@ private:
                                       unsigned int                                 j_angle,
                                       const float                                  angle,
                                       float                                      & sn_ratio,
+                                      float                                      & global_wavelet_scale,
                                       bool                                         estimate_wavlet,
                                       bool                                         use_ricker_wavelet) const;
 
@@ -1060,6 +1064,10 @@ private:
   void               PrintSettings(const ModelSettings    * model_settings,
                                    const InputFiles       * input_files) const;
 
+  void               ReportBlockedLogs(const std::map<std::string, BlockedLogsCommon *> & mapped_blocked_logs_common,
+                                       const std::vector<std::string>                   & continuous_logs_to_be_blocked,
+                                       const std::vector<std::string>                   & discrete_logs_to_be_blocked) const;
+
   void               WriteOutputSurfaces(ModelSettings * model_settings,
                                          Simbox        & simbox) const;
 
@@ -1147,6 +1155,7 @@ private:
   std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
   std::map<int, std::vector<float> >                           global_noise_estimates_;
   std::map<int, std::vector<float> >                           sn_ratios_;
+  std::map<int, std::vector<float> >                           global_wavelet_scales_; //Store global (estimated) wavelet scale set up in CommonData to be used in modelavodynamic if we fail to estimate scale for one interval
   std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
   std::string                                                  wavelet_est_int_bot_ ;
   std::vector<std::vector<Grid2D *> >                          shift_grids_; //vector timelapse, vector angles

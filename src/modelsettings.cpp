@@ -140,6 +140,9 @@ ModelSettings::ModelSettings(void)
   //time_nz_[""]             = IMISSING;
   segy_nz_                 = IMISSING;
   segy_dz_                 = RMISSING;
+  output_offset_           = RMISSING;
+  match_output_input_segy_ = true;
+  use_input_segy_dz_for_output_segy_ = false;
 
   velocityFromInv_         =    false;
 

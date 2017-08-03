@@ -75,25 +75,6 @@ BlockedLogsCommon::BlockedLogsCommon(const NRLib::Well                * well_dat
               n_data_, i_pos_, j_pos_, k_pos_, first_M_, last_M_, first_B_, last_B_, n_blocks_, n_blocks_with_data_,
               n_blocks_with_data_tot_, facies_log_defined_, interpolate, restrict_to_visible, dz_, failed, is_inside, err_text_tmp);
 
-  if (err_text_tmp == "" && is_inside == true) {
-    LogKit::LogFormatted(LogKit::Low,"-The following continuous logs from well \'"+well_name_+"\' were blocked into the simbox: ");
-    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
-      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
-    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
-    if (disc_logs_to_be_blocked.size() > 0) {
-    LogKit::LogFormatted(LogKit::Low,"-The following discrete logs from well \'"+well_name_+"\' were blocked into the simbox: ");
-      for (size_t i = 0; i < disc_logs_to_be_blocked.size() - 1; i++)
-        LogKit::LogFormatted(LogKit::Low, " \'" +disc_logs_to_be_blocked[i] + "\',");
-      if (disc_logs_to_be_blocked.size() > 1)
-        LogKit::LogFormatted(LogKit::Low," \'"+disc_logs_to_be_blocked[disc_logs_to_be_blocked.size() - 1]+"\'\n");
-      else
-        LogKit::LogFormatted(LogKit::Low,"\n");
-    }
-    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
-                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
-    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
-  }
-
   if (err_text_tmp != "") {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in simbox failed:\n");
     LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
@@ -242,30 +223,7 @@ BlockedLogsCommon::BlockedLogsCommon(NRLib::Well                      * well_dat
     }
   }
 
-
-  if (err_text_tmp == "") {
-    if (interval_simboxes.size() == 1) {
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
-    }
-    else
-      LogKit::LogFormatted(LogKit::Low,"The following continuous logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
-    for (size_t i = 0; i < cont_logs_to_be_blocked.size() - 1; i++)
-      LogKit::LogFormatted(LogKit::Low, " \'" +cont_logs_to_be_blocked[i] + "\',");
-    LogKit::LogFormatted(LogKit::Low," \'"+cont_logs_to_be_blocked[cont_logs_to_be_blocked.size() - 1]+"\'\n");
-    if (disc_logs_to_be_blocked.size() > 0) {
-      if (interval_simboxes.size() == 1)
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the inversion simbox: ");
-      else
-        LogKit::LogFormatted(LogKit::Low,"The following discrete logs from well \'"+well_name_+"\' were blocked into the MultiIntervalGrid: ");
-      for (size_t i = 0; i < disc_logs_to_be_blocked.size(); i++)
-        LogKit::LogFormatted(LogKit::Low, disc_logs_to_be_blocked[i]);
-      LogKit::LogFormatted(LogKit::Low,"\n");
-    }
-    LogKit::LogFormatted(LogKit::Low,"Total number of blocks / Number of blocks with data: " + CommonData::ConvertIntToString(n_blocks_) + " / "+
-                          CommonData::ConvertIntToString(n_blocks_with_data_tot_) + ".\n");
-    LogKit::LogFormatted(LogKit::Low,"Vertical resolution dz: " + CommonData::ConvertFloatToString(static_cast<float>(dz_)) + ".\n");
-  }
-  else {
+  if (err_text_tmp != "") {
     LogKit::LogFormatted(LogKit::Low,"\nBlocking of well " + well_name_ + " in the outer estimation simbox failed:\n");
     LogKit::LogFormatted(LogKit::Low, err_text_tmp + "\n");
 
@@ -1483,8 +1441,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     for (std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++) {
       facies_numbers.push_back(it->first);
     }
-    //facies_numbers_ = facies_numbers;
-    //n_facies_ = n_facies;
+
     blocked_log.resize(n_blocks_);
     for (unsigned int m = 0 ; m < n_blocks_ ; m++)
       blocked_log[m] = IMISSING;
@@ -2959,7 +2916,6 @@ void  BlockedLogsCommon::SetLogFromVerticalTrend(const std::vector<double>      
                                                  std::string                                    type,
                                                  int                                            i_angle) const
 {
-  //n_angles_ = n_angles;
 
   if (type != "WELL_SYNTHETIC_SEISMIC")
   {
@@ -3068,7 +3024,7 @@ void  BlockedLogsCommon::SetLogFromGrid(FFTGrid    * grid,
     n_angles_ = n_angles;
 
   if (type == "SEISMIC_DATA") {
-    //Real seismic data is shfited up by half a cell to match inversion. Shift back
+    //Real seismic data is shifted up by half a cell to match inversion. Shift back
     Utils::ShiftTrace(blocked_log,false);
     real_seismic_data_.insert(std::pair<int, std::vector<double> >(i_angle, blocked_log));
   }
@@ -3303,6 +3259,13 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
       file << "WellOptimizedSyntSeis" << i << " UNK lin\n";
   }
 
+  std::vector<int> facies_numbers;
+  if (got_facies) {
+    for (std::map<int,std::string>::const_iterator it = facies_map_.begin(); it != facies_map_.end(); it++) {
+      facies_numbers.push_back(it->first);
+    }
+  }
+
   //
   // Write LOGS
   //
@@ -3364,7 +3327,7 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
     if (got_interval_log == true)
       file << std::setw(7) << (interval_log[i]==IMISSING  ? WELLMISSING : interval_log[i])  << "  ";
     if (got_facies)
-      file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_blocked_[i])      << "  ";
+      file << (facies_blocked_[i]==IMISSING ? static_cast<int>(WELLMISSING) : facies_numbers[facies_blocked_[i]])      << "  ";
     file << std::scientific;
     if (got_facies_prob) {
       for (int a = 0; a < n_facies; a++)
@@ -3653,7 +3616,7 @@ void BlockedLogsCommon::GenerateSyntheticSeismic(const NRLib::Matrix        & re
   fftw_real    * synt_seis_r = new fftw_real[rnzp];
   fftw_complex * synt_seis_c = reinterpret_cast<fftw_complex*>(synt_seis_r);
 
-  GetVerticalTrend(GetVpBlocked(), vp_vert); //alpha_
+  GetVerticalTrend(GetVpBlocked(), vp_vert);
   GetVerticalTrend(GetVsBlocked(), vs_vert);
   GetVerticalTrend(GetRhoBlocked(), rho_vert);
 

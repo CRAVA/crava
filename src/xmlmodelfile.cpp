@@ -756,7 +756,7 @@ XmlModelFile::parseSurvey(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "segy-start-time", value, errTxt) == true)
     modelSettings_->addSegyOffset(value);
   else
-    modelSettings_->addDefaultSegyOffset();
+    modelSettings_->addSegyOffset(RMISSING); //Take offset from segy-cube
 
   modelSettings_->clearTimeLapse();
   inputFiles_->clearTimeLapse();
@@ -947,7 +947,7 @@ XmlModelFile::parseSeismicData(TiXmlNode * node, std::string & errTxt)
   if(parseValue(root, "start-time", fVal, errTxt) == true)
     modelSettings_->addLocalSegyOffset(fVal);
   else
-    modelSettings_->addLocalSegyOffset(-1);
+    modelSettings_->addLocalSegyOffset(RMISSING);
 
   TraceHeaderFormat * thf = NULL;
   if(parseTraceHeaderFormat(root, "segy-format", thf, errTxt) == true) {
@@ -981,6 +981,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   std::string value;
   bool        estimate = false;
   float       peakFrequency;
+  bool        use_ricker = false;
 
   if (parseFileName(root, "file-name", value, errTxt) == true) {
     inputFiles_->addWaveletFile(value);
@@ -993,6 +994,7 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     modelSettings_->addEstimateWavelet(false);
     modelSettings_->addUseRickerWavelet(true);
     modelSettings_->addRickerPeakFrequency(peakFrequency);
+    use_ricker = true;
   }
   else {
     inputFiles_->addWaveletFile(""); //Keeping tables balanced.
@@ -1019,8 +1021,15 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
   if(parseBool(root, "estimate-scale",estimate,tmpErr) == false || tmpErr != "") {
    if(scaleGiven==false) // no commands given
    {
-    modelSettings_->addWaveletScale(1);
-    modelSettings_->addEstimateGlobalWaveletScale(false);
+     //Estimate scale default true for Ricker
+     if (use_ricker == true) {
+       modelSettings_->addEstimateGlobalWaveletScale(true);
+       modelSettings_->addWaveletScale(1);
+     }
+     else {
+       modelSettings_->addWaveletScale(1);
+       modelSettings_->addEstimateGlobalWaveletScale(false);
+     }
    }
     errTxt += tmpErr;
   }
@@ -1039,6 +1048,10 @@ XmlModelFile::parseWavelet(TiXmlNode * node, std::string & errTxt)
     {
       modelSettings_->addWaveletScale(1);
       modelSettings_->addEstimateGlobalWaveletScale(false);
+
+      if (use_ricker == true)
+        LogKit::LogFormatted(LogKit::Warning, "\nWARNING: Scale should be given or estimated with Ricker wavelets, but estimate-scale is set to \'no\'.\n\n");
+
     }
 
 
@@ -5304,6 +5317,7 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   std::vector<std::string> legalCommands;
   legalCommands.push_back("segy-format");
   legalCommands.push_back("segy");
+  legalCommands.push_back("segy-start-time");
   legalCommands.push_back("storm");
   legalCommands.push_back("ascii");
   legalCommands.push_back("sgri");
@@ -5315,8 +5329,11 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
   bool useFormat = false;
   int formatFlag = 0;
   bool stormSpecified = false;  //Default format, error if turned off and no others turned on.
-  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true)
+  bool segySpecified = false;
+  if((parseBool(root, "segy", useFormat, errTxt) == true && useFormat == true) || segyFormat==true) {
     formatFlag += IO::SEGY;
+    segySpecified = true;
+  }
   if(parseBool(root, "storm", useFormat, errTxt) == true) {
     stormSpecified = true;
     if(useFormat == true)
@@ -5328,6 +5345,15 @@ XmlModelFile::parseGridFormats(TiXmlNode * node, std::string & errTxt)
     formatFlag += IO::SGRI;
   if(parseBool(root, "crava", useFormat, errTxt) == true && useFormat == true)
     formatFlag += IO::CRAVA;
+
+  float value = RMISSING;
+  if(parseValue(root,"segy-start-time", value, errTxt) == true) {
+    modelSettings_->setOutputOffset(value);
+    modelSettings_->setMatchOutputInputSegy(false);
+
+    if (segySpecified == false)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: <segy-start-time> is specified under <grid-output>, but <segy> is not specified as one of the output grids.\n");
+  }
 
   if(formatFlag > 0 || stormSpecified == true)
     modelSettings_->setOutputGridFormat(formatFlag);
@@ -5756,8 +5782,22 @@ XmlModelFile::parseAdvancedSettings(TiXmlNode * node, std::string & errTxt)
     modelSettings_->setMinSamplingDensity(value);
   if(parseValue(root, "minimum-horizontal-resolution", value, errTxt) == true)
     modelSettings_->setMinHorizontalRes(value);
-  if(parseValue(root, "white-noise-component", value, errTxt) == true)
+  if(parseValue(root, "white-noise-component", value, errTxt) == true) {
+    if(value <= 0.0) {
+      std::string err_msg = "Error in <white-noise-component>: Value must be greater than 0, found "+NRLib::ToString(value)+".\n";
+      errTxt += err_msg;
+    }
+    else if (value >= 1.0) {
+      std::string err_msg = "Error in <white-noise-component>: Value must be smaller than 1, found "+NRLib::ToString(value)+".\n";
+      errTxt += err_msg;
+    }
+    else if (value > 0.2)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The value set in <white-noise-component>, "+NRLib::ToString(value)+" is larger than 0.2. This is an extreme choice, so be sure that you mean it.\n");
+    else if (value < 0.01)
+      LogKit::LogMessage(LogKit::Warning, "\nWARNING: The value set in <white-noise-component>, "+NRLib::ToString(value)+" is less than 0.01. This is an extreme choice, so be sure that you mean it.\n");
+
     modelSettings_->setWNC(value);
+  }
   std::string filename;
   if(parseFileName(root, "reflection-matrix", filename, errTxt) == true)
     inputFiles_->setReflMatrFile(filename);
@@ -5973,6 +6013,7 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
   legalCommands.push_back("location-y");
   legalCommands.push_back("location-il");
   legalCommands.push_back("location-xl");
+  legalCommands.push_back("location-start-time");
   legalCommands.push_back("location-scaling-coefficient");
   legalCommands.push_back("bypass-coordinate-scaling");
 
@@ -6004,6 +6045,8 @@ XmlModelFile::parseTraceHeaderFormat(TiXmlNode * node, const std::string & keywo
     thf->SetInlineLoc(value);
   if(parseValue(root,"location-xl",value, errTxt) == true)
     thf->SetCrosslineLoc(value);
+  if(parseValue(root,"location-start-time",value, errTxt) == true)
+    thf->SetStartTimeLoc(value);
   if(parseValue(root,"location-scaling-coefficient",value, errTxt) == true)
     thf->SetScaleCoLoc(value);
 
@@ -6833,6 +6876,8 @@ XmlModelFile::checkTimeLapseConsistency(std::string & errTxt)
           errTxt += "When <location-il> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetCrosslineLoc() != thf2->GetCrosslineLoc())
           errTxt += "When <location-xl> in <segy-format> is given, it needs to be the same for all time lapses.\n";
+        if(thf1->GetStartTimeLoc() != thf2->GetStartTimeLoc())
+          errTxt += "When <location-start-time> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetScalCoLoc() != thf2->GetScalCoLoc())
           errTxt += "When <bypass-coordinate-scaling> in <segy-format> is given, it needs to be the same for all time lapses.\n";
         if(thf1->GetFormatName() != thf2->GetFormatName())
