@@ -449,7 +449,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
         NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(base_surface_file);
         if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
           estimation_mode_need_ILXL = true;
-          i = static_cast<int>(interval_names.size()) - 1;
+        i = static_cast<int>(interval_names.size()) - 1;
       }
     }
 
