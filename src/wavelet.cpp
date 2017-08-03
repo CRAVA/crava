@@ -741,30 +741,33 @@ Wavelet::setGainGrid(Grid2D * grid)
   if(gainGrid_ != NULL)
     delete [] gainGrid_;
   gainGrid_ = grid;
-  for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++)
+  for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++) {
     for(int i=0;i<static_cast<int>(gainGrid_->GetNI());i++) {
       sum+=log((*gainGrid_)(i,j));
       nData++;
     }
+  }
 
-    float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
-    for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++)
-      for(int i=0;i<static_cast<int>(gainGrid_->GetNI());i++) {
-        if((*gainGrid_)(i,j) != WELLMISSING)
-          (*gainGrid_)(i,j) *= invGeoMean;
-      }
-    float geoMean = 1/invGeoMean;
-    norm_ *= geoMean;
-    bool fftflag = isReal_;
-    if(fftflag == true)
-      invFFT1DInPlace();
-    for(int i=0;i<nzp_;i++) {
-      float rAmp = getRAmp(i);
-      rAmp *= geoMean;
-      setRAmp(rAmp,i);
+  float invGeoMean = float(exp(-sum/static_cast<double>(nData)));
+  for(int j=0;j<static_cast<int>(gainGrid_->GetNJ());j++) {
+    for(int i=0;i<static_cast<int>(gainGrid_->GetNI());i++) {
+      if((*gainGrid_)(i,j) != WELLMISSING)
+        (*gainGrid_)(i,j) *= invGeoMean;
     }
-    if(fftflag == true)
-      fft1DInPlace();
+  }
+
+  float geoMean = 1/invGeoMean;
+  norm_ *= geoMean;
+  bool fftflag = isReal_;
+  if(fftflag == true)
+    invFFT1DInPlace();
+  for(int i=0;i<nzp_;i++) {
+    float rAmp = getRAmp(i);
+    rAmp *= geoMean;
+    setRAmp(rAmp,i);
+  }
+  if(fftflag == true)
+    fft1DInPlace();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////

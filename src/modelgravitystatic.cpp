@@ -306,7 +306,7 @@ ModelGravityStatic::SetPaddingSize(int original_nxp, int upscaling_factor)
 
   int closestprod = original_nxp;
 
-  int factor   =       1;
+  int factor = 1;
 
   for(int i=0;i<exp_list[0]+1;i++)
     for(int j=0;j<exp_list[1]+1;j++)
@@ -315,14 +315,13 @@ ModelGravityStatic::SetPaddingSize(int original_nxp, int upscaling_factor)
           for(int m=0;m<exp_list[4]+1;m++)
             for(int n=exp_list[4];n<exp_list[5]+1;n++)
             {
-              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+              factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
               if ((factor >=  leastint) &&  (factor <  closestprod))
               {
                 closestprod=factor;
               }
             }
-            return closestprod;
+  return closestprod;
 }
 
 // Same as in FFTGrid-class, however, this one returns list of exponents

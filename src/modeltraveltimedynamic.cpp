@@ -160,7 +160,7 @@ ModelTravelTimeDynamic::readRMSData(const std::string & fileName,
   std::ifstream file;
   NRLib::OpenRead(file, fileName);
 
-  if (file == 0)
+  if (!file)
     errTxt += "Could not open RMS data file "+fileName+" for reading.\n";
 
 

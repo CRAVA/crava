@@ -824,7 +824,7 @@ FFTGrid::fillInErrCorr(const Surface * priorCorrXY,
 
         setNextReal(value);
       } //for k,j,i
-      endAccess();
+  endAccess();
 }
 
 void FFTGrid::FillInLateralCorr(const Surface   * prior_corr_xy,
@@ -1574,14 +1574,13 @@ FFTGrid::collapseAndAdd(float * grid)
   int   i,j;
   float value;
 
-
   for(j = 0; j < nyp_; j++)
     for(i=0;i<nxp_;i++)
     {
       value = rvalue_[i + j*rnxp_ ];
       grid[i + j*nxp_] += value ;
     }
-    return(0);
+  return(0);
 }
 
 void
@@ -2372,71 +2371,71 @@ FFTGrid::interpolateSeismic(float energyTreshold)
       index++;
     }
 
-    index = 0;
-    float energyLimit = energyTreshold*totalEnergy/float(nx_*ny_);
-    int nInter = 0;    //#traces interpolated.
-    int nInter0 = 0;   //#traces interpolated where there was no response at all.
-    for(j=0;j<ny_;j++)
-      for(i=0;i<nx_;i++)
-      {
-        curFlag = 0;
-        if(energyMap[index] <= energyLimit) {//Values in this trace are bogus, interpolate.
-          curFlag = 1;
-          nInter++;
-          if(energyMap[index] == 0.0f)
-            nInter0++;
-        }
-        flags[index] = short(flag+curFlag);
-        if(curFlag == 1)
-          flag = 2;
-        else
-        {
-          if(i < imin)
-            imin = i;
-          if(i > imax)
-            imax = i;
-          if(j < jmin)
-            jmin = j;
-          if(j > jmax)
-            jmax = j;
-        }
-        index++;
+  index = 0;
+  float energyLimit = energyTreshold*totalEnergy/float(nx_*ny_);
+  int nInter = 0;    //#traces interpolated.
+  int nInter0 = 0;   //#traces interpolated where there was no response at all.
+  for(j=0;j<ny_;j++)
+    for(i=0;i<nx_;i++)
+    {
+      curFlag = 0;
+      if(energyMap[index] <= energyLimit) {//Values in this trace are bogus, interpolate.
+        curFlag = 1;
+        nInter++;
+        if(energyMap[index] == 0.0f)
+          nInter0++;
       }
+      flags[index] = short(flag+curFlag);
+      if(curFlag == 1)
+        flag = 2;
+      else
+      {
+        if(i < imin)
+          imin = i;
+        if(i > imax)
+          imax = i;
+        if(j < jmin)
+          jmin = j;
+        if(j > jmax)
+          jmax = j;
+      }
+      index++;
+    }
 
-      LogKit::LogFormatted(LogKit::Low,"\n%d of %d traces (%d with zero response)",
-        nInter, nx_*ny_, nInter0);
-      int curIndex = 0;
-      for(j=0;j<ny_;j++)
-        for(i=0;i<nx_;i++)
+  LogKit::LogFormatted(LogKit::Low,"\n%d of %d traces (%d with zero response)",
+                       nInter, nx_*ny_, nInter0);
+  int curIndex = 0;
+  for(j=0;j<ny_;j++)
+    for(i=0;i<nx_;i++)
+    {
+      if((flags[curIndex] % 2) == 1)
+      {
+        if((interpolateTrace(curIndex, flags, i, j) % 2) == 0)
         {
-          if((flags[curIndex] % 2) == 1)
+          index = curIndex-1;
+          while(index >= 0 && flags[index] > 1)
           {
-            if((interpolateTrace(curIndex, flags, i, j) % 2) == 0)
-            {
-              index = curIndex-1;
-              while(index >= 0 && flags[index] > 1)
-              {
-                if((flags[index] % 2) == 1)
-                  interpolateTrace(index, flags, (index % nx_), index/nx_);
-                index--;
-              }
-              if(index < 0)
-                index = 0;
-              assert(flags[index] < 2);
-              index++;
-              while(flags[index-1] == 0 && index <= curIndex)
-              {
-                if(flags[index] > 1)
-                  flags[index] -= 2;
-                index++;
-              }
-            }
+            if((flags[index] % 2) == 1)
+              interpolateTrace(index, flags, (index % nx_), index/nx_);
+            index--;
           }
-          curIndex++;
+          if(index < 0)
+            index = 0;
+          assert(flags[index] < 2);
+          index++;
+          while(flags[index-1] == 0 && index <= curIndex)
+          {
+            if(flags[index] > 1)
+              flags[index] -= 2;
+            index++;
+          }
         }
-        extrapolateSeismic(imin, imax, jmin, jmax);
-        delete [] energyMap;
-        delete [] flags;
+      }
+      curIndex++;
+    }
+  extrapolateSeismic(imin, imax, jmin, jmax);
+  delete [] energyMap;
+  delete [] flags;
 }
 
 
@@ -2655,7 +2654,7 @@ int FFTGrid::findClosestFactorableNumber(int leastint)
                 closestprod=factor;
               }
             }
-            return closestprod;
+  return closestprod;
 }
 
 
