@@ -240,8 +240,8 @@ public:
     // Filter using Odd's magic vector...
     //
     float dt  = static_cast<float> (dt_milliseconds/1000.0); // Sampling density in seconds
-    float T   = (nt - 1)*dt;                                 // Time sample
-    float w   = 1/T;                                         // Lowest frequency that can be extracted from log
+    float dT  = (nt - 1)*dt;                                 // Time sample
+    float w   = 1/dT;                                        // Lowest frequency that can be extracted from log
     int   N   = int(max_hz/w + 0.5f);                        // Number of elements of Fourier vector to keep
 
     if (cnt < N+1) {

@@ -590,31 +590,31 @@ AVOInversion::divideDataByScaleWavelet(const SeismicParametersHolder & seismicPa
         }
       }
 
-      if(ModelSettings::getDebugLevel() > 0)
-      {
-        ///* NBNB How to handle
-        std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
-        std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
-        std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
-        seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
-        seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
-        //*/
-      }
+    if(ModelSettings::getDebugLevel() > 0)
+    {
+      ///* NBNB How to handle
+      std::string fileName1 = IO::PrefixReflectionCoefficients() + angle;
+      std::string fileName2 = IO::PrefixReflectionCoefficients() + "With_Padding_" + angle;
+      std::string sgriLabel = "Reflection coefficients for incidence angle " + angle;
+      seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
+      seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
+      //*/
+    }
 
-      LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
-      seisData_[l]->interpolateSeismic(energyTreshold_);
+    LogKit::LogFormatted(LogKit::Medium,"\nInterpolating reflections for angle stack "+angle+": ");
+    seisData_[l]->interpolateSeismic(energyTreshold_);
 
-      if(ModelSettings::getDebugLevel() > 0)
-      {
-        ///*
-        std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
-        std::string fileName1 = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
-        std::string fileName2 = IO::PrefixReflectionCoefficients()  + "Interpolated_With_Padding_" + angle;
-        seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
-        seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
-        //*/
-      }
-      seisData_[l]->endAccess();
+    if(ModelSettings::getDebugLevel() > 0)
+    {
+      ///*
+      std::string sgriLabel = "Interpolated reflections for incidence angle "+angle;
+      std::string fileName1 = IO::PrefixReflectionCoefficients() + "Interpolated_" + angle;
+      std::string fileName2 = IO::PrefixReflectionCoefficients()  + "Interpolated_With_Padding_" + angle;
+      seisData_[l]->writeFile(fileName1, IO::PathToDebug(), simbox_, sgriLabel);
+      seisData_[l]->writeStormFile(fileName2, simbox_, false, true, true);
+      //*/
+    }
+    seisData_[l]->endAccess();
   }
 
   fftw_free(rData);
@@ -772,17 +772,16 @@ AVOInversion::multiplyDataByScaleWaveletAndWriteToFile(const std::string & typeN
         {
           seisData_[l]->setRealValue(i,j,k,rData[k]/static_cast<float>(sqrt(static_cast<double>(nzp_))),true);
         }
-
       }
-      std::string angle     = NRLib::ToString(thetaDeg_[l],1);
-      std::string sgriLabel = typeName + " for incidence angle "+angle;
-      std::string fileName  = typeName + angle;
+    std::string angle     = NRLib::ToString(thetaDeg_[l],1);
+    std::string sgriLabel = typeName + " for incidence angle "+angle;
+    std::string fileName  = typeName + angle;
 
-      if (interval_name != "")
-        fileName += "_" + interval_name;
+    if (interval_name != "")
+      fileName += "_" + interval_name;
 
-      seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
-      seisData_[l]->endAccess();
+    seisData_[l]->writeFile(fileName, IO::PathToSeismicData(), simbox_, sgriLabel);
+    seisData_[l]->endAccess();
   }
 
   fftw_free(rData);
@@ -1460,70 +1459,70 @@ AVOInversion::simulate(SeismicParametersHolder & seismicParameters, RandomGen * 
             seed2->setNextComplex(ijkSeed[2]);
           }
 
-          postCovVp->endAccess();  //
-          postCovVs->endAccess();   //
-          postCovRho->endAccess();
-          postCrCovVpVs->endAccess();
-          postCrCovVpRho->endAccess();
-          postCrCovVsRho->endAccess();
-          seed0->endAccess();
-          seed1->endAccess();
-          seed2->endAccess();
+      postCovVp->endAccess();  //
+      postCovVs->endAccess();   //
+      postCovRho->endAccess();
+      postCrCovVpVs->endAccess();
+      postCrCovVpRho->endAccess();
+      postCrCovVsRho->endAccess();
+      seed0->endAccess();
+      seed1->endAccess();
+      seed2->endAccess();
 
-          // time(&timeend);
-          // printf("Simulation in FFT domain in %ld seconds \n",timeend-timestart);
-          // time(&timestart);
+      // time(&timeend);
+      // printf("Simulation in FFT domain in %ld seconds \n",timeend-timestart);
+      // time(&timestart);
 
-          seed0->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed0->invFFTInPlace();
+      seed0->setAccessMode(FFTGrid::RANDOMACCESS);
+      seed0->invFFTInPlace();
 
-          seed1->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed1->invFFTInPlace();
+      seed1->setAccessMode(FFTGrid::RANDOMACCESS);
+      seed1->invFFTInPlace();
 
-          seed2->setAccessMode(FFTGrid::RANDOMACCESS);
-          seed2->invFFTInPlace();
+      seed2->setAccessMode(FFTGrid::RANDOMACCESS);
+      seed2->invFFTInPlace();
 
-          if(modelAVOdynamic_->GetUseLocalNoise()==true)
-          {
-            float vp, vs, rho;
-            float vpnew, vsnew, rhonew;
+      if(modelAVOdynamic_->GetUseLocalNoise()==true)
+      {
+        float vp, vs, rho;
+        float vpnew, vsnew, rhonew;
 
-            for (j=0;j<ny_;j++)
-              for (i=0;i<nx_;i++)
-                for (k=0;k<nz_;k++)
-                {
-                  vp  = seed0->getRealValue(i,j,k);
-                  vs  = seed1->getRealValue(i,j,k);
-                  rho = seed2->getRealValue(i,j,k);
-                  vpnew  = float((*sigmamdnew_)(i,j)[0][0]*vp+ (*sigmamdnew_)(i,j)[0][1]*vs+(*sigmamdnew_)(i,j)[0][2]*rho);
-                  vsnew  = float((*sigmamdnew_)(i,j)[1][0]*vp+ (*sigmamdnew_)(i,j)[1][1]*vs+(*sigmamdnew_)(i,j)[1][2]*rho);
-                  rhonew = float((*sigmamdnew_)(i,j)[2][0]*vp+ (*sigmamdnew_)(i,j)[2][1]*vs+(*sigmamdnew_)(i,j)[2][2]*rho);
-                  seed0->setRealValue(i,j,k,vpnew);
-                  seed1->setRealValue(i,j,k,vsnew);
-                  seed2->setRealValue(i,j,k,rhonew);
-                }
-          }
+        for (j=0;j<ny_;j++)
+          for (i=0;i<nx_;i++)
+            for (k=0;k<nz_;k++)
+            {
+              vp  = seed0->getRealValue(i,j,k);
+              vs  = seed1->getRealValue(i,j,k);
+              rho = seed2->getRealValue(i,j,k);
+              vpnew  = float((*sigmamdnew_)(i,j)[0][0]*vp+ (*sigmamdnew_)(i,j)[0][1]*vs+(*sigmamdnew_)(i,j)[0][2]*rho);
+              vsnew  = float((*sigmamdnew_)(i,j)[1][0]*vp+ (*sigmamdnew_)(i,j)[1][1]*vs+(*sigmamdnew_)(i,j)[1][2]*rho);
+              rhonew = float((*sigmamdnew_)(i,j)[2][0]*vp+ (*sigmamdnew_)(i,j)[2][1]*vs+(*sigmamdnew_)(i,j)[2][2]*rho);
+              seed0->setRealValue(i,j,k,vpnew);
+              seed1->setRealValue(i,j,k,vsnew);
+              seed2->setRealValue(i,j,k,rhonew);
+            }
+      }
 
-          seed0->add(postVp_);
-          seed0->endAccess();
-          seed1->add(postVs_);
-          seed1->endAccess();
-          seed2->add(postRho_);
-          seed2->endAccess();
+      seed0->add(postVp_);
+      seed0->endAccess();
+      seed1->add(postVs_);
+      seed1->endAccess();
+      seed2->add(postRho_);
+      seed2->endAccess();
 
-          if(kriging == true) {
-            double wall2=0.0, cpu2=0.0;
-            TimeKit::getTime(wall2,cpu2);
-            doPostKriging(seismicParameters, *seed0, *seed1, *seed2);
-            Timings::addToTimeKrigingSim(wall2,cpu2);
-          }
+      if(kriging == true) {
+        double wall2=0.0, cpu2=0.0;
+        TimeKit::getTime(wall2,cpu2);
+        doPostKriging(seismicParameters, *seed0, *seed1, *seed2);
+        Timings::addToTimeKrigingSim(wall2,cpu2);
+      }
 
-          seismicParameters.AddSimulationSeed0(seed0);
-          seismicParameters.AddSimulationSeed1(seed1);
-          seismicParameters.AddSimulationSeed2(seed2);
+      seismicParameters.AddSimulationSeed0(seed0);
+      seismicParameters.AddSimulationSeed1(seed1);
+      seismicParameters.AddSimulationSeed2(seed2);
 
-          // time(&timeend);
-          // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
+      // time(&timeend);
+      // printf("Back transform and write of simulation in %ld seconds \n",timeend-timestart);
     }
 
     delete seed0;

@@ -951,13 +951,13 @@ int MultiIntervalGrid::FindClosestFactorableNumber(int leastint) {
             for (n=maxant11;n<maxant13+1;n++)
             {
               factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+                                        pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
               if ((factor >=  leastint) &&  (factor <  closestprod))
               {
                 closestprod=factor;
               }
             }
-            return closestprod;
+  return closestprod;
 }
 
 // --------------------------------------------------------------------------------

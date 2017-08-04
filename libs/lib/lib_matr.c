@@ -72,7 +72,7 @@ int lib_matrCholR(
       }
       x_mat[l_i][l_i] = sqrt(l_r);
     }
-    return(r_value);
+  return(r_value);
 }
 
 int lib_matrCholCpx(
@@ -110,60 +110,60 @@ int lib_matrCholCpx(
       x_mat[l_i][l_j].im = x_mat[l_i][l_j].im/factor;
     }
 
-    for (l_i=0; l_i < i_dim; l_i++)
-      if (x_mat[l_i][l_i].re <= TOL) {
+  for (l_i=0; l_i < i_dim; l_i++)
+    if (x_mat[l_i][l_i].re <= TOL) {
+      /*
+        fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
+        "Diagonal-element near 0.0");
+        lib_matrPrintCpx( x_mat, i_dim, i_dim);
+      */
+      r_value = 1;
+      return(r_value);
+    } else {
+      for (l_j=0; l_j < l_i; l_j++) {
+        l_r.re = 0.0;
+        l_r.im = 0.0;
+        for (l_k = 0; l_k < l_j; l_k++){
+          l_r.re += (x_mat[l_i][l_k].re * x_mat[l_j][l_k].re)+(x_mat[l_i][l_k].im * x_mat[l_j][l_k].im);
+          l_r.im += -(x_mat[l_i][l_k].re * x_mat[l_j][l_k].im)+(x_mat[l_i][l_k].im * x_mat[l_j][l_k].re);
+        }
+        help = x_mat[l_j][l_j].re*x_mat[l_j][l_j].re + x_mat[l_j][l_j].im*x_mat[l_j][l_j].im;
+        x_mat[l_i][l_j].re = ((x_mat[l_i][l_j].re - l_r.re)*x_mat[l_j][l_j].re
+                              +(x_mat[l_i][l_j].im - l_r.im)*x_mat[l_j][l_j].im)/help;
+
+        x_mat[l_i][l_j].im = ((x_mat[l_i][l_j].im - l_r.im)*x_mat[l_j][l_j].re
+                              -(x_mat[l_i][l_j].re - l_r.re)*x_mat[l_j][l_j].im)/help;
+      }
+      l_r.re = 0.0;
+      l_r.im = 0.0;
+      for (l_k=0; l_k < l_i; l_k++){
+        l_r.re += (x_mat[l_i][l_k].re * x_mat[l_i][l_k].re) + (x_mat[l_i][l_k].im * x_mat[l_i][l_k].im);
+        /* l_r.im -= 2*x_mat[l_i][l_k].re * x_mat[l_i][l_k].im;*/
+      }
+      l_r.re = x_mat[l_i][l_i].re - l_r.re;
+      /* l_r.im = x_mat[l_i][l_i].im - l_r.im;*/
+      if (l_r.re <= TOL) {
         /*
-          fprintf(stderr, "Matrix to be Cholesky factorized not valid! %s\n",
-          "Diagonal-element near 0.0");
+          fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n");
           lib_matrPrintCpx( x_mat, i_dim, i_dim);
         */
         r_value = 1;
         return(r_value);
-      } else {
-        for (l_j=0; l_j < l_i; l_j++) {
-          l_r.re = 0.0;
-          l_r.im = 0.0;
-          for (l_k = 0; l_k < l_j; l_k++){
-            l_r.re += (x_mat[l_i][l_k].re * x_mat[l_j][l_k].re)+(x_mat[l_i][l_k].im * x_mat[l_j][l_k].im);
-            l_r.im += -(x_mat[l_i][l_k].re * x_mat[l_j][l_k].im)+(x_mat[l_i][l_k].im * x_mat[l_j][l_k].re);
-          }
-          help = x_mat[l_j][l_j].re*x_mat[l_j][l_j].re + x_mat[l_j][l_j].im*x_mat[l_j][l_j].im;
-          x_mat[l_i][l_j].re = ((x_mat[l_i][l_j].re - l_r.re)*x_mat[l_j][l_j].re
-            +(x_mat[l_i][l_j].im - l_r.im)*x_mat[l_j][l_j].im)/help;
-
-          x_mat[l_i][l_j].im = ((x_mat[l_i][l_j].im - l_r.im)*x_mat[l_j][l_j].re
-            -(x_mat[l_i][l_j].re - l_r.re)*x_mat[l_j][l_j].im)/help;
-        }
-        l_r.re = 0.0;
-        l_r.im = 0.0;
-        for (l_k=0; l_k < l_i; l_k++){
-          l_r.re += (x_mat[l_i][l_k].re * x_mat[l_i][l_k].re) + (x_mat[l_i][l_k].im * x_mat[l_i][l_k].im);
-          /* l_r.im -= 2*x_mat[l_i][l_k].re * x_mat[l_i][l_k].im;*/
-        }
-        l_r.re = x_mat[l_i][l_i].re - l_r.re;
-        /* l_r.im = x_mat[l_i][l_i].im - l_r.im;*/
-        if (l_r.re <= TOL) {
-          /*
-          fprintf(stderr, "Matrix to be Cholesky factorized not valid !\n");
-          lib_matrPrintCpx( x_mat, i_dim, i_dim);
-          */
-          r_value = 1;
-          return(r_value);
-        }
-
-        assert(l_r.im<0.00001);
-        x_mat[l_i][l_i].re = (float) (sqrt(l_r.re));
-        x_mat[l_i][l_i].im = 0.0;
       }
 
-      for(l_i=0;l_i<i_dim;l_i++)
-        for(l_j=0;l_j<=l_i;l_j++)
-        {
-          x_mat[l_i][l_j].re *= (float) (sqrt(factor));
-          x_mat[l_i][l_j].im *= (float) (sqrt(factor));
-        }
+      assert(l_r.im<0.00001);
+      x_mat[l_i][l_i].re = (float) (sqrt(l_r.re));
+      x_mat[l_i][l_i].im = 0.0;
+    }
 
-        return(r_value);
+  for(l_i=0;l_i<i_dim;l_i++)
+    for(l_j=0;l_j<=l_i;l_j++)
+      {
+        x_mat[l_i][l_j].re *= (float) (sqrt(factor));
+        x_mat[l_i][l_j].im *= (float) (sqrt(factor));
+      }
+
+  return(r_value);
 }
 
 
@@ -465,8 +465,7 @@ void lib_matrProdCholVec(int n, fftw_complex ** mat, fftw_complex * vec)
       vec[i].im += mat[i][j].re * inseed[j].im + mat[i][j].im * inseed[j].re;
     }
 
-    fftw_free(inseed);
-
+  fftw_free(inseed);
 }
 
 
