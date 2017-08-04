@@ -52,11 +52,12 @@ CBox::IsInside(int i, int j, int k) const {
 
 void
 CBox::TruncateIndex(int& i, int& j, int& k, const Simbox* pSBox) {
-  if (i < 0) i = 0; if (j < 0) j = 0; if (k < 0) k = 0;
+  if (i < 0) i = 0;
+  if (j < 0) j = 0;
+  if (k < 0) k = 0;
   if (i >= pSBox->getnx()) i = pSBox->getnx() - 1;
   if (j >= pSBox->getny()) j = pSBox->getny() - 1;
   if (k >= pSBox->getnz()) k = pSBox->getnz() - 1;
-
 }
 
 void CBox::ModifyBox(const CBox& boxS, const Simbox* pSBox, float rangeX, float rangeY, float rangeZ) {

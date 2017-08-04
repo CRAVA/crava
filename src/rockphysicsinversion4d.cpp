@@ -455,7 +455,7 @@ RockPhysicsInversion4D::smoothAllDirectionsAndNormalize()
              double value;
              if(normalizing<1e-5)
                value=RMISSING;
-             else;
+             else
                value=number/normalizing;
 
              SetGridValue(1,i0,i1,i2,i3,value);
@@ -466,7 +466,6 @@ RockPhysicsInversion4D::smoothAllDirectionsAndNormalize()
     for (int j=0; j<nf_[0]; j++){
       meanRockPrediction_(i,j)->endAccess();
     }
-
 }
 
 void

@@ -449,7 +449,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
         NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(base_surface_file);
         if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
           estimation_mode_need_ILXL = true;
-          i = static_cast<int>(interval_names.size()) - 1;
+        i = static_cast<int>(interval_names.size()) - 1;
       }
     }
 
@@ -3251,7 +3251,7 @@ bool CommonData::WaveletHandling(ModelSettings                               * m
         std::vector<std::vector<double> > SigmaXY;
 
         for (size_t w = 0; w < n_wells; w++) {
-          if (!estimate_well_gradient & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
+          if ((!estimate_well_gradient) & ((structure_depth_grad_x.GetN()> 0) & (structure_depth_grad_y.GetN()>0))) {
             double v0=model_settings->getAverageVelocity();
             mapped_blocked_logs.find(wells_[w]->GetWellName())->second->SetSeismicGradient(v0, structure_depth_grad_x, structure_depth_grad_y, ref_time_grad_x_, ref_time_grad_y_, t_grad_x[w], t_grad_y[w]);
           }
@@ -6889,13 +6889,13 @@ int CommonData::FindClosestFactorableNumber(int leastint)
             for (n=maxant11;n<maxant13+1;n++)
             {
               factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+                                        pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
               if ((factor >=  leastint) &&  (factor <  closestprod))
               {
                 closestprod=factor;
               }
             }
-            return closestprod;
+  return closestprod;
 }
 
 void CommonData::SmoothTraceInGuardZone(std::vector<float> & data_trace,
@@ -10977,4 +10977,3 @@ CommonData::DumpVector(const fftw_real   * data,
   dump << data[i] << "\n";
   dump.close();
 }
-

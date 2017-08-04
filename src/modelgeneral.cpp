@@ -472,7 +472,8 @@ ModelGeneral::Dump4Dparameters(const ModelSettings* model_settings, std::string 
   std::string fileName;
   std::stringstream tag;
 
-  if(timestep<0)
+  if (timestep<0)
+    return;
 
   // write mu static
   tag.str(std::string());tag.clear();label = "mean_vp_static_step_"; tag << label << timestep << identifyer ; fileName= outPath + tag.str();
@@ -572,4 +573,3 @@ ModelGeneral::WriteToFile(const Simbox        * simbox,
                   *format,
                   padding);
 }
-

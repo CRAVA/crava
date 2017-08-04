@@ -981,7 +981,7 @@ SegY::GetAllValues(void)
         oInd++;
       }
     }
-    return(result);
+  return(result);
 }
 
 size_t
