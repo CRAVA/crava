@@ -1437,6 +1437,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     //
     // Set undefined
     //
+
     std::vector<int> facies_numbers;
     for (std::map<int,std::string>::const_iterator it = facies_map.begin(); it != facies_map.end(); it++) {
       facies_numbers.push_back(it->first);
@@ -1449,6 +1450,17 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     int   max_allowed_value = 10000;  // Largest allowed value (facies number).
     std::vector<int> count(n_facies);
     std::vector<int> table(max_allowed_value);
+
+    int max_facies_number = -1;
+    for (int i = 0 ; i < n_facies ; i++)
+      if (facies_numbers[i] > max_facies_number)
+        max_facies_number = facies_numbers[i];
+
+    if (max_facies_number > max_allowed_value) {
+      LogKit::LogFormatted(LogKit::Error,"ERROR the maximum facies number " + NRLib::ToString(max_facies_number) + " is higher then the allowed limit in Crava " + NRLib::ToString(max_allowed_value) +".\n");
+      LogKit::LogFormatted(LogKit::Error,"  Crava has to stop\n");
+      exit(1);
+    }
 
     //
     // Set up facies-to-position table.
