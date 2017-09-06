@@ -1446,7 +1446,7 @@ void BlockedLogsCommon::BlockFaciesLog(const std::vector<int>          & b_ind,
     for (unsigned int m = 0 ; m < n_blocks_ ; m++)
       blocked_log[m] = IMISSING;
 
-    int   max_allowed_value = 100;  // Largest allowed value (facies number).
+    int   max_allowed_value = 10000;  // Largest allowed value (facies number).
     std::vector<int> count(n_facies);
     std::vector<int> table(max_allowed_value);
 
@@ -2204,7 +2204,6 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
     std::map<std::string, std::vector<int> >      discrete_logs_raw_logs_temp;
 
     // Pick only the variables that are requested in the constructor --------------------------------------------------------
-
     // Find the continuous vectors in the wells that are to be blocked
     for (unsigned int i=0; i<cont_logs_to_be_blocked.size(); i++) {
       std::map<std::string,std::vector<double> >::iterator it = continuous_logs_well.find(cont_logs_to_be_blocked[i]);
@@ -2213,7 +2212,6 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
         continuous_logs_raw_logs_temp.insert(std::pair<std::string, std::vector<double> >(it->first, it->second));
       }
     }
-
     // Find the discrete vectors in the wells that are to be blocked
     for (unsigned int i=0; i<disc_logs_to_be_blocked.size(); i++) {
       std::map<std::string,std::vector<int> >::iterator it = discrete_logs_well.find(disc_logs_to_be_blocked[i]);
@@ -2222,7 +2220,6 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
         discrete_logs_raw_logs_temp.insert(std::pair<std::string, std::vector<int> >(it->first, it->second));
       }
     }
-
     for (std::map<std::string,std::vector<double> >::iterator it = continuous_logs_raw_logs_temp.begin(); it!=continuous_logs_raw_logs_temp.end(); it++) {
       std::vector<double> temp_vector;
       continuous_logs_raw_logs.insert(std::pair<std::string, std::vector<double> >(it->first, temp_vector));
@@ -2233,13 +2230,14 @@ void    BlockedLogsCommon::RemoveMissingLogValues(const NRLib::Well             
       discrete_logs_raw_logs.insert(std::pair<std::string, std::vector<int> >(it->first, temp_vector));
     }
 
-
     // Remove WELLMISSING data from wells
     if (continuous_logs_well.find("Z_pos") != continuous_logs_well.end()) {
+
       for (unsigned int i = 0; i < n_data_with_wellmissing; i++) {
         // TWT/Z_pos is the variable we are testing for WELLMISSING values
         double dummy = continuous_logs_well.find("Z_pos")->second[i];
         if (dummy != WELLMISSING && dummy != OPENWORKS_MISSING) {
+
           x_pos_raw_logs.push_back(continuous_logs_well.find("X_pos")->second[i]);
           y_pos_raw_logs.push_back(continuous_logs_well.find("Y_pos")->second[i]);
           z_pos_raw_logs.push_back(continuous_logs_well.find("Z_pos")->second[i]);
