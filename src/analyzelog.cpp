@@ -219,17 +219,17 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
                                 const std::string                                     & log_name,
                                 std::string                                           & err_txt){
 
-  double global_mean    = 0.0;
-  int   count           = 0;
-  int   nd              = 0;
-  int   nd_tot          = 0;
-  int   log_nr          = -1;
+  //double global_mean = 0.0;
+  int   count        = 0;
+  int   nd           = 0;
+  int   nd_tot       = 0;
+  int   log_nr       = -1;
   //
   // The three vectors below contain data from all wells and all intervals
   //
-  std::vector<double>  mean_vector;
-  std::vector<double>  ln_data_vector;
-  std::vector<double>  low_freq_log;
+  std::vector<double> mean_vector;
+  std::vector<double> ln_data_vector;
+  std::vector<double> low_freq_log;
 
   assert(log_name == "Vp" || log_name == "Vs" || log_name == "Rho");
 
@@ -284,7 +284,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
         low_freq_log.push_back(temp_low_freq_log[n]);
         if (blocked_well_log[n] != RMISSING && mean[n] != RMISSING) {
           ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[n] - mean[n]);
-          global_mean   += blocked_well_log[n] - mean[n];
+          //global_mean   += blocked_well_log[n] - mean[n];
           ln_data_vector.push_back(blocked_well_log[n] - mean[n]);
           count++;
         }
@@ -333,7 +333,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
         low_freq_log.push_back(temp_low_freq_log[n]);
         if (blocked_well_log[n] != RMISSING && mean[n] != RMISSING) {
           ln_data_map.find(well_names[i])->second.push_back(blocked_well_log[n] - mean[n]);
-          global_mean   += blocked_well_log[n] - mean[n];
+          //global_mean   += blocked_well_log[n] - mean[n];
           ln_data_vector.push_back(blocked_well_log[n] - mean[n]);
           count++;
         }
@@ -379,16 +379,15 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
   */
 }
 
-bool   Analyzelog::CheckConsistencyBackground(const std::vector<double>                              & ln_data_blocked,
-                                              const std::vector<double>                              & background,
-                                              const std::vector<double>                              & low_freq_log,
-                                              int                                                     nd_tot){
-
-  bool    background_ok    = true;
-  double  sum_top          = 0;
-  double  sum_base         = 0;
-  double  ratio            = 0;
-
+bool Analyzelog::CheckConsistencyBackground(const std::vector<double> & ln_data_blocked,
+                                            const std::vector<double> & background,
+                                            const std::vector<double> & low_freq_log,
+                                            int                         nd_tot)
+{
+  bool   background_ok = true;
+  double sum_top       = 0;
+  double sum_base      = 0;
+  double ratio         = 0;
 
   for (int i = 0; i < nd_tot; i++){
     if (ln_data_blocked[i] != RMISSING){

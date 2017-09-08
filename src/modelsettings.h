@@ -434,7 +434,7 @@ public:
   void setForwardModeling(bool forwardModeling)           { forwardModeling_          = forwardModeling          ;}
   void setGenerateSeismicAfterInv( bool generateSeismic)  { generateSeismicAfterInv_  = generateSeismic          ;}
   void setMultizoneBackground(bool multizone)             { multizoneBackground_      = multizone                ;}
-  void setGenerateBackground(bool generateBackgr)         { generateBackground_       = generateBackgr           ;}
+  void setGenerateBackground(bool generateBackground)     { generateBackground_       = generateBackground       ;}
   void setBackgroundFromRockPhysics(bool backgroundFromRP){ backgroundFromRockPhysics_= backgroundFromRP         ;}
   void setCalibrateRockPhysicsToWells(bool calibrate)     { calibrateRockPhysicsToWells_ = calibrate             ;}
   void setEstimateFaciesProb(bool estFaciesProb)          { estimateFaciesProb_       = estFaciesProb            ;}

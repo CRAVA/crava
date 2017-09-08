@@ -148,12 +148,10 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<double> trend_vp(nz);
     std::vector<double> trend_vs(nz);
     std::vector<double> trend_rho(nz);
-    std::vector<double> trend_vel(nz);
 
     std::vector<double> avg_dev_vp(n_wells);
     std::vector<double> avg_dev_vs(n_wells);
     std::vector<double> avg_dev_rho(n_wells);
-    std::vector<double> avg_dev_vel(n_wells);
 
     CalculateBackgroundTrend(trend_vp,
                              avg_dev_vp,
@@ -187,6 +185,9 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                              name_rho);
 
     if (velocity->GetN() != 0) {
+      std::vector<double> trend_vel(nz);
+      std::vector<double> avg_dev_vel(n_wells);
+
       //
       // We still want CalculateBackgroundTrend() for alpha above. By calculating
       // avgDevAlpha we can check that the bgAlpha calculated from velocity is as
