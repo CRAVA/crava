@@ -911,7 +911,7 @@ private:
 
   void               ChangeSignGrid(NRLib::Grid<float> * grid) const;
 
-  void               LoadVelocity(NRLib::Grid<float>  * velocity,
+  void               LoadVelocity(std::vector<NRLib::Grid<float> *> grids,
                                   Simbox              * interval_simbox,
                                   const ModelSettings * model_settings,
                                   const std::string   & velocity_field,

@@ -851,7 +851,7 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                         * m
       nz_extended = bg_simbox->getnz();
 
     NRLib::Grid<float> * trend_grid = new NRLib::Grid<float>(nx, ny, nz);
-    if (nz_extended != nz) { //Vertical trend is estimated in an extended simbox, we resample it to interval simbox similar to the resampling of background grid.
+    if (nz_extended > 0 && nz_extended != nz) { //Vertical trend is estimated in an extended simbox, we resample it to interval simbox similar to the resampling of background grid.
 
       NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
       Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,0));

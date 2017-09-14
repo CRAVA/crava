@@ -1568,6 +1568,20 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
   if (autocov == true && (filename_tmpcorr != "" || modelSettings_->getUseVerticalVariogram() || filename_paramcorr != ""))
     errTxt += "Parameter correlation and/or Temporal correlation cannot be given as input together with autocovariance. Parameter and temporal correlation are integrated into the autocovariance";
 
+
+  // We do not allow estimating prior correlations if background is not estimated by Crava
+  if (modelSettings_->getForwardModeling() == false) {
+    bool estimate_temp_corr = (inputFiles_->getTempCorrFile() == "" && modelSettings_->getUseVerticalVariogram() == false);
+    bool param_cov_from_rock_physics = (inputFiles_->getParamCovFile() == "" && modelSettings_->getFaciesProbFromRockPhysics());
+    bool estimate_param_cov = (inputFiles_->getParamCovFile() == "" && !param_cov_from_rock_physics);
+    if (modelSettings_->getGenerateBackground() == false) {
+      if (autocov == false && (estimate_param_cov || estimate_temp_corr)) {
+        errTxt += "Crava cannot estimating prior correlations without also estimating the background model.\n";
+        errTxt += "If this is desired then one option is to run a separate run to estimate the prior correlations and then use them as input together with the background from file.\n";
+      }
+    }
+  }
+
   parseCorrelationDirection(root, errTxt);
 
   parseFaciesProbabilities(root, errTxt);

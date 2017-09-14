@@ -7357,12 +7357,17 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
   NRLib::Grid<float> * velocity = NULL;
   std::string velocity_field    = input_files->getVelocityField();
 
-  LoadVelocity(velocity,
+  std::vector<NRLib::Grid<float> *> grids(1);
+  grids[0] = new NRLib::Grid<float>();
+
+  LoadVelocity(grids,
                &simbox,
                model_settings,
                velocity_field,
                velocity_from_inversion,
                err_text);
+
+  velocity = grids[0];
 
   if (err_text == "") {
     bool failed_dummy = false;
@@ -7375,7 +7380,7 @@ bool CommonData::SetupDepthConversion(ModelSettings * model_settings,
 
     time_depth_mapping->setDepthSurfaces(input_files->getDepthSurfTopFile(), base_depth_surface, failed_dummy, err_text);
 
-    if (velocity != NULL) {
+    if (velocity->GetN() != 0) {
 
       int output_format = model_settings->getOutputGridFormat();
       if (model_settings->getWriteAsciiSurfaces() && !(output_format & IO::ASCII))
@@ -7502,12 +7507,18 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         if (back_vel_file != "") {
           bool dummy;
-          LoadVelocity(velocity,
+          std::vector<NRLib::Grid<float> *> grids(1);
+          grids[0] = new NRLib::Grid<float>();
+
+          LoadVelocity(grids,
                        simbox,
                        model_settings,
                        back_vel_file,
                        dummy,
                        err_text);
+
+          velocity = grids[0];
+
         }
 
         if (input_files->getCorrDirFiles().find(interval_name) != input_files->getCorrDirFiles().end()) {
@@ -8011,7 +8022,7 @@ void CommonData::ChangeSignGrid(NRLib::Grid<float> * grid) const
 
 }
 
-void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
+void CommonData::LoadVelocity(std::vector<NRLib::Grid<float> *> grids,
                               Simbox              * simbox,
                               const ModelSettings * model_settings,
                               const std::string   & velocity_field,
@@ -8031,10 +8042,7 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
     std::string err_text_tmp         = "";
 
     //ReadGridFromFile is based on vector of simboxes and grids
-    std::vector<NRLib::Grid<float> *> grids(1);
-    velocity = new NRLib::Grid<float>();
-    grids[0] = velocity;
-
+    //Grid will be read to grid[0]
     std::vector<Simbox *> simboxes;
     simboxes.push_back(simbox);
 
@@ -8050,6 +8058,8 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
                      model_settings,
                      err_text_tmp);
 
+    //velocity = grids[0];
+
     if (err_text_tmp == "") { // No errors
       //
       // Check that the velocity grid is veldefined.
@@ -8057,16 +8067,16 @@ void CommonData::LoadVelocity(NRLib::Grid<float>  * velocity,
       float log_min = model_settings->getVpMin();
       float log_max = model_settings->getVpMax();
 
-      const int nz = static_cast<int>(velocity->GetNK());
-      const int ny = static_cast<int>(velocity->GetNJ());
-      const int nx = static_cast<int>(velocity->GetNI());
+      const int nz = static_cast<int>(grids[0]->GetNK());
+      const int ny = static_cast<int>(grids[0]->GetNJ());
+      const int nx = static_cast<int>(grids[0]->GetNI());
       int too_low  = 0;
       int too_high = 0;
 
       for (int k = 0; k < nz; k++) {
         for (int j = 0; j < ny; j++) {
           for (int i = 0; i < nx; i++) {
-            double value = velocity->GetValue(i,j,k);
+            double value = grids[0]->GetValue(i,j,k);
             if (value < log_min && value != RMISSING)
               too_low++;
             if (value > log_max && value != RMISSING)
