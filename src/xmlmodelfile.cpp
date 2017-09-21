@@ -1578,7 +1578,7 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
       if (autocov == false && (estimate_param_cov || estimate_temp_corr)) {
         errTxt += "To estimate prior correlations Crava needs to also estimate the background model.\n";
         errTxt += "It is not allowed to estimate prior correlation when background model is from file (or a constant value).\n";
-        errTxt += "If it is desired to have Crava estimating prior correlations with background models from file, \n then one option is to first make a run where prior correlations is estimated and written, and then make a new separate run where both are input from file.\n"; 
+        errTxt += "If it is desired to have Crava estimating prior correlations with background models from file, \n then one option is to first make a run where prior correlations is estimated and written, and then make a new separate run where both are input from file.\n";
       }
     }
   }
