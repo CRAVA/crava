@@ -1576,8 +1576,9 @@ XmlModelFile::parsePriorModel(TiXmlNode * node, std::string & errTxt)
     bool estimate_param_cov = (inputFiles_->getParamCovFile() == "" && !param_cov_from_rock_physics);
     if (modelSettings_->getGenerateBackground() == false) {
       if (autocov == false && (estimate_param_cov || estimate_temp_corr)) {
-        errTxt += "Crava cannot estimating prior correlations without also estimating the background model.\n";
-        errTxt += "If this is desired then one option is to run a separate run to estimate the prior correlations and then use them as input together with the background from file.\n";
+        errTxt += "To estimate prior correlations Crava needs to also estimate the background model.\n";
+        errTxt += "It is not allowed to estimate prior correlation when background model is from file (or a constant value).\n";
+        errTxt += "If it is desired to have Crava estimating prior correlations with background models from file, \n then one option is to first make a run where prior correlations is estimated and written, and then make a new separate run where both are input from file.\n"; 
       }
     }
   }
