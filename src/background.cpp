@@ -148,6 +148,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<double> trend_vp(nz);
     std::vector<double> trend_vs(nz);
     std::vector<double> trend_rho(nz);
+      std::vector<double> trend_vel(nz);
 
     std::vector<double> avg_dev_vp(n_wells);
     std::vector<double> avg_dev_vs(n_wells);
@@ -185,7 +186,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                              name_rho);
 
     if (velocity->GetN() != 0) {
-      std::vector<double> trend_vel(nz);
+
       std::vector<double> avg_dev_vel(n_wells);
 
       //
@@ -199,14 +200,30 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
                                   //model_settings->getOutputGridsElastic(),
                                   n_wells);
 
-      velocity->LogTransform(RMISSING);
+      //velocity->LogTransform(RMISSING);
+      //delete bg_vp;
+      //bg_vp = velocity;
+      //velocity->Resize(0, 0, 0, 0.0);
 
-      delete bg_vp;
-      bg_vp = velocity;
-      velocity->Resize(0, 0, 0, 0.0);
       WriteDeviationsFromVerticalTrend(avg_dev_vel, avg_dev_vs, avg_dev_rho,
                                        trend_vel, trend_vs, trend_rho,
                                        blocked_logs, n_wells, nz);
+
+      //LogTransform
+      for (size_t i = 0; i < trend_vel.size(); i++) {
+        double velocity_value;
+        if (trend_vel[i] == 0.0)
+          velocity_value = 0.0;
+        else if (trend_vel[i] == RMISSING)
+          velocity_value = RMISSING;
+        else
+          velocity_value = std::log(trend_vel[i]);
+        trend_vel[i] = velocity_value;
+      }
+
+      //Use trend_vel in setting up backgroup vp
+      trend_vp = trend_vel;
+
     }
     else {
       WriteDeviationsFromVerticalTrend(avg_dev_vp, avg_dev_vs, avg_dev_rho,
