@@ -8450,15 +8450,16 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
     //Read auto_covariance from file, this overrides estimate_param_cov and estimate_temp_corr
     const std::map<std::string, std::string> & param_auto_cov_files = input_files->getParamAutoCovFiles();
 
+    bool auto_cov_from_file = false;
     for (size_t i = 0; i < n_intervals; i++) {
       if (param_auto_cov_files.find(interval_names[i]) != param_auto_cov_files.end()) {
+        auto_cov_from_file = true;
 
         std::string param_auto_cov_file = input_files->getParamAutoCovFile(interval_names[i]);
 
-        prior_cov_estimated_or_file      = true;
+        prior_cov_estimated_or_file = true;
         std::string tmp_err_text = "";
         ReadPriorAutoCovariance(param_auto_cov_file, prior_auto_cov, interval_simboxes[i]->GetNZpad(), static_cast<int>(i), tmp_err_text);
-        ValidatePriorAutoCovMatrices(prior_auto_cov, model_settings, tmp_err_text);
 
         //Set prior_param_cov equal to auto_cov[0]
         prior_param_cov[i] = prior_auto_cov[i][0];
@@ -8480,6 +8481,14 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
           IO::writeSurfaceToFile(*prior_corr_XY[i], file_name, IO::PathToCorrelations(), model_settings->getOutputGridFormat());
         }
       }
+    }
+
+    //Validiate covariance matrices from file
+    if (auto_cov_from_file) {
+      std::string tmp_err_text = "";
+      ValidatePriorAutoCovMatrices(prior_auto_cov, model_settings, tmp_err_text);
+      if (tmp_err_text != "")
+        err_text += tmp_err_text;
     }
 
     if (prior_cov_estimated_or_file == false) {
