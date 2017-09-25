@@ -148,7 +148,7 @@ Background::GenerateBackgroundModel(NRLib::Grid<float>                          
     std::vector<double> trend_vp(nz);
     std::vector<double> trend_vs(nz);
     std::vector<double> trend_rho(nz);
-      std::vector<double> trend_vel(nz);
+    std::vector<double> trend_vel(nz);
 
     std::vector<double> avg_dev_vp(n_wells);
     std::vector<double> avg_dev_vs(n_wells);
