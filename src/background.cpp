@@ -86,7 +86,8 @@ Background::SetupBackground(std::vector<NRLib::Grid<float> *>                & p
 
     ResampleBackgroundModel(parameters[0], parameters[1], parameters[2],
                             bg_simbox,
-                            simbox);
+                            simbox,
+                            err_text);
 
     float avg = 0.0f;
     float min = 0.0f;
@@ -1274,16 +1275,17 @@ Background::ResampleBackgroundModel(NRLib::Grid<float>  * & bg_vp,
                                     NRLib::Grid<float>  * & bg_vs,
                                     NRLib::Grid<float>  * & bg_rho,
                                     const Simbox        *   bg_simbox,
-                                    const Simbox        *   simbox)
+                                    const Simbox        *   simbox,
+                                    std::string           & err_text)
 {
   NRLib::Grid<float> * res_bg_vp  = new NRLib::Grid<float>();
   NRLib::Grid<float> * res_bg_vs  = new NRLib::Grid<float>();
   NRLib::Grid<float> * res_bg_rho = new NRLib::Grid<float>();
 
   LogKit::LogFormatted(LogKit::Low,"\nResampling background model...\n");
-  ResampleParameter(res_bg_vp,  bg_vp,  simbox, bg_simbox);
-  ResampleParameter(res_bg_vs,  bg_vs,  simbox, bg_simbox);
-  ResampleParameter(res_bg_rho, bg_rho, simbox, bg_simbox);
+  ResampleParameter(res_bg_vp,  bg_vp,  simbox, bg_simbox, err_text);
+  ResampleParameter(res_bg_vs,  bg_vs,  simbox, bg_simbox, err_text);
+  ResampleParameter(res_bg_rho, bg_rho, simbox, bg_simbox, err_text);
 
   delete bg_vp;
   delete bg_vs;
@@ -1298,8 +1300,11 @@ void
 Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
                               NRLib::Grid<float> *  p_old, // Resample from
                               const Simbox       *  simbox_new,
-                              const Simbox       *  simbox_old)
+                              const Simbox       *  simbox_old,
+                              std::string         & err_text)
 {
+  std::string err_text_tmp = "";
+
   int nx = simbox_new->getnx();
   int ny = simbox_new->getny();
   int nz = simbox_new->getnz();
@@ -1343,7 +1348,6 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       ij++;
     }
   }
-
   //
   // Resample parameter
   //
@@ -1360,7 +1364,19 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       for (int i = 0; i < nx; i++) {
         if (missing[ij] == false) {
           int k_old = static_cast<int>(static_cast<double>(k)*a[ij] + b[ij]);
-          layer[ij] = p_old->GetValue(i, j, k_old);
+
+          if (k_old > simbox_old->getnz()-1) {
+            if (err_text_tmp == "") {
+              LogKit::LogFormatted(LogKit::Error,"\n Error: There is a problem resampling the background model, grid is not large enough.\n");
+              err_text_tmp += "Error resampling background model, the old background does not cover the new background.";
+              i = nx-1;
+              j = ny-1;
+              k = nz-1;
+            }
+          }
+          else {
+            layer[ij] = p_old->GetValue(i, j, k_old);
+          }
         }
         else
           layer[ij] = RMISSING;
@@ -1368,60 +1384,65 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
       }
     }
 
-    //
-    // Smooth the layer (equal weighting of all neighbouring cells)
-    //
-    double value = 0.0;
-    for (int j = 0; j < ny; j++) {
-      for (int i = 0; i < nx; i++) {
-        if (layer[j*nx + i] != RMISSING) {
-          int n = 1;
-          double sum = layer[j*nx + i];
-          if (i > 1) {
-            if (layer[j*nx + i - 1] != RMISSING) {
-              sum += layer[j*nx + i - 1];
-              n++;
+    if (err_text_tmp == "") {
+      //
+      // Smooth the layer (equal weighting of all neighbouring cells)
+      //
+      double value = 0.0;
+      for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+          if (layer[j*nx + i] != RMISSING) {
+            int n = 1;
+            double sum = layer[j*nx + i];
+            if (i > 1) {
+              if (layer[j*nx + i - 1] != RMISSING) {
+                sum += layer[j*nx + i - 1];
+                n++;
+              }
             }
-          }
-          if (j > 1) {
-            if (layer[(j - 1)*nx + i] != RMISSING) {
-              sum += layer[(j - 1)*nx + i];
-              n++;
+            if (j > 1) {
+              if (layer[(j - 1)*nx + i] != RMISSING) {
+                sum += layer[(j - 1)*nx + i];
+                n++;
+              }
             }
-          }
-          if (i > 1 && j > 1) {
-            if (layer[(j - 1)*nx + i - 1] != RMISSING) {
-              sum += layer[(j - 1)*nx + i - 1];
-              n++;
+            if (i > 1 && j > 1) {
+              if (layer[(j - 1)*nx + i - 1] != RMISSING) {
+                sum += layer[(j - 1)*nx + i - 1];
+                n++;
+              }
             }
-          }
-          if (i < nx-1) {
-            if (layer[j*nx + i + 1] != RMISSING) {
-              sum += layer[j*nx + i + 1];
-              n++;
+            if (i < nx-1) {
+              if (layer[j*nx + i + 1] != RMISSING) {
+                sum += layer[j*nx + i + 1];
+                n++;
+              }
             }
-          }
-          if (j < ny-1) {
-            if (layer[(j + 1)*nx + i] != RMISSING) {
-              sum += layer[(j + 1)*nx + i];
-              n++;
+            if (j < ny-1) {
+              if (layer[(j + 1)*nx + i] != RMISSING) {
+                sum += layer[(j + 1)*nx + i];
+                n++;
+              }
             }
-          }
-          if (i < nx-1 && j < ny-1) {
-            if (layer[(j + 1)*nx + i + 1] != RMISSING) {
-              sum += layer[(j + 1)*nx + i + 1];
-              n++;
+            if (i < nx-1 && j < ny-1) {
+              if (layer[(j + 1)*nx + i + 1] != RMISSING) {
+                sum += layer[(j + 1)*nx + i + 1];
+                n++;
+              }
             }
+            value = sum/static_cast<double>(n);
           }
-          value = sum/static_cast<double>(n);
-        }
-        else
-          value = RMISSING;
+          else
+            value = RMISSING;
 
-        p_new->SetValue(i, j, k, static_cast<float>(value));
+          p_new->SetValue(i, j, k, static_cast<float>(value));
+        }
       }
     }
   }
+
+  if (err_text_tmp != "")
+    err_text += err_text_tmp;
 
   delete [] layer;
   delete [] a;
