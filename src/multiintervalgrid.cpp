@@ -61,6 +61,7 @@ MultiIntervalGrid::MultiIntervalGrid(ModelSettings * model_settings,
       uncertainties_[0] = 0;
 
       top_surface = MakeSurfaceFromFileName(top_surface_file_name_temp, *estimation_simbox, model_settings, input_files, segy_geometry, err_text);
+
       surfaces[0] = *top_surface;
       for (int i = 0; i < n_intervals_; i++) {
 
@@ -635,10 +636,12 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
     InterpolateMissing(new_surface);
   }
   else { //If the file name is a value
-
-    //Create a constant surface that follows the seismic data
+    //18.10.17 Changed from using 2*2 to nx*ny due to a problem with constant correlation surfaces (see CRA-880):
+    //When we expand simboxes we use the correlation surfaces and add/subtract top/bot surfaces, if the correlation surface only have 4
+    // points then we may get undesired results when adding/subtracting a full surface.
+    // Ideally all surfaces used in Crava should have the same resolution
     new_surface = new Surface(estimation_simbox.getx0(), estimation_simbox.gety0(), estimation_simbox.getlx(), estimation_simbox.getly(),
-                              2, 2, estimation_simbox.getAngle(), atof(file_name.c_str()));
+                              estimation_simbox.getnx(), estimation_simbox.getny(), estimation_simbox.getAngle(), atof(file_name.c_str()));
   }
 
   return new_surface;

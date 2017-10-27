@@ -7521,6 +7521,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
         }
 
+        bool extended_simbox_failed = false;
         if (input_files->getCorrDirFiles().find(interval_name) != input_files->getCorrDirFiles().end()) {
 
           Surface * tmp_surf = NULL;
@@ -7565,14 +7566,17 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
               output_format += IO::ASCII;
 
             SetupExtendedBackgroundSimbox(simbox, correlation_direction, bg_simbox, output_format,
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i), err_text_tmp);
+
           }
 
           if (tmp_surf != NULL)
             delete tmp_surf;
 
-          if (err_text_tmp != "")
+          if (err_text_tmp != "") {
             err_text += err_text_tmp;
+            extended_simbox_failed = true;
+          }
         }
         else {
           Surface * top_corr_surface = NULL;
@@ -7647,24 +7651,36 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             bot_corr_surface = NULL;
           }
 
+          std::string err_text_tmp = "";
           if (top_corr_surface != NULL) {
             if(bot_corr_surface != NULL) {
               SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i), err_text_tmp);
               delete top_corr_surface;
               delete bot_corr_surface;
             }
             else { //Top conform
               SetupExtendedBackgroundSimbox(simbox, top_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+                                            model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i), err_text_tmp);
               delete top_corr_surface;
             }
+
+
           }
           else if (bot_corr_surface != NULL) {//Base conform
             SetupExtendedBackgroundSimbox(simbox, bot_corr_surface, bg_simbox, model_settings->getOutputGridFormat(),
-                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i));
+                                          model_settings->getOutputGridDomain(), model_settings->getOtherOutputFlag(), model_settings->getIntervalName(i), err_text_tmp);
+
+
+
             delete bot_corr_surface;
           }
+
+          if (err_text_tmp != "") {
+            err_text += err_text_tmp;
+            extended_simbox_failed = true;
+          }
+
         }//Note: Default case when no correlation is given is handled in cons
 
         //Block logs to bg_simbox
@@ -7726,7 +7742,7 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
           background_parameters[i][j] = new NRLib::Grid<float>();
 
         //Create background
-        if (blocking_failed == false) {
+        if (blocking_failed == false && extended_simbox_failed == false) {
           std::vector<std::vector<double> > interval_vertical_trends(3);
           Background::SetupBackground(background_parameters[i], interval_vertical_trends, velocity, simbox, bg_simbox, blocked_logs, bg_blocked_logs_tmp, model_settings, interval_name, err_text);
           for (int j = 0; j < 3; j++)
@@ -8226,14 +8242,17 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
                                                int            output_format,
                                                int            output_domain,
                                                int            other_output,
-                                               std::string    interval_name) const
+                                               std::string    interval_name,
+                                               std::string  & err_text) const
 {
   assert (bg_simbox == NULL); //avoid memory leaks
+
   //
   // Move correlation surface for easier handling.
   //
   Surface tmp_surf(*corr_surf);
   double avg = tmp_surf.Avg();
+
   if (avg > 0)
     tmp_surf.Subtract(avg);
   else
@@ -8247,16 +8266,18 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   //
   Surface d_top(tmp_surf);
   d_top.SubtractNonConform(&(simbox->GetTopSurface()));
+
   d_top.Multiply(-1.0);
+
   double shift_top = d_top.Min();
   Surface top_surf(tmp_surf);
   top_surf.Add(shift_top);
-
   //
   // Find base surface of background simbox
   //
   Surface d_bot(tmp_surf);
   d_bot.SubtractNonConform(&(simbox->GetBotSurface()));
+
   d_bot.Multiply(-1.0);
   double shift_bot = d_bot.Max();
   Surface bot_surf(tmp_surf);
@@ -8280,12 +8301,17 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   //  dt = 10.0;  // A sampling density of 10.0ms is good enough for BG model
   // }
   nz = static_cast<int>(ceil(d_max/dt));
-
   //
   // Make new simbox
   //
   bg_simbox = new Simbox(*simbox);
   bg_simbox->setDepth(top_surf, bot_surf, nz);
+
+  //The extended background simbox must always be larger then the input simbox
+  if ( ((bg_simbox->GetBotSurface().Max()+simbox->getdz()) < simbox->GetBotSurface().Max()) || ((bg_simbox->GetTopSurface().Min()-simbox->getdz()) > simbox->GetTopSurface().Min())) {
+    err_text += "Error setting up the the extended background simbox from a correlation direction: it does not cover the whole original simbox.";
+    err_text += " If the correlation surface and the top/bot surfaces have different resolution, it might cause problems.\n";
+  }
 
   std::string interval_name_out = "";
   if (interval_name != "")
@@ -8308,7 +8334,8 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
                                                int            output_format,
                                                int            output_domain,
                                                int            other_output,
-                                               std::string    interval_name) const
+                                               std::string    interval_name,
+                                               std::string  & err_text) const
 {
   assert (bg_simbox == NULL); //avoid memory leaks
   //
@@ -8380,6 +8407,13 @@ void CommonData::SetupExtendedBackgroundSimbox(const Simbox * simbox,
   //
   bg_simbox = new Simbox(*simbox);
   bg_simbox->setDepth(top_surf, bot_surf, nz);
+
+  //The extended background simbox must always be larger then the input simbox
+  if ( ((bg_simbox->GetBotSurface().Max()+simbox->getdz()) < simbox->GetBotSurface().Max()) || ((bg_simbox->GetTopSurface().Min()-simbox->getdz()) > simbox->GetTopSurface().Min())) {
+    err_text += "Error setting up the the extended background simbox from a correlation direction: it does not cover the whole original simbox.";
+    err_text += " If the correlation surface and the top/bot surfaces have different resolution, it might cause problems.\n";
+  }
+
 
   std::string interval_name_out = "";
   if (interval_name != "")

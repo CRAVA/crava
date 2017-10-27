@@ -18,6 +18,7 @@ class Wavelet1D : public Wavelet {
 public:
 //Constructors and destructor
   Wavelet1D();
+
   Wavelet1D(const Simbox                                     * simbox,
             SeismicStorage                                   * seismic_data,
             std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
@@ -37,6 +38,7 @@ public:
             float               theta,
             int               & errCode,
             std::string       & errText);
+
   Wavelet1D(Wavelet * wavelet);
 
   Wavelet1D(std::vector<float>   vec,
@@ -55,11 +57,11 @@ public:
           int                 nz,
           int                 nzp);
 
-Wavelet1D(const ModelSettings * modelSettings,
-          const float         * reflCoef,
-          float                 theta,
-          float                 peakFrequency,
-          int                 & errCode);
+  Wavelet1D(const ModelSettings * modelSettings,
+            const float         * reflCoef,
+            float                 theta,
+            float                 peakFrequency,
+            int                 & errCode);
 
   void   shiftAndScale(float shift, float scale);
   void   adjustForAmplitudeEffect(double multiplyer, double Halpha);

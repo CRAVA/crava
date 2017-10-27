@@ -934,7 +934,8 @@ private:
                                                    int            output_format,
                                                    int            output_domain,
                                                    int            other_output,
-                                                   std::string    interval_name) const;
+                                                   std::string    interval_name,
+                                                   std::string  & err_text) const;
 
   void               SetupExtendedBackgroundSimbox(const Simbox * simbox,
                                                    Surface      * top_corr_surf,
@@ -943,7 +944,8 @@ private:
                                                    int            output_format,
                                                    int            output_domain,
                                                    int            other_output,
-                                                   std::string    interval_name) const;
+                                                   std::string    interval_name,
+                                                   std::string  & err_text) const;
 
   bool               SetupPriorCorrelation(const ModelSettings                                              * model_settings,
                                            const InputFiles                                                 * input_files,

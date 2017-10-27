@@ -855,7 +855,14 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                         * m
 
       NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
       Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,0));
-      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+
+      std::string err_text = "";
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox, err_text);
+
+      if (err_text != "")
+        LogKit::LogFormatted(LogKit::Error,"\n Problem combining vertical trends\n: " + err_text);
+
+
       delete trend_grid_extended;
 
     }
@@ -883,7 +890,13 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                         * m
 
       NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
       Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,1));
-      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+
+      std::string err_text = "";
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox, err_text);
+
+      if (err_text != "")
+        LogKit::LogFormatted(LogKit::Error,"\n Problem combining vertical trends\n: " + err_text);
+
       delete trend_grid_extended;
 
     }
@@ -911,7 +924,12 @@ CravaResult::CombineVerticalTrends(MultiIntervalGrid                         * m
 
       NRLib::Grid<float> * trend_grid_extended = new NRLib::Grid<float>(nx, ny, nz_extended);
       Background::FillInVerticalTrend(trend_grid_extended, vertical_trend(i,2));
-      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox);
+
+      std::string err_text = "";
+      Background::ResampleParameter(trend_grid, trend_grid_extended, interval_simbox, bg_simbox, err_text);
+
+      if (err_text != "")
+        LogKit::LogFormatted(LogKit::Error,"\n Problem combining vertical trends\n: " + err_text);
       delete trend_grid_extended;
 
     }

@@ -52,7 +52,8 @@ public:
   void         ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
                                  NRLib::Grid<float> *  p_old, // Resample from
                                  const Simbox       *  simbox_new,
-                                 const Simbox       *  simbox_old);
+                                 const Simbox       *  simbox_old,
+                                 std::string         & err_text);
 
 
 private:
@@ -74,7 +75,8 @@ private:
                                        NRLib::Grid<float>  * & bg_vs,
                                        NRLib::Grid<float>  * & bg_rho,
                                        const Simbox        *   bg_simbox,
-                                       const Simbox        *   simbox);
+                                       const Simbox        *   simbox,
+                                       std::string           & err_text);
   static
   void         CalculateBackgroundTrend(std::vector<double>               & trend,
                                         std::vector<double>               & avgDev,
