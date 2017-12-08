@@ -12,6 +12,7 @@
 #include "nrlib/flens/nrlib_flens.hpp"
 #include "nrlib/stormgrid/stormcontgrid.hpp"
 #include "nrlib/random/beta.hpp"
+#include "src/commondata.h"
 
 class MultiIntervalGrid
 {

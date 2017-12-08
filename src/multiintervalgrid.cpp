@@ -613,20 +613,15 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
   if (!NRLib::IsNumber(file_name)) { // If the file name is a string
     if (segy_geometry != NULL) {
         std::vector<int> ilxl_area = FindILXLArea(model_settings, input_files, segy_geometry);
-        double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-        double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-        new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                  segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                  segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+        new_surface = CommonData::ReadSurfaceFromFile(file_name, CommonData::SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
     }
     else {
-      int surf_type = NRLib::FindSurfaceFileType(file_name);
+      int surf_type = CommonData::FindSurfaceFileType(file_name);
 
-      if (surf_type == NRLib::SURF_MULT_ASCII)
+      if (surf_type == CommonData::SURF_MULT_ASCII)
         err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
-      else if (surf_type == NRLib::SURF_XYZ_ASCII)
+      else if (surf_type == CommonData::SURF_XYZ_ASCII)
         err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
       else
         new_surface = new Surface(file_name);

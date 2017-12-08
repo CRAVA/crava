@@ -21,6 +21,7 @@
 #include "src/timeline.h"
 #include "src/cravatrend.h"
 #include "src/multiintervalgrid.h"
+#include "src/definitions.h"
 
 class MultiIntervalGrid;
 class CravaTrend;
@@ -28,6 +29,7 @@ class BlockedLogsCommon;
 class Wavelet1D;
 
 class CommonData{
+
 public:
   CommonData(ModelSettings * model_settings,
              InputFiles    * input_files);
@@ -35,6 +37,16 @@ public:
   ~ CommonData();
 
   enum                 gridTypes{CTMISSING, DATA, PARAMETER};
+
+  enum SurfaceFileFormat {
+    SURF_UNKNOWN,
+    SURF_IRAP_CLASSIC_ASCII,
+    SURF_STORM_BINARY,
+    SURF_SGRI,
+    SURF_RMS_POINTS_ASCII,
+    SURF_MULT_ASCII,
+    SURF_XYZ_ASCII
+  };
 
   //GET FUNCTIONS
 
@@ -349,16 +361,71 @@ public:
   static void        SetUndefinedCellsToGlobalAverageGrid(NRLib::Grid<float> * grid,
                                                           const float          avg);
 
-  static   void      FindWaveletEstimationInterval(const ModelSettings    * model_settings,
+  void      FindWaveletEstimationInterval(const ModelSettings    * model_settings,
                                                    const InputFiles       * input_files,
                                                    const std::string      & wavelet_est_int_top,
                                                    const std::string      & wavelet_est_int_bot,
                                                    std::vector<Surface *> & wavelet_estim_interval,
                                                    const Simbox           & simbox,
                                                    SegyGeometry           * segy_geometry,
-                                                   std::string            & err_text);
+                                                   std::string            & err_text) const;
 
   static int         FindClosestFactorableNumber(int leastint);
+
+  static Surface   *         ReadSurfaceFromFile(std::string                       filename,
+                                                 CommonData::SurfaceFileFormat format = SURF_UNKNOWN,
+                                                 SegyGeometry                    * segy_geometry = NULL,
+                                                 int                             * ilxl_area     = NULL);
+
+  static bool               FindXYZAsciiLine(const std::string& filename, int & header_start_line);
+
+  static bool               FindMulticolumnAsciiLine(const std::string& filename, int & header_start_line);
+
+  static void ReadXYZAsciiSurf(std::string         filename,
+                        NRLib::RegularSurface<double>           & surface,
+                        double              x_ref,
+                        double              y_ref,
+                        double              lx,
+                        double              ly,
+                        int               * ilxl_area,
+                        int                 il0,
+                        int                 xl0,
+                        bool                first_axis_il,
+                        double              in_line0,
+                        double              cross_line0,
+                        double              il_step_x,
+                        double              il_step_y,
+                        double              xl_step_x,
+                        double              xl_step_y,
+                        double              mult_irap_missing);
+
+  static void ReadMulticolumnAsciiSurf(std::string         filename,
+                                NRLib::RegularSurface<double>           & surface,
+                                double              x_ref,
+                                double              y_ref,
+                                double              lx,
+                                double              ly,
+                                int               * ilxl_area,
+                                int                 il0,
+                                int                 xl0,
+                                bool                first_axis_il,
+                                double              mult_irap_missing);
+
+  static void CreateSurfaceFromILXL(NRLib::RegularSurface<double>             & surface,
+                             std::vector<int>    & il_vec,
+                             std::vector<int>    & xl_vec,
+                             std::vector<double> & z_vec,
+                             int                 * ilxl_area,
+                             int                 & il0,
+                             int                 & xl0,
+                             double              & x_ref,
+                             double              & y_ref,
+                             double              & lx,
+                             double              & ly,
+                             bool                  first_axis_il,
+                             double              mult_irap_missing);
+
+  static SurfaceFileFormat FindSurfaceFileType(const std::string & filename);
 
 
 private:
@@ -1106,6 +1173,7 @@ private:
   bool setup_timeline_;
   bool setup_gravity_inversion_;
   bool setup_traveltime_inversion_;
+
 
   MultiIntervalGrid                                          * multiple_interval_grid_;
   Simbox                                                       estimation_simbox_;
