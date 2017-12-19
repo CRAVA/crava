@@ -94,10 +94,6 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   int n_blocks_tot = 0;
   for (int i = 0; i < n_wells_; i++){
     std::string well_name_tmp = well_names[i];
-    //for (size_t j = 0; j < interval_simboxes.size(); j++){
-    //  std::string interval_name = interval_simboxes[j]->GetIntervalName();
-    //  n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithData(interval_name);
-    //}
     n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithDataTot();
   }
   enough_data_for_corr_estimation = (min_blocks_with_data_for_corr_estim_ <= n_blocks_tot);
