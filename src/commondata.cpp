@@ -8638,15 +8638,15 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             std::string tmp_err_txt = "";
 
             // First possibility: Estimate within this interval
-            std::vector<Simbox *> temp_simbox;
-            temp_simbox.push_back(interval_simboxes[i]);
+            std::vector<Simbox *> dummy_simboxes;
             std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
             current_background_interval.push_back(background[i]);
             bool multi_zone_available = (n_intervals > 1);
             Analyzelog * analyze = new Analyzelog(wells,
                                                   mapped_blocked_logs_intervals.find(static_cast<int>(i))->second,
                                                   current_background_interval,
-                                                  temp_simbox,
+                                                  dummy_simboxes,
+                                                  interval_simboxes[i],
                                                   interval_simboxes[i]->getdz(),
                                                   model_settings,
                                                   multi_zone_available,
@@ -8661,10 +8661,23 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
             // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
             else if (analyze->GetEnoughData() == false && interval_names.size() > 1 && analyze_all == NULL) {
-              std::vector<Simbox *> temp_simboxes;
-              for (size_t j = 0; j < interval_simboxes.size(); j++)
-                temp_simboxes.push_back(interval_simboxes[j]);
-              analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, false, tmp_err_txt);
+
+              //Set up a temporary simbox with the (possibly extended) top and bot surfaces for the first and last interval
+              Simbox * tmp_simbox = new Simbox(full_inversion_simbox_);
+              tmp_simbox->SetSurfaces(interval_simboxes[0]->GetTopSurface(), interval_simboxes[interval_simboxes.size()-1]->GetBotSurface());
+              int nz = static_cast<int>(tmp_simbox->getlz() / dz_min);
+              tmp_simbox->setDepth(interval_simboxes[0]->GetTopSurface(), interval_simboxes[interval_simboxes.size()-1]->GetBotSurface(), nz, false);
+              tmp_simbox->calculateDz(0.0, tmp_err_txt);
+
+              analyze_all = new Analyzelog(wells,
+                                           mapped_blocked_logs_for_correlation,
+                                           background,
+                                           interval_simboxes, //Used for comparing correct background model
+                                           tmp_simbox, //Used for estimating correlations
+                                           dz_min,
+                                           model_settings,
+                                           false,
+                                           tmp_err_txt);
               if (analyze_all->GetEnoughData() == false) {
                 err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
                 err_text += tmp_err_txt;
