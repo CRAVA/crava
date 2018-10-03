@@ -354,7 +354,7 @@ void  NRLib::ReadSgriSurf(const std::string & filename,
     getline(header_file, tmp_str);
     if (!tmp_str.empty()) {
       std::locale loc;
-      int i = 0;
+      i = 0;
       char c = tmp_str[i];
       while (!std::isspace(c,loc)) {
         i++;

@@ -167,8 +167,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
       //if (missingTracesSimbox > 0) {}
       if (missing_traces_padding > 0) {
-        int nx     = simbox->getnx();
-        int ny     = simbox->getny();
+        nx     = simbox->getnx();
+        ny     = simbox->getny();
         int nxpad  = nxp - nx;
         int nypad  = nyp - ny;
         int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;

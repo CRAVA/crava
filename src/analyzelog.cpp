@@ -295,19 +295,19 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
         double y = y_pos_blocked[n];
         double z = z_pos_blocked[n];
         int simbox_num = -1;
-        for (size_t i = 0; i < background_simboxes.size(); i++) {
-          if (background_simboxes[i]->IsPointBetweenVisibleSurfaces(x,y,z)) {
-            simbox_num = static_cast<int>(i);
+        for (size_t ii = 0; ii < background_simboxes.size(); ii++) {
+          if (background_simboxes[ii]->IsPointBetweenVisibleSurfaces(x,y,z)) {
+            simbox_num = static_cast<int>(ii);
             break;
           }
         }
 
         //Find correct kpos
-        int i = 0;
-        int j = 0;
+        int i_dummy = 0;
+        int j_dummy = 0;
         int k = 0;
         if (simbox_num > -1)
-          background_simboxes[simbox_num]->getIndexes(x, y, z, i, j, k);
+          background_simboxes[simbox_num]->getIndexes(x, y, z, i_dummy, j_dummy, k);
 
         if (simbox_num > -1 && background[simbox_num][log_nr]->GetN() > 0) { //if simbox_num = -1 then well_log should be RMISSING
           mean_vector.push_back( (*background[simbox_num][log_nr])(i_pos[n], j_pos[n], k));

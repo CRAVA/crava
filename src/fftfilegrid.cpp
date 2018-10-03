@@ -75,11 +75,11 @@ FFTGrid()
   }
   else{
     createComplexGrid();
-    for(int k=0;k<nzp_;k++) {
-      for(int j=0;j<nyp_;j++) {
-        for(int i=0;i<cnxp_;i++) {
-          fftw_complex value = fftGrid->getNextComplex();
-          setNextComplex(value);
+    for(k=0;k<nzp_;k++) {
+      for(j=0;j<nyp_;j++) {
+        for(i=0;i<cnxp_;i++) {
+          fftw_complex value_c = fftGrid->getNextComplex();
+          setNextComplex(value_c);
         }
       }
     }

@@ -1359,7 +1359,7 @@ Background::ResampleParameter(NRLib::Grid<float> *& p_new, // Resample to
     //
     // Map a layer
     //
-    int ij=0;
+    ij=0;
     for (int j = 0; j < ny; j++) {
       for (int i = 0; i < nx; i++) {
         if (missing[ij] == false) {

@@ -528,7 +528,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
              area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) { // tilfelle ii med snap to seismic
       LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+grid_file+"\'\n");
       area_type = "Grid data";
-      std::string tmp_err_text;
+      std::string tmp_err_text = "";
       SegyGeometry * geometry;
       TraceHeaderFormat * thf = NULL;
       if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
@@ -561,11 +561,10 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
               if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII) {
                 //Get area from surface. However, we need the segy-geometry to read the rotated ascii-surfaces.
                 SegyGeometry * geometry_tmp;
-                TraceHeaderFormat * thf = NULL;
+                thf = NULL;
                 if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
                   thf = model_settings->getTraceHeaderFormat(0,0);
 
-                std::string tmp_err_text = "";
                 GetGeometryFromGridOnFile(grid_file,
                                           thf,
                                           geometry_tmp,
@@ -1457,11 +1456,11 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           if (new_well.HasDiscLog("Facies") == true) {
             facies_log_in_well = true;
             const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
-            int n_facies                        = new_well.GetNFacies();
+            int n_facies_tmp                    = new_well.GetNFacies();
             bool facies_ok_tmp                  = false;
             for (size_t j = 0; j < facies_log.size(); j++) {
               if (facies_log[j] != IMISSING) {
-                for (int k = 0; k < n_facies; k++) {
+                for (int k = 0; k < n_facies_tmp; k++) {
                   if (cur_facies_nr[k] == facies_log[j]) {
                     facies_ok_tmp = true;
                     break;
@@ -5354,7 +5353,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     // Map reservoir variables for use in rocks to access resampling trigger.
     std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(1, std::vector<DistributionWithTrend *>(0));
     if (reservoir_variables.size() > 0) {
-      size_t n_vintages = reservoir_variables.begin()->second.size();
+      n_vintages = static_cast<int>(reservoir_variables.begin()->second.size());
       res_var_vintage.resize(n_vintages);
       for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables.begin();
         var_it != reservoir_variables.end();var_it++)
@@ -5417,7 +5416,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
 
             std::string tmp_err_txt = "";
 
-            int n_vintages = static_cast<int>(rock.size());
+            n_vintages = static_cast<int>(rock.size());
             if (n_vintages > 1)
               LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
 
@@ -6060,10 +6059,10 @@ CommonData::CheckFaciesNamesConsistency(const ModelSettings       * model_settin
       typedef std::map<std::string,float> mapType;
       mapType myMap = model_settings->getPriorFaciesProb(interval_name);
 
-      for (int i = 0; i < n_facies; i++) {
-        mapType::iterator iter = myMap.find(facies_names_[i]);
+      for (int ii = 0; ii < n_facies; ii++) {
+        mapType::iterator iter = myMap.find(facies_names_[ii]);
         if (iter==myMap.end())
-          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[ii]+" is not one of the facies given in the xml-file.\n";
       }
     }
   }
@@ -8606,7 +8605,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             }
             // 1. Defined in text file
             else {
-              std::string tmp_err_text("");
+              tmp_err_text = "";
               float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
               if (corr_mat == NULL) {
                 err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed.\n";
@@ -10560,8 +10559,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
             buffer = "  ";
           }
 
-          for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-            LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+          for (mapType::iterator ii=myMap.begin();ii!=myMap.end();ii++)
+            LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(ii->first).c_str(),ii->second);
 
         }
       }
@@ -10587,8 +10586,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
           buffer = "  ";
         }
 
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+        for (mapType::iterator ii=myMap.begin();ii!=myMap.end();ii++)
+          LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(ii->first).c_str(),ii->second);
 
       }
     }
@@ -11180,7 +11179,6 @@ void CommonData::ReadXYZAsciiSurf(std::string         filename,
     }
 
     std::vector<std::vector<double> > data(3);
-    std::string line_string;
     while (NRLib::CheckEndOfFile(file)==false) {
 
       //Read line
@@ -11272,7 +11270,6 @@ void CommonData::ReadMulticolumnAsciiSurf(std::string         filename,
     line_number++;
 
     std::vector<std::vector<double> > data(5);
-    std::string line_string;
     while (NRLib::CheckEndOfFile(file)==false) {
 
       //Read line

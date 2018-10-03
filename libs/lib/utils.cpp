@@ -270,17 +270,17 @@ Utils::ShiftTrace(fftw_real * trace,
 
   std::vector<fftw_real> l_trace(fft_large,0);
   fftw_complex * l_trace_c = reinterpret_cast<fftw_complex*>(&(l_trace[0]));
-  for(size_t i=0;i<fft_small;i++)
+  for(i=0;i<fft_small;i++)
     l_trace[i] = s_trace[i];
 
   Utils::fftInv(l_trace_c,&(l_trace[0]), static_cast<int>(n_large));
 
   if(shift_up == true){
-    for(size_t i=0;i<n_data;i++)
+    for(i=0;i<n_data;i++)
       trace[i] = 2*l_trace[2*i+1];
   }
   else {
-    for(size_t i=1;i<n_data;i++)
+    for(i=1;i<n_data;i++)
       trace[i] = 2*l_trace[2*i-1];
     trace[0] = l_trace[n_large-1];
   }

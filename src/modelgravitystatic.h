@@ -89,8 +89,7 @@ private:
 
   ModelGeneral * modelGeneral_;
 
-  void MakeUpscalingKernel(ModelSettings * modelSettings,
-                           const Simbox  * fullTimeSimbox);
+  void MakeUpscalingKernel(const Simbox  * fullTimeSimbox);
 
   void MakeLagIndex(int nx_upscaled, int ny_upscaled, int nz_upscaled);
 

@@ -1531,12 +1531,12 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
     ParameterOutput::WriteFile(model_settings, cr_cov_vs_rho_, file_name_vsrho, IO::PathToCorrelations(), &simbox, false, "Posterior cross-covariance for (Vs,density)");
 
     if (write_crava_) {
-      std::string file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
-      std::string file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
-      std::string file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
-      std::string file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
-      std::string file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
-      std::string file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
+      file_name_vp    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vp");
+      file_name_vs    = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Vs");
+      file_name_rho   = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCovariance() + "Rho");
+      file_name_vpvs  = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpVs");
+      file_name_vprho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VpRho");
+      file_name_vsrho = IO::makeFullFileName(IO::PathToCorrelations(), IO::PrefixPosterior() + IO::PrefixCrossCovariance() + "VsRho");
 
       seismic_parameters.GetCovVp()->writeCravaFile(file_name_vp,         &simbox);
       seismic_parameters.GetCovVs()->writeCravaFile(file_name_vs,         &simbox);
@@ -1617,7 +1617,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
         ParameterOutput::WriteToFile(&simbox, time_depth_mapping, model_settings, lh_cubes_[i], file_name, "");
 
         if (write_crava_) {
-          std::string file_name = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixLikelihood() + facies_names[i]);
+          file_name = IO::makeFullFileName(IO::PathToInversionResults(), IO::PrefixLikelihood() + facies_names[i]);
           seismic_parameters.GetLHCube()[i]->writeCravaFile(file_name, &simbox);
         }
 
@@ -1996,9 +1996,9 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
 
           //Real seismic gives value at cell base, synthetic at cell top. Shift real seismic.
           for (int k = static_cast<int>(seismic_storm->GetNK())-1; k > 0; k--) {
-            for (size_t j = 0; j < seismic_storm->GetNJ(); j++) {
-              for (size_t i = 0; i < seismic_storm->GetNI(); i++) {
-                (*seismic_storm)(i,j,k) = (*seismic_storm)(i,j,k-1);
+            for (size_t jj = 0; jj < seismic_storm->GetNJ(); jj++) {
+              for (size_t ii = 0; ii < seismic_storm->GetNI(); ii++) {
+                (*seismic_storm)(ii,jj,k) = (*seismic_storm)(ii,jj,k-1);
               }
             }
           }
@@ -2011,9 +2011,9 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
 
               StormContGrid residual(*(synt_seismic_data_[j]));
               for (size_t k=0;k<seismic_storm->GetNK();k++) {
-                for (size_t j=0;j<seismic_storm->GetNJ();j++) {
-                  for (size_t i=0;i<seismic_storm->GetNI();i++) {
-                    residual(i,j,k) = (*seismic_storm)(i,j,k)-residual(i,j,k);
+                for (size_t jj=0;jj<seismic_storm->GetNJ();jj++) {
+                  for (size_t ii=0;ii<seismic_storm->GetNI();ii++) {
+                    residual(ii,jj,k) = (*seismic_storm)(ii,jj,k)-residual(ii,jj,k);
                   }
                 }
               }
@@ -2351,7 +2351,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
 
         float sf = static_cast<float>(simbox->getRelThick(i, j))*wavelets[l]->getLocalStretch(i,j);
 
-        for (int k = 0; k <(nzp/2 +1); k++) {
+        for (k = 0; k <(nzp/2 +1); k++) {
           fftw_complex r = resultVec.getCAmp(k);
           fftw_complex w = localWavelet->getCAmp(k,static_cast<float>(sf));// returns complex conjugate
           fftw_complex s;
@@ -2362,7 +2362,7 @@ void CravaResult::ComputeSyntSeismic(const ModelSettings          * model_settin
         delete localWavelet;
 
         resultVec.invFFT1DInPlace();
-        for (int k = 0; k < nz; k++) { //nzp
+        for (k = 0; k < nz; k++) { //nzp
           float value = resultVec.getRAmp(k);
           imp->SetValue(i, j, k, value);
         }
@@ -2460,8 +2460,8 @@ void CravaResult::GenerateWellOptSyntSeis(ModelSettings                         
   }
 
   for (int i = 0; i < n_angles; i++) {
-    for (size_t w=0;w<blocked_wells.size();w++) {
-      delete wavelets[w][i];
+    for (size_t ww=0;ww<blocked_wells.size();ww++) {
+      delete wavelets[ww][i];
     }
   }
 }

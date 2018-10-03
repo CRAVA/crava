@@ -665,7 +665,7 @@ void StormContGrid::ReadSgriHeader(std::ifstream &headerFile, std::string &binFi
     binFileName = "";
   else {
     std::locale loc;
-    int i = 0;
+    i = 0;
     char c = tmpStr[i];
     while (!std::isspace(c,loc)) {
       i++;
