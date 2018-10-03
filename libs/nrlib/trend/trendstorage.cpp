@@ -368,6 +368,8 @@ Trend1DStorage::GenerateTrend(const std::string                       & path,
         /* -------------------------- */
 
         /* preprocess and mean-correct observations */
+        std::vector<double> x;
+        std::vector<double> y;
         std::vector<double> z;
 
         PreprocessData2D(s1,
