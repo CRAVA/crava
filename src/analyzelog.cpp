@@ -552,11 +552,10 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
   for (size_t i = 0; i < well_names.size(); i++){
     time_t timestart, timeend;
     time(&timestart);
-    size_t nd = mapped_blocked_logs.find(well_names[i])->second->GetNBlocksWithDataTot();
+    size_t nd = mapped_blocked_logs.find(well_names[i])->second->GetNumberOfBlocks();
     const std::vector<double> & x_pos = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
     const std::vector<double> & y_pos = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
     const std::vector<double> & z_pos = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
-    std::vector<double> z(nd);
     const std::vector<double> log_vp   = log_data_vp.find(well_names[i])->second;
     const std::vector<double> log_vs   = log_data_vs.find(well_names[i])->second;
     const std::vector<double> log_rho  = log_data_rho.find(well_names[i])->second;
