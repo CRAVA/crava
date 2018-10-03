@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual Studio 14
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "crava", "crava.vcxproj", "{7FF3AB5B-854B-46AB-99F6-B59958E1BE91}"
 EndProject
 Global
