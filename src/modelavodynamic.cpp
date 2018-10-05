@@ -363,6 +363,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     else {
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
+      wavelets_[i]->scale(model_settings->getWaveletScale(this_timelapse_,i));
     }
 
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order
