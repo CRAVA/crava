@@ -98,8 +98,7 @@ doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
                                ModelGeneral            * modelGeneral,
                                ModelTravelTimeStatic   * modelTravelTimeStatic,
                                const InputFiles        * inputFiles,
-                               const int               & vintage,
-                               SeismicParametersHolder & seismicParameters)
+                               const int               & vintage)
 {
   ModelTravelTimeDynamic * modelTravelTimeDynamic = NULL;
 

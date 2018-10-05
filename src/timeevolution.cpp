@@ -713,10 +713,10 @@ TimeEvolution::makeCovRobust(NRLib::Vector  mu, NRLib::Matrix sigma, std::vector
        NRLib::ComputeEigenVectors(dummySigma,eVals,eVec);
 
        maxVal = 0;
-       for(int i=0;i<nd;i++)
-         maxVal=std::max(maxVal,eVals(i));
-       for(int i=0;i<nd;i++)
-         eVals(i) =std::max(eVals(i),maxVal*eps);
+       for(int ii=0;ii<nd;ii++)
+         maxVal=std::max(maxVal,eVals(ii));
+       for(int ii=0;ii<nd;ii++)
+         eVals(ii) =std::max(eVals(ii),maxVal*eps);
       }
   }
 

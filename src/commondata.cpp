@@ -5425,10 +5425,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                 LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", t+1);
 
               //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-              std::vector<DistributionWithTrend *> reservoir_variable(0);
+              std::vector<DistributionWithTrend *> reservoir_variable_tmp(0);
               if (n_vintages > 0)
-                reservoir_variable = res_var_vintage[t];
-              rock[t]->CompleteTopLevelObject(reservoir_variable, tmp_err_txt);
+                reservoir_variable_tmp = res_var_vintage[t];
+              rock[t]->CompleteTopLevelObject(reservoir_variable_tmp, tmp_err_txt);
 
               std::vector<bool> has_trends = rock[t]->HasTrend();
               bool              has_trend = false;
