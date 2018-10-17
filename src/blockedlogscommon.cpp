@@ -3291,15 +3291,25 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   const std::vector<double> & vs_highcut_seismic  = GetVsHighCutSeismic();
   const std::vector<double> & rho_highcut_seismic = GetRhoHighCutSeismic();
 
-  const std::vector<double> & vp_predicted  = GetVpPredicted();
-  const std::vector<double> & vs_predicted  = GetVsPredicted();
-  const std::vector<double> & rho_predicted = GetRhoPredicted();
+  std::vector<double> vp_predicted;
+  std::vector<double> vs_predicted;
+  std::vector<double> rho_predicted;
+  if (got_predicted == true) {
+    vp_predicted  = GetVpPredicted();
+    vs_predicted  = GetVsPredicted();
+    rho_predicted = GetRhoPredicted();
+  }
 
-  const std::vector<double> & vp_seismic_resolution  = GetVpSeismicResolution();
-  const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
-  const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
+  std::vector<double> vp_seismic_resolution;
+  std::vector<double> vs_seismic_resolution;
+  std::vector<double> rho_seismic_resolution;
+  if (got_filtered_log == true) {
+    vp_seismic_resolution  = GetVpSeismicResolution();
+    vs_seismic_resolution  = GetVsSeismicResolution();
+    rho_seismic_resolution = GetRhoSeismicResolution();
+  }
 
-  const std::vector<int>    & interval_log = GetIntervalLog();
+  const std::vector<int> & interval_log = GetIntervalLog();
 
   for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
