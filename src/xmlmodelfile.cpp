@@ -164,14 +164,6 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
       modelSettings_->setEstimateCorrelations(true);
       modelSettings_->setEstimateWaveletNoise(true);
       modelSettings_->setEstimateBackground(true);
-      if (modelSettings_->getOutputGridsDefaultInd()) {
-        modelSettings_->setOutputGridsElastic(IO::BACKGROUND);
-        modelSettings_->setOutputGridsDefaultInd(false);
-      }
-      else {
-        int paramFlag = modelSettings_->getOutputGridsElastic() & IO::BACKGROUND;
-        modelSettings_->setOutputGridsElastic(paramFlag);
-      }
     }
     else if(mode != "inversion")
       errTxt += "String after <mode> must be either <inversion>, <estimation> or <forward>, found <"+
@@ -286,6 +278,18 @@ bool XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTx
   bool estimateBG = true;
   parseBool(root,"estimate-background", estimateBG, errTxt);
   modelSettings_->setEstimateBackground(estimateBG);
+  modelSettings_->setGenerateBackground(estimateBG);
+  if (estimateBG)
+  {
+    if (modelSettings_->getOutputGridsDefaultInd()) {
+      modelSettings_->setOutputGridsElastic(IO::BACKGROUND);
+      modelSettings_->setOutputGridsDefaultInd(false);
+    }
+    else {
+      int paramFlag = modelSettings_->getOutputGridsElastic() & IO::BACKGROUND;
+      modelSettings_->setOutputGridsElastic(paramFlag);
+    }
+  }
 
   bool estimateCorr = true;
   parseBool(root,"estimate-correlations", estimateCorr, errTxt);
