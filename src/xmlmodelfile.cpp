@@ -6391,8 +6391,13 @@ XmlModelFile::checkConsistency(std::string & errTxt)
 
       std::string file_name = input_dir + back_file;
 
-      if (IO::findGridType(file_name) != IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
-        errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+      try {
+        if (IO::findGridType(file_name) != IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
+          errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+      }
+      catch(NRLib::Exception & e) {
+        errTxt = errTxt + e.what() + "\n";
+      }
 
     }
   }
