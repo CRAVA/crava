@@ -405,7 +405,7 @@ Wavelet3D::createAverageWavelet(const Simbox * simBox)
       double sfLoc =(simBox->getRelThick(i,j)*w1->getLocalStretch(i,j));// scale factor from thickness stretch + (local stretch when 3D wavelet)
       //double relT   = simBox->getRelThick(i,j);
       //double deltaF = static_cast<double>(nz_)*1000.0/(relT*simBox->getlz()*static_cast<double>(nzp_));
-      for(int k=0;k < (nzp_/2 +1);k++)
+      for(k=0;k < (nzp_/2 +1);k++)
       {
         fftw_complex amp = w1->getCAmp(k,static_cast<float>(sfLoc));
         average2[k].re+= static_cast<fftw_real>(amp.re*divNy);

@@ -43,26 +43,26 @@ void FindMixTypesForRock(std::vector<std::string>  constituent_label,
 {
 
   for(int i=0; i<n_constituents; i++) {
-    std::map<std::string, DistributionsRockStorage *>::const_iterator m = model_rock_storage.find(constituent_label[i]);
-    if(m != model_rock_storage.end()) {
+    std::map<std::string, DistributionsRockStorage *>::const_iterator m_rock = model_rock_storage.find(constituent_label[i]);
+    if(m_rock != model_rock_storage.end()) {
       constituent_type[i] = ModelSettings::ROCK;
       mix_rock = true;
     }
     else {
-      std::map<std::string, DistributionsFluidStorage *>::const_iterator m = model_fluid_storage.find(constituent_label[i]);
-      if(m != model_fluid_storage.end()) {
+      std::map<std::string, DistributionsFluidStorage *>::const_iterator m_fluid = model_fluid_storage.find(constituent_label[i]);
+      if(m_fluid != model_fluid_storage.end()) {
         constituent_type[i] = ModelSettings::FLUID;
         mix_fluid = true;
       }
       else {
-        std::map<std::string, DistributionsSolidStorage *>::const_iterator m = model_solid_storage.find(constituent_label[i]);
-        if(m != model_solid_storage.end()) {
+        std::map<std::string, DistributionsSolidStorage *>::const_iterator m_solid = model_solid_storage.find(constituent_label[i]);
+        if(m_solid != model_solid_storage.end()) {
           constituent_type[i] = ModelSettings::SOLID;
           mix_solid = true;
         }
         else {
-          std::map<std::string, DistributionsDryRockStorage *>::const_iterator m = model_dry_rock_storage.find(constituent_label[i]);
-          if(m != model_dry_rock_storage.end()) {
+          std::map<std::string, DistributionsDryRockStorage *>::const_iterator m_dryrock = model_dry_rock_storage.find(constituent_label[i]);
+          if(m_dryrock != model_dry_rock_storage.end()) {
             constituent_type[i] = ModelSettings::DRY_ROCK;
             tmpErrTxt += "A dry-rock can not be used as constituent for mixing a rock\n";
           }

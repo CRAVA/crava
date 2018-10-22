@@ -1216,7 +1216,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   interval_simboxes[last_S]->getIndexes(x_pos_raw_logs[last_M], y_pos_raw_logs[last_M], z_pos_raw_logs[last_M], last_I, last_J, last_K);
   min_m = last_K+1;
   max_m = interval_simboxes[last_S]->getnz();
-  for (int k = last_K + 1; k < max_m; k++) {
+  for (k = last_K + 1; k < max_m; k++) {
     b++;
     s_pos[b] = last_S;
     i_pos[b] = last_I;
@@ -1227,7 +1227,7 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
   for (int s = last_S+1; s < static_cast<int>(interval_simboxes.size()); s++) {
     min_m = 0;
     max_m = interval_simboxes[s]->getnz();
-    for (int k = min_m; k< max_m; k++) {
+    for (k = min_m; k< max_m; k++) {
       b++;
       s_pos[b] = s;
       i_pos[b] = last_I;
@@ -1244,8 +1244,8 @@ void    BlockedLogsCommon::FindBlockIJK(const MultiIntervalGrid          * multi
     LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",first_B,last_B);
     LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",first_I, first_J, first_K);
     LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",last_I, last_J, last_K);
-    for (unsigned int b = 0; b < n_blocks_; b++)
-      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,i_pos[b],j_pos[b],k_pos[b]);
+    for (unsigned int bb = 0; bb < n_blocks_; bb++)
+      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",bb,i_pos[bb],j_pos[bb],k_pos[bb]);
   }
 }
 
@@ -1307,7 +1307,7 @@ void    BlockedLogsCommon::FindBlockIJK(const Simbox                     * estim
   //
   int last_I,  last_J,  last_K;
   estimation_simbox->getIndexes(x_pos[last_M], y_pos[last_M], z_pos[last_M], last_I, last_J, last_K);
-  for (int k = last_K + 1 ; k < n_layers_ ; k++) {
+  for (k = last_K + 1 ; k < n_layers_ ; k++) {
     b++;
     i_pos[b] = last_I;
     j_pos[b] = last_J;
@@ -1321,8 +1321,8 @@ void    BlockedLogsCommon::FindBlockIJK(const Simbox                     * estim
     LogKit::LogFormatted(LogKit::Low,"firstB_, lastB_        = %d, %d    \n",first_B,last_B);
     LogKit::LogFormatted(LogKit::Low,"firstI, firstJ, firstK = %d, %d, %d\n",first_I, first_J, first_K);
     LogKit::LogFormatted(LogKit::Low,"lastI,  lastJ,  lastK  = %d, %d, %d\n",last_I, last_J, last_K);
-    for (unsigned int b = 0 ; b < n_blocks_ ; b++)
-      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",b,i_pos[b],j_pos[b],k_pos[b]);
+    for (unsigned int bb = 0 ; bb < n_blocks_ ; bb++)
+      LogKit::LogFormatted(LogKit::Low,"b=%d   i,j,k=%d,%d,%d\n",bb,i_pos[bb],j_pos[bb],k_pos[bb]);
   }
 }
 
@@ -1390,11 +1390,11 @@ BlockedLogsCommon::FindBlockIJK(const StormContGrid             & stormgrid,
   size_t last_I,  last_J,  last_K;
   stormgrid.FindIndex(x[last_M], y[last_M], z[last_M], last_I, last_J, last_K);
 
-  for (int k = static_cast<int>(last_K) + 1 ; k < n_layers_ ; k++) {
+  for (int kk = static_cast<int>(last_K) + 1 ; kk < n_layers_ ; kk++) {
     b++;
     i_pos[b] = static_cast<int>(last_I);
     j_pos[b] = static_cast<int>(last_J);
-    k_pos[b] = k;
+    k_pos[b] = kk;
   }
 }
 
@@ -3291,15 +3291,25 @@ void BlockedLogsCommon::WriteRMSWell(const float                      max_hz_bac
   const std::vector<double> & vs_highcut_seismic  = GetVsHighCutSeismic();
   const std::vector<double> & rho_highcut_seismic = GetRhoHighCutSeismic();
 
-  const std::vector<double> & vp_predicted  = GetVpPredicted();
-  const std::vector<double> & vs_predicted  = GetVsPredicted();
-  const std::vector<double> & rho_predicted = GetRhoPredicted();
+  std::vector<double> vp_predicted;
+  std::vector<double> vs_predicted;
+  std::vector<double> rho_predicted;
+  if (got_predicted == true) {
+    vp_predicted  = GetVpPredicted();
+    vs_predicted  = GetVsPredicted();
+    rho_predicted = GetRhoPredicted();
+  }
 
-  const std::vector<double> & vp_seismic_resolution  = GetVpSeismicResolution();
-  const std::vector<double> & vs_seismic_resolution  = GetVsSeismicResolution();
-  const std::vector<double> & rho_seismic_resolution = GetRhoSeismicResolution();
+  std::vector<double> vp_seismic_resolution;
+  std::vector<double> vs_seismic_resolution;
+  std::vector<double> rho_seismic_resolution;
+  if (got_filtered_log == true) {
+    vp_seismic_resolution  = GetVpSeismicResolution();
+    vs_seismic_resolution  = GetVsSeismicResolution();
+    rho_seismic_resolution = GetRhoSeismicResolution();
+  }
 
-  const std::vector<int>    & interval_log = GetIntervalLog();
+  const std::vector<int> & interval_log = GetIntervalLog();
 
   for (int i = first_B_; i < last_B_ + 1; i++) {
     file << std::right
@@ -3512,7 +3522,7 @@ void BlockedLogsCommon::WriteNorsarWell(const float max_hz_background,
   log_files.resize(n_files);
   for (int f=0; f < n_files; f++) {
     log_files[f] = new std::ofstream();
-    std::string file_name = log_file_name+NRLib::ToString(f);
+    file_name = log_file_name+NRLib::ToString(f);
     NRLib::OpenWrite(*(log_files[f]), file_name.c_str());
     *(log_files[f]) << "[NORSAR Well Log]\n";
     *(log_files[f]) << "[See header (.nwh) file for log information]\n";
@@ -3882,8 +3892,6 @@ void BlockedLogsCommon::FindXYZForVirtualPart(const MultiIntervalGrid   * multip
                                               int                         n_blocks,
                                               int                         first_B,
                                               int                         last_B,
-                                              int                         first_S,
-                                              int                         last_S,
                                               std::vector<double>       & x_pos_blocked,
                                               std::vector<double>       & y_pos_blocked,
                                               std::vector<double>       & z_pos_blocked) const

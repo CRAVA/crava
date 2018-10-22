@@ -1017,13 +1017,13 @@ CKrigingAdmin::CreateAndFillFFTGridWithCov(int i1) {
       float deltaY = static_cast<float>(j*simbox_.getdy());
 
       for (i = -nxp2; i < nxp2; i++) {
-        int i1 = (i < 0 ? nxp + i : i);
+        int ii1 = (i < 0 ? nxp + i : i);
         float deltaX = static_cast<float>(i*simbox_.getdx());
         const float h = float(sqrt(deltaX*deltaX/(rangeX*rangeX) + deltaY*deltaY/(rangeY*rangeY) +
           deltaZ*deltaZ/(rangeZ*rangeZ)));
         const float gamma = float(exp(-pow(h,power)));
 
-        pGrid->setRealValue(i1, j1, k1, gamma);
+        pGrid->setRealValue(ii1, j1, k1, gamma);
 
       } // end i
     } //end j
@@ -1088,7 +1088,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
     for (j = -nyp2; j < nyp2; j++) {
       int j1 = (j < 0 ? nyp + j : j);
       for (i = -nxp2; i < nxp2; i++) {
-        int i1 = (i < 0 ? nxp + i : i);
+        int ii1 = (i < 0 ? nxp + i : i);
         float deltaX = static_cast<float>(i*simbox_.getdx());
         float deltaY = static_cast<float>(j*simbox_.getdy());
         float deltaZ = static_cast<float>(k*simbox_.getdz());
@@ -1099,7 +1099,7 @@ CKrigingAdmin::CreateAndFillFFTGridWithCovRot(int i1) {
           deltaZ*deltaZ/(rangeZ*rangeZ)));
         const float gamma = float(exp(-pow(h,power)));
 
-        pGrid->setRealValue(i1, j1, k1, gamma);
+        pGrid->setRealValue(ii1, j1, k1, gamma);
 
       } // end i
     } //end j

@@ -97,7 +97,7 @@ ModelGravityStatic::ModelGravityStatic(ModelSettings        *& modelSettings,
     dz_upscaled_ = fullTimeSimbox->GetLZ()/nz_upscaled_;
 
     LogKit::LogFormatted(LogKit::Low, "Generating smoothing kernel ...");
-    MakeUpscalingKernel(modelSettings, fullTimeSimbox);
+    MakeUpscalingKernel(fullTimeSimbox);
     LogKit::LogFormatted(LogKit::Low, "ok.\n");
 
     LogKit::LogFormatted(LogKit::Low, "Generating lag index table (size " + NRLib::ToString(nxp_upscaled_) + " x "
@@ -187,7 +187,7 @@ ModelGravityStatic::ReadGravityDataFile(const std::string   & fileName,
 }
 
 void
-ModelGravityStatic::MakeUpscalingKernel(ModelSettings * modelSettings, const Simbox * fullTimeSimbox)
+ModelGravityStatic::MakeUpscalingKernel(const Simbox * fullTimeSimbox)
 {
   int nx = fullTimeSimbox->getnx();
   int ny = fullTimeSimbox->getny();

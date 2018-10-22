@@ -26,8 +26,8 @@ trend2Index_(j){
   assert(alpha.size()==beta.size() && beta.size()==rho.size());
 
   faciesNames_.resize(nFacies_);
-  for(int i=0; i<nFacies_; i++){
-    faciesNames_[i] = faciesNames[i];
+  for(int ii=0; ii<nFacies_; ii++){
+    faciesNames_[ii] = faciesNames[ii];
   }
 
   ipos_ = new int[nBins_];
@@ -38,14 +38,14 @@ trend2Index_(j){
   rho_.resize(nBins_,0);
   faciesLog_.resize(nBins_,-1);
 
-  for(int i=0; i<nBins_; i++){
-    alpha_[i] = alpha[i];
-    beta_[i] = beta[i];
-    rho_[i] = rho[i];
-    faciesLog_[i] = faciesLog[i];
-    ipos_[i] = 0;
-    jpos_[i] = 0;
-    kpos_[i] = i; //only vertical
+  for(int ii=0; ii<nBins_; ii++){
+    alpha_[ii] = alpha[ii];
+    beta_[ii] = beta[ii];
+    rho_[ii] = rho[ii];
+    faciesLog_[ii] = faciesLog[ii];
+    ipos_[ii] = 0;
+    jpos_[ii] = 0;
+    kpos_[ii] = ii; //only vertical
   }
 
 }

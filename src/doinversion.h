@@ -34,8 +34,7 @@ bool doTimeLapseTravelTimeInversion(const ModelSettings     * modelSettings,
                                     ModelGeneral            * modelGeneral,
                                     ModelTravelTimeStatic   * modelTravelTimeStatic,
                                     const InputFiles        * inputFiles,
-                                    const int               & vintage,
-                                    SeismicParametersHolder & seismicParameters);
+                                    const int               & vintage);
 
 bool doTimeLapseGravimetricInversion(ModelSettings           * modelSettings,
                                      ModelGeneral            * modelGeneral,

@@ -144,7 +144,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
       blocked_log->GetBlockedGrid(seismic_data, simbox, seisLog);
 
       double maxAmp = 0.0;
-      for (int i = 0 ; i < blocked_log->GetNumberOfBlocks(); i++) {
+      for (i = 0 ; i < blocked_log->GetNumberOfBlocks(); i++) {
         maxAmp = std::max(maxAmp, std::abs(seisLog[i]));
       }
       if (maxAmp == 0.0f) {
@@ -234,7 +234,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     std::vector<float> shiftWell(nWells);
     float shiftAvg = shiftOptimal(ccor_seis_cpp_r, wellWeight, dzWell, nWells, nzp_, shiftWell, modelSettings->getMaxWaveletShift());
     multiplyPapolouis(ccor_seis_cpp_r, dzWell, nWells, nzp_, waveletTaperLength, wellWeight);
-    for(int w=0; w < nWells;w++) {
+    for(w=0; w < nWells;w++) {
       if(wellWeight[w]>0)
         adjustLowfrequency(ccor_seis_cpp_r[w], dzWell[w],  nzp_, waveletTaperLength);
     }
@@ -243,9 +243,9 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
     // to simplify comparison
     std::vector<std::vector<fftw_real> > wellWavelets(nWells);
-    for(int w=0; w<nWells; w++) {
+    for(w=0; w<nWells; w++) {
       wellWavelets[w].resize(nzp_);
-      for(int i=0;i<nzp_;i++) {
+      for(i=0;i<nzp_;i++) {
         if(wellWeight[w] > 0)
           wellWavelets[w][i] = wavelet_r[w][i];
         else
@@ -256,7 +256,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     adjustLowfrequency(rAmp_, dz_,  nzp_, waveletTaperLength);
     cAmp_ = reinterpret_cast<fftw_complex*>(rAmp_);
 
-    for(int w=0;w<nWells;w++)
+    for(w=0;w<nWells;w++)
     {
       if(wellWeight[w]>0)
         adjustLowfrequency(wavelet_r[w], dzWell[w],  nzp_, waveletTaperLength);
@@ -264,10 +264,10 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
     // Save estimated wavelet for each well, write to file later because waveletlength calculted for average wavelet is used for all well wavelets
     // to simplify comparison
-    for(int w=0; w<nWells; w++) {
+    for(w=0; w<nWells; w++) {
       wellWavelets[w].resize(nzp_,0);
       if(wellWeight[w] > 0) {
-        for(int i=0;i<nzp_;i++)
+        for(i=0;i<nzp_;i++)
           wellWavelets[w][i] = wavelet_r[w][i];
         CenterWellWavelet(wellWavelets[w]);
       }
@@ -275,7 +275,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
 
     // gets syntetic seismic with estimated wavelet
     well_wavelet.resize(nWells);
-    int w = 0;
+    w = 0;
     for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
       fillInnWavelet(wavelet_r[w], nzp_, dzWell[w]);
       shiftReal(shiftWell[w]/dzWell[w], wavelet_r[w], nzp_);
@@ -325,7 +325,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
         ((modelSettings->getWaveletOutputFlag() & IO::WELL_WAVELETS)>0 || modelSettings->getEstimationMode())) {
 
         dz_ = dzWell[w];
-        for(int i = 0 ; i < nzp_ ; i++)
+        for(i = 0 ; i < nzp_ ; i++)
           rAmp_[i] = wellWavelets[w][i];
         std::string wellname(blocked_log->GetWellName());
         NRLib::Substitute(wellname,"/","_");
@@ -352,7 +352,7 @@ Wavelet1D::Wavelet1D(const Simbox                                     * simbox,
     }
   }
 
-  for(int i=0;i<nWells;i++) {
+  for(i=0;i<nWells;i++) {
     delete [] cpp_r[i];
     delete [] seis_r[i] ;
     delete [] synt_seis_r[i] ;
@@ -911,7 +911,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
     errText += " Could not estimate global wavelet scale for stack "+NRLib::ToString(number)+".\n";
   }
 
-  for(int w=0; w<nWells; w++) {
+  for(w=0; w<nWells; w++) {
     delete [] cpp_r[w];
     delete [] seis_r[w] ;
     delete [] synt_r[w] ;
@@ -925,7 +925,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   delete [] cor_seis_synt_r;
 
   int nData=0;
-  for(int w=0; w<nWells; w++) {
+  for(w=0; w<nWells; w++) {
     nData   += nActiveData[w];
   }
 
@@ -934,7 +934,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   float dataVar = 0.0f;
 
   if (nData > 0) {
-    for (int w=0 ; w < nWells ; w++) {
+    for (w=0 ; w < nWells ; w++) {
       errStd  += errVarWell[w];
       locStd  += errWellOptScale[w]*errWellOptScale[w]*nActiveData[w];
       dataVar += dataVarWell[w];
@@ -1051,7 +1051,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
       else //SNRatio given in model file
         errStdLN = sqrt(dataVar/SNRatio);
       if(gainGrid == NULL && doEstimateLocalScale==false && doEstimateGlobalScale==false) { // No local wavelet scale
-        for(int w=0 ; w < nWells ; w++)
+        for(w=0 ; w < nWells ; w++)
           errVarWell[w] = sqrt(errVarWell[w]);
         estimateLocalNoise(cov, noiseScaled, errStdLN, errVarWell, nActiveData, inversion_simbox, mapped_blocked_logs);
       }
@@ -1304,14 +1304,14 @@ Wavelet1D::findLocalNoiseWithGainGiven(fftw_real                                
 
   float optValue=error;
   err = sqrt(optValue/static_cast<float>(totCount));
-  for(int i=0;i<nWells;i++) {
+  for(i=0;i<nWells;i++) {
     if(counter[i]>0)
       errWell[i] = sqrt(resNorm[i]/counter[i]);
     else
       errWell[i] = 0.0f;
   }
 
-  for(int i=0;i<nWells;i++) {
+  for(i=0;i<nWells;i++) {
     if(wellWeight[i]>0) {
       optValue = resNorm[i];
       scaleOptWell[i]    = float(scale[i]);

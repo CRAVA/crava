@@ -92,7 +92,7 @@ ModelTravelTimeStatic::processHorizons(const ModelSettings  * modelSettings,
 
     horizon_names_ = modelSettings->getTimeLapseTravelTimeHorizons(0);
 
-    int n_horizons = static_cast<int>(horizon_names_.size());
+    n_horizons = static_cast<int>(horizon_names_.size());
 
     initial_horizons_.resize(n_horizons);
 
