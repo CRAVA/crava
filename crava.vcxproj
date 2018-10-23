@@ -140,7 +140,7 @@
     <ClCompile>
       <AdditionalOptions>/D "_CRT_SECURE_NO_DEPRECATE"  /wd4512 /wd4127 /w44263 /w44264 /w44062 /I "." /I ".\fft\include" /D "BYPASS_COORDINATE_SCALING" %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;libs/nrlib;libs;libs/fft/include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;libs/nrlib;libs;libs/fft/include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include;$(INTEL_DEF_X64_INSTALL_DIR)MKL\Include\intel64;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MKL;FLENS_FIRST_INDEX=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
