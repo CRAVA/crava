@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual Studio 14
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "findgrammar", "findgrammar.vcxproj", "{C2F3F579-474B-44B1-8EC2-64A68FB11D25}"
 EndProject
 Global
