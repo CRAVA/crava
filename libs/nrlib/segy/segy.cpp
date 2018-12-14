@@ -409,7 +409,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   }
 
   if (write_to_file)
-    WriteAllTracesToFile(offset);
+    WriteAllTracesToFile(1, offset);
 
 }
 
@@ -1394,7 +1394,7 @@ bool SortIndex(const SegYTrace * t1, const SegYTrace * t2)
 }
 
 void
-SegY::WriteAllTracesToFile(double offset, short scalcoinitial)
+SegY::WriteAllTracesToFile(short scalcoinitial, double offset)
 {
   size_t i, k;
   std::vector<float>  trace(nz_);

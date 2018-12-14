@@ -169,8 +169,9 @@ public:
                                        float                    topVal  = 0.0f,
                                        float                    baseVal = 0.0f,
                                        short                    scalcoinitial = 1);
-  void                      WriteAllTracesToFile(double offset        = 0,
-                                                 short  scalcoinitial = 1); ///< Use only after writeTrace with x and y as input is used for the whole cube
+
+  void                      WriteAllTracesToFile(short  scalcoinitial = 1,
+                                                 double offset        = 0); ///< Use only after writeTrace with x and y as input is used for the whole cube
   //<<<End write mode
 
 
