@@ -87,7 +87,8 @@ public:
       const std::string       & file_name = "",
       bool                      write_to_file = true,
       const TraceHeaderFormat & trace_header_format = TraceHeaderFormat(TraceHeaderFormat::SEISWORKS),
-      bool                      is_seismic = false);
+      bool                      is_seismic = false,
+      double                    offset = 0);
 
   ~SegY();
 
@@ -168,7 +169,8 @@ public:
                                        float                    topVal  = 0.0f,
                                        float                    baseVal = 0.0f,
                                        short                    scalcoinitial = 1);
-  void                      WriteAllTracesToFile(short scalcoinitial = 1); ///< Use only after writeTrace with x and y as input is used for the whole cube
+  void                      WriteAllTracesToFile(double offset        = 0,
+                                                 short  scalcoinitial = 1); ///< Use only after writeTrace with x and y as input is used for the whole cube
   //<<<End write mode
 
 

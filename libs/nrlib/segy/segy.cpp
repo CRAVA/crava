@@ -327,7 +327,8 @@ SegY::SegY(const StormContGrid     * storm_grid,
            const std::string       & file_name,
            bool                      write_to_file,
            const TraceHeaderFormat & trace_header_format,
-           bool                      is_seismic)
+           bool                      is_seismic,
+           double                    offset)
 {
   rmissing_               = segyRMISSING;
   geometry_               = NULL;
@@ -408,7 +409,7 @@ SegY::SegY(const StormContGrid     * storm_grid,
   }
 
   if (write_to_file)
-    WriteAllTracesToFile();
+    WriteAllTracesToFile(offset);
 
 }
 
@@ -1393,7 +1394,7 @@ bool SortIndex(const SegYTrace * t1, const SegYTrace * t2)
 }
 
 void
-SegY::WriteAllTracesToFile(short scalcoinitial)
+SegY::WriteAllTracesToFile(double offset, short scalcoinitial)
 {
   size_t i, k;
   std::vector<float>  trace(nz_);
@@ -1420,6 +1421,7 @@ SegY::WriteAllTracesToFile(short scalcoinitial)
       header.SetInline(traces_[i]->GetInline());
       header.SetCrossline(traces_[i]->GetCrossline());
       header.SetStartTime(static_cast<short>(z0_));
+      header.SetOffset(offset);
       header.Write(file_);
       WriteBinaryIbmFloatArray(file_,trace.begin(),trace.end());
     }
