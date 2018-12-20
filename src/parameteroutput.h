@@ -38,17 +38,18 @@ public:
                                const std::string   & sgri_label,
                                bool                  padding = false);
 
-  static void     WriteFile(const ModelSettings     * model_settings,
-                            StormContGrid           * storm_grid,
-                            const std::string       & f_name,
-                            const std::string       & sub_dir,
-                            const Simbox            * simbox,
+  static void     WriteFile(const ModelSettings * model_settings,
+                            StormContGrid       * storm_grid,
+                            const std::string   & f_name,
+                            const std::string   & sub_dir,
+                            const Simbox        * simbox,
                             //Note: Used to mark synthetic seismic, where value in cell is actually value at top of cell.
                             //Real seismic data when resampled are values at base of cell, and must be shifted an index before this is used.
-                            bool                      is_seismic = false,
-                            const std::string         label = "NO_LABEL",
-                            const GridMapping       * depth_map = NULL,
-                            bool                      padding = false);
+                            bool                  is_seismic = false,
+                            const std::string     label = "NO_LABEL",
+                            const GridMapping   * depth_map = NULL,
+                            bool                  padding = false,
+                            double                offset = 0);
 
 private:
 
