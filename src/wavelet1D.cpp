@@ -878,7 +878,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   float globalScale = waveletScale;
 
   if (n_wells_for_wavelet_estimation == 0 && estimateSomething) {
-    errText += " Error with wavelet estimations: There are no wells ";
+    errText += " Error with wavelet estimations: There are no wells";
     errText += " available for the estimation.\n";
     errText += " Wells can be added for estimation with the <use-for-wavelet-estimation> keyword under <well> in the modelfile.\n";
   }
