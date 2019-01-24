@@ -1670,7 +1670,7 @@ void CravaResult::WriteResults(ModelSettings           * model_settings,
       if (((model_settings->getOutputGridsSeismic() & IO::SYNTHETIC_SEISMIC_DATA) > 0) || (model_settings->getForwardModeling() == true)) {
         if (i == 0)
           LogKit::LogFormatted(LogKit::Low,"\nWrite Synthetic Seismic\n");
-        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+        ParameterOutput::WriteFile(model_settings, synt_seismic_data_[i], file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping, false, theta_deg);
       }
     }
   }
@@ -2003,8 +2003,10 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
             }
           }
 
+
+          float theta_deg   = static_cast<float>((angles[j]*180.0/NRLib::Pi));
           if ((model_settings->getOutputGridsSeismic() & IO::ORIGINAL_SEISMIC_DATA) > 0)
-            ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+            ParameterOutput::WriteFile(model_settings, seismic_storm, file_name_orig, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping, false, theta_deg);
 
           if (model_settings->getEstimationMode() == false) {
             if ((i==0) && ((model_settings->getOutputGridsSeismic() & IO::RESIDUAL) > 0)) { //residuals only for first vintage.
@@ -2021,7 +2023,7 @@ void CravaResult::WriteSeismicData(ModelSettings * model_settings,
               sgri_label = "Residual computed from synthetic seismic for incidence angle "+angle;
               std::string file_name  = IO::PrefixResiduals() + angle;
 
-              ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping);
+              ParameterOutput::WriteFile(model_settings, &residual, file_name, IO::PathToSeismicData(), &simbox, true, sgri_label, time_depth_mapping, false, theta_deg);
             }
           }
         }

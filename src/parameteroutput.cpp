@@ -415,15 +415,16 @@ ParameterOutput::ExpTransf(StormContGrid * grid)
 }
 
 void
-ParameterOutput::WriteFile(const ModelSettings     * model_settings,
-                           StormContGrid           * storm_grid,
-                           const std::string       & f_name,
-                           const std::string       & sub_dir,
-                           const Simbox            * simbox,
-                           bool                      is_seismic,
-                           const std::string         label,
-                           const GridMapping       * depth_map,
-                           bool                      padding)
+ParameterOutput::WriteFile(const ModelSettings * model_settings,
+                           StormContGrid       * storm_grid,
+                           const std::string   & f_name,
+                           const std::string   & sub_dir,
+                           const Simbox        * simbox,
+                           bool                  is_seismic,
+                           const std::string     label,
+                           const GridMapping   * depth_map,
+                           bool                  padding,
+                           double                offset)
 {
   //All crava files are written out directly in CravaResult
   (void) padding;
@@ -487,7 +488,8 @@ ParameterOutput::WriteFile(const ModelSettings     * model_settings,
                                file_name_segy,
                                true, //Write to file
                                *thf,
-                               is_seismic);
+                               is_seismic,
+                               offset);
 
         LogKit::LogFormatted(LogKit::Low,"done\n");
 
