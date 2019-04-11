@@ -383,6 +383,26 @@ outside the well control area.  This is illustrated in
 
 Local noise is estimated using the local noise energies from above. We always use local shift when estimating the noise, but only use local scale if it is used in the inversion. If local scale is used, the noise is divided by this. A noise scaling factor is then computed in each well, and kriged as above.
 
+\section{Signal to Noise ratio}
+\label{sec:snratio}
+
+The signal to noise ratio is defined as the data variance divided on the error variance, 
+\begin{equation}
+S/N = \frac{Var(D)}{Var(E)}
+\end{equation}
+
+The data variance $Var(D)$ is the combination of the signal variance $Var(S)$ and error variance $Var(E)$. There is an assumption that the $Var(S)$ and $Var(E)$ are independent, which means that the data variance can be defined as $Var(D) = Var(S) + Var(E)$.
+
+This fraction can be given as input to \crava by the \kw{signal-to-noise-ratio} keyword or it can be estimated from the wells. When it is estimated from the wells, \crava will first generate synthetic seismic data, which is bulk shifted to match the input seismic data. The next step is to calculate error variance ($Var(E)$) by taking the variance of the difference of synthetic data and the real seismic data, and also the data variance ($Var(D)$) by taking the variance of the real seismic data for these wells. This is done for each angle. \crava will then report the the $S/N$, where the calculations is based on the data for all wells. The combined ratio cannot be lower than 1.1. The ratio is also calculated and reported per well. 
+
+Internally \crava will compute and use an effective Signal to Noise ratio ($S/N_{e}$) by
+\begin{equation}
+S/N_{e} = \frac{Var(D)}{Var(E)} = \frac{Var(S) + Var(E)}{Var(E)} = 1 + \frac{Var(S)}{Var(E)} = 1 + \frac{Var(D)}{Var(S)}S/N
+\end{equation}
+where $Var(D)$ is the variance of the seismic data, and $Var(S)$ is the variance of the model. The first steps of the equation is based on the the assumption that $Var(D) = Var(S) + Var(E)$. The last step uses $Var(E) = Var(D)/SN$ to obtain the unknown error variance. By the last fraction ($Var(S)/Var(D)$) means that \crava will adjust the input signal to noise ratio given as input based on how noisy the input data are.
+
+The inversion should go towards the background model if the signal to noise ratio decreases. If a user would like to test this property, it is not straightforward to do so by just lowering the the \kw{signal-to-noise-ratio} input in the modelfile, due to the $Var(S)/Var(D)$ factor above. Instead the fraction $Var(S)/Var(D)$ should be lowered. This can be done for example by increasing the $Var(D)$ by adding noise to the data, or lower $Var(S)$ by for example dampen the wavelet.
+
 \section{Estimating 3D wavelet}
 \label{sec:3Dwaveestimp}
 The expression for the wavenumber representation of the point-spread function given in \autoref{eq:waveletform}
