@@ -799,6 +799,7 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
   std::vector<int>   nActiveData(nWells, 0);
 
   w = 0;
+  int n_wells_for_wavelet_estimation = 0;
   for(std::map<std::string, BlockedLogsCommon *>::const_iterator it = mapped_blocked_logs.begin(); it != mapped_blocked_logs.end(); it++) {
     std::map<std::string, BlockedLogsCommon *>::const_iterator iter = mapped_blocked_logs.find(it->first);
     BlockedLogsCommon * blocked_log = iter->second;
@@ -869,10 +870,18 @@ Wavelet1D::calculateSNRatioAndLocalWavelet(const Simbox                         
         LogKit::LogFormatted(LogKit::Low, "\n  Not using vertical well %s for error estimation (length=%.1fms  required length=%.1fms).",
                              blocked_log->GetWellName().c_str(), length*dz_, waveletLength_+1);
       }
+
+      n_wells_for_wavelet_estimation++;
     }
     w++;
   }
   float globalScale = waveletScale;
+
+  if (n_wells_for_wavelet_estimation == 0 && estimateSomething) {
+    errText += " Error with wavelet estimations: There are no wells";
+    errText += " available for the estimation.\n";
+    errText += " Wells can be added for estimation with the <use-for-wavelet-estimation> keyword under <well> in the modelfile.\n";
+  }
 
   std::vector<float> scaleOptWell(nWells, -1.0f);
   std::vector<float> errWellOptScale(nWells);
