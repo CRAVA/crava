@@ -36,7 +36,7 @@ OBJCOMPARE  = compare_storm_binary_volumes/compare.o   \
 INCLUDE     = -I. -I./libs -I./libs/nrlib -I./libs/flens -I./libs/fft/include
 CPPFLAGS   += $(INCLUDE)
 
-all:	$(PROGRAM)
+all:	$(PROGRAM) $(COMPARE)
 
 comp:	$(COMPARE)
 
@@ -113,7 +113,4 @@ help:
 	@echo 'case'
 	@echo '  n         : Comma-separated list of test case numbers (number given first in the test case'
 	@echo '              directory name) or a range give as 1-5'
-	@echo ''
-	@echo 'at'
-	@echo '  nr        : Needed to compile under Ubuntu at NR'
 	@echo ''
