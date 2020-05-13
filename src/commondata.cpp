@@ -4626,7 +4626,7 @@ void CommonData::SetLogsToBeBlocked(ModelSettings                    * model_set
   continuous_logs_to_be_blocked.push_back("Rho");
 
   //MD-logs are only used for writing of norsar wells
-  if (model_settings->getWellFormatFlag() && IO::NORSARWELL) {
+  if (model_settings->getWellFormatFlag() == IO::NORSARWELL) {
     for (size_t i = 0; i < wells.size(); i++) {
       if (wells[i]->HasContLog("MD")) {
         continuous_logs_to_be_blocked.push_back("MD");
