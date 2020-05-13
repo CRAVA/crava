@@ -633,8 +633,6 @@ private:
                                 int                         n_blocks,
                                 int                         first_B,
                                 int                         last_B,
-                                int                         first_S,
-                                int                         last_S,
                                 std::vector<double>       & x_pos_blocked,
                                 std::vector<double>       & y_pos_blocked,
                                 std::vector<double>       & z_pos_blocked) const;

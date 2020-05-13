@@ -2,6 +2,13 @@
 # The available CRAVA compiler directives are
 #    -DBIGENDIAN   (needed for IRIX, SUNOS, etc...)
 #
+SHELL       = sh
+OS          = $(shell uname -s)
+FLAVOUR     = $(shell lsb_release -si)
+VERSION     = $(shell lsb_release -r | sed 's/[^0-9\.]*//g')
+
+
+
 CDIR        = -DFLENS_FIRST_INDEX=0
 CXX         = g++
 CC          = gcc
@@ -63,10 +70,16 @@ endif
 #|              RedHat vs. Ubuntu linking               |
 #o======================================================o
 
-ifeq ($(at),nr)
-  ATLASLFLAGS = -L/usr/lib64/atlas -L/usr/lib64/atlas/atlas -L/lib64 -llapack -lblas -lcblas -latlas -lgfortran -lpthread
-else
-  ATLASLFLAGS = -L/lib64 -lgfortran -lpthread -Wl,/usr/lib64/atlas/liblapack.a,/usr/lib64/libblas.a,/usr/lib64/atlas/libcblas.a,/usr/lib64/atlas/libatlas.a
+
+ifeq ($(FLAVOUR),RedHatEnterpriseServer)
+  ATLASLFLAGS = -L/usr/lib64/atlas -llapack -lblas -lsatlas -lgfortran    # For RH6
+  ifeq ($(shell expr $(VERSION) \>= 7.0), 1)
+    ATLASLFLAGS = -L/usr/lib64/atlas -llapack -lblas -lsatlas -lgfortran  # For RH7
+  endif
+endif
+
+ifeq ($(FLAVOUR),Ubuntu)
+  ATLASLFLAGS = -llapack -lblas -lcblas -latlas -lgfortran -lquadmath
 endif
 
 #o======================================================o

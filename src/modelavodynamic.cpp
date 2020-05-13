@@ -167,8 +167,8 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
       //In CommonData::ReadSeiscmicData it is checked that segy/storm file covers esimation_simbox
       //if (missingTracesSimbox > 0) {}
       if (missing_traces_padding > 0) {
-        int nx     = simbox->getnx();
-        int ny     = simbox->getny();
+        nx     = simbox->getnx();
+        ny     = simbox->getny();
         int nxpad  = nxp - nx;
         int nypad  = nyp - ny;
         int nxypad = nxpad*ny + nx*nypad - nxpad*nypad;
@@ -363,6 +363,7 @@ ModelAVODynamic::ModelAVODynamic(ModelSettings          *& model_settings,
     }
     else {
       sn_ratio_[i] = common_data->GetSNRatioTimeLapse(this_timelapse_)[i];
+      wavelets_[i]->scale(model_settings->getWaveletScale(this_timelapse_,i));
     }
 
     wavelets_[i]->resample(static_cast<float>(simbox->getdz()), simbox->getnz(), simbox->GetNZpad()); //Get into correct simbox and on fft order

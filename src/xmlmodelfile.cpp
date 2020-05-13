@@ -164,14 +164,6 @@ XmlModelFile::parseActions(TiXmlNode * node, std::string & errTxt)
       modelSettings_->setEstimateCorrelations(true);
       modelSettings_->setEstimateWaveletNoise(true);
       modelSettings_->setEstimateBackground(true);
-      if (modelSettings_->getOutputGridsDefaultInd()) {
-        modelSettings_->setOutputGridsElastic(IO::BACKGROUND);
-        modelSettings_->setOutputGridsDefaultInd(false);
-      }
-      else {
-        int paramFlag = modelSettings_->getOutputGridsElastic() & IO::BACKGROUND;
-        modelSettings_->setOutputGridsElastic(paramFlag);
-      }
     }
     else if(mode != "inversion")
       errTxt += "String after <mode> must be either <inversion>, <estimation> or <forward>, found <"+
@@ -286,6 +278,18 @@ bool XmlModelFile::parseEstimationSettings(TiXmlNode * node, std::string & errTx
   bool estimateBG = true;
   parseBool(root,"estimate-background", estimateBG, errTxt);
   modelSettings_->setEstimateBackground(estimateBG);
+  modelSettings_->setGenerateBackground(estimateBG);
+  if (estimateBG)
+  {
+    if (modelSettings_->getOutputGridsDefaultInd()) {
+      modelSettings_->setOutputGridsElastic(IO::BACKGROUND);
+      modelSettings_->setOutputGridsDefaultInd(false);
+    }
+    else {
+      int paramFlag = modelSettings_->getOutputGridsElastic() & IO::BACKGROUND;
+      modelSettings_->setOutputGridsElastic(paramFlag);
+    }
+  }
 
   bool estimateCorr = true;
   parseBool(root,"estimate-correlations", estimateCorr, errTxt);
@@ -6387,8 +6391,13 @@ XmlModelFile::checkConsistency(std::string & errTxt)
 
       std::string file_name = input_dir + back_file;
 
-      if (IO::findGridType(file_name) != IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
-        errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+      try {
+        if (IO::findGridType(file_name) != IO::SEGY && modelSettings_->getTraceHeaderFormatBackground(i) != NULL)
+          errTxt += "SegyTraceHeader is given for background parameter " + parameter[i] + ", but the background file for this parameter is not on segy-format.\n";
+      }
+      catch(NRLib::Exception & e) {
+        errTxt = errTxt + e.what() + "\n";
+      }
 
     }
   }

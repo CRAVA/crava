@@ -402,7 +402,7 @@ ModelGeneral::Do4DRockPhysicsInversion(ModelSettings* model_settings)
 
   std::string  outPre =  "mu_";
 
-  for (int i=0;i<nParamOut;i++)
+  for (i=0;i<nParamOut;i++)
   {
      std::string fileName;
      fileName= outPre + labels[i];
@@ -410,8 +410,8 @@ ModelGeneral::Do4DRockPhysicsInversion(ModelSettings* model_settings)
      WriteToFile(simbox_, time_depth_mapping_, model_settings, predictions[i] , fileName, labels[i]);
   }
 
-  for (size_t i = 0; i < predictions.size(); i++)
-    delete predictions[i];
+  for (size_t ii = 0; ii < predictions.size(); ii++)
+    delete predictions[ii];
 
   return 0;
 }

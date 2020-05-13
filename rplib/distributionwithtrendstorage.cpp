@@ -374,7 +374,8 @@ BetaDistributionWithTrendStorage::GenerateDistributionWithTrend(const std::strin
         WriteTrendToFile(filename_prefix + "_var",  trend_cube_sampling, variance_trend);
     }
 
-    CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
+    if (errTxt == "")
+      CheckBetaConsistency(mean_trend, variance_trend, lower_limit_, upper_limit_, errTxt);
 
     int share_level = DistributionWithTrend::None;
     if(is_shared_ == true)

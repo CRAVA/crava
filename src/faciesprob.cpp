@@ -965,7 +965,7 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
   for(int i=0;i<densdim;i++) {
     if(i>0){
       // Multiply vp, vs, rho with scale
-      int nAng = static_cast<int>(noiseScale.size());
+      nAng = static_cast<int>(noiseScale.size());
 
       std::vector<double> maxScale(nAng);
       double maxS, minS;
@@ -993,16 +993,16 @@ int FaciesProb::MakePosteriorElasticPDF3D(std::vector<std::vector<PosteriorElast
 
       NRLib::Vector h1(3);
 
-      for(int i=0 ; i < static_cast<int>(vpFiltered.size()) ; i++) {
-        h1(0) = static_cast<double>(vpFiltered[i]);
-        h1(1) = static_cast<double>(vsFiltered[i]);
-        h1(2) = static_cast<double>(rhoFiltered[i]);
+      for(int ii=0 ; ii < static_cast<int>(vpFiltered.size()) ; ii++) {
+        h1(0) = static_cast<double>(vpFiltered[ii]);
+        h1(1) = static_cast<double>(vsFiltered[ii]);
+        h1(2) = static_cast<double>(rhoFiltered[ii]);
 
         NRLib::Vector h2 = H * h1;
 
-        vpFilteredNew[i]  = h2(0);
-        vsFilteredNew[i]  = h2(1);
-        rhoFilteredNew[i] = h2(2);
+        vpFilteredNew[ii]  = h2(0);
+        vsFilteredNew[ii]  = h2(1);
+        rhoFilteredNew[ii] = h2(2);
       }
     }
 

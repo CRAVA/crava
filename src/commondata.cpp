@@ -436,8 +436,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
     std::string top_surface_file = input_files->getTimeSurfTopFile();
     if (!NRLib::IsNumber(top_surface_file) && top_surface_file != "") {
-      NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(top_surface_file);
-      if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
+      CommonData::SurfaceFileFormat surf_type = CommonData::FindSurfaceFileType(top_surface_file);
+      if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII)
         estimation_mode_need_ILXL = true;
     }
 
@@ -446,8 +446,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       std::string base_surface_file = input_files->getBaseTimeSurface(interval_names[i]);
 
       if (!NRLib::IsNumber(base_surface_file) && base_surface_file != "") {
-        NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(base_surface_file);
-        if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII) {
+        CommonData::SurfaceFileFormat surf_type = CommonData::FindSurfaceFileType(base_surface_file);
+        if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII) {
           estimation_mode_need_ILXL = true;
           i = static_cast<int>(interval_names.size()) - 1;
         }
@@ -456,8 +456,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
 
     std::string area_surface_file = input_files->getAreaSurfaceFile();
     if (!NRLib::IsNumber(area_surface_file) && area_surface_file != "") {
-        NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(area_surface_file);
-        if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII)
+        CommonData::SurfaceFileFormat surf_type = CommonData::FindSurfaceFileType(area_surface_file);
+        if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII)
           estimation_mode_need_ILXL = true;
     }
   }
@@ -493,8 +493,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
       LogKit::LogFormatted(LogKit::High,"\nFinding area information from surface \'"+input_files->getAreaSurfaceFile()+"\'\n");
       area_type = "Surface";
 
-      NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(input_files->getAreaSurfaceFile());
-      if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII) {
+      CommonData::SurfaceFileFormat surf_type = CommonData::FindSurfaceFileType(input_files->getAreaSurfaceFile());
+      if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII) {
         //Get area from surface. However, we need the segy-geometry to read the rotated ascii-surfaces.
         SegyGeometry * geometry_tmp;
         TraceHeaderFormat * thf = NULL;
@@ -510,13 +510,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
         ILXL_geometry = geometry_tmp;
 
         std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, geometry_tmp);
-        double lx = geometry_tmp->GetDx() * geometry_tmp->GetNx();
-        double ly = geometry_tmp->GetDy() * geometry_tmp->GetNy();
 
-        Surface surf(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp->GetAngle(), geometry_tmp->GetX0(),
-                     geometry_tmp->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                     geometry_tmp->GetInLine0(), geometry_tmp->GetCrossLine0(),
-                     geometry_tmp->GetILStepX(), geometry_tmp->GetILStepY(), geometry_tmp->GetXLStepX(), geometry_tmp->GetXLStepY());
+        Surface surf = *ReadSurfaceFromFile(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp, &ilxl_area[0]);
 
         SegyGeometry geometry(surf);
         model_settings->setAreaParameters(&geometry);
@@ -533,7 +528,7 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
              area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) { // tilfelle ii med snap to seismic
       LogKit::LogFormatted(LogKit::High,"\nFinding inversion area from grid data in file \'"+grid_file+"\'\n");
       area_type = "Grid data";
-      std::string tmp_err_text;
+      std::string tmp_err_text = "";
       SegyGeometry * geometry;
       TraceHeaderFormat * thf = NULL;
       if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
@@ -562,15 +557,14 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
             }
             else if (area_specification == ModelSettings::AREA_FROM_GRID_DATA_AND_SURFACE) {
 
-              NRLib::SurfaceFileFormat surf_type = NRLib::FindSurfaceFileType(input_files->getAreaSurfaceFile());
-              if (surf_type == NRLib::SURF_XYZ_ASCII || surf_type == NRLib::SURF_MULT_ASCII) {
+              CommonData::SurfaceFileFormat surf_type = CommonData::FindSurfaceFileType(input_files->getAreaSurfaceFile());
+              if (surf_type == SURF_XYZ_ASCII || surf_type == SURF_MULT_ASCII) {
                 //Get area from surface. However, we need the segy-geometry to read the rotated ascii-surfaces.
                 SegyGeometry * geometry_tmp;
-                TraceHeaderFormat * thf = NULL;
+                thf = NULL;
                 if (model_settings->getNumberOfTraceHeaderFormats(0) > 0)
                   thf = model_settings->getTraceHeaderFormat(0,0);
 
-                std::string tmp_err_text = "";
                 GetGeometryFromGridOnFile(grid_file,
                                           thf,
                                           geometry_tmp,
@@ -579,13 +573,8 @@ bool CommonData::CreateOuterTemporarySimbox(ModelSettings   * model_settings,
                 ILXL_geometry = geometry_tmp;
 
                 std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, geometry_tmp);
-                double lx = geometry_tmp->GetDx() * geometry_tmp->GetNx();
-                double ly = geometry_tmp->GetDy() * geometry_tmp->GetNy();
 
-                Surface surf(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp->GetAngle(), geometry_tmp->GetX0(),
-                             geometry_tmp->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                             geometry_tmp->GetInLine0(), geometry_tmp->GetCrossLine0(),
-                             geometry_tmp->GetILStepX(), geometry_tmp->GetILStepY(), geometry_tmp->GetXLStepX(), geometry_tmp->GetXLStepY());
+                Surface surf = *ReadSurfaceFromFile(input_files->getAreaSurfaceFile(), surf_type, geometry_tmp, &ilxl_area[0]);
 
                 template_geometry = new SegyGeometry(surf);
               }
@@ -1467,11 +1456,11 @@ bool CommonData::ReadWellData(ModelSettings                           * model_se
           if (new_well.HasDiscLog("Facies") == true) {
             facies_log_in_well = true;
             const std::vector<int> & facies_log = new_well.GetDiscLog("Facies");
-            int n_facies                        = new_well.GetNFacies();
+            int n_facies_tmp                    = new_well.GetNFacies();
             bool facies_ok_tmp                  = false;
             for (size_t j = 0; j < facies_log.size(); j++) {
               if (facies_log[j] != IMISSING) {
-                for (int k = 0; k < n_facies; k++) {
+                for (int k = 0; k < n_facies_tmp; k++) {
                   if (cur_facies_nr[k] == facies_log[j]) {
                     facies_ok_tmp = true;
                     break;
@@ -3377,7 +3366,7 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
                                           std::vector<Surface *> & wavelet_estim_interval,
                                           const Simbox           & simbox,
                                           SegyGeometry           * segy_geometry,
-                                          std::string            & err_text)
+                                          std::string            & err_text) const
 
 {
   const double x0 = simbox.getx0();
@@ -3399,20 +3388,16 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            wavelet_estim_interval[0] = new Surface(wavelet_est_int_top, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                      segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            wavelet_estim_interval[0] = ReadSurfaceFromFile(wavelet_est_int_top, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
+
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_top);
+          int surf_type = CommonData::FindSurfaceFileType(wavelet_est_int_top);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + wavelet_est_int_top + " without segy geometry.\n";
           else
             wavelet_estim_interval[0] = new Surface(wavelet_est_int_top);
@@ -3432,20 +3417,15 @@ CommonData::FindWaveletEstimationInterval(const ModelSettings    * model_setting
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                      segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                      segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            wavelet_estim_interval[1] = ReadSurfaceFromFile(wavelet_est_int_bot, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(wavelet_est_int_bot);
+          int surf_type = CommonData::FindSurfaceFileType(wavelet_est_int_bot);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + wavelet_est_int_bot + " without segy geometry.\n";
           else
             wavelet_estim_interval[1] = new Surface(wavelet_est_int_bot);
@@ -4451,20 +4431,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
       LogKit::LogFormatted(LogKit::Low,"Top surface file name: " + top_surface_file_name +" \n");
       if (segy_geometry != NULL) {
         std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-        double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-        double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-        top_surface = new Surface(top_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(),
-                                  segy_geometry->GetFirstAxisIL(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                  segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+        top_surface = ReadSurfaceFromFile(top_surface_file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
       }
       else {
-        int surf_type = NRLib::FindSurfaceFileType(top_surface_file_name);
+        int surf_type = CommonData::FindSurfaceFileType(top_surface_file_name);
 
-        if (surf_type == NRLib::SURF_MULT_ASCII)
+        if (surf_type == SURF_MULT_ASCII)
           err_text += "Cannot read multicolumn ascii surface " + top_surface_file_name + " without segy geometry.\n";
-        else if (surf_type == NRLib::SURF_XYZ_ASCII)
+        else if (surf_type == SURF_XYZ_ASCII)
           err_text += "Cannot read xyz ascii surface " + top_surface_file_name + " without segy geometry.\n";
         else
           top_surface = new Surface(top_surface_file_name);
@@ -4510,20 +4485,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
             LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
             if (segy_geometry != NULL) {
               std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-              base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                         segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                         segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                         segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+              base_surface = ReadSurfaceFromFile(base_surface_file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
             }
             else {
-              int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+              int surf_type = CommonData::FindSurfaceFileType(base_surface_file_name);
 
-              if (surf_type == NRLib::SURF_MULT_ASCII)
+              if (surf_type == SURF_MULT_ASCII)
                 err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
-              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              else if (surf_type == SURF_XYZ_ASCII)
                 err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
               else
                 base_surface = new Surface(base_surface_file_name);
@@ -4550,20 +4520,15 @@ void CommonData::SetSurfaces(const ModelSettings * const model_settings,
           LogKit::LogFormatted(LogKit::Low,"Base surface file name: " + base_surface_file_name +" \n");
           if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            base_surface = new Surface(base_surface_file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                       segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                       segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                       segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            base_surface = ReadSurfaceFromFile(base_surface_file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
           }
           else {
-            int surf_type = NRLib::FindSurfaceFileType(base_surface_file_name);
+            int surf_type = CommonData::FindSurfaceFileType(base_surface_file_name);
 
-            if (surf_type == NRLib::SURF_MULT_ASCII)
+            if (surf_type == SURF_MULT_ASCII)
               err_text += "Cannot read multicolumn ascii surface " + base_surface_file_name + " without segy geometry.\n";
-            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            else if (surf_type == SURF_XYZ_ASCII)
               err_text += "Cannot read xyz ascii surface " + base_surface_file_name + " without segy geometry.\n";
             else
               base_surface = new Surface(base_surface_file_name);
@@ -4946,7 +4911,7 @@ bool  CommonData::OptimizeWellLocations(ModelSettings                           
     std::stringstream entry;
       entry
         << std::fixed
-        << std::left     << "  "
+        << std::left
         << std::setw(14) << wells[w]->GetWellName() << " "
         << std::right
         << std::setprecision(2)
@@ -5144,20 +5109,15 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            well_move_interval[0] = new Surface(topWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                                segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            well_move_interval[0] = ReadSurfaceFromFile(topWMI, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(topWMI);
+          int surf_type = CommonData::FindSurfaceFileType(topWMI);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + topWMI + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + topWMI + " without segy geometry.\n";
           else
             well_move_interval[0] = new Surface(topWMI);
@@ -5177,20 +5137,15 @@ void CommonData::LoadWellMoveInterval(const ModelSettings    * model_settings,
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            well_move_interval[1] = new Surface(baseWMI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                                segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                                segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            well_move_interval[1] = ReadSurfaceFromFile(baseWMI, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(baseWMI);
+          int surf_type = CommonData::FindSurfaceFileType(baseWMI);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + baseWMI + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + baseWMI + " without segy geometry.\n";
           else
             well_move_interval[1] = new Surface(baseWMI);
@@ -5398,7 +5353,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
     // Map reservoir variables for use in rocks to access resampling trigger.
     std::vector<std::vector<DistributionWithTrend *> > res_var_vintage(1, std::vector<DistributionWithTrend *>(0));
     if (reservoir_variables.size() > 0) {
-      size_t n_vintages = reservoir_variables.begin()->second.size();
+      n_vintages = static_cast<int>(reservoir_variables.begin()->second.size());
       res_var_vintage.resize(n_vintages);
       for (std::map<std::string, std::vector<DistributionWithTrend *> >::iterator var_it = reservoir_variables.begin();
         var_it != reservoir_variables.end();var_it++)
@@ -5461,7 +5416,7 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
 
             std::string tmp_err_txt = "";
 
-            int n_vintages = static_cast<int>(rock.size());
+            n_vintages = static_cast<int>(rock.size());
             if (n_vintages > 1)
               LogKit::LogFormatted(LogKit::Low, "Number of vintages: %4d\n", n_vintages);
 
@@ -5470,10 +5425,10 @@ bool CommonData::SetupRockPhysics(const ModelSettings                           
                 LogKit::LogFormatted(LogKit::Low, "\nVintage number: %4d\n", t+1);
 
               //Completing the top level rocks, by setting access to reservoir variables and sampling distribution.
-              std::vector<DistributionWithTrend *> reservoir_variable(0);
+              std::vector<DistributionWithTrend *> reservoir_variable_tmp(0);
               if (n_vintages > 0)
-                reservoir_variable = res_var_vintage[t];
-              rock[t]->CompleteTopLevelObject(reservoir_variable, tmp_err_txt);
+                reservoir_variable_tmp = res_var_vintage[t];
+              rock[t]->CompleteTopLevelObject(reservoir_variable_tmp, tmp_err_txt);
 
               std::vector<bool> has_trends = rock[t]->HasTrend();
               bool              has_trend = false;
@@ -5975,20 +5930,15 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            facies_estim_interval[0] = new Surface(topFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                                   segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            facies_estim_interval[0] = ReadSurfaceFromFile(topFEI, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(topFEI);
+          int surf_type = CommonData::FindSurfaceFileType(topFEI);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + topFEI + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + topFEI + " without segy geometry.\n";
           else
             facies_estim_interval[0] = new Surface(topFEI);
@@ -6007,20 +5957,15 @@ void CommonData::FindFaciesEstimationInterval(const ModelSettings    * model_set
 
         if (segy_geometry != NULL) {
             std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-            double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-            double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-            facies_estim_interval[1] = new Surface(baseFEI, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                                   segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                                   segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+            facies_estim_interval[1] = ReadSurfaceFromFile(baseFEI, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
         }
         else {
-          int surf_type = NRLib::FindSurfaceFileType(baseFEI);
+          int surf_type = CommonData::FindSurfaceFileType(baseFEI);
 
-          if (surf_type == NRLib::SURF_MULT_ASCII)
+          if (surf_type == SURF_MULT_ASCII)
             err_text += "Cannot read multicolumn ascii surface " + baseFEI + " without segy geometry.\n";
-          else if (surf_type == NRLib::SURF_XYZ_ASCII)
+          else if (surf_type == SURF_XYZ_ASCII)
             err_text += "Cannot read xyz ascii surface " + baseFEI + " without segy geometry.\n";
           else
             facies_estim_interval[1] = new Surface(baseFEI);
@@ -6114,10 +6059,10 @@ CommonData::CheckFaciesNamesConsistency(const ModelSettings       * model_settin
       typedef std::map<std::string,float> mapType;
       mapType myMap = model_settings->getPriorFaciesProb(interval_name);
 
-      for (int i = 0; i < n_facies; i++) {
-        mapType::iterator iter = myMap.find(facies_names_[i]);
+      for (int ii = 0; ii < n_facies; ii++) {
+        mapType::iterator iter = myMap.find(facies_names_[ii]);
         if (iter==myMap.end())
-          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[i]+" is not one of the facies given in the xml-file.\n";
+          tmp_err_text += "Problem with facies logs. Facies "+facies_names_[ii]+" is not one of the facies given in the xml-file.\n";
       }
     }
   }
@@ -7530,20 +7475,16 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
 
           if (segy_geometry != NULL) {
               std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-              tmp_surf = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                     segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                     segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                     segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+              tmp_surf = ReadSurfaceFromFile(file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
+
           }
           else {
-            int surf_type = NRLib::FindSurfaceFileType(file_name);
+            int surf_type = CommonData::FindSurfaceFileType(file_name);
 
-            if (surf_type == NRLib::SURF_MULT_ASCII)
+            if (surf_type == SURF_MULT_ASCII)
               err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
-            else if (surf_type == NRLib::SURF_XYZ_ASCII)
+            else if (surf_type == SURF_XYZ_ASCII)
               err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
             else
               tmp_surf = new Surface(file_name);
@@ -7589,19 +7530,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             std::string file_name = input_files->getCorrDirTopSurfaceFiles().find(interval_name)->second;
             if (segy_geometry != NULL) {
               std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-              top_corr_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                              segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                              segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                              segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+              top_corr_surface = ReadSurfaceFromFile(file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
             }
             else {
-              int surf_type = NRLib::FindSurfaceFileType(file_name);
-              if (surf_type == NRLib::SURF_MULT_ASCII)
+              int surf_type = CommonData::FindSurfaceFileType(file_name);
+              if (surf_type == SURF_MULT_ASCII)
                 err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
-              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              else if (surf_type == SURF_XYZ_ASCII)
                 err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
               else
                 top_corr_surface = new Surface(file_name);
@@ -7619,19 +7555,14 @@ bool CommonData::SetupBackgroundModel(ModelSettings                             
             std::string file_name = input_files->getCorrDirBaseSurfaceFiles().find(interval_name)->second;
             if (segy_geometry != NULL) {
               std::vector<int> ilxl_area = MultiIntervalGrid::FindILXLArea(model_settings, input_files, segy_geometry);
-              double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
-              double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
-              bot_corr_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                              segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
-                                              segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
-                                              segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
+              bot_corr_surface = ReadSurfaceFromFile(file_name, SURF_UNKNOWN, segy_geometry, &ilxl_area[0]);
             }
             else {
-              int surf_type = NRLib::FindSurfaceFileType(file_name);
-              if (surf_type == NRLib::SURF_MULT_ASCII)
+              int surf_type = CommonData::FindSurfaceFileType(file_name);
+              if (surf_type == SURF_MULT_ASCII)
                 err_text += "Cannot read multicolumn ascii surface " + file_name + " without segy geometry.\n";
-              else if (surf_type == NRLib::SURF_XYZ_ASCII)
+              else if (surf_type == SURF_XYZ_ASCII)
                 err_text += "Cannot read xyz ascii surface " + file_name + " without segy geometry.\n";
               else
                 bot_corr_surface = new Surface(file_name);
@@ -8674,7 +8605,7 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             }
             // 1. Defined in text file
             else {
-              std::string tmp_err_text("");
+              tmp_err_text = "";
               float ** corr_mat = ReadMatrix(corr_time_file, 1, n_corr_T+1, "temporal correlation", tmp_err_text);
               if (corr_mat == NULL) {
                 err_text += "Reading of file '"+corr_time_file+"' for temporal correlation failed.\n";
@@ -8706,15 +8637,15 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             std::string tmp_err_txt = "";
 
             // First possibility: Estimate within this interval
-            std::vector<Simbox *> temp_simbox;
-            temp_simbox.push_back(interval_simboxes[i]);
+            std::vector<Simbox *> dummy_simboxes;
             std::vector<std::vector<NRLib::Grid<float> *> > current_background_interval;
             current_background_interval.push_back(background[i]);
             bool multi_zone_available = (n_intervals > 1);
             Analyzelog * analyze = new Analyzelog(wells,
                                                   mapped_blocked_logs_intervals.find(static_cast<int>(i))->second,
                                                   current_background_interval,
-                                                  temp_simbox,
+                                                  dummy_simboxes,
+                                                  interval_simboxes[i],
                                                   interval_simboxes[i]->getdz(),
                                                   model_settings,
                                                   multi_zone_available,
@@ -8729,10 +8660,23 @@ bool CommonData::SetupPriorCorrelation(const ModelSettings                      
             // Second possibility: Estimate over all intervals if the multiple interval setting is being used
             // EN: This feature is not yet tested; i.e. we need > 100 layers in each interval
             else if (analyze->GetEnoughData() == false && interval_names.size() > 1 && analyze_all == NULL) {
-              std::vector<Simbox *> temp_simboxes;
-              for (size_t j = 0; j < interval_simboxes.size(); j++)
-                temp_simboxes.push_back(interval_simboxes[j]);
-              analyze_all = new Analyzelog(wells, mapped_blocked_logs_for_correlation, background, temp_simboxes, dz_min, model_settings, false, tmp_err_txt);
+
+              //Set up a temporary simbox with the (possibly extended) top and bot surfaces for the first and last interval
+              Simbox * tmp_simbox = new Simbox(full_inversion_simbox_);
+              tmp_simbox->SetSurfaces(interval_simboxes[0]->GetTopSurface(), interval_simboxes[interval_simboxes.size()-1]->GetBotSurface());
+              int nz = static_cast<int>(tmp_simbox->getlz() / dz_min);
+              tmp_simbox->setDepth(interval_simboxes[0]->GetTopSurface(), interval_simboxes[interval_simboxes.size()-1]->GetBotSurface(), nz, false);
+              tmp_simbox->calculateDz(0.0, tmp_err_txt);
+
+              analyze_all = new Analyzelog(wells,
+                                           mapped_blocked_logs_for_correlation,
+                                           background,
+                                           interval_simboxes, //Used for comparing correct background model
+                                           tmp_simbox, //Used for estimating correlations
+                                           dz_min,
+                                           model_settings,
+                                           false,
+                                           tmp_err_txt);
               if (analyze_all->GetEnoughData() == false) {
                 err_text += "There are not enough layers in the inversion intervals to estimate prior correlations.\n";
                 err_text += tmp_err_txt;
@@ -10615,8 +10559,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
             buffer = "  ";
           }
 
-          for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-            LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+          for (mapType::iterator ii=myMap.begin();ii!=myMap.end();ii++)
+            LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(ii->first).c_str(),ii->second);
 
         }
       }
@@ -10642,8 +10586,8 @@ void CommonData::PrintSettings(const ModelSettings    * model_settings,
           buffer = "  ";
         }
 
-        for (mapType::iterator i=myMap.begin();i!=myMap.end();i++)
-          LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(i->first).c_str(),i->second);
+        for (mapType::iterator ii=myMap.begin();ii!=myMap.end();ii++)
+          LogKit::LogFormatted(LogKit::Low,buffer+"   %-12s                            : %10.2f\n",(ii->first).c_str(),ii->second);
 
       }
     }
@@ -11030,4 +10974,584 @@ CommonData::DumpVector(const fftw_real   * data,
   for (int i=0;i<n_data;i++)
   dump << data[i] << "\n";
   dump.close();
+}
+
+Surface *
+CommonData::ReadSurfaceFromFile(std::string                file_name,
+                                CommonData::SurfaceFileFormat   format,
+                                SegyGeometry             * segy_geometry,
+                                int                      * ilxl_area)
+{
+  Surface * new_surface = new Surface();
+  if (format == SURF_UNKNOWN) {
+    format = CommonData::FindSurfaceFileType(file_name);
+  }
+
+  double mult_irap_missing = -999.25;
+  if (format == SURF_UNKNOWN) {
+    LogKit::LogFormatted(LogKit::Error, "Failed to determine file format for surface file: " + file_name + "Allowed formats are Irap Classic, Storm binary, Sgri, Multicolumn Ascii (X,Y,Z,IL,XL) and XYZ ascii.\n");
+  }
+  else if (format == SURF_XYZ_ASCII) {
+    NRLib::RegularSurface<double> reg_surface;
+    double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+    double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+    CommonData::ReadXYZAsciiSurf(file_name, reg_surface, segy_geometry->GetX0(), segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(),
+                      segy_geometry->GetFirstAxisIL(), segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                      segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY(), mult_irap_missing);
+
+    double angle = segy_geometry->GetAngle();
+
+    new_surface = new Surface(reg_surface, angle);
+
+  }
+  else if (format == SURF_MULT_ASCII) {
+    NRLib::RegularSurface<double> reg_surface;
+    double lx = segy_geometry->GetDx() * segy_geometry->GetNx();
+    double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
+
+    CommonData::ReadMulticolumnAsciiSurf(file_name, reg_surface, segy_geometry->GetX0(), segy_geometry->GetY0(), lx, ly, &ilxl_area[0],
+                              segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(), mult_irap_missing);
+
+    double angle = segy_geometry->GetAngle();
+    new_surface = new Surface(reg_surface, angle);
+  }
+  else { //Ascii/Storm/Norsar
+    //Read known surface with surfaceio
+    new_surface = new Surface(file_name);
+  }
+
+  return new_surface;
+}
+
+
+bool CommonData::FindMulticolumnAsciiLine(const std::string& filename, int & header_start_line)
+{
+  //Contains five columns: X, Y, IL, XL, Attribute
+  //File starts with several information lines
+  std::ifstream file;
+  NRLib::OpenRead(file, filename);
+  int line = 0;
+
+  //Find first line with five numbers
+  bool found_mult_ascii_line = false;
+  while (found_mult_ascii_line == false && NRLib::CheckEndOfFile(file)==false && line < 200) { //Only search the first lines
+
+    //Read line
+    std::string line_string;
+    std::getline(file, line_string);
+    std::vector<std::string> tokens = NRLib::GetTokens(line_string);
+
+    //Check if the line has five number elements
+    if (tokens.size() == 5) {
+      for (int i = 0; i < 5; i++) {
+        if (!NRLib::IsNumber(tokens[i])) {
+          found_mult_ascii_line = false;
+          break;
+        }
+        else
+          found_mult_ascii_line = true;
+      }
+    }
+
+    line++;
+  }
+  file.close();
+
+  header_start_line = line -2;
+
+  return found_mult_ascii_line;
+}
+
+bool CommonData::FindXYZAsciiLine(const std::string& filename, int & header_start_line)
+{
+  //Contains three columns: X, Y, Z
+  std::ifstream file;
+  NRLib::OpenRead(file, filename);
+  int line = 0;
+
+  //Find first line with three numbers
+  bool found_xyz_ascii_line = false;
+  while (found_xyz_ascii_line == false && NRLib::CheckEndOfFile(file)==false && line < 200) { //Only search the first lines
+
+    //Read line
+    std::string line_string;
+    std::getline(file, line_string);
+    std::vector<std::string> tokens = NRLib::GetTokens(line_string);
+
+    //Check if the line has five number elements
+    if (tokens.size() == 3) {
+      for (int i = 0; i < 3; i++) {
+        if (!NRLib::IsNumber(tokens[i])) {
+          found_xyz_ascii_line = false;
+          break;
+        }
+        else
+          found_xyz_ascii_line = true;
+      }
+    }
+
+    line++;
+  }
+  file.close();
+
+  header_start_line = line -2;
+
+  return found_xyz_ascii_line;
+}
+
+void CommonData::ReadXYZAsciiSurf(std::string         filename,
+                             NRLib::RegularSurface<double> & surface,
+                             double              x_ref,
+                             double              y_ref,
+                             double              lx,
+                             double              ly,
+                             int               * ilxl_area,
+                             int                 il0,
+                             int                 xl0,
+                             bool                first_axis_il,
+                             double              in_line0,
+                             double              cross_line0,
+                             double              il_step_x,
+                             double              il_step_y,
+                             double              xl_step_x,
+                             double              xl_step_y,
+                             double              mult_irap_missing)
+{
+  try {
+    //Create surface with area corresponding to segy-grid (ilxl_area), but use sampling from surface file
+    //il0_ref and xl0_ref are il/xl values at rotation corner, this is used to match IL/XL values from surface with segy
+
+    int header_start_line;
+    bool is_xyz_ascii = false;
+    is_xyz_ascii = FindXYZAsciiLine(filename, header_start_line);
+
+    if (is_xyz_ascii == false)
+      throw NRLib::Exception("Error: Did not recognize file as an xyz ascii file. We require the ascii file to have three columns X,Y,Z in an arbitrary order.\n");
+
+    std::ifstream file;
+    NRLib::OpenRead(file, filename);
+    int line = 0;
+    int line_number = 1;
+
+    for (int i = 0; i < header_start_line; i++) {
+      NRLib::DiscardRestOfLine(file, line, false);
+      line_number++;
+    }
+
+    int x_index  = -1;
+    int y_index  = -1;
+    int z_index  = -1;
+    if (header_start_line > -1) {
+      //Header line, contains X, Y, Z
+      std::vector<std::string> variable_names(3);
+      variable_names[0] = NRLib::ReadNext<std::string>(file, line);
+      variable_names[1] = NRLib::ReadNext<std::string>(file, line);
+      variable_names[2] = NRLib::ReadNext<std::string>(file, line);
+
+      for (int i = 0; i < 3; i++) {
+        if (NRLib::Uppercase(variable_names[i]) == "X" || NRLib::Uppercase(variable_names[i]) == "UTMX")
+          x_index = i;
+        if (NRLib::Uppercase(variable_names[i]) == "Y" || NRLib::Uppercase(variable_names[i]) == "UTMY")
+          y_index = i;
+        if (NRLib::Uppercase(variable_names[i]) == "ATTRIBUTE" || NRLib::Uppercase(variable_names[i]) == "Z" || NRLib::Uppercase(variable_names[i]) == "TWT")
+          z_index = i;
+      }
+
+      std::string err_txt = "";
+      if (x_index == -1)
+        err_txt += "Could not find variable name for X in file " + filename +". (Tried X, UTMX).\n";
+      if (y_index == -1)
+        err_txt += "Could not find variable name for Y in file " + filename +". (Tried Y, UTMY).\n";
+      if (z_index == -1)
+        err_txt += "Could not find variable name for Attribute in file " + filename +". (Tried Attribute, Z, TWT).\n";
+
+      if (err_txt != "")
+        throw NRLib::Exception("Error when finding header information in " + filename + " :" + err_txt + "We require the xyz ascii file to have three columns (X,Y,Z) in an arbitrary order.");
+
+      line_number++;
+    }
+    else {
+      //No header, assume order is: x, y, z
+      x_index  = 0;
+      y_index  = 1;
+      z_index  = 2;
+    }
+
+    std::vector<std::vector<double> > data(3);
+    while (NRLib::CheckEndOfFile(file)==false) {
+
+      //Read line
+      std::string line_string;
+      std::getline(file, line_string);
+      std::vector<std::string> tokens = NRLib::GetTokens(line_string);
+
+      if (tokens.size() != 3) {
+        throw NRLib::FileFormatError("Error reading line " + NRLib::ToString(line_number) + " in " + filename + ", expected three numbers.");
+      }
+      else {
+        for (int i = 0; i < 3; i++) {
+
+          if (NRLib::IsNumber(tokens[i].c_str()))
+            data[i].push_back(atof(tokens[i].c_str()));
+          else
+            throw NRLib::FileFormatError("Error reading line " + NRLib::ToString(line_number) + " in " + filename + ", expected three numbers.");
+        }
+      }
+      line_number++;
+    }
+
+    std::vector<double> x_vec = data[x_index];
+    std::vector<double> y_vec = data[y_index];
+    std::vector<double> z_vec = data[z_index];
+
+
+    //Create IL, XL vector from x, y
+    std::vector<int> il_vec = std::vector<int>(x_vec.size());
+    std::vector<int> xl_vec = std::vector<int>(x_vec.size());
+    for (int i = 0; i < static_cast<int>(x_vec.size()); i++) {
+      il_vec[i] = static_cast<int>(0.5+in_line0    + (x_vec[i]-x_ref)*il_step_x + (y_vec[i]-y_ref)*il_step_y);
+      xl_vec[i] = static_cast<int>(0.5+cross_line0 + (x_vec[i]-x_ref)*xl_step_x + (y_vec[i]-y_ref)*xl_step_y);
+    }
+
+    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0, xl0, x_ref, y_ref, lx, ly, first_axis_il, mult_irap_missing);
+
+    surface.SetMissingValue(static_cast<double>(mult_irap_missing));
+    surface.SetName(NRLib::GetStem(filename));
+
+  }
+  catch (NRLib::Exception& e) {
+    LogKit::LogFormatted(LogKit::Error, "Error parsing \"" + filename + "\" as an XYZ ASCII file: \n" + e.what() + "\n");
+  }
+
+}
+
+void CommonData::ReadMulticolumnAsciiSurf(std::string         filename,
+                                          NRLib::RegularSurface<double> & surface,
+                                          double              x_ref,
+                                          double              y_ref,
+                                          double              lx,
+                                          double              ly,
+                                          int               * ilxl_area,
+                                          int                 il0,
+                                          int                 xl0,
+                                          bool                first_axis_il,
+                                          double              mult_irap_missing)
+{
+
+  try {
+    //Create surface with area corresponding to segy-grid (ilxl_area), but use sampling from surface file
+    //il0_ref and xl0_ref are il/xl values at rotation corner, this is used to match IL/XL values from surface with segy
+
+    int header_start_line;
+    bool is_multicolumn_ascii = false;
+    is_multicolumn_ascii = FindMulticolumnAsciiLine(filename, header_start_line);
+
+    if (is_multicolumn_ascii == false)
+      throw NRLib::Exception("Error: Did not recognize file as a multicolumns ascii file. We require the ascii file to have five columns X,Y,Z,IL and XL in an arbitrary order, each with its own header.\n");
+
+    std::ifstream file;
+    NRLib::OpenRead(file, filename);
+    int line = 0;
+    int line_number = 1;
+
+    for (int i = 0; i < header_start_line; i++) {
+      NRLib::DiscardRestOfLine(file, line, false);
+      line_number++;
+    }
+
+    //Header line, contains X, Y, Z, Inline, Crossline
+    std::vector<std::string> variable_names(5);
+    variable_names[0] = NRLib::ReadNext<std::string>(file, line);
+    variable_names[1] = NRLib::ReadNext<std::string>(file, line);
+    variable_names[2] = NRLib::ReadNext<std::string>(file, line);
+    variable_names[3] = NRLib::ReadNext<std::string>(file, line);
+    variable_names[4] = NRLib::ReadNext<std::string>(file, line);
+    line_number++;
+
+    std::vector<std::vector<double> > data(5);
+    while (NRLib::CheckEndOfFile(file)==false) {
+
+      //Read line
+      std::string line_string;
+      std::getline(file, line_string);
+      std::vector<std::string> tokens = NRLib::GetTokens(line_string);
+
+      if (tokens.size() != 5) {
+        throw NRLib::FileFormatError("Error reading line " + NRLib::ToString(line_number) + " in " + filename + ", expected five numbers.");
+      }
+      else {
+        for (int i = 0; i < 5; i++) {
+
+          if (NRLib::IsNumber(tokens[i].c_str()))
+            data[i].push_back(atof(tokens[i].c_str()));
+          else
+            throw NRLib::FileFormatError("Error reading line " + NRLib::ToString(line_number) + " in " + filename + ", expected five numbers.");
+        }
+      }
+      line_number++;
+    }
+
+
+    int il_index = -1;
+    int xl_index = -1;
+    int x_index  = -1;
+    int y_index  = -1;
+    int z_index  = -1;
+    for (int i = 0; i < 5; i++) {
+      if (NRLib::Uppercase(variable_names[i]) == "INLINE" || NRLib::Uppercase(variable_names[i]) == "IL")
+        il_index = i;
+      if (NRLib::Uppercase(variable_names[i]) == "CROSSLINE" || NRLib::Uppercase(variable_names[i]) == "XL")
+        xl_index = i;
+      if (NRLib::Uppercase(variable_names[i]) == "X" || NRLib::Uppercase(variable_names[i]) == "UTMX")
+        x_index = i;
+      if (NRLib::Uppercase(variable_names[i]) == "Y" || NRLib::Uppercase(variable_names[i]) == "UTMY")
+        y_index = i;
+      if (NRLib::Uppercase(variable_names[i]) == "ATTRIBUTE" || NRLib::Uppercase(variable_names[i]) == "Z" || NRLib::Uppercase(variable_names[i]) == "TWT")
+        z_index = i;
+    }
+
+    std::string err_txt = "";
+    if (il_index == -1)
+      err_txt += "Could not find variable name for Inline in file " + filename +". (Tried Inline, IL).\n";
+    if (xl_index == -1)
+      err_txt += "Could not find variable name for Crossline in file " + filename +". (Tried Crossline, XL).\n";
+    if (x_index == -1)
+      err_txt += "Could not find variable name for X in file " + filename +". (Tried X, UTMX).\n";
+    if (y_index == -1)
+      err_txt += "Could not find variable name for Y in file " + filename +". (Tried Y, UTMY).\n";
+    if (z_index == -1)
+      err_txt += "Could not find variable name for Attribute in file " + filename +". (Tried Attribute, Z, TWT).\n";
+
+    if (err_txt != "")
+      throw NRLib::Exception("Error when finding header information in " + filename + " :" + err_txt + "\n. We require the multicolumn ascii file to have five columns (X,Y,Z,IL,XL) in an arbitrary order.");
+
+    std::vector<double> x_vec = data[x_index];
+    std::vector<double> y_vec = data[y_index];
+    std::vector<double> z_vec = data[z_index];
+
+    std::vector<int> il_vec = std::vector<int>(x_vec.size());
+    std::vector<int> xl_vec = std::vector<int>(x_vec.size());
+
+    for (int i = 0; i < static_cast<int>(x_vec.size()); i++) {
+      il_vec[i] = static_cast<int>(data[il_index][i]);
+      xl_vec[i] = static_cast<int>(data[xl_index][i]);
+    }
+
+    CreateSurfaceFromILXL(surface, il_vec, xl_vec, z_vec, ilxl_area, il0, xl0, x_ref, y_ref, lx, ly, first_axis_il, mult_irap_missing);
+
+    surface.SetMissingValue(static_cast<double>(mult_irap_missing));
+    surface.SetName(NRLib::GetStem(filename));
+  }
+  catch (NRLib::Exception& e) {
+    LogKit::LogFormatted(LogKit::Error, "Error parsing \"" + filename + "\" as an Multicolumn ASCII file: \n" + e.what() + "\n");
+  }
+
+}
+
+void CommonData::CreateSurfaceFromILXL(NRLib::RegularSurface<double>   & surface,
+                                      std::vector<int>    & il_vec,
+                                      std::vector<int>    & xl_vec,
+                                      std::vector<double> & z_vec,
+                                      int                 * ilxl_area,
+                                      int                 & il0,
+                                      int                 & xl0,
+                                      double              & x_ref,
+                                      double              & y_ref,
+                                      double              & lx,
+                                      double              & ly,
+                                      bool                  first_axis_il,
+                                      double                mult_irap_missing)
+
+{
+
+  //Find min and max IL/XL
+  std::vector<int> il_vec_sorted = il_vec;
+  std::sort(il_vec_sorted.begin(), il_vec_sorted.end());
+  il_vec_sorted.erase(std::unique(il_vec_sorted.begin(), il_vec_sorted.end()), il_vec_sorted.end());
+
+  std::vector<int> xl_vec_sorted = xl_vec;
+  std::sort(xl_vec_sorted.begin(), xl_vec_sorted.end());
+  xl_vec_sorted.erase(std::unique(xl_vec_sorted.begin(), xl_vec_sorted.end()), xl_vec_sorted.end());
+
+  int ni_file = static_cast<int>(il_vec_sorted.size());
+  int nj_file = static_cast<int>(xl_vec_sorted.size());
+
+  int il_min_file = il_vec_sorted[0];
+  int il_max_file = il_vec_sorted[ni_file-1];
+
+  int xl_min_file = xl_vec_sorted[0];
+  int xl_max_file = xl_vec_sorted[nj_file-1];
+
+  int n = static_cast<int>(il_vec.size());
+  double missing = static_cast<double>(mult_irap_missing);
+
+  NRLib::Grid2D<double> ilxl_grid_file_z(ni_file, nj_file, missing);
+  NRLib::Grid2D<double> ilxl_grid_file_il(ni_file, nj_file, missing);
+  NRLib::Grid2D<double> ilxl_grid_file_xl(ni_file, nj_file, missing);
+
+  int d_il_file = static_cast<int>((il_max_file - il_min_file) / (ni_file - 1));
+  int d_xl_file = static_cast<int>((xl_max_file - xl_min_file) / (nj_file - 1));
+
+  //We require the surfaces to have even sampling
+  for (int i = 1; i < static_cast<int>(il_vec_sorted.size()); i++)
+    if ((il_vec_sorted[i] - il_vec_sorted[i-1]) != d_il_file)
+        throw NRLib::Exception("Found inconsistencies in the surface sampling. Does the surface have uneven/irregular sampling? Crava requires regular XYZ/Multicolumn Ascii-surfaces\n");
+
+  for (int i = 1; i < static_cast<int>(xl_vec_sorted.size()); i++)
+    if ((xl_vec_sorted[i] - xl_vec_sorted[i-1]) != d_xl_file)
+        throw NRLib::Exception("Found inconsistencies in the surface sampling. Does the surface have uneven/irregular sampling? Crava requires regular XYZ/Multicolumn Ascii-surfaces\n");
+
+  for (int k = 0; k < n; k++) {
+    //Local IL/XL
+    int il_loc = (static_cast<int>(il_vec[k]) - il_min_file)/d_il_file;
+    int xl_loc = (static_cast<int>(xl_vec[k]) - xl_min_file)/d_xl_file;
+
+    ilxl_grid_file_z(il_loc, xl_loc)  = static_cast<double>(z_vec[k]);
+    ilxl_grid_file_il(il_loc, xl_loc) = static_cast<double>(il_vec[k]);
+    ilxl_grid_file_xl(il_loc, xl_loc) = static_cast<double>(xl_vec[k]);
+  }
+
+  //Check consistency between IL/XL sampling in surface and expected ((max-min)/n)
+  //We only do this for one path in the center of the surface
+  int j_index = nj_file/2;
+  for (int i = 1; i < ni_file; i++) {
+    if (ilxl_grid_file_il(i-1,j_index) != missing && ilxl_grid_file_il(i,j_index) != missing) {
+      int diff_il = static_cast<int>(std::abs(ilxl_grid_file_il(i-1,j_index) - ilxl_grid_file_il(i,j_index)));
+
+      if (diff_il != d_il_file) {
+        throw NRLib::Exception("Found sampling of IL-values in file to be " + NRLib::ToString(diff_il) +
+                        ", expected sampling equal to " + NRLib::ToString(d_il_file) + ".\n");
+      }
+
+    }
+  }
+
+  int i_index = ni_file/2;
+  for (int j = 1; j < nj_file; j++) {
+    if (ilxl_grid_file_xl(i_index,j-1) != missing && ilxl_grid_file_xl(i_index,j) != missing) {
+      int diff_xl = static_cast<int>(std::abs(ilxl_grid_file_xl(i_index,j-1) - ilxl_grid_file_xl(i_index,j)));
+
+      if (diff_xl != d_xl_file) {
+        throw NRLib::Exception("Found sampling of IL-values in file to be " + NRLib::ToString(diff_xl) +
+                        ", expected sampling equal to " + NRLib::ToString(d_xl_file) + ".\n");
+      }
+
+    }
+  }
+
+  int il_min_segy  = ilxl_area[0];
+  int il_max_segy  = ilxl_area[1];
+  int xl_min_segy  = ilxl_area[2];
+  int xl_max_segy  = ilxl_area[3];
+  int il_step_segy = ilxl_area[4];
+  int xl_step_segy = ilxl_area[5];
+
+  //Create IL/XL surface as large as segy geometry, but with sampling from file
+  int n_il = (il_max_segy - il_min_segy)/d_il_file + 1;
+  int n_xl = (xl_max_segy - xl_min_segy)/d_xl_file + 1;
+
+  //Find IL/XL of rotation corner
+  int il0_segy = il0;
+  int xl0_segy = xl0;
+
+  // To ensure that the IL XL we find are existing traces
+  if (il0_segy < il_min_segy)
+    il0_segy -= (il0_segy - il_min_segy) % il_step_segy;
+  else if (il0_segy > il_max_segy)
+    il0_segy += (il_max_segy - il0_segy) % il_step_segy;
+
+  if (xl0_segy < xl_min_segy)
+    xl0_segy -= (xl0_segy - xl_min_segy) % xl_step_segy;
+  else if (xl0_segy > xl_max_segy)
+    xl0_segy += (xl_max_segy - xl0_segy) % xl_step_segy;
+
+  //In addition to the four cases below (under Fill in correct corner) IL and XL can go either direction
+  //If the first axis is XL we must transpose the surface
+  NRLib::Grid2D<double> surface_grid;
+  if (first_axis_il == true)
+    surface_grid.Resize(n_il, n_xl, static_cast<double>(mult_irap_missing));
+  else
+    surface_grid.Resize(n_xl, n_il, static_cast<double>(mult_irap_missing));
+
+  int grid_i, grid_j;
+  for (int i = 0; i < n_il; i++) {
+    for (int j = 0; j < n_xl; j++) {
+
+      //Global IL/XL of surface_grid
+      int il_glob = il_min_segy + i*d_il_file;
+      int xl_glob = xl_min_segy + j*d_xl_file;
+
+      //Get corresponding IL/XL from file_grid
+      int il_loc_file = (il_glob - il_min_file)/d_il_file;
+      int xl_loc_file = (xl_glob - xl_min_file)/d_xl_file;
+
+      //If surface is smaller than segy-grid, we set is as missing
+      double z;
+      if (il_loc_file < 0 || il_loc_file > ni_file-1 || xl_loc_file < 0 || xl_loc_file > nj_file-1)
+        z = missing;
+      else
+        z = ilxl_grid_file_z(il_loc_file, xl_loc_file);
+
+      //Fill in correct corner
+      if (il0_segy == il_min_segy && xl0_segy == xl_min_segy) {
+        grid_i = i;
+        grid_j = j;
+      }
+      else if (il0_segy == il_max_segy && xl0_segy == xl_max_segy) {
+        grid_i = n_il - i - 1;
+        grid_j = n_xl - j - 1;
+      }
+      else if (il0_segy == il_min_segy && xl0_segy == xl_max_segy) {
+        grid_i = i;
+        grid_j = n_xl - j - 1;
+      }
+      else { //il0_segy == il_max_segy && xl0_segy == xl_min_segy
+        grid_i = n_il - i - 1;
+        grid_j = j;
+      }
+
+      if (first_axis_il == true)
+        surface_grid(grid_i, grid_j) = z;
+      else
+        surface_grid(grid_j, grid_i) = z;
+    }
+  }
+
+  surface = NRLib::RegularSurface<double>(x_ref, y_ref, lx, ly, surface_grid);
+}
+
+CommonData::SurfaceFileFormat CommonData::FindSurfaceFileType(const std::string & filename)
+{
+  std::ifstream file;
+  NRLib::OpenRead(file, filename, std::ios::in | std::ios::binary);
+
+  std::string first_token;
+  if (!(file >> first_token)) {
+    // Empty file.
+    return SURF_UNKNOWN;
+  }
+  int dummy;
+
+  if (first_token == "-996")
+    return SURF_IRAP_CLASSIC_ASCII;
+  else if (first_token == "STORMGRID_BINARY")
+    return SURF_STORM_BINARY;
+  else if (first_token == "NORSAR") {
+    std::string token;
+    file >> token;
+    file >> token;
+    file >> token;
+    file >> token;
+    if(token == "v1.0" ||token == "v2.0" )
+      return SURF_SGRI;
+  }
+  else if (FindXYZAsciiLine(filename, dummy) == true) {
+    return SURF_XYZ_ASCII;
+  }
+  else if (FindMulticolumnAsciiLine(filename, dummy) == true) {
+    return SURF_MULT_ASCII;
+  }
+
+  return SURF_UNKNOWN;
 }

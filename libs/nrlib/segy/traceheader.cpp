@@ -42,7 +42,8 @@ enum standardLoc {
   NS_LOC        = 115,
   DT_LOC        = 117,
   INLINE_LOC    = 9, // 189,
-  CROSSLINE_LOC = 21 // 193
+  CROSSLINE_LOC = 21, // 193
+  OFFSET_LOC    = 37
 };
 
 TraceHeaderFormat::TraceHeaderFormat(int headerformat)
@@ -121,6 +122,7 @@ TraceHeaderFormat::TraceHeaderFormat(int scalCoLoc,
     crossline_loc_(crosslineLoc),
     start_time_loc_(startTimeLoc),
     coord_sys_(coordSys),
+    offset_loc_(),
     standard_type_(true)
 {}
 
@@ -138,6 +140,7 @@ TraceHeaderFormat::TraceHeaderFormat(const TraceHeaderFormat & thf)
    crossline_loc_ (thf.GetCrosslineLoc()),
    start_time_loc_(thf.GetStartTimeLoc()),
    coord_sys_     (thf.GetCoordSys()),
+   offset_loc_    (thf.GetOffsetLoc()),
    standard_type_ (thf.GetStandardType())
 {
   CheckFormat();
@@ -157,6 +160,7 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = CROSSLINE_LOC;
     start_time_loc_ = 109;
     coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
   }
   else if (headerformat==IESX)
   {
@@ -168,6 +172,7 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = CROSSLINE_LOC;
     start_time_loc_ = 109; //Not tested
     coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
   }
   else if (headerformat==SIP)
   {
@@ -179,6 +184,7 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = 193;
     start_time_loc_ = 109;
     coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
   }
   else if (headerformat == CHARISMA)
   {
@@ -190,6 +196,7 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = CROSSLINE_LOC;
     start_time_loc_ = 109;
     coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
   }
   else if (headerformat == SIPX) // Sebn: SIP probably messed up when they made volumes with this header specification.
   {
@@ -201,17 +208,19 @@ TraceHeaderFormat::Init(int headerformat)
     crossline_loc_  = 185;
     start_time_loc_ = 109; //Not tested
     coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
     }
   else if (headerformat == HESS) // Sebn: SIP probably messed up when they made volumes with this header specification.
   {
-    format_name_ = std::string("HESS");
-    scal_co_loc_ = SCALCO_LOC;
-    utmx_loc_ = SX_LOC;
-    utmy_loc_ = SY_LOC;
-    inline_loc_ = 185;
-    crossline_loc_ = 189;
+    format_name_    = std::string("HESS");
+    scal_co_loc_    = SCALCO_LOC;
+    utmx_loc_       = SX_LOC;
+    utmy_loc_       = SY_LOC;
+    inline_loc_     = 185;
+    crossline_loc_  = 189;
     start_time_loc_ = 109; //Not tested
-    coord_sys_ = UTM;
+    coord_sys_      = UTM;
+    offset_loc_     = OFFSET_LOC;
   }
   else
   {
@@ -564,6 +573,11 @@ int TraceHeader::Write(std::ostream& outFile)
       WriteBinaryShort(outFile, start_time_);
       i=i+2;
     }
+    else if (i==(format_.GetOffsetLoc()-1))
+    {
+      WriteBinaryInt(outFile, static_cast<int>(offset_));
+      i=i+4;
+    }
     else
     {
       outFile.write(&(buffer_[i]), 2);
@@ -697,6 +711,13 @@ void TraceHeader::SetStartTime(float start_time)
   }
 }
 
+void TraceHeader::SetOffset(double offset)
+{
+  int loc = format_.GetOffsetLoc();
+  if (loc > 0) {
+    offset_ = offset;
+  }
+}
 
 double TraceHeader::GetCoord1() const
 {

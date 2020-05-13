@@ -171,16 +171,16 @@ void  DistributionsRock::SetupExpectationAndCovariances(std::string & errTxt)
 
         if(failed == false) {
 
-          std::vector<NRLib::Vector> m(3);
+          std::vector<NRLib::Vector> m_vec(3);
 
-          m[0] = log_vp;
-          m[1] = log_vs;
-          m[2] = log_rho;
+          m_vec[0] = log_vp;
+          m_vec[1] = log_vs;
+          m_vec[2] = log_rho;
 
           for (int k = 0; k < 3; k++) {
-            expectation_small[k] = NRLib::Mean(m[k]);
+            expectation_small[k] = NRLib::Mean(m_vec[k]);
             for (int l = k; l < 3; l++) {
-              covariance_small(k,l) = NRLib::Cov(m[k], m[l]);
+              covariance_small(k,l) = NRLib::Cov(m_vec[k], m_vec[l]);
               covariance_small(l,k) = covariance_small(k,l);
             }
           }

@@ -954,17 +954,17 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
       // Copy matrix A to float**
       float ** A = new float * [ntheta_];
-      for (int i = 0; i < ntheta_; i++)
+      for (i = 0; i < ntheta_; i++)
         A[i] = new float[3];
-      for (int i = 0; i < ntheta_; i++){
-        for (int j = 0; j < 3; j++){
+      for (i = 0; i < ntheta_; i++){
+        for (j = 0; j < 3; j++){
           A[i][j] = static_cast<float>(A_(i,j));
         }
       }
 
       lib_matrProdDiagCpxR(kW, A, ntheta_, 3, K); // defines content of (WDA) K
 
-      for (int i = 0; i < ntheta_; i++)
+      for (i = 0; i < ntheta_; i++)
         delete [] A[i];
       delete [] A;
 
@@ -979,10 +979,10 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
 
       // Copy matrix A to float **
       float ** A = new float * [ntheta_];
-      for (int i = 0; i < ntheta_; i++)
+      for (i = 0; i < ntheta_; i++)
         A[i] = new float[3];
-      for (int i = 0; i < ntheta_; i++){
-        for (int j = 0; j < 3; j++){
+      for (i = 0; i < ntheta_; i++){
+        for (j = 0; j < 3; j++){
           A[i][j] = static_cast<float>(A_(i,j));
         }
       }
@@ -991,7 +991,7 @@ AVOInversion::computePostMeanResidAndFFTCov(ModelGeneral            * modelGener
       lib_matrFillValueVecCpx(kD, errMult1, ntheta_);    // errMult1 used as dummy
       lib_matrProdDiagCpxR(errMult1, A, ntheta_, 3, K); // defines content of ( K = DA )
 
-      for (int i = 0; i < ntheta_; i++)
+      for (i = 0; i < ntheta_; i++)
         delete [] A[i];
       delete [] A;
 

@@ -16,14 +16,15 @@
 #include "src/simbox.h"
 #include "src/io.h"
 
-Analyzelog::Analyzelog(const std::vector<NRLib::Well *>                        & wells,
-                       const std::map<std::string, BlockedLogsCommon *>        & mapped_blocked_logs,
-                       const std::vector<std::vector<NRLib::Grid<float> *> >   & background,
-                       const std::vector<Simbox *>                             & interval_simboxes,
-                       double                                                    dz_min,
-                       const ModelSettings                                     * model_settings,
-                       bool                                                      multi_zone_available,
-                       std::string                                             & err_txt):
+Analyzelog::Analyzelog(const std::vector<NRLib::Well *>                      & wells,
+                       const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs,
+                       const std::vector<std::vector<NRLib::Grid<float> *> > & background,
+                       const std::vector<Simbox *>                           & background_simboxes, //Simboxes per interval, used for subtracting background models if we use multiinterval
+                       const Simbox                                          * estimation_simbox, //Simbox where correlations are estimated
+                       double                                                  dz_min,
+                       const ModelSettings                                   * model_settings,
+                       bool                                                    multi_zone_available,
+                       std::string                                           & err_txt):
 min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimation()){
 
   enough_data_for_corr_estimation_  = false;
@@ -45,21 +46,15 @@ min_blocks_with_data_for_corr_estim_(model_settings->getMinBlocksForCorrEstimati
     }
   }
 
-  // Relative dz
-  std::vector<double> dz_rel(interval_simboxes.size());
-  for (size_t i = 0; i < interval_simboxes.size(); i++){
-    dz_rel[i] = interval_simboxes[i]->getdz() / dz_min;
-  }
-
   EstimateCorrelation(model_settings,
                       well_names_,
                       mapped_blocked_logs,
-                      interval_simboxes,
+                      background_simboxes,
+                      estimation_simbox,
                       enough_data_for_corr_estimation_,
                       regression_coef_vs_,
                       residual_variance_vs_,
                       dz_min,
-                      dz_rel,
                       background,
                       n_lags_,
                       multi_zone_available,
@@ -71,19 +66,19 @@ Analyzelog::~Analyzelog(void)
 {
 }
 
-void  Analyzelog::EstimateCorrelation(const ModelSettings                                       * model_settings,
-                                      const std::vector<std::string>                            & well_names,
-                                      const std::map<std::string, BlockedLogsCommon *>          & mapped_blocked_logs,
-                                      const std::vector<Simbox *>                               & interval_simboxes,
-                                      bool                                                      & enough_data_for_corr_estimation,
-                                      NRLib::Vector                                             & regression_coef,
-                                      std::vector<double>                                       & residual_variance_vs,
-                                      double                                                      dz_min,
-                                      std::vector<double>                                         dz_rel,
-                                      const std::vector<std::vector<NRLib::Grid<float> *> >     & background,
-                                      int                                                       & n_lags,
-                                      bool                                                        multi_zone_available,
-                                      std::string                                               & err_txt)
+void  Analyzelog::EstimateCorrelation(const ModelSettings                                    * model_settings,
+                                      const std::vector<std::string>                         & well_names,
+                                      const std::map<std::string, BlockedLogsCommon *>       & mapped_blocked_logs,
+                                      const std::vector<Simbox *>                            & background_simboxes,
+                                      const Simbox                                           * estimation_simbox,
+                                      bool                                                   & enough_data_for_corr_estimation,
+                                      NRLib::Vector                                          & regression_coef,
+                                      std::vector<double>                                    & residual_variance_vs,
+                                      double                                                   dz_min,
+                                      const std::vector<std::vector<NRLib::Grid<float> *> >  & background,
+                                      int                                                    & n_lags,
+                                      bool                                                     multi_zone_available,
+                                      std::string                                            & err_txt)
 {
   //
   // Covariance and correlation estimation with blocked logs
@@ -99,15 +94,12 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
   int n_blocks_tot = 0;
   for (int i = 0; i < n_wells_; i++){
     std::string well_name_tmp = well_names[i];
-    for (size_t j = 0; j < interval_simboxes.size(); j++){
-      std::string interval_name = interval_simboxes[j]->GetIntervalName();
-      n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithData(interval_name);
-    }
+    n_blocks_tot += mapped_blocked_logs.find(well_name_tmp)->second->GetNBlocksWithDataTot();
   }
   enough_data_for_corr_estimation = (min_blocks_with_data_for_corr_estim_ <= n_blocks_tot);
 
   if (!enough_data_for_corr_estimation) {
-    if (interval_simboxes.size() > 1) {
+    if (background_simboxes.size() > 0) {
       TaskList::addTask("For estimation of prior correlations in all intervals at least "+ CommonData::ConvertIntToString(min_blocks_with_data_for_corr_estim_) +
         " blocks are needed; currently there are "+ CommonData::ConvertIntToString(n_blocks_tot) +". Either increase the number of layers or add wells.\n");
       LogKit::LogFormatted(LogKit::Low,"\nThere is not enough well data for estimation of prior correlations in all intervals.\n");
@@ -155,14 +147,14 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
       temp_null.resize(n_wells_);
       for(int j = 0; j < n_wells_; j++)
         temp_null[j].resize(3);
-      EstimateLnData(log_data_vp, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Vp", err_txt);
-      EstimateLnData(log_data_vs, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Vs", err_txt);
-      EstimateLnData(log_data_rho, temp_null, well_names_, mapped_blocked_logs, interval_simboxes, "Rho", err_txt);
+      EstimateLnData(log_data_vp, temp_null, well_names_, mapped_blocked_logs, background_simboxes, "Vp", err_txt);
+      EstimateLnData(log_data_vs, temp_null, well_names_, mapped_blocked_logs, background_simboxes, "Vs", err_txt);
+      EstimateLnData(log_data_rho, temp_null, well_names_, mapped_blocked_logs, background_simboxes, "Rho", err_txt);
     }
     else{
-      EstimateLnData(log_data_vp, background, well_names_, mapped_blocked_logs, interval_simboxes, "Vp", err_txt);
-      EstimateLnData(log_data_vs, background, well_names_, mapped_blocked_logs, interval_simboxes, "Vs", err_txt);
-      EstimateLnData(log_data_rho, background, well_names_, mapped_blocked_logs, interval_simboxes, "Rho", err_txt);
+      EstimateLnData(log_data_vp, background, well_names_, mapped_blocked_logs, background_simboxes, "Vp", err_txt);
+      EstimateLnData(log_data_vs, background, well_names_, mapped_blocked_logs, background_simboxes, "Vs", err_txt);
+      EstimateLnData(log_data_rho, background, well_names_, mapped_blocked_logs, background_simboxes, "Rho", err_txt);
     }
 
     //EstimatePointVar0(point_var_0_, log_data_vp, log_data_vs, log_data_rho, err_txt);
@@ -170,14 +162,12 @@ void  Analyzelog::EstimateCorrelation(const ModelSettings                       
     if (err_txt != "")
       return;
 
-    CalculateNumberOfLags(n_lags, dz_min, dz_rel, interval_simboxes);
-
-    n_lags = n_lags + 1; //H Lags in EstimateAutoCovarianceFunction may exceed n_lags
+    n_lags = estimation_simbox->getnz();
 
     //corr_T_.resize(n_lags, 0);
     auto_cov_.resize(n_lags);
 
-    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs, interval_simboxes, log_data_vp, log_data_vs, log_data_rho,
+    EstimateAutoCovarianceFunction(auto_cov_, well_names, mapped_blocked_logs, estimation_simbox, log_data_vp, log_data_vs, log_data_rho,
       all_Vs_logs_synthetic, all_Vs_logs_non_synthetic, regression_coef, residual_variance_vs, static_cast<float>(dz_min), n_lags, min_blocks_with_data_for_corr_estim_, max_lag_with_data_, err_txt);
 
     SetParameterCov(auto_cov_[0], var_0_, 3);
@@ -215,9 +205,9 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
                                 const std::vector<std::vector<NRLib::Grid<float> *> > & background,
                                 const std::vector<std::string>                        & well_names,
                                 const std::map<std::string, BlockedLogsCommon *>      & mapped_blocked_logs,
-                                const std::vector<Simbox *>                           & interval_simboxes,
+                                const std::vector<Simbox *>                           & background_simboxes,
                                 const std::string                                     & log_name,
-                                std::string                                           & err_txt){
+                                std::string                                           & err_txt) {
 
   //double global_mean = 0.0;
   int   count        = 0;
@@ -265,7 +255,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
       log_nr               = 2;
     }
 
-    if (interval_simboxes.size() == 1) {
+    if (background_simboxes.size() == 0) {
 
       if (background[0][log_nr]->GetN() > 0) {
         for(int n = 0; n < nd; n++) {
@@ -296,6 +286,7 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
     }
     //For multiple intervals the blocked logs are common for all intervals with an adjusted resolution, but the background models are created in interval-simbox resolutions
     else {
+
       //Get correct background values
       for (int n = 0; n < nd; n++) {
 
@@ -304,19 +295,19 @@ void Analyzelog::EstimateLnData(std::map<std::string, std::vector<double> >     
         double y = y_pos_blocked[n];
         double z = z_pos_blocked[n];
         int simbox_num = -1;
-        for (size_t i = 0; i < interval_simboxes.size(); i++) {
-          if (interval_simboxes[i]->IsPointBetweenVisibleSurfaces(x,y,z)) {
-            simbox_num = static_cast<int>(i);
+        for (size_t ii = 0; ii < background_simboxes.size(); ii++) {
+          if (background_simboxes[ii]->IsPointBetweenVisibleSurfaces(x,y,z)) {
+            simbox_num = static_cast<int>(ii);
             break;
           }
         }
 
         //Find correct kpos
-        int i = 0;
-        int j = 0;
+        int i_dummy = 0;
+        int j_dummy = 0;
         int k = 0;
         if (simbox_num > -1)
-          interval_simboxes[simbox_num]->getIndexes(x, y, z, i, j, k);
+          background_simboxes[simbox_num]->getIndexes(x, y, z, i_dummy, j_dummy, k);
 
         if (simbox_num > -1 && background[simbox_num][log_nr]->GetN() > 0) { //if simbox_num = -1 then well_log should be RMISSING
           mean_vector.push_back( (*background[simbox_num][log_nr])(i_pos[n], j_pos[n], k));
@@ -413,22 +404,22 @@ bool Analyzelog::CheckConsistencyBackground(const std::vector<double> & ln_data_
 //
 // CRA-257: new implementation of estimation of autocovariance function
 //
-void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >                        & auto_cov,
-                                                const std::vector<std::string>                     & well_names,
-                                                const std::map<std::string, BlockedLogsCommon *>   & mapped_blocked_logs,
-                                                const std::vector<Simbox *>                        & interval_simboxes,
-                                                const std::map<std::string, std::vector<double> >  & log_data_vp,
-                                                const std::map<std::string, std::vector<double> >  & log_data_vs,
-                                                const std::map<std::string, std::vector<double> >  & log_data_rho,
-                                                bool                                                 all_Vs_logs_synthetic,
-                                                bool                                                 all_Vs_logs_non_synthetic,
-                                                NRLib::Vector                                      & regression_coef,
-                                                std::vector<double>                                & residual_variance_vs,
-                                                float                                                min_dz,
-                                                int                                                  max_nd,
-                                                int                                                  min_blocks_with_data_for_corr_estim,
-                                                int                                                & max_lag_with_data,
-                                                std::string                                        & err_text)
+void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >                       & auto_cov,
+                                                const std::vector<std::string>                    & well_names,
+                                                const std::map<std::string, BlockedLogsCommon *>  & mapped_blocked_logs,
+                                                const Simbox                                      * simbox,
+                                                const std::map<std::string, std::vector<double> > & log_data_vp,
+                                                const std::map<std::string, std::vector<double> > & log_data_vs,
+                                                const std::map<std::string, std::vector<double> > & log_data_rho,
+                                                bool                                                all_Vs_logs_synthetic,
+                                                bool                                                all_Vs_logs_non_synthetic,
+                                                NRLib::Vector                                     & regression_coef,
+                                                std::vector<double>                               & residual_variance_vs,
+                                                float                                               min_dz,
+                                                int                                                 max_nd,
+                                                int                                                 min_blocks_with_data_for_corr_estim,
+                                                int                                               & max_lag_with_data,
+                                                std::string                                       & err_text)
 {
   time_t timestart_tot, timeend_tot;
   time(&timestart_tot);
@@ -468,23 +459,21 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
     std::vector<double>                 vp;
     std::vector<double>                 rho;
     std::vector<double>                 vs;
-    for (size_t i = 0; i < well_names.size(); i++){
+    for (size_t i = 0; i < well_names.size(); i++) {
       if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
         //int n_lags;
-        for (size_t j = 0; j<interval_simboxes.size(); j++){
-          const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
-          const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
-          const std::vector<double> well_log_vs     = log_data_vs.find(well_names[i])->second;
-          //const std::vector<double> z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
-          // Loop over all blocks
-          for (int k = 0; k < static_cast<float>(well_log_vp.size()); k++){
-            if(well_log_vp[k] != RMISSING && well_log_rho[k] != RMISSING && well_log_vs[k] != RMISSING){
-              //n_lags = static_cast<int>(std::floor(std::abs(z_pos[l] - z_pos[k])/min_dz + 0.5));
-              n_data++;
-              vp.push_back(well_log_vp[k]);
-              rho.push_back(well_log_rho[k]);
-              vs.push_back(well_log_vs[k]);
-            }
+        const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
+        const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
+        const std::vector<double> well_log_vs     = log_data_vs.find(well_names[i])->second;
+        //const std::vector<double> z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
+        // Loop over all blocks
+        for (int k = 0; k < static_cast<float>(well_log_vp.size()); k++){
+          if(well_log_vp[k] != RMISSING && well_log_rho[k] != RMISSING && well_log_vs[k] != RMISSING){
+            //n_lags = static_cast<int>(std::floor(std::abs(z_pos[l] - z_pos[k])/min_dz + 0.5));
+            n_data++;
+            vp.push_back(well_log_vp[k]);
+            rho.push_back(well_log_rho[k]);
+            vs.push_back(well_log_vs[k]);
           }
         }
       }
@@ -510,7 +499,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
       int last_obs = 0;
       int lag = 0;
       for (size_t i = 0; i < well_names.size(); i++){
-        if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
+        if (mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false) {
         //int n_lags;
           const std::vector<double> well_log_vp     = log_data_vp.find(well_names[i])->second;
           const std::vector<double> well_log_rho    = log_data_rho.find(well_names[i])->second;
@@ -519,23 +508,20 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
           const std::vector<double> & y_pos         = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
           const std::vector<double> & z_pos         = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
 
-          for (size_t j = 0; j<interval_simboxes.size(); j++){
-
-            for (size_t k = 0; k < well_log_vp.size(); k++){
-              for (size_t l = k; l < well_log_vp.size(); l++){
-                if (well_log_vp[k] != RMISSING && well_log_vp[l] != RMISSING
-                  && well_log_rho[k] != RMISSING && well_log_rho[l] != RMISSING
-                  && well_log_vs[k] != RMISSING && well_log_vs[l] != RMISSING){
-                  double z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(x_pos[k], y_pos[k]))/interval_simboxes[j]->getRelThick(x_pos[k], y_pos[k]);
-                  double z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(x_pos[l], y_pos[l]))/interval_simboxes[j]->getRelThick(x_pos[l], y_pos[l]);
-                  lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
-                  residual_k = regression_coef(0)*well_log_vp[k] + regression_coef(1)*well_log_rho[k] - well_log_vs[k];
-                  residual_l = regression_coef(0)*well_log_vp[l] + regression_coef(1)*well_log_rho[l] - well_log_vs[l];
-                  residual_variance_vs[lag] += residual_k*residual_l;
-                  count_obs[lag] += 1;
-                  if (lag > last_obs)
-                    last_obs = lag;
-                }
+          for (size_t k = 0; k < well_log_vp.size(); k++){
+            for (size_t l = k; l < well_log_vp.size(); l++){
+              if (well_log_vp[k] != RMISSING && well_log_vp[l] != RMISSING
+                && well_log_rho[k] != RMISSING && well_log_rho[l] != RMISSING
+                && well_log_vs[k] != RMISSING && well_log_vs[l] != RMISSING){
+                double z_k_rel = (z_pos[k] - simbox->getTop(x_pos[k], y_pos[k]))/simbox->getRelThick(x_pos[k], y_pos[k]);
+                double z_l_rel = (z_pos[l] - simbox->getTop(x_pos[l], y_pos[l]))/simbox->getRelThick(x_pos[l], y_pos[l]);
+                lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
+                residual_k = regression_coef(0)*well_log_vp[k] + regression_coef(1)*well_log_rho[k] - well_log_vs[k];
+                residual_l = regression_coef(0)*well_log_vp[l] + regression_coef(1)*well_log_rho[l] - well_log_vs[l];
+                residual_variance_vs[lag] += residual_k*residual_l;
+                count_obs[lag] += 1;
+                if (lag > last_obs)
+                  last_obs = lag;
               }
             }
           }
@@ -566,164 +552,161 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
   for (size_t i = 0; i < well_names.size(); i++){
     time_t timestart, timeend;
     time(&timestart);
-    for (size_t j = 0; j < interval_simboxes.size(); j++){
-      std::string interval_name = interval_simboxes[j]->GetIntervalName();
-      size_t nd = mapped_blocked_logs.find(well_names[i])->second->GetNBlocksWithData(interval_name);
-      const std::vector<double> & x_pos = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
-      const std::vector<double> & y_pos = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
-      const std::vector<double> & z_pos = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
-      std::vector<double> z(nd);
-      const std::vector<double> log_vp   = log_data_vp.find(well_names[i])->second;
-      const std::vector<double> log_vs   = log_data_vs.find(well_names[i])->second;
-      const std::vector<double> log_rho  = log_data_rho.find(well_names[i])->second;
-      //
-      // 2.2.1 Add autocovariance data
-      //
-      int lag = 0;
+    size_t nd = mapped_blocked_logs.find(well_names[i])->second->GetNumberOfBlocks();
+    const std::vector<double> & x_pos = mapped_blocked_logs.find(well_names[i])->second->GetXposBlocked();
+    const std::vector<double> & y_pos = mapped_blocked_logs.find(well_names[i])->second->GetYposBlocked();
+    const std::vector<double> & z_pos = mapped_blocked_logs.find(well_names[i])->second->GetZposBlocked();
+    const std::vector<double> log_vp   = log_data_vp.find(well_names[i])->second;
+    const std::vector<double> log_vs   = log_data_vs.find(well_names[i])->second;
+    const std::vector<double> log_rho  = log_data_rho.find(well_names[i])->second;
+    //
+    // 2.2.1 Add autocovariance data
+    //
+    int lag = 0;
 
-      for (size_t k = 0; k < nd; k++){
-        for (size_t l = k; l < nd; l++){
+    for (size_t k = 0; k < nd; k++){
+      for (size_t l = k; l < nd; l++){
 
-          if(log_vp[k] != RMISSING || log_vs[k] != RMISSING || log_rho[k] != RMISSING){
-            if (log_vp[l] != RMISSING || log_vs[l] != RMISSING || log_rho[l] != RMISSING) {
-              double xk = x_pos[k];
-              double yk = y_pos[k];
-              double xl = x_pos[l];
-              double yl = y_pos[l];
-              double z_k_rel = (z_pos[k] - interval_simboxes[j]->getTop(xk, yk))/interval_simboxes[j]->getRelThick(xk, yk);
-              double z_l_rel = (z_pos[l] - interval_simboxes[j]->getTop(xl, yl))/interval_simboxes[j]->getRelThick(xl, yl);
-              lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
+        if(log_vp[k] != RMISSING || log_vs[k] != RMISSING || log_rho[k] != RMISSING){
+          if (log_vp[l] != RMISSING || log_vs[l] != RMISSING || log_rho[l] != RMISSING) {
+            double xk = x_pos[k];
+            double yk = y_pos[k];
+            double xl = x_pos[l];
+            double yl = y_pos[l];
 
-              // cov(vp_k, vp_l)
-              if(log_vp[k] != RMISSING && log_vp[l] != RMISSING){
+            double z_k_rel = (z_pos[k] - simbox->getTop(xk, yk))/simbox->getRelThick(xk, yk);
+            double z_l_rel = (z_pos[l] - simbox->getTop(xl, yl))/simbox->getRelThick(xl, yl);
+            lag = static_cast<int>(std::floor(std::abs(z_k_rel - z_l_rel)/min_dz + 0.5));
+
+            // cov(vp_k, vp_l)
+            if(log_vp[k] != RMISSING && log_vp[l] != RMISSING){
+              if (lag > max_lag_with_data)
+                max_lag_with_data = lag;
+              temp_auto_cov[lag](0,0) += log_vp[k]*log_vp[l];
+              count[lag](0,0) += 1;
+            }
+            // cov(rho_k, rho_l)
+            if(log_rho[k] != RMISSING && log_rho[l] != RMISSING){
+              if (lag > max_lag_with_data)
+                max_lag_with_data = lag;
+              temp_auto_cov[lag](2,2) += log_rho[k]*log_rho[l];
+              count[lag](2,2) += 1;
+            }
+            // cov(vp_k, rho_l)
+            if(log_vp[k] != RMISSING && log_rho[l] != RMISSING){
+              temp_auto_cov[lag](0,2) += log_vp[k]*log_rho[l];
+              count[lag](0,2) += 1;
+              if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                temp_auto_cov[lag](2,0) += log_vp[k]*log_rho[l];
+                count[lag](2,0)         += 1;
+              }
+            }
+            // cov(rho_k, vp_l)
+            if(log_rho[k] != RMISSING && log_vp[l] != RMISSING){
+              temp_auto_cov[lag](2,0) += log_rho[k]*log_vp[l];
+              count[lag](2,0) += 1;
+              if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                temp_auto_cov[lag](0,2) += log_rho[k]*log_vp[l];
+                count[lag](0,2)         += 1;
+              }
+            }
+            //
+            // If this Vs log is synthetic and there exist real Vs logs: use regression coefficients
+            //
+            if(!all_Vs_logs_synthetic && mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == true){
+              // Use the relation Vs = a*Vp + b*Rho + e, where e is iid
+              // cov[t](vs_i, vs_j) = cov[t](a*vp_k + b*rho_k + e_k, a*vp_l + b*rho_l + e_l) = a*a*cov(vp_k,vp_l) + a*b*cov(vp_k, rho_l) + a*b*cov(vp_l, rho_k) + b*b*cov(rho_k, rho_l) + I(k = l) var(e)
+              if(log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING){
+                double vs_k = regression_coef(0)*log_vp[k] + regression_coef(1)*log_rho[k];
+                double vs_l = regression_coef(0)*log_vp[l] + regression_coef(1)*log_rho[l];
+
+                temp_auto_cov[lag](1,1) += vs_k*vs_l + residual_variance_vs[lag];
+                //if (k == l)
+                //  temp_auto_cov[lag](1,1) += var_vs_resid;
+                count[lag](1,1) += 1;
+              }
+              // cov[l-k](vp, vs) = cov[l-k](vp_k, a*vp_l + b*rho_l + e_l) = a*autocov[l-k](vp_k, vp_l) + b*autocov[l-k](vp_k, rho_l)
+              if (log_vp[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
+                temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[k]*log_rho[l];
+                count[lag](0,1)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](1,0) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[k]*log_rho[l];
+                  count[lag](1,0)         += 1;
+                }
+              }
+              // cov[l-k](vs, vp) = a*cov[l-k](vp_k, vp_l) + b*cov[l-k](rho_k, vp_l)
+              if (log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_vp[l] != RMISSING){
+                temp_auto_cov[lag](1,0) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_vp[l];
+                count[lag](1,0)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_vp[l];
+                  count[lag](0,1)         += 1;
+                }
+              }
+              // cov[l-k](rho_k, vs_l) = cov[l-k](rho_k, a*vp_l + b*rho_l + e_l) = a*cov[l-k](rho_k,vp_l) + b*cov[l-k](rho_k, rho_l)
+              if (log_rho[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
+                temp_auto_cov[lag](1,2) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+                count[lag](1,2)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](2,1) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+                  count[lag](2,1)         += 1;
+                }
+              }
+              // cov[l-k](vs_k, rho_l) = a*cov[l-k](vp_k, rho_l) + b*cov[l-k](rho_k, rho_l)
+              if (log_rho[k] != RMISSING && log_vp[k] != RMISSING && log_rho[l] != RMISSING){
+                temp_auto_cov[lag](2,1) += regression_coef(0)*log_vp[k]*log_rho[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+                count[lag](2,1)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](1,2) += regression_coef(0)*log_vp[k]*log_rho[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+                  count[lag](1,2)         += 1;
+                }
+              }
+            }
+            //
+            // Non-synthetic Vs log
+            //
+            else if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
+              // cov[t](vs, vs)
+              if(log_vs[k] != RMISSING && log_vs[l] != RMISSING){
                 if (lag > max_lag_with_data)
                   max_lag_with_data = lag;
-                temp_auto_cov[lag](0,0) += log_vp[k]*log_vp[l];
-                count[lag](0,0) += 1;
+                temp_auto_cov[lag](1,1) += log_vs[k]*log_vs[l];
+                count[lag](1,1)         += 1;
               }
-              // cov(rho_k, rho_l)
-              if(log_rho[k] != RMISSING && log_rho[l] != RMISSING){
-                if (lag > max_lag_with_data)
-                  max_lag_with_data = lag;
-                temp_auto_cov[lag](2,2) += log_rho[k]*log_rho[l];
-                count[lag](2,2) += 1;
-              }
-              // cov(vp_k, rho_l)
-              if(log_vp[k] != RMISSING && log_rho[l] != RMISSING){
-                temp_auto_cov[lag](0,2) += log_vp[k]*log_rho[l];
-                count[lag](0,2) += 1;
+              // cov[t](vp, vs)
+              if(log_vp[k] != RMISSING && log_vs[l] != RMISSING){
+                temp_auto_cov[lag](0,1) += log_vp[k]*log_vs[l];
+                count[lag](0,1)         += 1;
                 if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                  temp_auto_cov[lag](2,0) += log_vp[k]*log_rho[l];
-                  count[lag](2,0)         += 1;
+                  temp_auto_cov[lag](1,0) += log_vp[k]*log_vs[l];
+                  count[lag](1,0)         += 1;
                 }
               }
-              // cov(rho_k, vp_l)
-              if(log_rho[k] != RMISSING && log_vp[l] != RMISSING){
-                temp_auto_cov[lag](2,0) += log_rho[k]*log_vp[l];
-                count[lag](2,0) += 1;
+              // cov[t](vs, vp)
+              if(log_vs[k] != RMISSING && log_vp[l] != RMISSING){
+                temp_auto_cov[lag](1,0) += log_vs[k]*log_vp[l];
+                count[lag](1,0)         += 1;
                 if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                  temp_auto_cov[lag](0,2) += log_rho[k]*log_vp[l];
-                  count[lag](0,2)         += 1;
+                  temp_auto_cov[lag](0,1) += log_vs[k]*log_vp[l];
+                  count[lag](0,1)         += 1;
                 }
               }
-              //
-              // If this Vs log is synthetic and there exist real Vs logs: use regression coefficients
-              //
-              if(!all_Vs_logs_synthetic && mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == true){
-                // Use the relation Vs = a*Vp + b*Rho + e, where e is iid
-                // cov[t](vs_i, vs_j) = cov[t](a*vp_k + b*rho_k + e_k, a*vp_l + b*rho_l + e_l) = a*a*cov(vp_k,vp_l) + a*b*cov(vp_k, rho_l) + a*b*cov(vp_l, rho_k) + b*b*cov(rho_k, rho_l) + I(k = l) var(e)
-                if(log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_rho[l] != RMISSING && log_vp[l] != RMISSING){
-                  double vs_k = regression_coef(0)*log_vp[k] + regression_coef(1)*log_rho[k];
-                  double vs_l = regression_coef(0)*log_vp[l] + regression_coef(1)*log_rho[l];
-
-                  temp_auto_cov[lag](1,1) += vs_k*vs_l + residual_variance_vs[lag];
-                  //if (k == l)
-                  //  temp_auto_cov[lag](1,1) += var_vs_resid;
-                  count[lag](1,1) += 1;
-                }
-                // cov[l-k](vp, vs) = cov[l-k](vp_k, a*vp_l + b*rho_l + e_l) = a*autocov[l-k](vp_k, vp_l) + b*autocov[l-k](vp_k, rho_l)
-                if (log_vp[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
-                  temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[k]*log_rho[l];
-                  count[lag](0,1)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](1,0) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_vp[k]*log_rho[l];
-                    count[lag](1,0)         += 1;
-                  }
-                }
-                // cov[l-k](vs, vp) = a*cov[l-k](vp_k, vp_l) + b*cov[l-k](rho_k, vp_l)
-                if (log_vp[k] != RMISSING && log_rho[k] != RMISSING && log_vp[l] != RMISSING){
-                  temp_auto_cov[lag](1,0) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_vp[l];
-                  count[lag](1,0)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](0,1) += regression_coef(0)*log_vp[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_vp[l];
-                    count[lag](0,1)         += 1;
-                  }
-                }
-                // cov[l-k](rho_k, vs_l) = cov[l-k](rho_k, a*vp_l + b*rho_l + e_l) = a*cov[l-k](rho_k,vp_l) + b*cov[l-k](rho_k, rho_l)
-                if (log_rho[k] != RMISSING && log_vp[l] != RMISSING && log_rho[l] != RMISSING){
-                  temp_auto_cov[lag](1,2) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
-                  count[lag](1,2)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](2,1) += regression_coef(0)*log_rho[k]*log_vp[l] + regression_coef(1)*log_rho[k]*log_rho[l];
-                    count[lag](2,1)         += 1;
-                  }
-                }
-                // cov[l-k](vs_k, rho_l) = a*cov[l-k](vp_k, rho_l) + b*cov[l-k](rho_k, rho_l)
-                if (log_rho[k] != RMISSING && log_vp[k] != RMISSING && log_rho[l] != RMISSING){
-                  temp_auto_cov[lag](2,1) += regression_coef(0)*log_vp[k]*log_rho[l] + regression_coef(1)*log_rho[k]*log_rho[l];
+              // cov[t](vs, rho)
+              if(log_vs[k] != RMISSING && log_rho[l] != RMISSING){
+                temp_auto_cov[lag](1,2) += log_vs[k]*log_rho[l];
+                count[lag](1,2)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](2,1) += log_vs[k]*log_rho[l];
                   count[lag](2,1)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](1,2) += regression_coef(0)*log_vp[k]*log_rho[l] + regression_coef(1)*log_rho[k]*log_rho[l];
-                    count[lag](1,2)         += 1;
-                  }
                 }
               }
-              //
-              // Non-synthetic Vs log
-              //
-              else if(mapped_blocked_logs.find(well_names[i])->second->HasSyntheticVsLog() == false){
-                // cov[t](vs, vs)
-                if(log_vs[k] != RMISSING && log_vs[l] != RMISSING){
-                  if (lag > max_lag_with_data)
-                    max_lag_with_data = lag;
-                  temp_auto_cov[lag](1,1) += log_vs[k]*log_vs[l];
-                  count[lag](1,1)         += 1;
-                }
-                // cov[t](vp, vs)
-                if(log_vp[k] != RMISSING && log_vs[l] != RMISSING){
-                  temp_auto_cov[lag](0,1) += log_vp[k]*log_vs[l];
-                  count[lag](0,1)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](1,0) += log_vp[k]*log_vs[l];
-                    count[lag](1,0)         += 1;
-                  }
-                }
-                // cov[t](vs, vp)
-                if(log_vs[k] != RMISSING && log_vp[l] != RMISSING){
-                  temp_auto_cov[lag](1,0) += log_vs[k]*log_vp[l];
-                  count[lag](1,0)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](0,1) += log_vs[k]*log_vp[l];
-                    count[lag](0,1)         += 1;
-                  }
-                }
-                // cov[t](vs, rho)
-                if(log_vs[k] != RMISSING && log_rho[l] != RMISSING){
-                  temp_auto_cov[lag](1,2) += log_vs[k]*log_rho[l];
+              // cov[t](rho, vs)
+              if(log_rho[k] != RMISSING && log_vs[l] != RMISSING){
+                temp_auto_cov[lag](2,1) += log_rho[k]*log_vs[l];
+                count[lag](2,1)         += 1;
+                if (lag == 0){ // In lag 0, the autocov matrix is symmetric
+                  temp_auto_cov[lag](1,2) += log_rho[k]*log_vs[l];
                   count[lag](1,2)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](2,1) += log_vs[k]*log_rho[l];
-                    count[lag](2,1)         += 1;
-                  }
-                }
-                // cov[t](rho, vs)
-                if(log_rho[k] != RMISSING && log_vs[l] != RMISSING){
-                  temp_auto_cov[lag](2,1) += log_rho[k]*log_vs[l];
-                  count[lag](2,1)         += 1;
-                  if (lag == 0){ // In lag 0, the autocov matrix is symmetric
-                    temp_auto_cov[lag](1,2) += log_rho[k]*log_vs[l];
-                    count[lag](1,2)         += 1;
-                  }
                 }
               }
             }
@@ -731,6 +714,7 @@ void Analyzelog::EstimateAutoCovarianceFunction(std::vector<NRLib::Matrix >     
         }
       }
     }
+
     time(&timeend);
     //long int time = static_cast<long int>(timeend - timestart);
     //printf("\nWell %s processed in %ld seconds.",well_names[i].c_str(),time);

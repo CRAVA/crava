@@ -23,6 +23,7 @@
 #include "../exception/exception.hpp"
 #include <limits>
 #include <cmath>
+#include <algorithm>
 
 // Functions follow Numerical Recipes by Press, Teukolsky, Vetterling and Flannery
 

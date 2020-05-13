@@ -1427,7 +1427,6 @@ NRLib::Vector Simbox::FindPlane(const Surface * surf){
 
   NRLib::SymmetricMatrix A = NRLib::SymmetricZeroMatrix(3);
   NRLib::Vector b(3);
-  NRLib::Vector x(3);
 
   b = 0;
 
@@ -1452,6 +1451,7 @@ NRLib::Vector Simbox::FindPlane(const Surface * surf){
 
   A(0,0) = nData;
 
+  NRLib::Vector x(3);
   NRLib::CholeskySolve(A, b, x);
 
   return x;

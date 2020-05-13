@@ -113,6 +113,9 @@ public:
   /// Get bypassCoodScaling status
   bool GetBypassCoordScaling() const {return scal_co_loc_ == -1;}
 
+  /// Get offset location
+  int GetOffsetLoc() const { return offset_loc_;}
+
   /// Get coordinate system.
   coordSys_t GetCoordSys() const {return coord_sys_;}
 
@@ -160,6 +163,8 @@ private:
   int start_time_loc_;
   /// Coordinate system to use.
   coordSys_t coord_sys_;
+  /// Location of offset
+  int offset_loc_;
   /// Standard type
   bool standard_type_;
 };
@@ -248,6 +253,8 @@ public:
 
   void SetScalCo(short scalcoinitial);
 
+  void SetOffset(double offset);
+
 
   /// Get status code.
   ///  0 - everything went OK.
@@ -278,6 +285,7 @@ private:
   short dt_;
   int imissing_;
   float rmissing_;
+  double offset_;
 
   bool useBinaryInline;
 
