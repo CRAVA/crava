@@ -81,6 +81,8 @@ public:
   std::vector<SeismicStorage *>                                      & GetSeismicDataTimeLapse(int time_lapse)                { return seismic_data_[time_lapse]                      ;}
   std::map<int, std::vector<float> >                                 & GetSNRatio()                                           { return sn_ratios_                                     ;}
   std::vector<float>                                                 & GetSNRatioTimeLapse(int time_lapse)                    { return sn_ratios_.find(time_lapse)->second            ;}
+  std::map<int, std::vector<float> >                                 & GetGlobalWaveletScales()                               { return global_wavelet_scales_                         ;}
+  std::vector<float>                                                 & GetGlobalWaveletScale(int time_lapse)                  { return global_wavelet_scales_.find(time_lapse)->second;}
 
   bool                                                                 HasSeismicData()                                       { return seismic_data_.size() > 0                       ;}
 
@@ -238,8 +240,8 @@ public:
     // Filter using Odd's magic vector...
     //
     float dt  = static_cast<float> (dt_milliseconds/1000.0); // Sampling density in seconds
-    float T   = (nt - 1)*dt;                                 // Time sample
-    float w   = 1/T;                                         // Lowest frequency that can be extracted from log
+    float dT  = (nt - 1)*dt;                                 // Time sample
+    float w   = 1/dT;                                        // Lowest frequency that can be extracted from log
     int   N   = int(max_hz/w + 0.5f);                        // Number of elements of Fourier vector to keep
 
     if (cnt < N+1) {
@@ -420,7 +422,7 @@ private:
                                        MultiIntervalGrid  * multi_interval_grid,
                                        std::string        & err_text);
 
-  double             FindDzMin(MultiIntervalGrid * multi_interval_grid);
+  double             FindDzMin(MultiIntervalGrid * multi_interval_grid, ModelSettings * model_settings);
 
   void               WriteAreas(const SegyGeometry  * area_params,
                                 Simbox              * time_simbox,
@@ -592,6 +594,7 @@ private:
                                      std::map<int, std::vector<Grid2D *> >       & local_noise_scale,
                                      std::map<int, std::vector<float> >          & global_noise_estimate,
                                      std::map<int, std::vector<float> >          & sn_ratio,
+                                     std::map<int, std::vector<float> >          & global_wavelet_scales,
                                      std::vector<std::vector<double> >           & t_grad_x,
                                      std::vector<std::vector<double> >           & t_grad_y,
                                      NRLib::Grid2D<float>                        & ref_time_grad_x,
@@ -668,6 +671,7 @@ private:
                                       unsigned int                                 j_angle,
                                       const float                                  angle,
                                       float                                      & sn_ratio,
+                                      float                                      & global_wavelet_scale,
                                       bool                                         estimate_wavlet,
                                       bool                                         use_ricker_wavelet) const;
 
@@ -1151,6 +1155,7 @@ private:
   std::map<int, std::vector<Grid2D *> >                        local_noise_scales_;
   std::map<int, std::vector<float> >                           global_noise_estimates_;
   std::map<int, std::vector<float> >                           sn_ratios_;
+  std::map<int, std::vector<float> >                           global_wavelet_scales_; //Store global (estimated) wavelet scale set up in CommonData to be used in modelavodynamic if we fail to estimate scale for one interval
   std::string                                                  wavelet_est_int_top_; //Filename for wavelet estimation interval
   std::string                                                  wavelet_est_int_bot_ ;
   std::vector<std::vector<Grid2D *> >                          shift_grids_; //vector timelapse, vector angles

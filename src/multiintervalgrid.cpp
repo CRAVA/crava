@@ -616,7 +616,8 @@ Surface * MultiIntervalGrid::MakeSurfaceFromFileName(const std::string   & file_
         double ly = segy_geometry->GetDy() * segy_geometry->GetNy();
 
         new_surface = new Surface(file_name, NRLib::SURF_UNKNOWN, segy_geometry->GetAngle(), segy_geometry->GetX0(),
-                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
+                                  segy_geometry->GetY0(), lx, ly, &ilxl_area[0], segy_geometry->GetIL0(), segy_geometry->GetXL0(), segy_geometry->GetFirstAxisIL(),
+                                  segy_geometry->GetInLine0(), segy_geometry->GetCrossLine0(),
                                   segy_geometry->GetILStepX(), segy_geometry->GetILStepY(), segy_geometry->GetXLStepX(), segy_geometry->GetXLStepY());
     }
     else {
@@ -950,13 +951,13 @@ int MultiIntervalGrid::FindClosestFactorableNumber(int leastint) {
             for (n=maxant11;n<maxant13+1;n++)
             {
               factor = static_cast<int>(pow(2.0f,i)*pow(3.0f,j)*pow(5.0f,k)*
-                pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
+                                        pow(7.0f,l)*pow(11.0f,m)*pow(13.0f,n));
               if ((factor >=  leastint) &&  (factor <  closestprod))
               {
                 closestprod=factor;
               }
             }
-            return closestprod;
+  return closestprod;
 }
 
 // --------------------------------------------------------------------------------
