@@ -36,7 +36,7 @@ OBJCOMPARE  = compare_storm_binary_volumes/compare.o   \
 INCLUDE     = -I. -I./libs -I./libs/nrlib -I./libs/flens -I./libs/fft/include
 CPPFLAGS   += $(INCLUDE)
 
-all:	$(PROGRAM) $(COMPARE)
+all:	$(PROGRAM)
 
 comp:	$(COMPARE)
 

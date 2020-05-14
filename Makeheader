@@ -17,7 +17,7 @@ GCCWARNING := -Wall -pedantic -Wno-long-long -Werror
 # segy/traceheader.cpp: In member function ‘int NRLib::TraceHeader::GetInt32(int) const’:
 # segy/traceheader.cpp:519: error: dereferencing type-punned pointer will break strict-aliasing rules
 #
-GXXWARNING  = -Wall -pedantic -Werror -Woverloaded-virtual -Wno-long-long -fno-strict-aliasing -Wno-deprecated-declarations
+GXXWARNING  = -Wall -pedantic -Werror -Woverloaded-virtual -Wno-long-long -fno-strict-aliasing -Wno-deprecated-declarations -Wno-unused-but-set-variable
 PROGRAM     = cravarun
 GRAMMAR     = grammar.exe
 COMPARE     = compare.exe
@@ -25,10 +25,6 @@ OPT         = -O2
 DEBUG       =
 PURIFY      =
 mode        = all
-
-ifeq ($(GCCNEW),1)
-  GXXWARNING += -Wno-unused-but-set-variable
-endif
 
 #o======================================================o
 #|                        Mode                          |
