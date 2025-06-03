@@ -227,7 +227,7 @@ NorsarWell::ReadLogs(const std::string & filename, int n_col, int n_row, int ski
       //  legal_data++;
     }
   }
-  catch (NRLib::EndOfFile) {
+  catch (const NRLib::IOError & e) {
     std::string error = "Unexpected end of file "+filename+": Expected to read "+NRLib::ToString(n_row*n_col)+"elements, found only "+NRLib::ToString(i*n_col+j)+".";
     throw (NRLib::IOError(error));
   }
