@@ -1244,7 +1244,7 @@ void CKrigingAdmin::CalcSmoothWeights(Gamma gamma, int direction) {
   try {
     NRLib::CholeskySolve(ppMatrix2, ppInv);
   }
-  catch (NRLib::IOError e) {
+  catch (const NRLib::IOError & e) {
     robustify = true;
   }
 

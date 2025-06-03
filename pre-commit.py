@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 """
     Subversion pre-commit hook for sand.
     Checks that:
@@ -13,19 +13,19 @@
 
 import argparse
 import os
-import pipes # For pipes.quote. In 3.2 we can use shlex.quote instead.
+#import pipes # For pipes.quote. In 3.2 we can use shlex.quote instead.
 import re
 import shlex
 import subprocess
 
 # file extensions for code files
 code_extensions = ".cpp .hpp .c .h *.C *.H .cu .py .tcc .cc"
-modified = re.compile('^(?:M|A)(\s+)(?P<name>.*)')
+modified = re.compile(r'^(?:M|A)(\s+)(?P<name>.*)')
 
 def command_output(cmd):
     " Capture a command's standard output. "
     return subprocess.Popen(
-        shlex.split(cmd), stdout=subprocess.PIPE).communicate()[0]
+        shlex.split(cmd), stdout=subprocess.PIPE, encoding='utf8').communicate()[0]
 
 
 def files_changed(all_files):
@@ -39,7 +39,7 @@ def files_changed(all_files):
             for file_name in file_names:
                 files.append(os.path.join(root, file_name))
     else:
-        p = subprocess.Popen(['git', 'status', '--porcelain'], stdout=subprocess.PIPE)
+        p = subprocess.Popen(['git', 'status', '--porcelain'], stdout=subprocess.PIPE, encoding='utf8')
         out, err = p.communicate()
         for line in out.splitlines():
             match = modified.match(line)
@@ -50,12 +50,12 @@ def files_changed(all_files):
 
 def file_contents(filename):
     " Return a file's contents for this transaction. "
-    return command_output("cat %s" % (pipes.quote(filename)))
+    return command_output("cat %s" % (shlex.quote(filename)))
 
 
 def file_diff(filename):
     "Return the changed lines for the given file. "
-    diff = command_output("git diff --cached -U0 %s" % (pipes.quote(filename)))
+    diff = command_output("git diff --cached -U0 %s" % (shlex.quote(filename)))
     new_lines = ''
     for line in diff.split('\n'):
         if line.startswith('+'):
@@ -126,4 +126,3 @@ def main():
 if __name__ == "__main__":
   import sys
   sys.exit(main())
-

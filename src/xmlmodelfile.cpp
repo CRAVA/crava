@@ -51,7 +51,7 @@ XmlModelFile::XmlModelFile(const std::string & fileName)
   try {
     NRLib::OpenRead(file,fileName);
   }
-  catch (NRLib::IOError e) {
+  catch (const NRLib::IOError & e) {
     LogKit::LogMessage(LogKit::Error,"\nERROR: "+std::string(e.what()));
     failed_ = true;
   }

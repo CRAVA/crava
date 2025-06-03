@@ -80,7 +80,7 @@ endif
 #|              LAPACK vs. Intel MKL                    |
 #o======================================================o
 
-ifeq ($(lib),mkl)
+ifneq ($(lib),atlas)
   ATLASLFLAGS  =
   MKLINCLUDE  := /nr/prog/intel/Compiler/mkl/include
   MKLPATH     := /nr/prog/intel/Compiler/mkl/lib/intel64

@@ -90,7 +90,7 @@ test:	$(PROGRAM) $(GRAMMAR) $(COMPARE)
 
 help:
 	@echo ''
-	@echo 'Usage:  make type [mode=...] [case=...] [passive=...] [at=...]'
+	@echo 'Usage:  make type [mode=...] [lib=...] [case=...] [passive=...] [at=...]'
 	@echo ''
 	@echo 'types'
 	@echo '  clean     : Remove object files generated from  src'
@@ -103,6 +103,9 @@ help:
 	@echo '  debug     : Compile and link with -g -O0'
 	@echo '  profile   : Compile and link with -g -pg'
 	@echo '  purify    : Compile and link with -g -p0 and link with purify. Executable becomes cravarun.purify'
+	@echo ''
+	@echo 'lib'
+	@echo '  atlas     : Link with ATLAS/LAPACK. Otherwise use Intel MKL'
 	@echo ''
 	@echo 'passive'
 	@echo '  yes       : Run test suite in passive mode (do not run CRAVA)'
